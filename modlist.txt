@@ -1,0 +1,147 @@
+Coffees Aero SMP — Full Mod List
+========================
+Minecraft 1.21.1 | NeoForge 21.1.0
+Generated for: Modrinth + CurseForge distribution
+
+----------------------------------------------------------------
+CORE — CREATE ECOSYSTEM
+----------------------------------------------------------------
+- Create (by simibubi)
+- Create: Aeronautics (by Team Aeronautics)
+- Sable (by Team Aeronautics)
+- Create: Trackwork (by Team Aeronautics)
+- Create: Liftoff (by Team Aeronautics)
+- Create: Connected
+- Create: TFMG — The Factory Must Grow
+- Create: Numismatics
+- Create: Enchantment Industry
+- Create Deco
+- Copycats+
+- Create: Power Loader
+- Create: Steam 'n' Rails
+- Create: Big Cannons
+- Create: Interiors
+- Create: Slice & Dice
+- Create: Dreams & Desires
+- Create: Extended Cogwheels
+- Create: Misc and Things
+- Create: Crafts & Additions (FE↔SU bridge, wires, rolling mill)
+- Create: New Age (magnet+coil electricity generation, nuclear heat)
+
+----------------------------------------------------------------
+AERONAUTICS IMMERSION
+----------------------------------------------------------------
+- Vista (TV and camera blocks for airship cockpits)
+- Vista: Aeronautics Fix (rendering fix for Vista on moving ships)
+- Aeronautics Camera Sync (smooth camera rotation with airship)
+- Sable: Collision Damage (real impact damage on crash)
+
+----------------------------------------------------------------
+PERFORMANCE & GRAPHICS
+----------------------------------------------------------------
+- Embeddium (NeoForge port of Sodium)
+- Canary (NeoForge port of Lithium)
+- Iris (shader support — replaces Oculus, now has NeoForge support natively)
+- ModernFix
+- FerriteCore
+- Entity Culling
+- MemoryLeakFix
+- More Culling
+- ImmediateFast
+
+----------------------------------------------------------------
+UTILITIES & API
+----------------------------------------------------------------
+- NeoForge (mod loader)
+- Architectury API
+- Cloth Config API
+- JEI — Just Enough Items
+- AppleSkin
+- Mouse Tweaks
+- Controlling
+- Catalogue (NeoForge mod browser)
+- Searchables
+- Xaero's Minimap
+- Xaero's World Map
+- Waystones
+- Antique Atlas
+- Carry On
+- Sophisticated Backpacks
+- Sophisticated Storage
+- Tom's Simple Storage
+
+----------------------------------------------------------------
+IMMERSIVE ENGINEERING
+----------------------------------------------------------------
+- Immersive Engineering (by BluSunrize)
+
+----------------------------------------------------------------
+WORLD GENERATION
+----------------------------------------------------------------
+- Terralith
+- Tectonic (dramatic terrain amplification)
+- Terratonic (Tectonic + Terralith compatibility)
+
+----------------------------------------------------------------
+VILLAGES & SETTLEMENTS
+----------------------------------------------------------------
+- ChoiceTheorem's Overhauled Village (CTOV) — Terralith biome-specific villages
+- Towns and Towers — watchtowers, new village types, Terralith compatible
+
+----------------------------------------------------------------
+WORLD STRUCTURES & EXPLORATION
+----------------------------------------------------------------
+- When Dungeons Arise — 85+ massive structures including hostile abandoned airships
+- Structory — small atmospheric ruins and campsites
+- Explorify — enhanced dungeon variety
+
+----------------------------------------------------------------
+DIMENSIONS & EXPLORATION
+----------------------------------------------------------------
+- The Aether
+- Twilight Forest
+- Alex's Caves
+- YUNG's Better Dungeons
+- YUNG's Better Strongholds
+
+----------------------------------------------------------------
+COMBAT & ADVENTURE
+----------------------------------------------------------------
+- Alex's Mobs
+- Apotheosis
+
+----------------------------------------------------------------
+FOOD & BUILDING
+----------------------------------------------------------------
+- Farmer's Delight
+- Supplementaries
+- Handcrafted
+
+----------------------------------------------------------------
+QUESTING & PROGRESSION
+----------------------------------------------------------------
+- FTB Quests
+- FTB Library
+- FTB Teams
+
+----------------------------------------------------------------
+SERVER-SIDE & MULTIPLAYER
+----------------------------------------------------------------
+- Sable Protect
+- Open Parties and Claims
+- Simple Voice Chat
+- No Chat Reports
+
+----------------------------------------------------------------
+CUSTOM (THIS PACK)
+----------------------------------------------------------------
+- CoffeesAeroSMP Core [custom mod — built in src/AeroCore/]
+  Admin: MrCoffeeBench
+  Feature: Singleplayer locked, Multiplayer auto-connects to server
+  Feature: Admin Settings panel for live IP updates
+
+----------------------------------------------------------------
+TOTAL MOD COUNT: 74 (+ 1 custom)
+NOTE: Create: Power Loader has no confirmed 1.21.1 build — verify before including.
+NOTE: Several Create ecosystem addons should be re-verified against Create 6.0 (1.21.1).
+----------------------------------------------------------------

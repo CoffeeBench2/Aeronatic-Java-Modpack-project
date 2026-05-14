@@ -1,0 +1,65 @@
+plugins {
+    id 'net.neoforged.gradle.userdev' version '7.0.80'
+    id 'java'
+}
+
+version = mod_version
+group = mod_group
+
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(17)
+}
+
+minecraft {
+    accessTransformers {
+        // No AT needed for this mod
+    }
+}
+
+runs {
+    client {
+        workingDirectory(project.file('run'))
+        systemProperty 'forge.logging.markers', 'REGISTRIES'
+        systemProperty 'forge.logging.console.level', 'debug'
+        programArgument '--username'
+        programArgument 'DevPlayer'
+        modSource sourceSets.main
+    }
+    server {
+        workingDirectory(project.file('run'))
+        systemProperty 'forge.logging.markers', 'REGISTRIES'
+        systemProperty 'forge.logging.console.level', 'debug'
+        modSource sourceSets.main
+    }
+}
+
+dependencies {
+    implementation "net.neoforged:neoforge:${neoforge_version}"
+}
+
+processResources {
+    def replaceProps = [
+        mod_id     : mod_id,
+        mod_version: mod_version,
+        mod_name   : mod_name,
+        mod_license: mod_license,
+        mc_version : minecraft_version
+    ]
+    inputs.properties replaceProps
+    filesMatching('META-INF/mods.toml') {
+        expand replaceProps
+    }
+}
+
+jar {
+    manifest {
+        attributes([
+            'Specification-Title'   : mod_id,
+            'Specification-Vendor'  : 'CoffeesAeroSMP',
+            'Specification-Version' : '1',
+            'Implementation-Title'  : project.name,
+            'Implementation-Version': project.jar.archiveVersion,
+            'Implementation-Vendor' : 'CoffeesAeroSMP',
+        ])
+    }
+}

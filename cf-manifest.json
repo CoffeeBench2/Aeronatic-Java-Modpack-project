@@ -1,0 +1,19 @@
+{
+  "minecraft": {
+    "version": "1.21.1",
+    "modLoaders": [
+      {
+        "id": "neoforge-21.1.0",
+        "primary": true
+      }
+    ]
+  },
+  "manifestType": "minecraftModpack",
+  "manifestVersion": 1,
+  "name": "Coffees Aero SMP",
+  "version": "1.0.0",
+  "author": "",
+  "description": "A custom SMP modpack built around Create: Aeronautics. Build and pilot airships, run sky-based industry, and explore a world seen from above.",
+  "files": [],
+  "overrides": "overrides"
+}

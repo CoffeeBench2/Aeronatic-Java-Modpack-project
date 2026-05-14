@@ -1,0 +1,79 @@
+plugins {
+    id 'net.neoforged.gradle.userdev' version '7.0.80'
+    id 'java'
+}
+
+version = mod_version
+group = mod_group
+
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(21)
+}
+
+repositories {
+    maven {
+        name = 'Create Maven'
+        url = 'https://maven.createmod.net'
+    }
+    maven {
+        name = 'Curse Maven'
+        url = 'https://www.cursemaven.com'
+    }
+    maven {
+        name = 'Modrinth Maven'
+        url = 'https://api.modrinth.com/maven'
+    }
+}
+
+runs {
+    client {
+        workingDirectory(project.file('run'))
+        systemProperty 'forge.logging.markers', 'REGISTRIES'
+        systemProperty 'forge.logging.console.level', 'debug'
+        modSource sourceSets.main
+    }
+    server {
+        workingDirectory(project.file('run'))
+        systemProperty 'forge.logging.markers', 'REGISTRIES'
+        systemProperty 'forge.logging.console.level', 'debug'
+        modSource sourceSets.main
+    }
+}
+
+dependencies {
+    implementation "net.neoforged:neoforge:${neoforge_version}"
+
+    // Create 6.0 — compile-only (provided at runtime by the modpack)
+    compileOnly "com.simibubi.create:create-${minecraft_version}:${create_version}:slim"
+
+    // Immersive Engineering — compile-only for wire interface (optional at runtime)
+    // Update the file ID to the latest IE 1.21.1 release on CurseForge
+    compileOnly "curse.maven:immersive-engineering-231951:6116312"
+}
+
+processResources {
+    def replaceProps = [
+        mod_id     : mod_id,
+        mod_version: mod_version,
+        mod_name   : mod_name,
+        mod_license: mod_license,
+        mc_version : minecraft_version
+    ]
+    inputs.properties replaceProps
+    filesMatching('META-INF/mods.toml') {
+        expand replaceProps
+    }
+}
+
+jar {
+    manifest {
+        attributes([
+            'Specification-Title'   : mod_id,
+            'Specification-Vendor'  : 'CoffeesAeroSMP',
+            'Specification-Version' : '1',
+            'Implementation-Title'  : project.name,
+            'Implementation-Version': project.jar.archiveVersion,
+            'Implementation-Vendor' : 'CoffeesAeroSMP',
+        ])
+    }
+}

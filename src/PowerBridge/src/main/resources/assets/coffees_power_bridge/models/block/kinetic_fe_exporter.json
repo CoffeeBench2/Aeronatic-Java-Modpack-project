@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:block/cube",
+  "textures": {
+    "up":       "coffees_power_bridge:block/kinetic_fe_exporter_end",
+    "down":     "coffees_power_bridge:block/kinetic_fe_exporter_end",
+    "north":    "coffees_power_bridge:block/kinetic_fe_exporter_side",
+    "south":    "coffees_power_bridge:block/kinetic_fe_exporter_side",
+    "east":     "coffees_power_bridge:block/kinetic_fe_exporter_side",
+    "west":     "coffees_power_bridge:block/kinetic_fe_exporter_side",
+    "particle": "coffees_power_bridge:block/kinetic_fe_exporter_side"
+  }
+}

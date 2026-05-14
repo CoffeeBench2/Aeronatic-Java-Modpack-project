@@ -1,0 +1,7 @@
+{
+  "block.coffees_power_bridge.fe_kinetic_importer": "FE Kinetic Importer",
+  "block.coffees_power_bridge.kinetic_fe_exporter": "Kinetic FE Exporter",
+
+  "coffees_power_bridge.tooltip.fe_kinetic_importer": "Converts FE power into Create rotational energy. Accepts Immersive Engineering wires.",
+  "coffees_power_bridge.tooltip.kinetic_fe_exporter": "Converts Create rotation into FE power. Pushes to adjacent blocks and IE wire networks."
+}

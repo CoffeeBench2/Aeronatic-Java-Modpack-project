@@ -1,0 +1,53 @@
+Aero SMP Mod List (Modrinth)
+============================
+The following is the mod list for the Aero SMP modpack, primarily centered around Create and the Create: Aeronautics ecosystem.
+
+CORE MODS
+---------
+- Create (by simibubi)
+- Create: Aeronautics (by Team Aeronautics) - The central airship and physics mod.
+- Sable (by Team Aeronautics) - Core physics engine for Aeronautics.
+- Create: Trackwork (by Team Aeronautics) - Adds tank tracks and wheels for ground vehicles.
+- Create: Liftoff (by Team Aeronautics) - Adds rocket and aerospace components.
+- Create: Connected - Adds more connected textures and blocks to Create.
+- Create: TFMG (The Factory Must Grow) - Adds heavy industry, oil, and more to Create.
+- Create: Numismatics - Economy and currency mod for SMP servers.
+- Create: Enchantment Industry - Automatable enchantment systems.
+- Create Deco - Decorative blocks and props for the Create aesthetic.
+- Copycats+ - Expanded copycat blocks for building.
+- Create: Power Loader - Keeps chunks loaded for moving contraptions.
+
+PERFORMANCE & GRAPHICS
+----------------------
+- Sodium / Embeddium - Major performance optimizations for rendering.
+- Lithium / Canary - Server-side and internal logic optimizations.
+- Iris / Oculus - Shader support (highly recommended for sky-based builds).
+- Indium - Compatibility bridge for Sodium and the Fabric Rendering API.
+- ModernFix - Fixes memory leaks and improves loading times.
+- FerriteCore - Significantly reduces memory usage.
+- Entity Culling - Only renders entities you can see.
+- MemoryLeakFix - Self-explanatory performance fix.
+- More Culling - Improves FPS by not rendering unseen faces.
+- ImmediateFast - Optimizes immediate mode rendering.
+- Krypton - Optimizes network stack for better server connectivity.
+
+UTILITIES & API
+---------------
+- Fabric API / NeoForge (Loader dependent)
+- Architectury API - Compatibility layer for multi-platform mods.
+- Cloth Config API - Configuration menu for many mods.
+- EMI / JEI / REI - Item list and recipe viewer.
+- AppleSkin - Displays food and saturation values.
+- Mouse Tweaks - Improved inventory management.
+- Controlling - Searchable keybind menu.
+- Mod Menu - List and configure your installed mods.
+- Searchables - Utility for searching through various menus.
+
+SERVER-SIDE & QoL
+-----------------
+- Sable Protect - Allows players to claim and protect their airships.
+- Open Parties and Claims - Land claiming and party system.
+- Simple Voice Chat - Proximity-based in-game voice chat.
+- No Chat Reports - Disables Microsoft's chat reporting feature.
+
+Note: This list is based on the official Aero SMP server modpack found on Modrinth (creator: printer). Some versions may vary slightly depending on the specific update cycle.

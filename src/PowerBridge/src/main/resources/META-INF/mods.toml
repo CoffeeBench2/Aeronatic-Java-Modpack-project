@@ -1,0 +1,44 @@
+modLoader="javafml"
+loaderVersion="[21,)"
+license="${mod_license}"
+
+[[mods]]
+modId="${mod_id}"
+version="${mod_version}"
+displayName="${mod_name}"
+description='''
+Custom compatibility mod for Coffees Aero SMP.
+Adds FE Kinetic Importer and Kinetic FE Exporter blocks that bridge
+Immersive Engineering power networks directly into Create rotational energy
+with IE wire support and configurable conversion rates.
+'''
+
+# Create is required
+[[dependencies.coffees_power_bridge]]
+    modId="create"
+    mandatory=true
+    versionRange="[6,)"
+    ordering="AFTER"
+    side="BOTH"
+
+[[dependencies.coffees_power_bridge]]
+    modId="neoforge"
+    mandatory=true
+    versionRange="[21.1,)"
+    ordering="NONE"
+    side="BOTH"
+
+[[dependencies.coffees_power_bridge]]
+    modId="minecraft"
+    mandatory=true
+    versionRange="[1.21.1,1.22)"
+    ordering="NONE"
+    side="BOTH"
+
+# IE is optional — wire compat activates only when IE is present
+[[dependencies.coffees_power_bridge]]
+    modId="immersiveengineering"
+    mandatory=false
+    versionRange="[1.0,)"
+    ordering="AFTER"
+    side="BOTH"
