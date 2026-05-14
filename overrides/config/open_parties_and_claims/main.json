@@ -1,0 +1,8 @@
+{
+  "maxClaimsPerPlayer": 500,
+  "maxPartyMembers": 20,
+  "partyClaimsEnabled": true,
+  "friendlyFire": false,
+  "protectClaimedChunks": true,
+  "claimsEnabled": true
+}
