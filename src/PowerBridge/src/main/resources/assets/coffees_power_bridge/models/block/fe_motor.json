@@ -1,0 +1,12 @@
+{
+  "parent": "block/cube",
+  "textures": {
+    "down":     "coffees_power_bridge:block/fe_motor_side",
+    "up":       "coffees_power_bridge:block/fe_motor_side",
+    "north":    "coffees_power_bridge:block/fe_motor_front",
+    "south":    "coffees_power_bridge:block/fe_motor_side",
+    "east":     "coffees_power_bridge:block/fe_motor_side",
+    "west":     "coffees_power_bridge:block/fe_motor_side",
+    "particle": "coffees_power_bridge:block/fe_motor_side"
+  }
+}

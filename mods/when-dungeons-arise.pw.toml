@@ -1,0 +1,13 @@
+name = "When Dungeons Arise"
+filename = "DungeonsArise-1.21.1-2.1.68-release.jar"
+side = "server"
+
+[download]
+url = "https://cdn.modrinth.com/data/8DfbfASn/versions/XIRJSFQ0/DungeonsArise-1.21.1-2.1.68-release.jar"
+hash-format = "sha512"
+hash = "cf87e06c8a49c9147fac2cf4d218d0e0eb56bb75819ab85f84ed7ae775bb3e259e2ebd5c423696d4d9026f6a69698babf5e7c82c74e480fbbf107359ef30a97e"
+
+[update]
+[update.modrinth]
+mod-id = "8DfbfASn"
+version = "XIRJSFQ0"

@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "pattern": [
+    "CEC",
+    "EME",
+    "CGC"
+  ],
+  "key": {
+    "C": { "item": "minecraft:copper_ingot" },
+    "E": { "item": "coffees_power_bridge:electromagnetic_coil" },
+    "M": { "item": "coffees_power_bridge:magnetized_steel" },
+    "G": { "item": "minecraft:gold_ingot" }
+  },
+  "result": {
+    "id": "coffees_power_bridge:kinetic_dynamo",
+    "count": 1
+  }
+}

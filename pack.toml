@@ -1,13 +1,16 @@
 name = "Coffees Aero SMP"
-author = ""
 version = "1.0.0"
 pack-format = "packwiz:1.1.0"
 
 [index]
 file = "index.toml"
 hash-format = "sha256"
-hash = ""
+hash = "612b32e28451929e864204d8e62ccfe74089c1d519c2305ab15d1266ea9b5c26"
 
 [versions]
 minecraft = "1.21.1"
 neoforge = "21.1.0"
+
+[options]
+acceptable-game-versions = ["1.21", "1.21.1", "1.21.2", "1.21.3", "1.21.4"]
+datapack-folder = "overrides/datapacks"

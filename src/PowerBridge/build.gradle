@@ -1,79 +1,67 @@
 plugins {
-    id 'net.neoforged.gradle.userdev' version '7.0.80'
-    id 'java'
+    id 'net.neoforged.moddev' version '2.0.141'
 }
 
-version = mod_version
-group = mod_group
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
-java {
-    toolchain.languageVersion = JavaLanguageVersion.of(21)
-}
+group   = project.mod_group_id
+version = project.mod_version
 
 repositories {
     maven {
-        name = 'Create Maven'
-        url = 'https://maven.createmod.net'
+        url = 'https://maven.blamejared.com'  // Registrate
+        content { includeGroup 'com.tterrag.registrate' }
     }
     maven {
-        name = 'Curse Maven'
-        url = 'https://www.cursemaven.com'
+        // Fallback mirror for Registrate
+        url = 'https://raw.githubusercontent.com/Fuzss/modresources/main/maven'
+        content { includeGroup 'com.tterrag.registrate' }
     }
-    maven {
-        name = 'Modrinth Maven'
-        url = 'https://api.modrinth.com/maven'
-    }
+    maven { url = 'https://maven.ithundxr.dev/releases' }  // Flywheel (in Create's classpath)
 }
 
-runs {
-    client {
-        workingDirectory(project.file('run'))
-        systemProperty 'forge.logging.markers', 'REGISTRIES'
-        systemProperty 'forge.logging.console.level', 'debug'
-        modSource sourceSets.main
+neoForge {
+    version = project.neoforge_version
+
+    runs {
+        client {
+            client()
+            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+        }
+        server {
+            server()
+            programArgument '--nogui'
+            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+        }
     }
-    server {
-        workingDirectory(project.file('run'))
-        systemProperty 'forge.logging.markers', 'REGISTRIES'
-        systemProperty 'forge.logging.console.level', 'debug'
-        modSource sourceSets.main
+
+    mods {
+        "${project.mod_id}" {
+            sourceSet(sourceSets.main)
+        }
     }
 }
 
 dependencies {
-    implementation "net.neoforged:neoforge:${neoforge_version}"
+    // Create 6.0 slim JAR — API surface only, no transitive deps required
+    compileOnly(files('libs/create-slim.jar'))
 
-    // Create 6.0 — compile-only (provided at runtime by the modpack)
-    compileOnly "com.simibubi.create:create-${minecraft_version}:${create_version}:slim"
+    // Ponder API — needed for Create's SmartBlockEntity/KineticBlockEntity class hierarchy
+    compileOnly(files('libs/ponder-neoforge.jar'))
 
-    // Immersive Engineering — compile-only for wire interface (optional at runtime)
-    // Update the file ID to the latest IE 1.21.1 release on CurseForge
-    compileOnly "curse.maven:immersive-engineering-231951:6116312"
-}
-
-processResources {
-    def replaceProps = [
-        mod_id     : mod_id,
-        mod_version: mod_version,
-        mod_name   : mod_name,
-        mod_license: mod_license,
-        mc_version : minecraft_version
-    ]
-    inputs.properties replaceProps
-    filesMatching('META-INF/mods.toml') {
-        expand replaceProps
-    }
+    // Immersive Engineering — for IEnergyStorage awareness (optional runtime)
+    compileOnly(files('libs/ImmersiveEngineering-1.21.1.jar'))
 }
 
 jar {
     manifest {
         attributes([
-            'Specification-Title'   : mod_id,
-            'Specification-Vendor'  : 'CoffeesAeroSMP',
+            'Specification-Title'   : project.mod_id,
+            'Specification-Vendor'  : project.mod_authors,
             'Specification-Version' : '1',
-            'Implementation-Title'  : project.name,
-            'Implementation-Version': project.jar.archiveVersion,
-            'Implementation-Vendor' : 'CoffeesAeroSMP',
+            'Implementation-Title'  : project.mod_name,
+            'Implementation-Version': project.version,
+            'Implementation-Vendor' : project.mod_authors,
         ])
     }
 }

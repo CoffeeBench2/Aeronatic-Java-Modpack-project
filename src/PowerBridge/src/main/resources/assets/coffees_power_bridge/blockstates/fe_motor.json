@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "facing=north": { "model": "coffees_power_bridge:block/fe_motor" },
+    "facing=south": { "model": "coffees_power_bridge:block/fe_motor", "y": 180 },
+    "facing=east":  { "model": "coffees_power_bridge:block/fe_motor", "y": 90  },
+    "facing=west":  { "model": "coffees_power_bridge:block/fe_motor", "y": 270 },
+    "facing=up":    { "model": "coffees_power_bridge:block/fe_motor", "x": -90 },
+    "facing=down":  { "model": "coffees_power_bridge:block/fe_motor", "x": 90  }
+  }
+}

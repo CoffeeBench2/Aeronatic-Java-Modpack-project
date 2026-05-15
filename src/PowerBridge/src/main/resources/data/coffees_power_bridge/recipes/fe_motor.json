@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "redstone",
+  "pattern": [
+    "IEI",
+    "EME",
+    "IRI"
+  ],
+  "key": {
+    "I": { "item": "minecraft:iron_ingot" },
+    "E": { "item": "coffees_power_bridge:electromagnetic_coil" },
+    "M": { "item": "coffees_power_bridge:magnetized_steel" },
+    "R": { "item": "minecraft:redstone" }
+  },
+  "result": {
+    "id": "coffees_power_bridge:fe_motor",
+    "count": 1
+  }
+}

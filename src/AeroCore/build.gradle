@@ -1,65 +1,37 @@
 plugins {
-    id 'net.neoforged.gradle.userdev' version '7.0.80'
-    id 'java'
+    id 'net.neoforged.moddev' version '2.0.141'
 }
 
-version = mod_version
-group = mod_group
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
-java {
-    toolchain.languageVersion = JavaLanguageVersion.of(17)
-}
+group   = project.mod_group_id
+version = project.mod_version
 
-minecraft {
-    accessTransformers {
-        // No AT needed for this mod
+neoForge {
+    version = project.neoforge_version
+
+    runs {
+        client {
+            client()
+        }
     }
-}
 
-runs {
-    client {
-        workingDirectory(project.file('run'))
-        systemProperty 'forge.logging.markers', 'REGISTRIES'
-        systemProperty 'forge.logging.console.level', 'debug'
-        programArgument '--username'
-        programArgument 'DevPlayer'
-        modSource sourceSets.main
-    }
-    server {
-        workingDirectory(project.file('run'))
-        systemProperty 'forge.logging.markers', 'REGISTRIES'
-        systemProperty 'forge.logging.console.level', 'debug'
-        modSource sourceSets.main
-    }
-}
-
-dependencies {
-    implementation "net.neoforged:neoforge:${neoforge_version}"
-}
-
-processResources {
-    def replaceProps = [
-        mod_id     : mod_id,
-        mod_version: mod_version,
-        mod_name   : mod_name,
-        mod_license: mod_license,
-        mc_version : minecraft_version
-    ]
-    inputs.properties replaceProps
-    filesMatching('META-INF/mods.toml') {
-        expand replaceProps
+    mods {
+        "${project.mod_id}" {
+            sourceSet(sourceSets.main)
+        }
     }
 }
 
 jar {
     manifest {
         attributes([
-            'Specification-Title'   : mod_id,
-            'Specification-Vendor'  : 'CoffeesAeroSMP',
+            'Specification-Title'   : project.mod_id,
+            'Specification-Vendor'  : project.mod_authors,
             'Specification-Version' : '1',
-            'Implementation-Title'  : project.name,
-            'Implementation-Version': project.jar.archiveVersion,
-            'Implementation-Vendor' : 'CoffeesAeroSMP',
+            'Implementation-Title'  : project.mod_name,
+            'Implementation-Version': project.version,
+            'Implementation-Vendor' : project.mod_authors,
         ])
     }
 }

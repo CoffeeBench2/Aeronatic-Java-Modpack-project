@@ -1,0 +1,13 @@
+name = "Tectonic"
+filename = "tectonic-3.0.22-neoforge-21.1.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/lWDHr9jE/versions/iCGkqnnx/tectonic-3.0.22-neoforge-21.1.jar"
+hash-format = "sha512"
+hash = "a02d3f2bfd8aa099512005df23b45ec723694c397b4224a69ffd47b41cd06bb3d56a0f10bbfd81e8159e0fc55f61d0729656f91231410a74ed55e6fc16fd18ec"
+
+[update]
+[update.modrinth]
+mod-id = "lWDHr9jE"
+version = "iCGkqnnx"

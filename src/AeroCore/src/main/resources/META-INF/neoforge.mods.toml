@@ -1,0 +1,32 @@
+modLoader = "javafml"
+loaderVersion = "[4,)"
+license = "MIT"
+
+[[mixins]]
+config = "coffeesaerosmp_core.mixins.json"
+
+[[mods]]
+modId           = "coffeesaerosmp_core"
+version         = "1.0.0"
+displayName     = "CoffeesAeroSMP Core"
+description     = '''
+Core mod for Coffees Aero SMP.
+
+Locks singleplayer access for regular players, replaces the Multiplayer button
+with a direct "Join Coffees Aero SMP" button, and provides an Admin Settings
+screen for configuring the server IP and admin username at runtime.
+'''
+
+[[dependencies.coffeesaerosmp_core]]
+    modId        = "neoforge"
+    type         = "required"
+    versionRange = "[21.1,)"
+    ordering     = "NONE"
+    side         = "BOTH"
+
+[[dependencies.coffeesaerosmp_core]]
+    modId        = "minecraft"
+    type         = "required"
+    versionRange = "[1.21.1,1.22)"
+    ordering     = "NONE"
+    side         = "BOTH"

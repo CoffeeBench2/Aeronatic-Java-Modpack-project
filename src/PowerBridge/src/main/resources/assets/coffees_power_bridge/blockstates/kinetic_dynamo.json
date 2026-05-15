@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "facing=north": { "model": "coffees_power_bridge:block/kinetic_dynamo" },
+    "facing=south": { "model": "coffees_power_bridge:block/kinetic_dynamo", "y": 180 },
+    "facing=east":  { "model": "coffees_power_bridge:block/kinetic_dynamo", "y": 90  },
+    "facing=west":  { "model": "coffees_power_bridge:block/kinetic_dynamo", "y": 270 },
+    "facing=up":    { "model": "coffees_power_bridge:block/kinetic_dynamo", "x": -90 },
+    "facing=down":  { "model": "coffees_power_bridge:block/kinetic_dynamo", "x": 90  }
+  }
+}

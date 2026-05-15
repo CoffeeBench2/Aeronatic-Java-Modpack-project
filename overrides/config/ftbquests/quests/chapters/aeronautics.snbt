@@ -1,0 +1,143 @@
+{
+	id: "1200000000000001"
+	group: ""
+	order_index: 1
+	filename: "aeronautics"
+	title: "Aeronautics"
+	icon: {
+		id: "minecraft:feather"
+		Count: 1
+	}
+	default_quest_shape: ""
+	default_hide_dependency_lines: false
+	quests: [
+		{
+			x: 0.0d
+			y: 0.0d
+			shape: "circle"
+			id: "1200000000000002"
+			title: "Your First Cog"
+			subtitle: "The beginning of every machine"
+			description: [
+				"Create is the backbone of all machines on this server.",
+				"",
+				"Craft a Cogwheel to begin your journey into rotational power.",
+				"Cogwheels transfer rotational force between shafts."
+			]
+			tasks: [{
+				id: "1200000000000003"
+				type: "item"
+				item: {
+					id: "create:cogwheel"
+					Count: 1
+				}
+			}]
+			rewards: [{
+				id: "1200000000000004"
+				type: "item"
+				item: {
+					id: "create:cogwheel"
+					Count: 4
+				}
+			}]
+		}
+		{
+			x: 2.0d
+			y: 0.0d
+			shape: "circle"
+			id: "1200000000000010"
+			dependencies: ["1200000000000002"]
+			title: "Wind Power"
+			subtitle: "Let the wind do the work"
+			description: [
+				"A Windmill Bearing with attached Windmill Sails generates free rotational power.",
+				"",
+				"Place a Windmill Bearing on a shaft, attach at least 8 Windmill Sail blocks,",
+				"and right-click the bearing to start it spinning."
+			]
+			tasks: [{
+				id: "1200000000000011"
+				type: "item"
+				item: {
+					id: "create:windmill_bearing"
+					Count: 1
+				}
+			}]
+			rewards: [{
+				id: "1200000000000012"
+				type: "item"
+				item: {
+					id: "create:sail_frame"
+					Count: 16
+				}
+			}]
+		}
+		{
+			x: 4.0d
+			y: 0.0d
+			shape: "circle"
+			id: "1200000000000020"
+			dependencies: ["1200000000000010"]
+			title: "Take to the Skies"
+			subtitle: "Build your first aircraft"
+			description: [
+				"Time to build your first flying machine using Create: Aeronautics!",
+				"",
+				"You will need:",
+				"  - A Contraption Anchor (the ship's core block)",
+				"  - Propellers or Rotors for lift and thrust",
+				"  - A Cockpit block to pilot the aircraft",
+				"",
+				"Assemble the ship using a Mechanical Piston or by right-clicking the anchor.",
+				"Climb in the cockpit and take flight!"
+			]
+			tasks: [{
+				id: "1200000000000021"
+				type: "manual"
+				title: "Successfully pilot a flying contraption"
+			}]
+			rewards: [{
+				id: "1200000000000022"
+				type: "item"
+				item: {
+					id: "minecraft:elytra"
+					Count: 1
+				}
+			}]
+		}
+		{
+			x: 2.0d
+			y: 2.0d
+			shape: "circle"
+			id: "1200000000000030"
+			dependencies: ["1200000000000002"]
+			title: "Power Bridge"
+			subtitle: "Connect FE and Create"
+			description: [
+				"The Coffees Power Bridge mod lets you convert between Forge Energy (FE)",
+				"and Create's rotational power (SU).",
+				"",
+				"FE Electric Motor — feed FE in, get a spinning shaft out.",
+				"Kinetic Dynamo    — spin a shaft, generate FE for IE wire networks.",
+				"",
+				"Build an FE Electric Motor to start bridging your power systems."
+			]
+			tasks: [{
+				id: "1200000000000031"
+				type: "item"
+				item: {
+					id: "coffees_power_bridge:fe_motor"
+					Count: 1
+				}
+			}]
+			rewards: [{
+				id: "1200000000000032"
+				type: "item"
+				item: {
+					id: "coffees_power_bridge:kinetic_dynamo"
+					Count: 1
+				}
+			}]
+		}
+	]
+}

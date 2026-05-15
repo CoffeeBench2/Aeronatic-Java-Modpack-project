@@ -1,0 +1,13 @@
+name = "Aeronautics Camera Sync"
+filename = "aero_cam_sync-1.2.0.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/ZGxtWu73/versions/vGsj4a2D/aero_cam_sync-1.2.0.jar"
+hash-format = "sha512"
+hash = "4059795fb56ed044de49885f4d5d3da5f1c639856e77555d873960fc2df99383f0d685319c1b37164661bcf4aa4f66f7c56fbd038500a365a5691af4f013387b"
+
+[update]
+[update.modrinth]
+mod-id = "ZGxtWu73"
+version = "vGsj4a2D"

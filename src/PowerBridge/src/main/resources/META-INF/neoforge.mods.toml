@@ -1,0 +1,45 @@
+modLoader = "javafml"
+loaderVersion = "[4,)"
+license = "MIT"
+
+[[mods]]
+modId           = "coffees_power_bridge"
+version         = "1.0.0"
+displayName     = "Coffees Power Bridge"
+description     = '''
+Bridges Forge Energy (FE/IF) and Create's Stress Units (SU/RPM).
+
+FE Electric Motor — feed FE in, get a Create shaft spinning.
+Kinetic Dynamo   — spin a Create shaft, generate FE for IE wires.
+
+Electromagnetically themed: magnetised steel rotors, copper coils,
+and realistic 75% round-trip efficiency to prevent infinite loops.
+'''
+
+[[dependencies.coffees_power_bridge]]
+    modId       = "neoforge"
+    type        = "required"
+    versionRange = "[21.1,)"
+    ordering    = "NONE"
+    side        = "BOTH"
+
+[[dependencies.coffees_power_bridge]]
+    modId       = "minecraft"
+    type        = "required"
+    versionRange = "[1.21.1,1.22)"
+    ordering    = "NONE"
+    side        = "BOTH"
+
+[[dependencies.coffees_power_bridge]]
+    modId       = "create"
+    type        = "required"
+    versionRange = "[6.0,)"
+    ordering    = "AFTER"
+    side        = "BOTH"
+
+[[dependencies.coffees_power_bridge]]
+    modId       = "immersiveengineering"
+    type        = "optional"
+    versionRange = "[12,)"
+    ordering    = "AFTER"
+    side        = "BOTH"

@@ -1,0 +1,101 @@
+{
+	id: "1300000000000001"
+	group: ""
+	order_index: 2
+	filename: "exploration"
+	title: "Exploration"
+	icon: {
+		id: "minecraft:spyglass"
+		Count: 1
+	}
+	default_quest_shape: ""
+	default_hide_dependency_lines: false
+	quests: [
+		{
+			x: 0.0d
+			y: 0.0d
+			shape: "circle"
+			id: "1300000000000002"
+			title: "Scout the World"
+			subtitle: "The world is vast"
+			description: [
+				"Coffees Aero SMP uses Terralith + Tectonic for a stunning world.",
+				"",
+				"Grab a spyglass and explore! The world has 85+ new structure types",
+				"from When Dungeons Arise, including abandoned hostile airships."
+			]
+			tasks: [{
+				id: "1300000000000003"
+				type: "item"
+				item: {
+					id: "minecraft:spyglass"
+					Count: 1
+				}
+			}]
+			rewards: [{
+				id: "1300000000000004"
+				type: "item"
+				item: {
+					id: "minecraft:filled_map"
+					Count: 1
+				}
+			}]
+		}
+		{
+			x: 2.0d
+			y: 0.0d
+			shape: "circle"
+			id: "1300000000000010"
+			dependencies: ["1300000000000002"]
+			title: "The Aether"
+			subtitle: "Ascend beyond the clouds"
+			description: [
+				"Find a glowing Aether Portal (a gold-framed portal with water) to enter the Aether.",
+				"",
+				"The Aether is a sky dimension filled with floating islands,",
+				"unique mobs, and valuable loot — perfect for aerial explorers."
+			]
+			tasks: [{
+				id: "1300000000000011"
+				type: "manual"
+				title: "Enter the Aether dimension"
+			}]
+			rewards: [{
+				id: "1300000000000012"
+				type: "item"
+				item: {
+					id: "minecraft:diamond"
+					Count: 3
+				}
+			}]
+		}
+		{
+			x: 4.0d
+			y: 0.0d
+			shape: "circle"
+			id: "1300000000000020"
+			dependencies: ["1300000000000002"]
+			title: "The Twilight Forest"
+			subtitle: "Through the portal of leaves"
+			description: [
+				"Build a 2×2 pool of water surrounded by flowers and throw a diamond in.",
+				"Lightning strikes — a Twilight Forest portal opens.",
+				"",
+				"This dense magical forest has unique bosses and progression."
+			]
+			tasks: [{
+				id: "1300000000000021"
+				type: "manual"
+				title: "Enter the Twilight Forest dimension"
+			}]
+			rewards: [{
+				id: "1300000000000022"
+				type: "item"
+				item: {
+					id: "minecraft:diamond"
+					Count: 3
+				}
+			}]
+		}
+	]
+}

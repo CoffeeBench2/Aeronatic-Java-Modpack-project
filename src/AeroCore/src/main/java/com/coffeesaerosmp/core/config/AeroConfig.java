@@ -4,33 +4,24 @@ import net.neoforged.neoforge.common.ModConfigSpec;
 
 public class AeroConfig {
 
-    public static final ModConfigSpec.Builder BUILDER = new ModConfigSpec.Builder();
-    public static final ClientConfig CLIENT;
     public static final ModConfigSpec CLIENT_SPEC;
+    public static final ModConfigSpec.ConfigValue<String> SERVER_IP;
+    public static final ModConfigSpec.ConfigValue<String> ADMIN_USERNAME;
 
     static {
-        CLIENT = new ClientConfig(BUILDER);
-        CLIENT_SPEC = BUILDER.build();
+        ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
+        builder.comment("CoffeesAeroSMP Core — Client Configuration");
+
+        SERVER_IP = builder
+            .comment("Server IP shown in and used by the 'Join Coffees Aero SMP' button")
+            .define("serverIp", "play.coffeesaerosmp.net");
+
+        ADMIN_USERNAME = builder
+            .comment("Minecraft username that can access the Admin Settings screen")
+            .define("adminUsername", "MrCoffeeBench");
+
+        CLIENT_SPEC = builder.build();
     }
 
-    public static class ClientConfig {
-
-        public final ModConfigSpec.ConfigValue<String> serverIP;
-        public final ModConfigSpec.ConfigValue<String> adminUsername;
-
-        ClientConfig(ModConfigSpec.Builder builder) {
-            builder.comment("Coffees Aero SMP Core — Client Configuration").push("coffeesaerosmp");
-
-            serverIP = builder
-                .comment("The IP address of the Coffees Aero SMP server. Updated via the Admin Settings screen in-game.")
-                .define("serverIP", "play.coffeesaerosmp.net");
-
-            adminUsername = builder
-                .comment("Exact Minecraft username (case-sensitive) that has admin access. " +
-                         "This player sees the Singleplayer button and the Admin Settings panel.")
-                .define("adminUsername", "MrCoffeeBench");
-
-            builder.pop();
-        }
-    }
+    private AeroConfig() {}
 }

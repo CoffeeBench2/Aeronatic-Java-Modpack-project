@@ -1,0 +1,13 @@
+name = "Apotheosis Addon Compat"
+filename = "apotheosis-addon-compat-1.0.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/wmUAkM5L/versions/eapEKYw4/apotheosis-addon-compat-1.0.jar"
+hash-format = "sha512"
+hash = "8ef514294f1ae1d0bffe400c31e6c601ceedb1d5e913e13200beb920e3d502de20d3ffafa905e9f3a5299db8df57e59b808cd0f2da4881d264db1a2d7eaf9deb"
+
+[update]
+[update.modrinth]
+mod-id = "wmUAkM5L"
+version = "eapEKYw4"

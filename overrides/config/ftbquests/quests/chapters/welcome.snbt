@@ -1,0 +1,101 @@
+{
+	id: "1100000000000001"
+	group: ""
+	order_index: 0
+	filename: "welcome"
+	title: "Welcome to Coffees Aero SMP"
+	icon: {
+		id: "minecraft:filled_map"
+		Count: 1
+	}
+	default_quest_shape: ""
+	default_hide_dependency_lines: false
+	quests: [
+		{
+			x: 0.0d
+			y: 0.0d
+			shape: "circle"
+			id: "1100000000000002"
+			title: "First Steps"
+			subtitle: "Welcome aboard!"
+			description: [
+				"Welcome to Coffees Aero SMP — an aviation-themed survival server!",
+				"",
+				"This is a community focused on building incredible flying machines",
+				"using Create: Aeronautics.",
+				"",
+				"Complete this quest to get your starter kit."
+			]
+			tasks: [{
+				id: "1100000000000003"
+				type: "item"
+				item: {
+					id: "minecraft:dirt"
+					Count: 1
+				}
+				title: "Pick up some dirt"
+			}]
+			rewards: [{
+				id: "1100000000000004"
+				type: "item"
+				item: {
+					id: "minecraft:bread"
+					Count: 16
+				}
+			}]
+		}
+		{
+			x: 2.0d
+			y: 0.0d
+			shape: "circle"
+			id: "1100000000000010"
+			dependencies: ["1100000000000002"]
+			title: "Claim Your Land"
+			subtitle: "Protect your builds"
+			description: [
+				"Use Open Parties and Claims to protect your territory.",
+				"",
+				"Type /ftbchunks to open the map and start claiming chunks.",
+				"You can claim up to 25 chunks as a solo player."
+			]
+			tasks: [{
+				id: "1100000000000011"
+				type: "manual"
+				title: "Claim at least one chunk"
+			}]
+			rewards: [{
+				id: "1100000000000012"
+				type: "item"
+				item: {
+					id: "minecraft:golden_apple"
+					Count: 1
+				}
+			}]
+		}
+		{
+			x: 4.0d
+			y: 0.0d
+			shape: "circle"
+			id: "1100000000000020"
+			dependencies: ["1100000000000010"]
+			title: "Set Up Voice Chat"
+			subtitle: "Talk to your crew"
+			description: [
+				"Simple Voice Chat is installed on the server.",
+				"",
+				"Press V to open voice chat settings.",
+				"You can use proximity voice chat to coordinate with nearby players."
+			]
+			tasks: [{
+				id: "1100000000000021"
+				type: "manual"
+				title: "Set up Simple Voice Chat"
+			}]
+			rewards: [{
+				id: "1100000000000022"
+				type: "xp"
+				xp: 50
+			}]
+		}
+	]
+}
