@@ -1,70 +1,6 @@
 hash-format = "sha256"
 
 [[files]]
-file = ".claude/settings.local.json"
-hash = "9fe0936ab78432d24893b9e6f73f79aa04adc31d4cd85eb96fbca766b2733015"
-
-[[files]]
-file = ".idea/misc.xml"
-hash = "113c6c1484fb21fd7f5b3c45fcc68221a5bfd32cdc90babbd2d1be2859923d03"
-
-[[files]]
-file = ".idea/modules.xml"
-hash = "15cb7767b02e086fe8d7b5a82195b4b48e409f46e6b3bab68486b8d20a00ac54"
-
-[[files]]
-file = ".idea/vcs.xml"
-hash = "136f8b0a20e3e16f5b60e8505219c34746e1ec62c68433f4f8ec97eefe3aa038"
-
-[[files]]
-file = ".idea/workspace.xml"
-hash = "b53665f22c102bad017ae43032c2329ca7472b969534e065afda5c67d12987e9"
-
-[[files]]
-file = "Aero_SMP_Mod_List.txt"
-hash = "097e42d2f866116f443634cc5e36006925f713b53a7307cd55261f8e05032d9f"
-
-[[files]]
-file = "CHANGELOG.md"
-hash = "6fed38bf4c83ce69ef5ffc8c563e87eb130d1701dfb27c7a8b31cfac2ebef9a4"
-
-[[files]]
-file = "CLAUDE.md"
-hash = "9a052ec535c3eadd575fd1b2806b4f1e30e7fa54fada27a418c87a17870050e3"
-
-[[files]]
-file = "MODLIST.md"
-hash = "0cd649a3b1c8fba62e417f492818d2958b9a91cf7421e67a33a655b489b77711"
-
-[[files]]
-file = "README.md"
-hash = "1d5cab008d3087f0c56d60dc98818ebb1aca065b9610ae65a6e9ff5f92113ebb"
-
-[[files]]
-file = "cf-manifest.json"
-hash = "ecf9c888e2eae0d320b1d76abee236dddacd818b1eaed8a8af6d32d07d99f1fb"
-
-[[files]]
-file = "docs/AEROCORE_MOD.md"
-hash = "9121763bcd60a3c6438345fbb59ee82c97a53d4c5e7840ff654b35d4fb224e50"
-
-[[files]]
-file = "docs/INSTALLATION.md"
-hash = "97f68d9c2b44195c8bf8aed9778ff3a4e6d13cfcc6b7f424d81a5a5d8e507f92"
-
-[[files]]
-file = "docs/MOD_GUIDE.md"
-hash = "756becf2d4193d0ffee5b42c5f76c6b8198a4e52733b63b6041146974e491fd0"
-
-[[files]]
-file = "docs/SERVER_SETUP.md"
-hash = "abca1cdc6b993c104ceca2aa427302a05db4972f9dd230e08e020954197b0d58"
-
-[[files]]
-file = "modlist.txt"
-hash = "4693985b27772ae4744a0b83059d0f989dc16158458fe7661c242f9007321f0e"
-
-[[files]]
 file = "mods/aero_cam_sync.pw.toml"
 hash = "87a042e342be9cc2c2ce9fa4f728fa0f93fa290c5b078ec620e6e8dcfae68741"
 metafile = true
@@ -82,11 +18,6 @@ metafile = true
 [[files]]
 file = "mods/alexs-mobs(1.21.1).pw.toml"
 hash = "fb53bc6c0d543cd7e88a5faba1e3235dca6c556e0cf8c1a534bbdec581c3c2f8"
-metafile = true
-
-[[files]]
-file = "mods/antique-atlas-4.pw.toml"
-hash = "72f9cf7ef1412b9384467782dd5444ec8adbd03b9f532d1238e5a166ffb25237"
 metafile = true
 
 [[files]]
@@ -210,11 +141,6 @@ hash = "f86855a3645203b1d477cdb6a55b7b1e0bed7cc744207b37bb5d59bc5891af56"
 metafile = true
 
 [[files]]
-file = "mods/embeddium.pw.toml"
-hash = "778c42263b2ba7c9e73553bdcd70f48a3e485ba52b6a83474160d48be696b71f"
-metafile = true
-
-[[files]]
 file = "mods/entityculling.pw.toml"
 hash = "590437e0f344c87791842b791a400e95ffd4154f02a04c2d8d78b43a76c659ad"
 metafile = true
@@ -232,11 +158,6 @@ metafile = true
 [[files]]
 file = "mods/ferrite-core.pw.toml"
 hash = "73360e397134d238ee8fd21d33fd7f9275e9441f74f8f1b6ed92278877c0b9f1"
-metafile = true
-
-[[files]]
-file = "mods/ftb-quests-optimizer.pw.toml"
-hash = "130923cea74d38f39b996ff5884dbfe91dde3f46f2efe330af2ae54d731f6481"
 metafile = true
 
 [[files]]
@@ -270,8 +191,13 @@ hash = "5367193d3f87b7bc5a81bcd64a5b96a843e76d4df7a83c8bb7e1911aa82dd52e"
 metafile = true
 
 [[files]]
+file = "mods/kotlin-for-forge.pw.toml"
+hash = "27302b0087cf53570cd7a3b4eb550a208cbb6f6ba07210c604176155f39e0078"
+metafile = true
+
+[[files]]
 file = "mods/lithostitched.pw.toml"
-hash = "367ce13ba351f3f6302f13e0271be1cdb8780df130ee41ad53e2539efd90ea36"
+hash = "bc2d592dc0107406f3564f968daf6b84d9379cdb66997305855ae68886fd5502"
 metafile = true
 
 [[files]]
@@ -390,11 +316,6 @@ hash = "084ba00d5d41d76f4975935f3ada0fb1fce41bce59dd3901f54684c3588cb9f6"
 metafile = true
 
 [[files]]
-file = "mods/surveyor.pw.toml"
-hash = "13848a9eb3c5fd091b52f78cfae4ace2c3cd0cb32a76d6f61c12435f47d82ed1"
-metafile = true
-
-[[files]]
 file = "mods/tectonic.pw.toml"
 hash = "cd5c8c1f6183f5c2ca899daed14f272890566002dfcb2d9f9a59dfbfac0bc8f6"
 metafile = true
@@ -407,11 +328,6 @@ metafile = true
 [[files]]
 file = "mods/the-mandela-catalogue-alternates.pw.toml"
 hash = "affca890e5673857c0e812c04b3f3b63175b1d52af78d8c5c777795bc779e254"
-metafile = true
-
-[[files]]
-file = "mods/the-twilight-forest-dungeons-villages.pw.toml"
-hash = "07d66394c90772cbdfbe1c165e12de9e0e10f3798681b95183e4189a1c7215a3"
 metafile = true
 
 [[files]]
@@ -475,6 +391,22 @@ hash = "1a33e6d64e88ad59b65d126c6457d582e62724167349ea184eb237435298985e"
 metafile = true
 
 [[files]]
+file = "overrides/config/ftbquests/quests/chapter_groups.snbt"
+hash = "169eee64601a301281858c12b8ddcf552e6c406bfe2331d7a63827c7efeb3a9b"
+
+[[files]]
+file = "overrides/config/ftbquests/quests/chapters/aeronautics.snbt"
+hash = "214b1bbf7b0006e2f21caceede971180f62fbc699ce7648358b008354b19247b"
+
+[[files]]
+file = "overrides/config/ftbquests/quests/chapters/exploration.snbt"
+hash = "d1d98007d30330a574b2d635fc4b0d4ed7387503027912b75e084f94cc2d4f14"
+
+[[files]]
+file = "overrides/config/ftbquests/quests/chapters/welcome.snbt"
+hash = "55f69cd48da1a6a99d670129ce57c7371f5855a824537ca1ada91860ad67b45f"
+
+[[files]]
 file = "overrides/config/open_parties_and_claims/main.json"
 hash = "28d2a0756a8132642f80bcb53bca6b527b3af8928750a65325a008048c2bbe7e"
 
@@ -488,49 +420,9 @@ hash = "34e41ec1900a082b2f8fbc9140d097abf017357a66ea8564826f4ce5b2975c4f"
 metafile = true
 
 [[files]]
-file = "reports/2026-05-14.pdf"
-hash = "395e70a0b6091b2264fe36a5961acf52b8e2a04da6307d9802de137aa30425f5"
+file = "overrides/mods/CoffeesAeroCore-1.0.0.jar"
+hash = "bb4e0f84c16237adaca6430826bcfbfa01989f528562bbd79b039b1fd3e6476a"
 
 [[files]]
-file = "scripts/export-curseforge.bat"
-hash = "45df92bbce056b8e33fc75b76ecb94557354ecf5d51b1482a582c819d435ed95"
-
-[[files]]
-file = "scripts/export-modrinth.bat"
-hash = "4a21973be24fcaffab484ef28ef98e5b6b7e40715057afdca9590d83bbcd240a"
-
-[[files]]
-file = "scripts/generate-assets.py"
-hash = "3b818d4e5b53179291aa669133e8d95bbfedc17b6bee52dde11e7da76a1476bd"
-
-[[files]]
-file = "scripts/generate-report.py"
-hash = "f1ece6b24c19c521f1f0bd1a6bb4433accf563cfd92befda035bb92f7b99841f"
-
-[[files]]
-file = "scripts/install-mods.bat"
-hash = "20c88d54154dd8bf27cd260441f4a4ec1990589e50aa1c7682eea3695d7477b3"
-
-[[files]]
-file = "scripts/install-mods.sh"
-hash = "f7db8e5cc41674e0ba25ef774b81775f0a9d6b9992be9ca83e989db20aa64fd0"
-
-[[files]]
-file = "server-files/server.properties"
-hash = "d85e5c27d1af54f722b5283c808da9f709a462100c7eef4ab7243221988a6e74"
-
-[[files]]
-file = "server-files/start.bat"
-hash = "f150cf806f53a4fbb149ada79638baa8294b9b84d0e314f52ac8c06d20602aa2"
-
-[[files]]
-file = "server-files/start.sh"
-hash = "84c8524237172d3cd846396832e245d2ceb7b8b440482f88778f146868ec8566"
-
-[[files]]
-file = "src/Main.java"
-hash = "ad00faf9ff95f5fb5d6e07ed28f17fbf904a7f15946bc59d85696a05fcc05716"
-
-[[files]]
-file = "untitled.iml"
-hash = "c08ee29851502ea1fc369dcfd51a269deaef93a03d815ff25fd7e1faf12b7d32"
+file = "overrides/mods/CoffeesPowerBridge-1.0.0.jar"
+hash = "b59dc15b87598efefcc9fcaff3fa4a719511970cbeb9081c38a7928111237e7d"

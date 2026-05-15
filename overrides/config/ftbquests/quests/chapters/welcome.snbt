@@ -93,8 +93,8 @@
 			}]
 			rewards: [{
 				id: "1100000000000022"
-				type: "xp"
-				xp: 50
+				type: "xp_levels"
+				levels: 3
 			}]
 		}
 	]
