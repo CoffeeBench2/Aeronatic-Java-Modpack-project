@@ -1,0 +1,13 @@
+name = "Create: Tools n Weapons"
+filename = "create_tools_n_weapons-1.0.1-neoforge-1.21.1.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/2aBDweGI/versions/fd0dltow/create_tools_n_weapons-1.0.1-neoforge-1.21.1.jar"
+hash-format = "sha512"
+hash = "bb08cea92137e0830a0e46049761f8af69af2d899009c3145886157bfadbc0323c7912d087a7abeaec07925ed076dad2f01c2c78a7c16834d0ab47baa7630c51"
+
+[update]
+[update.modrinth]
+mod-id = "2aBDweGI"
+version = "fd0dltow"
