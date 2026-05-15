@@ -1,0 +1,13 @@
+name = "Zigy's Player Animator API"
+filename = "playeranimatorapi-neoforge-1.21-2.2.1.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/IkQufrWh/versions/TwzDrNii/playeranimatorapi-neoforge-1.21-2.2.1.jar"
+hash-format = "sha512"
+hash = "612ddb7a97375e852ff52d0e3209fe47aa12685cdabf32d7fd8483596a13e9c54301531d87cd375a4a5d478ec6a31c04a8c417e1460e70bb9b33d9b6868c0b78"
+
+[update]
+[update.modrinth]
+mod-id = "IkQufrWh"
+version = "TwzDrNii"
