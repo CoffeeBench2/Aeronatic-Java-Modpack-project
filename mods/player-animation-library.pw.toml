@@ -1,0 +1,13 @@
+name = "Player Animation Library"
+filename = "PlayerAnimationLibNeoforge-1.1.4+mc.1.21.1.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/ha1mEyJS/versions/X11AqKQb/PlayerAnimationLibNeoforge-1.1.4%2Bmc.1.21.1.jar"
+hash-format = "sha512"
+hash = "d3a07aef209ee113a1df14ef74a9f9adecd4f98d506f7ef801e68ff3557864847bf8e2f46e329e54c2223b4160e4976a5e10f39d2aec4087b9110788b6ff3be8"
+
+[update]
+[update.modrinth]
+mod-id = "ha1mEyJS"
+version = "X11AqKQb"
