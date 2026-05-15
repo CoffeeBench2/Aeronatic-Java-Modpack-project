@@ -1,0 +1,13 @@
+name = "Terratonic"
+filename = "terratonic-3.0.18.zip"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/3L2L6sWL/versions/kXofCPYb/terratonic-3.0.18.zip"
+hash-format = "sha512"
+hash = "15183b40b7fd8206bf470b6321a70513032959c924ba5b87c20a0dd8971f4b33f89a93e8122c6c6bacb99943e23a5c02780c9cabf3b73def47742be7a984af35"
+
+[update]
+[update.modrinth]
+mod-id = "3L2L6sWL"
+version = "kXofCPYb"

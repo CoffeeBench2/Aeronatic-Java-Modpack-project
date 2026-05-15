@@ -1,0 +1,13 @@
+name = "McQoy"
+filename = "mcqoy-0.4.1+neo-1.21.jar"
+side = "client"
+
+[download]
+url = "https://cdn.modrinth.com/data/tNmWwdI2/versions/nfqfeKsL/mcqoy-0.4.1%2Bneo-1.21.jar"
+hash-format = "sha512"
+hash = "20c40e4bd4104069b65455065cbb9beac829efa314b6e9e960b269725727f0d4f9bed6946815e8b573223cd4a76feddd1e5fbfb17c7293fa6a25545299e1afbc"
+
+[update]
+[update.modrinth]
+mod-id = "tNmWwdI2"
+version = "nfqfeKsL"

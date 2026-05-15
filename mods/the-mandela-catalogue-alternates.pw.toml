@@ -1,0 +1,13 @@
+name = "The Mandela Catalogue: Alternates"
+filename = "nothing_is_worth_the_risk 0.06 neoforge-1.21.1.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/2g0W1ZTy/versions/1TOKRH6T/nothing_is_worth_the_risk%200.06%20neoforge-1.21.1.jar"
+hash-format = "sha512"
+hash = "f17e8f1ebbc6c81d11372245f643553234d233d5c89684625d69065c02651f5f4490324d8ea7a5a81bf29fb5c0c30d17d658148ed253c5149172ce5253d86094"
+
+[update]
+[update.modrinth]
+mod-id = "2g0W1ZTy"
+version = "1TOKRH6T"

@@ -1,0 +1,13 @@
+name = "Sable: Collision damage  (Create Aeronautics)"
+filename = "sablecollisiondamage-1.0.7.jar"
+side = "server"
+
+[download]
+url = "https://cdn.modrinth.com/data/Jm4nvDTr/versions/d5Pq98gY/sablecollisiondamage-1.0.7.jar"
+hash-format = "sha512"
+hash = "8fca169af89c41989a51c529c74b409e115e8d47a3093bebb7e6355e5a62395cea3fa5984d7d90f0d1d8b259cd7696595064de64b17e62436f41f4c645135fec"
+
+[update]
+[update.modrinth]
+mod-id = "Jm4nvDTr"
+version = "d5Pq98gY"
