@@ -1,0 +1,30 @@
+# Server installation
+server-files/
+server/
+
+# Source code & build artifacts
+src/
+build/
+
+# Development / IDE files
+.claude/
+.idea/
+*.iml
+
+# Scripts & docs (not part of the client pack)
+scripts/
+docs/
+reports/
+
+# Root-level text files
+CLAUDE.md
+CHANGELOG.md
+MODLIST.md
+README.md
+modlist.txt
+Aero_SMP_Mod_List.txt
+cf-manifest.json
+
+# Pack exports (don't re-include the output)
+*.mrpack
+*.zip

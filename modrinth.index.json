@@ -1,0 +1,14 @@
+﻿{
+    "name":  "Coffees Aero SMP",
+    "game":  "minecraft",
+    "files":  [
+
+              ],
+    "versionId":  "1.0.0",
+    "dependencies":  {
+                         "minecraft":  "1.21.1",
+                         "neoforge":  "21.1.230"
+                     },
+    "summary":  "Create: Aeronautics SMP modpack by MrCoffeeBench",
+    "formatVersion":  1
+}

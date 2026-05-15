@@ -2,7 +2,6 @@ package com.coffeesaerosmp.core.mixin;
 
 import com.coffeesaerosmp.core.config.AeroConfig;
 import com.coffeesaerosmp.core.screen.AdminSettingsScreen;
-import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.ConnectScreen;
@@ -14,12 +13,14 @@ import net.minecraft.network.chat.Component;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.ArrayList;
 
 @Mixin(TitleScreen.class)
 public abstract class TitleScreenMixin extends Screen {
+
+    private static boolean customMenuEnabled = true;
 
     protected TitleScreenMixin(Component title) {
         super(title);
@@ -27,33 +28,55 @@ public abstract class TitleScreenMixin extends Screen {
 
     @Inject(method = "init", at = @At("RETURN"))
     private void onInit(CallbackInfo ci) {
-        Button[] mpSlot = {null};
+        boolean isAdmin = Minecraft.getInstance().getUser().getName()
+                .equalsIgnoreCase(AeroConfig.ADMIN_USERNAME.get());
+
+        if (!customMenuEnabled) {
+            // Vanilla mode: only show a small "► Custom" toggle for admin in bottom-left
+            if (isAdmin) {
+                this.addRenderableWidget(Button.builder(
+                        Component.literal("► Custom"),
+                        b -> {
+                            customMenuEnabled = true;
+                            Minecraft.getInstance().setScreen(new TitleScreen());
+                        }
+                ).bounds(5, this.height - 25, 75, 20).build());
+            }
+            return;
+        }
+
+        // Custom mode: strip every button except Options and Quit
+        String optionsLabel = Component.translatable("menu.options").getString();
+        String quitLabel    = Component.translatable("menu.quit").getString();
 
         new ArrayList<>(this.children()).forEach(child -> {
             if (!(child instanceof Button btn)) return;
-            String key = btn.getMessage().getString();
-            if (key.equals(Component.translatable("menu.singleplayer").getString())) {
+            String label = btn.getMessage().getString();
+            if (!label.equals(optionsLabel) && !label.equals(quitLabel)) {
                 this.removeWidget(btn);
-            } else if (key.equals(Component.translatable("menu.multiplayer").getString())) {
-                mpSlot[0] = btn;
             }
         });
 
-        if (mpSlot[0] != null) {
-            Button old = mpSlot[0];
-            this.removeWidget(old);
-            this.addRenderableWidget(Button.builder(
+        // "Join Coffees Aero SMP" as the single main action button
+        this.addRenderableWidget(Button.builder(
                 Component.literal("Join Coffees Aero SMP"),
                 b -> connectToServer()
-            ).bounds(old.getX(), old.getY(), old.getWidth(), old.getHeight()).build());
-        }
+        ).bounds(this.width / 2 - 100, this.height / 4 + 48, 200, 20).build());
 
-        String username = Minecraft.getInstance().getUser().getName();
-        if (username.equalsIgnoreCase(AeroConfig.ADMIN_USERNAME.get())) {
+        // Admin-only corner buttons (bottom-left stack)
+        if (isAdmin) {
             this.addRenderableWidget(Button.builder(
-                Component.literal("Admin Settings"),
-                b -> Minecraft.getInstance().setScreen(new AdminSettingsScreen(this))
-            ).bounds(this.width / 2 + 4, this.height / 4 + 48 + 29, 96, 20).build());
+                    Component.literal("Admin Settings"),
+                    b -> Minecraft.getInstance().setScreen(new AdminSettingsScreen(this))
+            ).bounds(5, this.height - 50, 90, 20).build());
+
+            this.addRenderableWidget(Button.builder(
+                    Component.literal("◄ Vanilla Menu"),
+                    b -> {
+                        customMenuEnabled = false;
+                        Minecraft.getInstance().setScreen(new TitleScreen());
+                    }
+            ).bounds(5, this.height - 25, 90, 20).build());
         }
     }
 
