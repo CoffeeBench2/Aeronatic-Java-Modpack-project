@@ -1,13 +1,13 @@
 name = "DAP ur Homies!"
-filename = "DAP ur Homie!2.2.1.jar"
+filename = "DAP ur HOMIE (Bully ur Homie).jar"
 side = "both"
 
 [download]
-url = "https://cdn.modrinth.com/data/V3QHTHDA/versions/dfSSTarO/DAP%20ur%20Homie%212.2.1.jar"
+url = "https://cdn.modrinth.com/data/V3QHTHDA/versions/W02uSI93/DAP%20ur%20HOMIE%20%28Bully%20ur%20Homie%29.jar"
 hash-format = "sha512"
-hash = "e22ace17b2944c7596623e81bab90be89b15bb482eaeaffc666a83a573376e8ee1d0836db85548d83ce776f0209c9de162549ee2b9f6fb4497352cce10ca3c1f"
+hash = "e4e519e7d8f67e7e5e3ac506224e2e51258e788fdd374d508132bf867dd11025e756d548ceb103ed90caaac6f668886174fff84314fb3e8c011821c3978d86e5"
 
 [update]
 [update.modrinth]
 mod-id = "V3QHTHDA"
-version = "dfSSTarO"
+version = "W02uSI93"
