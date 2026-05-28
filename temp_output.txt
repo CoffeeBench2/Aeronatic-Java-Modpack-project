@@ -258,3 +258,60 @@ NEXT STEP — Build the mod:
   4. Drop on a plain NeoForge 1.21.1 test server with online-mode=false
   5. Stress test before adding Create + other mods
 
+[2026-05-28] SESSION 4 — END OF SESSION REPORT
+------------------------------------------------
+
+REPO STATUS
+- Branch: main — up to date with origin/main
+- SSH auth fixed and push confirmed
+- 2 commits pushed this session:
+  - 8162300 — Obsidian vault added for cross-machine sync
+  - 083e30b — CoffeesAeroAuth mod source + Obsidian integration committed (45 files, +4,191 lines)
+
+WHAT WAS BUILT — CoffeesAeroAuth (src/CoffeesAeroAuth/)
+39 Java source files. NeoForge 1.21.1, mod ID coffees_aero_auth.
+
+Security system:
+- Premium (UUID v4) → auto-auth on join, no password
+- Cracked (UUID v3 offline) → /register first join, /login every session
+- UUID-bound accounts — name changes don't break accounts
+- Anti-spoof: offline player username matching a verified display name → kick or auto-suffix
+
+Blocked until auth: movement, all interactions, inventory, chat. Configurable timeout
+(default 60s) and brute-force kick (default 5 fails).
+
+Profile system: display name, bio, join date, playtime, skin URL. Display names globally
+unique. Data stored as encrypted JSON flat files — no external DB.
+
+Watchdog (13 files): login storm, UUID switch, lookalike names, pre-auth flood, command
+velocity, movement hacks, admin abuse, quiet hours, slot drain, audit tamper — each with
+severity (LOW/MEDIUM/HIGH/CRITICAL) and auto-response.
+
+Discord integration: webhook alerts, public chat bridge, daily digest, Java WebSocket bot
+client with heartbeat/reconnect.
+
+Obsidian integration: live vault writes on player join/leave/achievement/alert/server stop.
+Vault structure: devlogs/, players/, sessions/, watchdog/, graph-data/. Secrets via .env
+(gitignored), .env.example committed.
+
+ALSO COMMITTED
+- Obsidian vault (obsidian-vault/) — .obsidian/ config, Dataview plugin, Local REST API plugin,
+  AeroSMP/devlogs/2026-05-28.md
+- .env.example — template for OBSIDIAN_URL and OBSIDIAN_API_KEY
+- temp_output.txt — full session output log
+
+NOT YET DONE
+- JAR not built yet (Gradle wrapper copy step pending)
+- No test server run yet
+- Velocity proxy stack not started
+- Client-side profile creation screen not started
+- Panorama cubemap pending MrCoffeeBench screenshot
+
+NEXT SESSION START POINT
+  1. copy src\PowerBridge\gradle\wrapper\gradle-wrapper.jar src\CoffeesAeroAuth\gradle\wrapper\
+  2. cd src\CoffeesAeroAuth && gradlew build
+  3. copy build\libs\CoffeesAeroAuth-1.0.0.jar ..\..\overrides\mods\
+  4. Drop on plain NeoForge 1.21.1 server (online-mode=false)
+  5. Stress test both premium + cracked auth paths
+  6. Then: Velocity proxy stack design (Singapore/Tokyo/Mumbai)
+
