@@ -1,0 +1,260 @@
+== COFFEES AERO SMP — TEMP OUTPUT FILE ==
+Reports and large text outputs go here instead of chat.
+=========================================
+
+[2026-05-28] DEV REPORT — CoffeesAeroAuth Mod (Discord format)
+---------------------------------------------------------------
+
+📋 **DEV REPORT — CoffeesAeroAuth Mod**
+📅 2026-05-28 | Session 4
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ **What was built today:**
+A standalone NeoForge 1.21.1 security + profile mod called **CoffeesAeroAuth**, designed to be stress-tested before any other mods are added to the public Asian server.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔐 **SECURITY SYSTEM**
+
+• **Premium players** (Mojang UUID v4) → auto-authenticated on join, no password needed
+• **Cracked players** (offline UUID v3, MD5 of `OfflinePlayer:name`) → must `/register` on first join, `/login` every session
+• All accounts tied to **UUID permanently**, not username — name changes don't break accounts
+• **Anti-spoof protection:** if an offline player's username matches a verified player's display name, the server either kicks them (configurable) or auto-suffixes their display name (e.g. `Alice_2`)
+• UUID version check used to distinguish premium vs cracked at the server level — works correctly behind Velocity + AuthVelocity
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔒 **WHAT'S BLOCKED UNTIL AUTH**
+
+• Movement (player teleported back to join position every tick)
+• All block/entity interactions
+• Item use
+• Block breaking + attacking
+• Inventory slot clicks (via Mixin — fully locked, not just events)
+• Chat
+• Auth timeout: configurable kick if player doesn't log in within N seconds (default 60s)
+• Brute force protection: configurable max failed attempts before kick (default 5)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+👤 **PROFILE SYSTEM**
+
+• Every player gets a profile on first join tied to their UUID
+• Profile stores: display name, bio, account type, join date, total playtime, skin URL
+• Display names are **globally unique across all players**
+• Verified (premium) players' names cannot be claimed by offline players
+• Data stored as encrypted JSON flat files in `<world>/coffeesaeroauth/` — no external database needed
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+💬 **CHAT FORMAT**
+
+Verified:  `[✦ Verified] DisplayName » message`
+Offline:   `[◈ Offline] DisplayName » message`
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🎮 **PLAYER COMMANDS**
+
+`/login <password>` — log in each session
+`/register <password> <confirm>` — first-time account setup
+`/changepassword <old> <new>` — change password
+`/logout` — disconnect and require login on next join
+`/profile [player]` — view your or another player's profile
+`/setdisplayname <name>` — choose your display name
+`/setbio <text>` — set a short bio (100 chars max)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🛠️ **ADMIN COMMANDS** (op level 2+)
+
+`/authmod info <player>` — view UUID, account type, password status
+`/authmod resetpassword <player>` — wipe password, force re-register
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✈️ **JOIN EXPERIENCE**
+
+• First ever join → special welcome title screen + intro banner (cutscene hook ready for when RP is built)
+• Returning player → welcome back title with their display name
+• Server auto-sends required resource pack on join (URL + SHA-1 hash configurable)
+• All titles use the **Coffees Aero SMP** branding
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⚙️ **TECH STACK**
+
+• NeoForge **21.1.230** | Minecraft **1.21.1** | Java 21
+• Zero external dependencies — PBKDF2WithHmacSHA256 (Java stdlib), Gson (bundled with Minecraft)
+• 23 files | mod ID: `coffees_aero_auth`
+• Location: `src/CoffeesAeroAuth/`
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📌 **NEXT STEPS**
+
+1. Build: `cd src\CoffeesAeroAuth && gradlew build`
+2. Drop JAR on a plain NeoForge 1.21.1 test server
+3. Run with `online-mode=false` to test both premium + cracked paths
+4. Stress test security before adding Create: Aeronautics and other mods
+5. After testing passes → design the Velocity proxy stack + CoffeesAeroAuth client-side profile screen
+
+[2026-05-28] WATCHDOG + DISCORD — Implementation Summary
+---------------------------------------------------------
+
+13 new files, 6 modified files. 36 total source files in CoffeesAeroAuth.
+
+NEW FILES
+util/NetUtil.java           — getPlayerIP, subnetOf, maskIp
+watchdog/Severity.java      — LOW/MEDIUM/HIGH/CRITICAL with emoji + Discord color
+watchdog/WatchdogEvent.java — immutable record + factory method
+watchdog/IpBanManager.java  — in-memory exact + /24 subnet bans
+watchdog/TrustedIpStore.java — persisted trusted_ips.json, FIFO eviction
+watchdog/AuditLogger.java   — append-only + SHA-256 tamper detection + backup
+watchdog/WatchdogManager.java — all threat detection, alerts, daily digest
+discord/DiscordWebhook.java — async HttpClient POST, silent no-op if blank
+discord/AlertFormatter.java — embeds for alerts, admin log, digest, public events
+discord/WebhookQueue.java   — 1 send/sec HIGH+; LOW batched every 30s
+discord/DiscordGateway.java — Java WebSocket bot client, heartbeat, reconnect
+discord/DiscordBridge.java  — public channel (join/leave/death/chat/milestones) + Discord→MC
+events/WatchdogEvents.java  — CommandEvent, LivingTickEvent, LivingDeathEvent, AdvancementEvent
+
+MODIFIED FILES
+AuthConfig.java       +28 config values (watchdog + discord sections)
+AuthManager.java      NetUtil replaces getPlayerIP; watchdog hooks on login; new public accessors
+CoffeesAeroAuth.java  WATCHDOG/DISCORD_BRIDGE/WEBHOOK_QUEUE statics; full init/teardown
+PlayerAuthEvents.java WATCHDOG.checkJoin before auth; premium name registration; Discord join
+ChatEvents.java       bridges MC chat to Discord public channel
+ProfileCommands.java  /mytrustedips, /authmod clearips, /authmod clearban
+
+THREAT COVERAGE
+Login storm:      10+ fails, 3+ accounts, /24 subnet, 60s → subnet ban + CRITICAL
+UUID switch:      same name, different UUID → kick + CRITICAL
+Lookalike names:  l/1/|, 0/O, rn→m, invisible Unicode normalization → kick + HIGH
+Pre-auth flood:   50+ blocked events/sec → 5min ban + HIGH
+Command velocity: >5/sec = throttle; >20/sec = cancel + MEDIUM
+Movement hack:    >2.0 b/t post-auth → zero velocity; repeat → MEDIUM alert
+Admin abuse:      >5 /authmod in 2min → 5min lock + CRITICAL
+Quiet hours:      any /authmod 02:00–08:00 UTC → MEDIUM regardless of action
+Slot drain:       >40% slots unauth → block joins + HIGH
+Audit tamper:     SHA-256 mismatch on 60s check → restore backup + CRITICAL
+
+DISCORD CONFIG (coffees_aero_auth-server.toml)
+[discord]
+  enabled = false              ← flip to true to activate
+  botToken = ""                ← Discord bot token (needs MESSAGE_CONTENT privileged intent)
+  watchdogChannelId = ""       ← admin-only channel ID
+  publicChannelId = ""         ← public chat bridge channel ID
+  webhookWatchdog = ""         ← webhook URL for watchdog channel
+  webhookPublic = ""           ← webhook URL for public channel
+  digestTime = "00:00"         ← UTC time for daily digest
+  discordToMcRoleId = ""       ← role allowed to send to MC (empty = anyone)
+  milestoneHours = "1,5,10,50,100"
+
+DATA FILES (world/coffeesaeroauth/)
+  audit.log + .bak + .checksum     — auth events with tamper detection
+  watchdog.log + .bak + .checksum  — threat events only
+  trusted_ips.json                  — up to 3 IPs per offline UUID
+
+[2026-05-28] OBSIDIAN INTEGRATION — Implementation Summary
+----------------------------------------------------------
+
+3 new files, 8 modified. 39 total source files in CoffeesAeroAuth.
+
+NEW FILES
+util/EnvLoader.java           — reads .env from server working dir (key=value, strips quotes)
+obsidian/ObsidianClient.java  — async PUT/POST/GET via java.net.http; URL-encodes path segments;
+                                retry once on failure, silently drop after that; ping() for startup check
+obsidian/ObsidianExporter.java — all vault write logic; in-memory InMemoryLog per player
+
+SECRETS HANDLING
+.env              — gitignored (added to .gitignore)
+.env.example      — committed template showing key names
+  OBSIDIAN_URL=http://localhost:27123
+  OBSIDIAN_API_KEY=<your key>
+Priority: .env > AuthConfig.obsidian.apiKey (config is a fallback only, prefer .env)
+API key NEVER logged, printed, or serialized.
+
+VAULT STRUCTURE (vaultPath = "AeroSMP" by default)
+AeroSMP/
+├── devlogs/YYYY-MM-DD.md          — written on server stop (or /authmod obsidianreport)
+├── players/[displayname].md       — PUT on first join; re-PUT on each login/logout/achievement
+├── sessions/YYYY-MM-DD.md         — PUT header on first join of day; POST timeline entries live
+├── watchdog/alerts-YYYY-MM.md     — PUT header on first alert of month; POST each alert line
+└── graph-data/connections.md      — PUT header once; POST each new player pair + date
+
+TRIGGERS
+Player first join    → PUT players/[name].md with frontmatter + empty sections
+Player login         → re-PUT players/[name].md; ensure session file exists; POST timeline entry
+Player logout        → closeSession() on InMemoryLog; re-PUT player file with updated playtime
+Achievement          → append to log.achievements; re-PUT player file; POST session timeline
+Watchdog alert       → POST to monthly watchdog file; append to player's watchdog flags
+Two players online   → POST connection line (deduped by "name1:name2:date" set)
+Server stop          → write devlogs/YYYY-MM-DD.md; rewrite today's session file
+
+OFFLINE PLAYER DELAY
+Premium players: Obsidian hooks fire immediately on join (auto-auth)
+Offline players: hooks fire when /login succeeds via AuthManager.onAuthenticated()
+  → calls PlayerAuthEvents.onOfflinePlayerAuthenticated(player) which calls exporter
+
+NEW CONFIG ([obsidian] section in coffees_aero_auth-server.toml)
+  enabled = false            ← flip to true
+  url = "http://localhost:27123"
+  apiKey = ""               ← prefer .env OBSIDIAN_API_KEY instead
+  vaultPath = "AeroSMP"
+  syncOnStop = true
+  syncPlayerUpdates = true
+  syncWatchdogAlerts = true
+
+NEW COMMAND
+/authmod obsidianreport  — full vault sync now (op level 2+)
+  Rewrites all active player files + today's session file + devlog
+
+WIKILINK USAGE (builds the Obsidian graph)
+  [[displayname]]   — every player reference
+  [[YYYY-MM-DD]]    — every date reference
+  [[achievement]]   — every earned advancement title
+  → Obsidian's graph view will show player connections, active days, shared sessions
+
+MODIFIED FILES
+AuthConfig.java         +7 obsidian config values
+CoffeesAeroAuth.java    OBSIDIAN_EXPORTER static; init from .env; stop before watchdog
+AuthManager.java        +getAuthenticatedCount(), +getAuthenticatedUUIDs(), +List import;
+                        offline player auth → PlayerAuthEvents.onOfflinePlayerAuthenticated()
+WatchdogManager.java    alert() calls OBSIDIAN_EXPORTER.onWatchdogAlert();
+                        +getDailyLogins(), +getDailyFailures()
+PlayerAuthEvents.java   isFirstJoin detected before AUTH_MANAGER.onPlayerJoin;
+                        +onOfflinePlayerAuthenticated(); Obsidian hooks on join/leave
+WatchdogEvents.java     onAdvancement() calls OBSIDIAN_EXPORTER.onAdvancement()
+ProfileCommands.java    +/authmod obsidianreport handler
+
+[2026-05-28] SESSION 4 RESUME — Verification + Cleanup
+-------------------------------------------------------
+
+Resumed after context compaction. Verified all previously planned Obsidian
+integration work was already fully implemented. No code was missing.
+
+FILES VERIFIED COMPLETE
+obsidian/ObsidianClient.java    — async PUT/POST/GET via java.net.http.HttpClient
+                                  Bearer token auth, URL-encoded path segments
+                                  retry once on failure, silently drop after that
+                                  ping() for startup reachability check
+obsidian/ObsidianExporter.java  — full vault write logic with InMemoryLog per player
+                                  onPlayerJoin, onPlayerLeave, onAdvancement,
+                                  onWatchdogAlert, onServerStop, syncAll
+util/EnvLoader.java             — reads .env from server working dir
+                                  key=value parsing, quote stripping
+config/AuthConfig.java          — [obsidian] section present with 7 config values:
+                                  enabled, url, apiKey, vaultPath, syncOnStop,
+                                  syncPlayerUpdates, syncWatchdogAlerts
+CoffeesAeroAuth.java            — OBSIDIAN_EXPORTER static instance declared
+                                  init: .env > config fallback, ping check, warn if offline
+                                  teardown: stops BEFORE watchdog so devlog can read stats
+.gitignore                      — .env present on line 47 (gitignored)
+.env.example                    — committed template; fixed real-looking hex placeholder
+                                  to <your-obsidian-local-rest-api-key>
+
+TOTAL SOURCE FILES: 39 Java files in src/CoffeesAeroAuth/
+
+NEXT STEP — Build the mod:
+  1. Copy gradle wrapper (one-time):
+     copy src\PowerBridge\gradle\wrapper\gradle-wrapper.jar src\CoffeesAeroAuth\gradle\wrapper\
+  2. Build:
+     cd src\CoffeesAeroAuth
+     gradlew build
+  3. Copy JAR to overrides:
+     copy build\libs\CoffeesAeroAuth-1.0.0.jar ..\..\overrides\mods\
+  4. Drop on a plain NeoForge 1.21.1 test server with online-mode=false
+  5. Stress test before adding Create + other mods
+

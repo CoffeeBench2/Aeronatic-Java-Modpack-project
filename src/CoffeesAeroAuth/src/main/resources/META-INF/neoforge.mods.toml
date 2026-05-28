@@ -1,0 +1,30 @@
+modLoader = "javafml"
+loaderVersion = "[4,)"
+license = "MIT"
+
+[[mods]]
+modId       = "coffees_aero_auth"
+version     = "1.0.0"
+displayName = "Coffees Aero Auth"
+description = '''
+Authentication and profile system for Coffees Aero SMP public server.
+Supports Mojang-authenticated (premium) and offline (cracked) players.
+Profiles are UUID-bound. Display names are globally unique and anti-spoof protected.
+'''
+
+[[mixins]]
+config = "coffeesaeroauth.mixins.json"
+
+[[dependencies.coffees_aero_auth]]
+    modId        = "neoforge"
+    type         = "required"
+    versionRange = "[21.1,)"
+    ordering     = "NONE"
+    side         = "BOTH"
+
+[[dependencies.coffees_aero_auth]]
+    modId        = "minecraft"
+    type         = "required"
+    versionRange = "[1.21.1,1.22)"
+    ordering     = "NONE"
+    side         = "BOTH"

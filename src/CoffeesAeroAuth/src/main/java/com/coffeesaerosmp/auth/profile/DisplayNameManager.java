@@ -1,0 +1,94 @@
+package com.coffeesaerosmp.auth.profile;
+
+import com.coffeesaerosmp.auth.db.PlayerProfile;
+import com.coffeesaerosmp.auth.db.ProfileStore;
+
+import java.util.UUID;
+
+public class DisplayNameManager {
+
+    private final ProfileStore store;
+
+    public DisplayNameManager(ProfileStore store) {
+        this.store = store;
+    }
+
+    /**
+     * Called for brand-new profiles. Attempts to claim displayName (= username by default).
+     *
+     * Rules:
+     *  - If the name is free, claim it.
+     *  - If taken by a verified (premium) player, return that profile so the caller can kick.
+     *  - If taken by another offline player, auto-suffix and claim the suffixed name.
+     *
+     * Returns the conflicting premium profile if a kick is warranted, null otherwise.
+     */
+    public PlayerProfile claimInitialName(PlayerProfile newProfile) {
+        String name = newProfile.displayName;
+        UUID owner  = store.getDisplayNameOwner(name);
+
+        if (owner == null) {
+            store.registerDisplayName(name, newProfile.getUUID());
+            store.save(newProfile);
+            return null;
+        }
+
+        if (owner.equals(newProfile.getUUID())) {
+            // Already ours — shouldn't happen for new profiles, but safe
+            return null;
+        }
+
+        PlayerProfile ownerProfile = store.get(owner);
+        if (ownerProfile != null && ownerProfile.getAccountType() == PlayerProfile.AccountType.PREMIUM) {
+            return ownerProfile; // signal: premium conflict, kick if configured
+        }
+
+        // Offline conflict: auto-suffix until we find a free name
+        String resolved = findFreeName(name, newProfile.getUUID());
+        newProfile.displayName = resolved;
+        store.registerDisplayName(resolved, newProfile.getUUID());
+        store.save(newProfile);
+        return null;
+    }
+
+    /**
+     * Attempts to set a custom display name for an existing player.
+     * Returns null on success, or a user-facing error message on failure.
+     */
+    public String trySetDisplayName(PlayerProfile requester, String newName) {
+        if (!isValidName(newName)) {
+            return "Display name must be 3-20 characters (letters, numbers, underscores only).";
+        }
+
+        UUID owner = store.getDisplayNameOwner(newName);
+        if (owner != null && !owner.equals(requester.getUUID())) {
+            PlayerProfile ownerProfile = store.get(owner);
+            if (ownerProfile != null && ownerProfile.getAccountType() == PlayerProfile.AccountType.PREMIUM) {
+                return "That name is reserved by a verified player.";
+            }
+            return "That display name is already taken.";
+        }
+
+        store.releaseDisplayName(requester.displayName);
+        requester.displayName = newName;
+        store.registerDisplayName(newName, requester.getUUID());
+        store.save(requester);
+        return null;
+    }
+
+    private String findFreeName(String base, UUID uuid) {
+        for (int i = 2; i <= 99; i++) {
+            String candidate = base + "_" + i;
+            if (candidate.length() > 20) break;
+            if (!store.isDisplayNameTaken(candidate)) return candidate;
+        }
+        // Fallback: append 4-hex UUID fragment
+        String suffix = Integer.toHexString(Math.abs(uuid.hashCode()) & 0xFFFF);
+        String candidate = base.substring(0, Math.min(base.length(), 15)) + "_" + suffix;
+        return candidate.substring(0, Math.min(candidate.length(), 20));
+    }
+
+    public static boolean isValidName(String name) {
+        return name != null && name.matches("[a-zA-Z0-9_]{3,20}");
+    }
+}

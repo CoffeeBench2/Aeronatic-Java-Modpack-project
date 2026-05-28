@@ -1,0 +1,39 @@
+plugins {
+    id 'net.neoforged.moddev' version '2.0.141'
+}
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+
+group   = project.mod_group_id
+version = project.mod_version
+
+neoForge {
+    version = project.neoforge_version
+
+    runs {
+        server {
+            server()
+            programArgument '--nogui'
+            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+        }
+    }
+
+    mods {
+        "${project.mod_id}" {
+            sourceSet(sourceSets.main)
+        }
+    }
+}
+
+jar {
+    manifest {
+        attributes([
+            'Specification-Title'   : project.mod_id,
+            'Specification-Vendor'  : project.mod_authors,
+            'Specification-Version' : '1',
+            'Implementation-Title'  : project.mod_name,
+            'Implementation-Version': project.version,
+            'Implementation-Vendor' : project.mod_authors,
+        ])
+    }
+}
