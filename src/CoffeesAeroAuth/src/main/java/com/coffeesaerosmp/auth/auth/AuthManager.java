@@ -1,5 +1,6 @@
 package com.coffeesaerosmp.auth.auth;
 
+import com.coffeesaerosmp.auth.CoffeesAeroAuth;
 import com.coffeesaerosmp.auth.config.AuthConfig;
 import com.coffeesaerosmp.auth.db.PlayerProfile;
 import com.coffeesaerosmp.auth.db.ProfileStore;

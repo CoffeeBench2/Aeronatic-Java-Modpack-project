@@ -2,7 +2,7 @@ package com.coffeesaerosmp.auth.events;
 
 import com.coffeesaerosmp.auth.CoffeesAeroAuth;
 import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.neoforge.event.entity.living.LivingTickEvent;
+import net.neoforged.neoforge.event.tick.EntityTickEvent;
 import net.neoforged.neoforge.event.entity.player.AttackEntityEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 
@@ -12,7 +12,7 @@ public class PlayerRestrictEvents {
      * Fires every tick for every living entity.
      * For unauthenticated players: freezes position and checks auth timeout.
      */
-    public static void onLivingTick(LivingTickEvent event) {
+    public static void onLivingTick(EntityTickEvent.Pre event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         if (CoffeesAeroAuth.AUTH_MANAGER == null) return;
         CoffeesAeroAuth.AUTH_MANAGER.onTick(player);

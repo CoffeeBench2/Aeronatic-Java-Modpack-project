@@ -10,7 +10,7 @@ public final class NetUtil {
     private NetUtil() {}
 
     public static String getPlayerIP(ServerPlayer player) {
-        SocketAddress addr = player.connection.connection.getRemoteAddress();
+        SocketAddress addr = player.connection.getRemoteAddress();
         if (addr instanceof InetSocketAddress inet) {
             return inet.getAddress().getHostAddress();
         }

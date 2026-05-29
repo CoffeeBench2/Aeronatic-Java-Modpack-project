@@ -10,9 +10,9 @@ public class AuthConfig {
     public static final ModConfigSpec.BooleanValue KICK_ON_NAME_CONFLICT;
     public static final ModConfigSpec.IntValue     MAX_FAILED_ATTEMPTS;
     public static final ModConfigSpec.BooleanValue BYPASS_AUTH_FOR_OPS;
-    public static final ModConfigSpec.StringValue  RESOURCE_PACK_URL;
-    public static final ModConfigSpec.StringValue  RESOURCE_PACK_HASH;
-    public static final ModConfigSpec.StringValue  SERVER_DISPLAY_NAME;
+    public static final ModConfigSpec.ConfigValue<String>  RESOURCE_PACK_URL;
+    public static final ModConfigSpec.ConfigValue<String>  RESOURCE_PACK_HASH;
+    public static final ModConfigSpec.ConfigValue<String>  SERVER_DISPLAY_NAME;
 
     // ── Watchdog ──────────────────────────────────────────────────────────────
     public static final ModConfigSpec.IntValue     LOGIN_STORM_FAILURES;
@@ -28,26 +28,26 @@ public class AuthConfig {
     public static final ModConfigSpec.IntValue     ADMIN_CMD_LIMIT;
     public static final ModConfigSpec.IntValue     ADMIN_CMD_WINDOW_SECONDS;
     public static final ModConfigSpec.IntValue     TRUSTED_IP_MAX_COUNT;
-    public static final ModConfigSpec.StringValue  QUIET_HOURS_START;
-    public static final ModConfigSpec.StringValue  QUIET_HOURS_END;
+    public static final ModConfigSpec.ConfigValue<String>  QUIET_HOURS_START;
+    public static final ModConfigSpec.ConfigValue<String>  QUIET_HOURS_END;
 
     // ── Discord ───────────────────────────────────────────────────────────────
     public static final ModConfigSpec.BooleanValue DISCORD_ENABLED;
-    public static final ModConfigSpec.StringValue  DISCORD_BOT_TOKEN;
-    public static final ModConfigSpec.StringValue  DISCORD_WATCHDOG_CHANNEL_ID;
-    public static final ModConfigSpec.StringValue  DISCORD_PUBLIC_CHANNEL_ID;
-    public static final ModConfigSpec.StringValue  DISCORD_WEBHOOK_WATCHDOG;
-    public static final ModConfigSpec.StringValue  DISCORD_WEBHOOK_PUBLIC;
-    public static final ModConfigSpec.StringValue  DISCORD_DIGEST_TIME;
-    public static final ModConfigSpec.StringValue  DISCORD_TO_MC_ROLE_ID;
-    public static final ModConfigSpec.StringValue  DISCORD_MILESTONE_HOURS;
+    public static final ModConfigSpec.ConfigValue<String>  DISCORD_BOT_TOKEN;
+    public static final ModConfigSpec.ConfigValue<String>  DISCORD_WATCHDOG_CHANNEL_ID;
+    public static final ModConfigSpec.ConfigValue<String>  DISCORD_PUBLIC_CHANNEL_ID;
+    public static final ModConfigSpec.ConfigValue<String>  DISCORD_WEBHOOK_WATCHDOG;
+    public static final ModConfigSpec.ConfigValue<String>  DISCORD_WEBHOOK_PUBLIC;
+    public static final ModConfigSpec.ConfigValue<String>  DISCORD_DIGEST_TIME;
+    public static final ModConfigSpec.ConfigValue<String>  DISCORD_TO_MC_ROLE_ID;
+    public static final ModConfigSpec.ConfigValue<String>  DISCORD_MILESTONE_HOURS;
 
     // ── Obsidian ──────────────────────────────────────────────────────────────
     public static final ModConfigSpec.BooleanValue OBSIDIAN_ENABLED;
-    public static final ModConfigSpec.StringValue  OBSIDIAN_URL;
+    public static final ModConfigSpec.ConfigValue<String>  OBSIDIAN_URL;
     /** Fallback if OBSIDIAN_API_KEY is absent from .env. Prefer .env — do not hardcode here. */
-    public static final ModConfigSpec.StringValue  OBSIDIAN_API_KEY;
-    public static final ModConfigSpec.StringValue  OBSIDIAN_VAULT_PATH;
+    public static final ModConfigSpec.ConfigValue<String>  OBSIDIAN_API_KEY;
+    public static final ModConfigSpec.ConfigValue<String>  OBSIDIAN_VAULT_PATH;
     public static final ModConfigSpec.BooleanValue OBSIDIAN_SYNC_ON_STOP;
     public static final ModConfigSpec.BooleanValue OBSIDIAN_SYNC_PLAYER_UPDATES;
     public static final ModConfigSpec.BooleanValue OBSIDIAN_SYNC_WATCHDOG;

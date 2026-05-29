@@ -15,4 +15,8 @@ public enum Severity {
         this.label = label;
         this.color = color;
     }
+
+    public String emoji() { return emoji; }
+    public String label() { return label; }
+    public int    color() { return color; }
 }

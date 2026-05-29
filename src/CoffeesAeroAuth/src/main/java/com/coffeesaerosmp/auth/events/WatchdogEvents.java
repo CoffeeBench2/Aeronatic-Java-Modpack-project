@@ -6,7 +6,7 @@ import com.coffeesaerosmp.auth.util.TextUtil;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.event.CommandEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
-import net.neoforged.neoforge.event.entity.living.LivingTickEvent;
+import net.neoforged.neoforge.event.tick.EntityTickEvent;
 import net.neoforged.neoforge.event.entity.player.AdvancementEvent;
 
 public class WatchdogEvents {
@@ -35,7 +35,7 @@ public class WatchdogEvents {
     }
 
     /** Movement speed check for authenticated players. */
-    public static void onLivingTick(LivingTickEvent event) {
+    public static void onLivingTick(EntityTickEvent.Pre event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         if (CoffeesAeroAuth.WATCHDOG == null) return;
         if (CoffeesAeroAuth.AUTH_MANAGER == null) return;
