@@ -193,7 +193,7 @@ Mods purpose-built for the Create: Aeronautics experience.
 | Mod | Source | Purpose |
 |-----|--------|---------|
 | CoffeesAeroSMP Core | `src/AeroCore/` | Custom mod — enforces server-only login, admin bypass, live IP config |
-| Coffees Power Bridge | `src/PowerBridge/` | Custom mod — dedicated FE↔Create SU converter blocks with IE wire compatibility |
+| CoffeesAeroAuth | `src/CoffeesAeroAuth/` | Custom mod — premium/cracked auth, private-room name approval, MySQL profiles, watchdog |
 
 ---
 

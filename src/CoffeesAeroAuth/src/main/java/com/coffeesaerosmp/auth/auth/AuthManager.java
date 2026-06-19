@@ -2,101 +2,160 @@ package com.coffeesaerosmp.auth.auth;
 
 import com.coffeesaerosmp.auth.CoffeesAeroAuth;
 import com.coffeesaerosmp.auth.config.AuthConfig;
+import com.coffeesaerosmp.auth.db.DatabaseManager;
 import com.coffeesaerosmp.auth.db.PlayerProfile;
-import com.coffeesaerosmp.auth.db.ProfileStore;
+import com.coffeesaerosmp.auth.db.CredentialStore;
 import com.coffeesaerosmp.auth.profile.DisplayNameManager;
+import com.coffeesaerosmp.auth.util.NetUtil;
 import com.coffeesaerosmp.auth.util.TextUtil;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.common.ClientboundResourcePackPushPacket;
 import net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket;
 import net.minecraft.network.protocol.game.ClientboundSetTitlesAnimationPacket;
 import net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket;
-import com.coffeesaerosmp.auth.util.NetUtil;
 import net.minecraft.server.level.ServerPlayer;
 
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class AuthManager {
 
-    private final ProfileStore       store;
+    private final CredentialStore    store;
     private final DisplayNameManager displayNames;
 
-    private final Map<UUID, AuthState> authStates     = new ConcurrentHashMap<>();
-    private final Map<UUID, double[]>  frozenPos      = new ConcurrentHashMap<>();
-    private final Map<UUID, Long>      joinTimes      = new ConcurrentHashMap<>();
-    private final Map<UUID, Integer>   failedAttempts = new ConcurrentHashMap<>();
-    private final SessionTokenManager  sessionTokens  = new SessionTokenManager();
+    private final Map<UUID, AuthState> authStates           = new ConcurrentHashMap<>();
+    private final Map<UUID, double[]>  frozenPos            = new ConcurrentHashMap<>();
+    private final Map<UUID, Long>      joinTimes            = new ConcurrentHashMap<>();
+    private final Map<UUID, Integer>   failedAttempts       = new ConcurrentHashMap<>();
+    private final Set<UUID>            pendingLobbyTeleport = ConcurrentHashMap.newKeySet();
+    private final Set<UUID>            awaitingType         = ConcurrentHashMap.newKeySet();
+    private final SessionTokenManager  sessionTokens        = new SessionTokenManager();
 
-    // Fixed UUID identifies this server's resource pack in the client's pack stack
-    private static final UUID PACK_UUID = UUID.fromString("c0ffee00-aero-4001-8000-cafebabe0001");
+    private static final UUID PACK_UUID = UUID.fromString("c0ffee00-ae40-4001-8000-cafebabe0001");
 
-    public AuthManager(ProfileStore store, DisplayNameManager displayNames) {
+    public AuthManager(CredentialStore store, DisplayNameManager displayNames, DatabaseManager db) {
         this.store        = store;
         this.displayNames = displayNames;
+        this.sessionTokens.init(db);
     }
 
     // ── Join / Leave ──────────────────────────────────────────────────────────
 
     public void onPlayerJoin(ServerPlayer player) {
-        UUID   uuid    = player.getUUID();
-        String mcName  = player.getGameProfile().getName();
-        boolean premium = UUIDUtil.isPremiumUUID(uuid);
+        UUID uuid = player.getUUID();
 
-        // Op bypass (disabled by default — only enable during initial server setup)
+        // Operators can skip auth entirely (setup convenience).
         if (AuthConfig.BYPASS_AUTH_FOR_OPS.get() && player.hasPermissions(4)) {
             authStates.put(uuid, AuthState.AUTHENTICATED);
             return;
         }
 
-        // Anti-spoof: block offline player if their MC username is already a verified
-        // player's display name and kickOnNameConflict is enabled
+        // Behind the Velocity proxy (player-info-forwarding = NONE) EVERY player reaches this
+        // backend with an offline (v3) UUID, so we cannot tell premium from cracked here. Hold
+        // the player frozen and wait for AeroVelocity's aerosmp:player_type message, handled by
+        // resolvePlayerType(). onTick() falls back to offline if no signal arrives (direct connect).
+        joinTimes.put(uuid, System.currentTimeMillis());
+        failedAttempts.put(uuid, 0);
+        frozenPos.put(uuid, new double[]{player.getX(), player.getY(), player.getZ()});
+        authStates.put(uuid, AuthState.AWAITING_TYPE);
+        awaitingType.add(uuid);
+
+        pushResourcePack(player);
+
+        // Prefer the forwarded identity (Velocity modern forwarding) when it is trusted; otherwise stay
+        // frozen in AWAITING_TYPE and wait for AeroVelocity's aerosmp:player_type message (handled by
+        // resolvePlayerType), with onTick() falling back to offline on timeout. Detection happens at the
+        // proxy — here we only READ the forwarded result.
+        PlayerIdentityReader.Identity forwarded = PlayerIdentityReader.read(player);
+        if (forwarded != PlayerIdentityReader.Identity.UNKNOWN) {
+            CoffeesAeroAuth.LOGGER.info("[Auth] {} resolved from forwarded UUID as {}.",
+                player.getGameProfile().getName(), forwarded);
+            resolvePlayerType(player, forwarded == PlayerIdentityReader.Identity.PREMIUM);
+        } else {
+            CoffeesAeroAuth.LOGGER.info("[Auth] {} frozen in AWAITING_TYPE — waiting for proxy player_type signal.",
+                player.getGameProfile().getName());
+        }
+    }
+
+    /**
+     * Resolves a held player once their premium/cracked status is known — from the proxy's
+     * {@code aerosmp:player_type} message or from the onTick timeout fallback. Idempotent:
+     * only the first call per join is honoured.
+     */
+    public void resolvePlayerType(ServerPlayer player, boolean premium) {
+        UUID uuid = player.getUUID();
+        if (!awaitingType.remove(uuid)) return;   // already resolved, or not awaiting
+        if (isAuthenticated(uuid)) return;
+
+        String mcName = player.getGameProfile().getName();
+        CoffeesAeroAuth.LOGGER.info("[Auth] Resolving {} as {}.", mcName, premium ? "PREMIUM" : "OFFLINE");
+
+        // Anti-spoof: block offline player whose MC name is already a verified player's display name
         if (!premium && AuthConfig.KICK_ON_NAME_CONFLICT.get()) {
             UUID nameOwner = store.getDisplayNameOwner(mcName);
             if (nameOwner != null && !nameOwner.equals(uuid)) {
                 PlayerProfile ownerProfile = store.get(nameOwner);
                 if (ownerProfile != null && ownerProfile.getAccountType() == PlayerProfile.AccountType.PREMIUM) {
                     player.connection.disconnect(Component.literal(
-                        "§cYour username §e" + mcName + "§c is reserved by a verified player on this server.\n" +
-                        "§7Please change your Minecraft username and try again."
-                    ));
+                        "§cYour username §e" + mcName + "§c is reserved by a verified player.\n" +
+                        "§7Please change your Minecraft username and try again."));
                     return;
                 }
             }
         }
 
-        PlayerProfile.AccountType type   = premium ? PlayerProfile.AccountType.PREMIUM : PlayerProfile.AccountType.OFFLINE;
-        ProfileStore.GetOrCreateResult r = store.getOrCreate(uuid, mcName, type);
-        PlayerProfile profile            = r.profile();
+        PlayerProfile.AccountType type = premium ? PlayerProfile.AccountType.PREMIUM : PlayerProfile.AccountType.OFFLINE;
+        CredentialStore.GetOrCreateResult r = store.getOrCreate(uuid, mcName, type);
+        PlayerProfile profile = r.profile();
 
-        if (r.isNew()) {
-            PlayerProfile premiumConflict = displayNames.claimInitialName(profile);
-            if (premiumConflict != null && !AuthConfig.KICK_ON_NAME_CONFLICT.get()) {
-                // Soft mode: name was auto-suffixed — warn the player
-                send(player, TextUtil.PREFIX + "§eYour username conflicted with a verified player. Display name set to: §a" + profile.displayName);
-            }
+        // A returning player first created offline but now Mojang-verified is upgraded to premium.
+        if (premium && profile.getAccountType() != PlayerProfile.AccountType.PREMIUM) {
+            profile.accountType  = PlayerProfile.AccountType.PREMIUM.name();
+            profile.nameApproved = true;
+            store.save(profile);
         }
 
-        // Freeze the player at their join position until auth completes
-        frozenPos.put(uuid, new double[]{player.getX(), player.getY(), player.getZ()});
-        joinTimes.put(uuid, System.currentTimeMillis());
+        if (r.isNew() && premium) {
+            displayNames.claimInitialName(profile);
+        }
         failedAttempts.put(uuid, 0);
 
         if (premium) {
-            authStates.put(uuid, AuthState.AUTHENTICATED);
-            onAuthenticated(player, profile, false);
-        } else if (profile.passwordHash == null) {
-            authStates.put(uuid, AuthState.REGISTERING);
-            send(player, TextUtil.PREFIX + "§eWelcome! Register your account: §a/register <password> <confirmPassword>");
-            send(player, TextUtil.PREFIX + "§7Password must be 8+ characters. Your account is permanently tied to your player ID.");
+            enterPremiumFlow(player, profile, r.isNew());
         } else {
-            // Check for a valid session token before requiring password
+            enterOfflineFlow(player, profile, mcName);
+        }
+    }
+
+    private void enterPremiumFlow(ServerPlayer player, PlayerProfile profile, boolean isFirstJoin) {
+        UUID uuid = player.getUUID();
+        // Premium: auto-authenticate immediately. onAuthenticated lifts the AWAITING_TYPE freeze.
+        authStates.put(uuid, AuthState.AUTHENTICATED);
+        onAuthenticated(player, profile, false);
+        com.coffeesaerosmp.auth.events.PlayerAuthEvents.onPremiumResolved(player, isFirstJoin);
+    }
+
+    private void enterOfflineFlow(ServerPlayer player, PlayerProfile profile, String mcName) {
+        UUID uuid = player.getUUID();
+
+        // Legacy migration: offline players that fully completed join before room system existed
+        if (!profile.nameApproved && profile.firstJoinComplete && profile.passwordHash != null) {
+            profile.nameApproved = true;
+            store.save(profile);
+        }
+
+        if (profile.nameApproved) {
+            // Returning approved offline player — straight to /login
+            frozenPos.put(uuid, new double[]{player.getX(), player.getY(), player.getZ()});
+
             String ip = NetUtil.getPlayerIP(player);
             SessionTokenManager.TokenStatus tokenStatus = sessionTokens.check(uuid, ip);
-
             if (tokenStatus == SessionTokenManager.TokenStatus.VALID) {
                 authStates.put(uuid, AuthState.AUTHENTICATED);
                 onAuthenticated(player, profile, false);
@@ -109,20 +168,46 @@ public class AuthManager {
                 authStates.put(uuid, AuthState.PENDING);
                 send(player, TextUtil.PREFIX + "§ePlease log in: §a/login <password>");
             }
-        }
 
-        // Push resource pack if configured
+        } else {
+            // New or mid-approval offline player → private room flow
+            if (profile.roomSlot < 0) {
+                profile.roomSlot      = CoffeesAeroAuth.ROOM_MANAGER != null
+                    ? CoffeesAeroAuth.ROOM_MANAGER.assignSlot(uuid) : 0;
+                profile.roomCreatedAt = System.currentTimeMillis();
+                store.save(profile);
+            } else if (CoffeesAeroAuth.ROOM_MANAGER != null) {
+                // Re-register slot as in-use (room manager was reset on server restart)
+                // runStartupCleanup already does this, but guard here too
+            }
+
+            if (profile.passwordHash == null) {
+                authStates.put(uuid, AuthState.LOBBY_REGISTER);
+            } else if (profile.nameApprovalPending && profile.pendingDisplayName != null) {
+                authStates.put(uuid, AuthState.LOBBY_PENDING);
+                // Re-add to approval queue (queue is in-memory, lost on restart)
+                if (CoffeesAeroAuth.APPROVAL_QUEUE != null) {
+                    CoffeesAeroAuth.APPROVAL_QUEUE.requeue(uuid, mcName, profile.pendingDisplayName);
+                }
+            } else {
+                authStates.put(uuid, AuthState.LOBBY_NAMING);
+            }
+
+            // Teleport to room on first tick (so player is fully joined first)
+            pendingLobbyTeleport.add(uuid);
+            frozenPos.put(uuid, new double[]{player.getX(), player.getY(), player.getZ()});
+        }
+    }
+
+    private void pushResourcePack(ServerPlayer player) {
         String packUrl  = AuthConfig.RESOURCE_PACK_URL.get();
         String packHash = AuthConfig.RESOURCE_PACK_HASH.get();
         if (!packUrl.isBlank()) {
             try {
                 player.connection.send(new ClientboundResourcePackPushPacket(
                     PACK_UUID, packUrl, packHash, true,
-                    Optional.of(Component.literal("§6Coffees Aero SMP §7Resource Pack"))
-                ));
-            } catch (Exception e) {
-                // Swallow — pack URL may be empty/invalid during local dev
-            }
+                    Optional.of(Component.literal("§6Coffees Aero SMP §7Resource Pack"))));
+            } catch (Exception ignored) {}
         }
     }
 
@@ -139,27 +224,60 @@ public class AuthManager {
         frozenPos.remove(uuid);
         joinTimes.remove(uuid);
         failedAttempts.remove(uuid);
+        pendingLobbyTeleport.remove(uuid);
+        awaitingType.remove(uuid);
     }
 
-    // ── Per-tick check (called from PlayerRestrictEvents) ────────────────────
+    // ── Per-tick ──────────────────────────────────────────────────────────────
 
     public void onTick(ServerPlayer player) {
         UUID uuid = player.getUUID();
         if (isAuthenticated(uuid)) return;
 
-        // Auth timeout
-        int timeout = AuthConfig.AUTH_TIMEOUT_SECONDS.get();
-        if (timeout > 0) {
+        // Awaiting the proxy's premium/cracked signal — keep frozen, fall back to offline on timeout.
+        if (authStates.get(uuid) == AuthState.AWAITING_TYPE) {
+            int timeout = AuthConfig.TYPE_RESOLVE_TIMEOUT_SECONDS.get();
             Long joined = joinTimes.get(uuid);
-            if (joined != null && (System.currentTimeMillis() - joined) > timeout * 1000L) {
-                player.connection.disconnect(Component.literal(
-                    "§cAuthentication timed out. Reconnect and log in within " + timeout + " seconds."
-                ));
-                return;
+            if (timeout > 0 && joined != null && (System.currentTimeMillis() - joined) > timeout * 1000L) {
+                resolvePlayerType(player, false);   // no signal — treat as offline / cracked
+            } else {
+                double[] held = frozenPos.get(uuid);
+                if (held != null) {
+                    player.teleportTo(held[0], held[1], held[2]);
+                    player.setDeltaMovement(0, 0, 0);
+                }
+            }
+            return;
+        }
+
+        // Handle deferred lobby teleport (fires on first tick after join)
+        if (pendingLobbyTeleport.remove(uuid)) {
+            AuthState state = authStates.getOrDefault(uuid, AuthState.PENDING);
+            if (isLobbyState(state) && CoffeesAeroAuth.ROOM_MANAGER != null) {
+                PlayerProfile profile = store.get(uuid);
+                if (profile != null && profile.roomSlot >= 0) {
+                    CoffeesAeroAuth.ROOM_MANAGER.teleportToRoom(player, profile.roomSlot);
+                    double[] pos = CoffeesAeroAuth.ROOM_MANAGER.getRoomSpawnPos(profile.roomSlot);
+                    frozenPos.put(uuid, pos);
+                }
+            }
+            return; // skip rest of tick this frame
+        }
+
+        // Auth timeout (PENDING state only)
+        if (authStates.getOrDefault(uuid, AuthState.PENDING) == AuthState.PENDING) {
+            int timeout = AuthConfig.AUTH_TIMEOUT_SECONDS.get();
+            if (timeout > 0) {
+                Long joined = joinTimes.get(uuid);
+                if (joined != null && (System.currentTimeMillis() - joined) > timeout * 1000L) {
+                    player.connection.disconnect(Component.literal(
+                        "§cAuthentication timed out. Reconnect and log in within " + timeout + " seconds."));
+                    return;
+                }
             }
         }
 
-        // Freeze position — teleport back to join point every tick
+        // Freeze position (all non-AUTHENTICATED states)
         double[] pos = frozenPos.get(uuid);
         if (pos != null) {
             player.teleportTo(pos[0], pos[1], pos[2]);
@@ -169,15 +287,20 @@ public class AuthManager {
         // Reminder every 5 seconds (100 ticks)
         if (player.tickCount % 100 == 0) {
             AuthState state = authStates.getOrDefault(uuid, AuthState.PENDING);
-            if (state == AuthState.REGISTERING) {
-                send(player, TextUtil.PREFIX + "§eUse §a/register <password> <confirmPassword>§e to create your account.");
-            } else {
-                send(player, TextUtil.PREFIX + "§eUse §a/login <password>§e to continue.");
+            switch (state) {
+                case LOBBY_REGISTER ->
+                    send(player, TextUtil.PREFIX + "§eSet up your account: §a/register <password> <confirmPassword>");
+                case LOBBY_NAMING ->
+                    send(player, TextUtil.PREFIX + "§eChoose your display name: §a/setname <displayName>");
+                case LOBBY_PENDING ->
+                    send(player, TextUtil.PREFIX + "§7Your display name is pending admin approval. Please wait...");
+                default ->
+                    send(player, TextUtil.PREFIX + "§eUse §a/login <password>§e to continue.");
             }
         }
     }
 
-    // ── Auth Commands ─────────────────────────────────────────────────────────
+    // ── Auth commands ─────────────────────────────────────────────────────────
 
     public boolean handleLogin(ServerPlayer player, String password) {
         UUID uuid = player.getUUID();
@@ -185,8 +308,9 @@ public class AuthManager {
             send(player, TextUtil.PREFIX + "§aAlready logged in.");
             return true;
         }
-        if (authStates.get(uuid) == AuthState.REGISTERING) {
-            send(player, TextUtil.PREFIX + "§cNo account yet. Use §a/register <password> <password>§c.");
+        AuthState state = authStates.getOrDefault(uuid, AuthState.PENDING);
+        if (isLobbyState(state)) {
+            send(player, TextUtil.PREFIX + "§cComplete your lobby setup first.");
             return false;
         }
         PlayerProfile profile = store.get(uuid);
@@ -195,14 +319,19 @@ public class AuthManager {
             return false;
         }
         if (!PasswordUtil.verify(password, profile.passwordSalt, profile.passwordHash)) {
-            int attempts = failedAttempts.merge(uuid, 1, Integer::sum);
-            int max      = AuthConfig.MAX_FAILED_ATTEMPTS.get();
+            int    attempts = failedAttempts.merge(uuid, 1, Integer::sum);
+            int    max      = AuthConfig.MAX_FAILED_ATTEMPTS.get();
+            String ip       = NetUtil.getPlayerIP(player);
             if (CoffeesAeroAuth.WATCHDOG != null) {
-                CoffeesAeroAuth.WATCHDOG.recordFailedLogin(uuid, NetUtil.getPlayerIP(player), player.getGameProfile().getName());
-                CoffeesAeroAuth.WATCHDOG.recordFailedLoginFromUnknownIp(uuid, NetUtil.getPlayerIP(player), player.getGameProfile().getName());
+                CoffeesAeroAuth.WATCHDOG.recordFailedLogin(uuid, ip, player.getGameProfile().getName());
+                CoffeesAeroAuth.WATCHDOG.recordFailedLoginFromUnknownIp(uuid, ip, player.getGameProfile().getName());
             }
             if (max > 0 && attempts >= max) {
-                player.connection.disconnect(Component.literal("§cToo many failed login attempts. Try again later."));
+                if (CoffeesAeroAuth.WATCHDOG != null) {
+                    CoffeesAeroAuth.WATCHDOG.getIpBanManager().banAuth(ip, 30_000L);
+                }
+                player.connection.disconnect(Component.literal(
+                    "§cToo many failed login attempts. Please wait §e30§c seconds before reconnecting."));
                 return false;
             }
             send(player, TextUtil.PREFIX + "§cWrong password." + (max > 0 ? " Attempt " + attempts + "/" + max + "." : ""));
@@ -224,7 +353,8 @@ public class AuthManager {
             send(player, TextUtil.PREFIX + "§aAlready registered and logged in.");
             return true;
         }
-        if (authStates.get(uuid) != AuthState.REGISTERING) {
+        AuthState state = authStates.getOrDefault(uuid, AuthState.PENDING);
+        if (state != AuthState.LOBBY_REGISTER) {
             send(player, TextUtil.PREFIX + "§cYou already have an account. Use §a/login <password>§c.");
             return false;
         }
@@ -244,9 +374,155 @@ public class AuthManager {
         profile.passwordHash = PasswordUtil.hash(password, salt);
         store.save(profile);
 
-        authStates.put(uuid, AuthState.AUTHENTICATED);
-        onAuthenticated(player, profile, true);
-        sessionTokens.createToken(uuid, NetUtil.getPlayerIP(player));
+        authStates.put(uuid, AuthState.LOBBY_NAMING);
+        send(player, TextUtil.PREFIX + "§aPassword set! Now choose your display name:");
+        send(player, TextUtil.PREFIX + "§a/setname <displayName>§7  (3–20 chars, letters/numbers/underscores)");
+        return true;
+    }
+
+    /** /setname — only usable from LOBBY_NAMING state. */
+    public boolean handleSetName(ServerPlayer player, String name) {
+        UUID uuid = player.getUUID();
+        if (authStates.getOrDefault(uuid, AuthState.PENDING) != AuthState.LOBBY_NAMING) {
+            send(player, TextUtil.PREFIX + "§cYou can only use §a/setname§c while setting up your profile in the lobby.");
+            return false;
+        }
+
+        if (!DisplayNameManager.isValidName(name)) {
+            send(player, TextUtil.PREFIX + "§cDisplay name must be 3-20 characters (letters, numbers, underscores only).");
+            return false;
+        }
+
+        // Check banned words (fail fast)
+        String lname = name.toLowerCase();
+        String bannedRaw = AuthConfig.BANNED_WORDS.get();
+        if (bannedRaw != null && !bannedRaw.isBlank()) {
+            for (String word : bannedRaw.split(",")) {
+                if (!word.isBlank() && lname.contains(word.trim().toLowerCase())) {
+                    send(player, TextUtil.PREFIX + "§cThat name contains prohibited content. Choose a different name.");
+                    return false;
+                }
+            }
+        }
+
+        // Check availability in local index
+        UUID existing = store.getDisplayNameOwner(name);
+        if (existing != null && !existing.equals(uuid)) {
+            PlayerProfile ownerProfile = store.get(existing);
+            if (ownerProfile != null && ownerProfile.getAccountType() == PlayerProfile.AccountType.PREMIUM) {
+                send(player, TextUtil.PREFIX + "§cThat name is reserved by a verified player.");
+            } else {
+                send(player, TextUtil.PREFIX + "§cThat display name is already taken.");
+            }
+            return false;
+        }
+
+        // Check watchdog premium name index
+        if (CoffeesAeroAuth.WATCHDOG != null && CoffeesAeroAuth.WATCHDOG.isPremiumDisplayName(name)) {
+            send(player, TextUtil.PREFIX + "§cThat name is reserved by a verified player.");
+            return false;
+        }
+
+        // Mojang API check (blocks up to 3s — acceptable for a once-per-lifetime action)
+        send(player, TextUtil.PREFIX + "§7Checking name availability...");
+        if (isMojangUsername(name)) {
+            send(player, TextUtil.PREFIX + "§cThat name belongs to an existing Mojang account and cannot be used.");
+            return false;
+        }
+
+        // Reserve name tentatively in index
+        if (existing == null) {
+            store.registerDisplayName(name, uuid);
+        }
+
+        // Mark pending in profile
+        PlayerProfile profile = store.get(uuid);
+        if (profile != null) {
+            profile.nameApprovalPending = true;
+            profile.pendingDisplayName  = name;
+            store.save(profile);
+        }
+
+        authStates.put(uuid, AuthState.LOBBY_PENDING);
+        if (CoffeesAeroAuth.APPROVAL_QUEUE != null) {
+            CoffeesAeroAuth.APPROVAL_QUEUE.submit(player, name);
+        }
+        return true;
+    }
+
+    /** /changename — one-time post-approval display name change. */
+    public boolean handleChangeName(ServerPlayer player, String newName) {
+        UUID uuid = player.getUUID();
+        if (!isAuthenticated(uuid)) {
+            send(player, TextUtil.PREFIX + "§cMust be logged in to change your display name.");
+            return false;
+        }
+        PlayerProfile profile = store.get(uuid);
+        if (profile == null) return false;
+
+        if (profile.nameChangesUsed >= 1) {
+            send(player, TextUtil.PREFIX + "§cYou have already used your one-time name change.");
+            return false;
+        }
+        if (!DisplayNameManager.isValidName(newName)) {
+            send(player, TextUtil.PREFIX + "§cDisplay name must be 3-20 characters (letters, numbers, underscores only).");
+            return false;
+        }
+        // Banned words
+        String bannedRaw = AuthConfig.BANNED_WORDS.get();
+        if (bannedRaw != null && !bannedRaw.isBlank()) {
+            String lower = newName.toLowerCase();
+            for (String word : bannedRaw.split(",")) {
+                if (!word.isBlank() && lower.contains(word.trim().toLowerCase())) {
+                    send(player, TextUtil.PREFIX + "§cThat name contains prohibited content.");
+                    return false;
+                }
+            }
+        }
+        // Global uniqueness check
+        UUID existing = store.getDisplayNameOwner(newName);
+        if (existing != null && !existing.equals(uuid)) {
+            send(player, TextUtil.PREFIX + "§cThat display name is already taken.");
+            return false;
+        }
+        // Online player check — name cannot match any currently connected player's display name
+        for (net.minecraft.server.level.ServerPlayer online : player.getServer().getPlayerList().getPlayers()) {
+            if (online.getUUID().equals(uuid)) continue;
+            PlayerProfile op = store.get(online.getUUID());
+            String onlineName = op != null ? op.displayName : online.getGameProfile().getName();
+            if (newName.equalsIgnoreCase(onlineName)) {
+                send(player, TextUtil.PREFIX + "§cThat name is currently in use by an online player.");
+                return false;
+            }
+        }
+        // Premium display name guard
+        if (CoffeesAeroAuth.WATCHDOG != null && CoffeesAeroAuth.WATCHDOG.isPremiumDisplayName(newName)) {
+            send(player, TextUtil.PREFIX + "§cThat name is reserved by a verified player.");
+            return false;
+        }
+        // Mojang API check
+        send(player, TextUtil.PREFIX + "§7Checking name availability...");
+        if (isMojangUsername(newName)) {
+            send(player, TextUtil.PREFIX + "§cThat name belongs to an existing Mojang account.");
+            return false;
+        }
+        // One-time change is consumed now (the command is disabled hereafter); the new name goes
+        // through the admin approval queue. The current display name stays active until approval; the
+        // new name is reserved tentatively so nobody else can claim it while it is pending.
+        String oldName = profile.displayName;
+        store.registerDisplayName(newName, uuid);
+        profile.nameApprovalPending = true;
+        profile.pendingDisplayName  = newName;
+        profile.nameChangesUsed++;
+        store.save(profile);
+        if (CoffeesAeroAuth.WATCHDOG != null) {
+            CoffeesAeroAuth.WATCHDOG.recordNameChange("REQUEST uuid=" + uuid + " old=" + oldName + " new=" + newName);
+        }
+        if (CoffeesAeroAuth.APPROVAL_QUEUE != null) {
+            CoffeesAeroAuth.APPROVAL_QUEUE.submitRename(player, newName);
+        }
+        send(player, TextUtil.PREFIX + "§aName change requested: §f" + oldName + " §7→ §a" + newName);
+        send(player, TextUtil.PREFIX + "§7Pending admin approval — this was your one-time change.");
         return true;
     }
 
@@ -275,26 +551,77 @@ public class AuthManager {
         profile.passwordHash = PasswordUtil.hash(newPw, salt);
         store.save(profile);
         sessionTokens.invalidate(uuid);
-        send(player, TextUtil.PREFIX + "§aPassword changed successfully. Session invalidated — you will need to log in on next join.");
+        send(player, TextUtil.PREFIX + "§aPassword changed. Session invalidated — log in on next join.");
         return true;
     }
 
-    // ── Auth Complete ─────────────────────────────────────────────────────────
+    // ── Approval callbacks (called by NameApprovalQueue) ─────────────────────
+
+    /** Called when a player's display name is approved.
+     *  Player stays in the lobby room — they leave manually via /spawn. */
+    public void completeApproval(ServerPlayer player, PlayerProfile profile) {
+        UUID uuid = player.getUUID();
+        authStates.put(uuid, AuthState.AUTHENTICATED);
+        frozenPos.remove(uuid);  // lift freeze so they can explore the room
+        profile.sessionStartEpoch = System.currentTimeMillis();
+        profile.firstJoinComplete = true;
+        store.save(profile);
+        sessionTokens.createToken(uuid, NetUtil.getPlayerIP(player));
+        if (CoffeesAeroAuth.WATCHDOG != null) {
+            CoffeesAeroAuth.WATCHDOG.recordSuccessfulLogin(uuid, NetUtil.getPlayerIP(player), profile.displayName, false);
+        }
+        // Welcome — player stays in their hangar until /spawn
+        String serverName = AuthConfig.SERVER_DISPLAY_NAME.get();
+        player.connection.send(new ClientboundSetTitlesAnimationPacket(20, 80, 20));
+        player.connection.send(new ClientboundSetTitleTextPacket(
+            Component.literal("§6§l" + serverName)));
+        player.connection.send(new ClientboundSetSubtitleTextPacket(
+            Component.literal("§aWelcome aboard, §f" + profile.displayName + "§a!")));
+        send(player, TextUtil.PREFIX + "§a✦ Display name approved: §f" + profile.displayName);
+        send(player, TextUtil.PREFIX + "§eLook around your hangar, then type §a/spawn§e to enter the server.");
+        send(player, TextUtil.PREFIX + "§7(Resource pack required on first join — accept when prompted.)");
+        com.coffeesaerosmp.auth.events.PlayerAuthEvents.onOfflinePlayerAuthenticated(player);
+    }
+
+    /** /spawn — exits the lobby room into the main world. Lobby-dimension only. */
+    public boolean handleSpawn(ServerPlayer player) {
+        UUID uuid = player.getUUID();
+        if (!isAuthenticated(uuid)) {
+            send(player, TextUtil.PREFIX + "§cYour name must be approved before you can enter the server.");
+            return false;
+        }
+        if (player.level().dimension() != com.coffeesaerosmp.auth.lobby.PrivateRoomManager.LOBBY_DIMENSION) {
+            send(player, TextUtil.PREFIX + "§7You're already in the main world.");
+            return false;
+        }
+        if (CoffeesAeroAuth.ROOM_MANAGER != null) {
+            CoffeesAeroAuth.ROOM_MANAGER.teleportToSpawn(player);
+        }
+        String serverName = AuthConfig.SERVER_DISPLAY_NAME.get();
+        send(player, TextUtil.PREFIX + "§a✈ Welcome to §6§l" + serverName + "§a!");
+        return true;
+    }
+
+    /** Resets state back to LOBBY_NAMING after a name rejection. */
+    public void resetToNaming(ServerPlayer player) {
+        UUID uuid = player.getUUID();
+        if (isLobbyState(authStates.getOrDefault(uuid, AuthState.PENDING))) {
+            authStates.put(uuid, AuthState.LOBBY_NAMING);
+        }
+    }
+
+    // ── Auth complete (premium / session resume / password login) ─────────────
 
     private void onAuthenticated(ServerPlayer player, PlayerProfile profile, boolean isNewAccount) {
         frozenPos.remove(player.getUUID());
         profile.sessionStartEpoch = System.currentTimeMillis();
         store.save(profile);
 
-        String serverName   = AuthConfig.SERVER_DISPLAY_NAME.get();
-        String displayName  = profile.displayName != null ? profile.displayName : profile.username;
+        String serverName  = AuthConfig.SERVER_DISPLAY_NAME.get();
+        String displayName = profile.displayName != null ? profile.displayName : profile.username;
 
         if (profile.getAccountType() == PlayerProfile.AccountType.PREMIUM) {
             send(player, TextUtil.PREFIX + "§a✦ Verified — welcome, " + displayName + "§a!");
-        } else if (isNewAccount) {
-            send(player, TextUtil.PREFIX + "§aAccount created! Welcome to §6" + serverName + "§a!");
-            send(player, TextUtil.PREFIX + "§7Use §a/setdisplayname <name>§7 to choose your display name.");
-            send(player, TextUtil.PREFIX + "§7Use §a/setbio <text>§7 to write a short bio.");
         } else {
             send(player, TextUtil.PREFIX + "§aLogged in. Welcome back, §f" + displayName + "§a!");
         }
@@ -307,8 +634,6 @@ public class AuthManager {
             sendWelcomeTitle(player, displayName, serverName);
         }
 
-        // Deferred Discord + Obsidian hook for offline players who just /login'd
-        // (premium players fire this in PlayerAuthEvents.onPlayerJoin immediately)
         if (profile.getAccountType() == PlayerProfile.AccountType.OFFLINE) {
             com.coffeesaerosmp.auth.events.PlayerAuthEvents.onOfflinePlayerAuthenticated(player);
         }
@@ -320,13 +645,11 @@ public class AuthManager {
             Component.literal("§6§l" + serverName)));
         player.connection.send(new ClientboundSetSubtitleTextPacket(
             Component.literal("§eYour adventure begins now ✈")));
-
         send(player, "§6§l╔═══════════════════════════╗");
         send(player, "§6§l║  §e✈ Welcome aboard, pilot!  §6§l║");
         send(player, "§6§l║  §7The #1 Create: Aeronautics  §6§l║");
         send(player, "§6§l║  §7experience in Asia.         §6§l║");
         send(player, "§6§l╚═══════════════════════════╝");
-        // Intro cutscene hook — resource pack animation plays here (TODO: wire up when RP is ready)
     }
 
     private void sendWelcomeTitle(ServerPlayer player, String displayName, String serverName) {
@@ -347,40 +670,58 @@ public class AuthManager {
         return authStates.getOrDefault(uuid, AuthState.PENDING);
     }
 
-    /** Explicitly invalidates a player's session token — called by /logout and admin password reset. */
     public void invalidateSessionToken(UUID uuid) {
         sessionTokens.invalidate(uuid);
     }
 
-    /** Returns frozen join position for authenticated players (used by watchdog movement check). */
     public double[] getFrozenPositionIfPresent(UUID uuid) {
         return frozenPos.get(uuid);
     }
 
-    /** Count of players who have joined but not yet authenticated (used by health monitor). */
     public int getUnauthenticatedCount() {
         int n = 0;
         for (AuthState s : authStates.values()) if (s != AuthState.AUTHENTICATED) n++;
         return n;
     }
 
-    /** Count of fully authenticated players (used by Obsidian peak-player tracking). */
     public int getAuthenticatedCount() {
         int n = 0;
         for (AuthState s : authStates.values()) if (s == AuthState.AUTHENTICATED) n++;
         return n;
     }
 
-    /** UUIDs of all currently authenticated players (used by Obsidian connection graph). */
     public List<UUID> getAuthenticatedUUIDs() {
         List<UUID> uuids = new java.util.ArrayList<>();
         authStates.forEach((uuid, state) -> { if (state == AuthState.AUTHENTICATED) uuids.add(uuid); });
         return uuids;
     }
 
-    public ProfileStore getStore() { return store; }
+    public CredentialStore getStore() { return store; }
 
     public DisplayNameManager getDisplayNames() { return displayNames; }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    public static boolean isLobbyState(AuthState state) {
+        return state == AuthState.LOBBY_REGISTER
+            || state == AuthState.LOBBY_NAMING
+            || state == AuthState.LOBBY_PENDING;
+    }
+
+    private static boolean isMojangUsername(String name) {
+        try {
+            URL url = new URL("https://api.mojang.com/users/profiles/minecraft/" + name);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("GET");
+            conn.setConnectTimeout(3000);
+            conn.setReadTimeout(3000);
+            int code = conn.getResponseCode();
+            conn.disconnect();
+            return code == 200;
+        } catch (Exception e) {
+            return false; // fail open — can't verify, allow
+        }
+    }
 
     private void send(ServerPlayer player, String msg) {
         player.sendSystemMessage(Component.literal(msg));

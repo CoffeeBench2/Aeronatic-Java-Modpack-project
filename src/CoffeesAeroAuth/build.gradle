@@ -7,6 +7,10 @@ java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 group   = project.mod_group_id
 version = project.mod_version
 
+repositories {
+    mavenCentral()
+}
+
 neoForge {
     version = project.neoforge_version
 
@@ -23,6 +27,12 @@ neoForge {
             sourceSet(sourceSets.main)
         }
     }
+}
+
+dependencies {
+    // Embedded in the JAR via NeoForge JarJar — no external install needed
+    jarJar(implementation("com.zaxxer:HikariCP:5.1.0"))
+    jarJar(implementation("com.mysql:mysql-connector-j:8.3.0"))
 }
 
 tasks.withType(JavaCompile).configureEach {

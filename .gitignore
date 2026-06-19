@@ -1,2 +1,21 @@
-﻿.obsidian/workspace.json
+.obsidian/workspace.json
 .obsidian/cache
+
+# Gradle build output / cache (custom mods)
+build/
+.gradle/
+
+# Local test server — contains world data, logs, and forwarding secrets. Never commit.
+/server-test/
+
+# Pack build artifacts
+*.mrpack
+client-mods-temp/
+client-mods-temp.zip
+nf_versions.json
+
+# Secrets — only the .env.example template is committed
+.env
+
+# IDE
+*.iml

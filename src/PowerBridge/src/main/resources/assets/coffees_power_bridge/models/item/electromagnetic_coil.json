@@ -1,6 +1,0 @@
-{
-  "parent": "item/generated",
-  "textures": {
-    "layer0": "coffees_power_bridge:item/electromagnetic_coil"
-  }
-}

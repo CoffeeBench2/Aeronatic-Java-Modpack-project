@@ -2,6 +2,7 @@ package com.coffeesaerosmp.auth.commands;
 
 import com.coffeesaerosmp.auth.CoffeesAeroAuth;
 import com.coffeesaerosmp.auth.db.PlayerProfile;
+import com.coffeesaerosmp.auth.lobby.NameApprovalQueue;
 import com.coffeesaerosmp.auth.util.TextUtil;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -27,16 +28,6 @@ public class ProfileCommands {
             .executes(ctx -> showProfile(ctx.getSource(), null))
             .then(Commands.argument("player", EntityArgument.player())
                 .executes(ctx -> showProfile(ctx.getSource(), EntityArgument.getPlayer(ctx, "player")))
-            )
-        );
-
-        // /setdisplayname <name>
-        dispatcher.register(Commands.literal("setdisplayname")
-            .then(Commands.argument("name", StringArgumentType.word())
-                .executes(ctx -> {
-                    ServerPlayer player = ctx.getSource().getPlayerOrException();
-                    return setDisplayName(player, StringArgumentType.getString(ctx, "name"));
-                })
             )
         );
 
@@ -84,6 +75,25 @@ public class ProfileCommands {
             .then(Commands.literal("obsidianreport")
                 .executes(ctx -> obsidianReport(ctx.getSource()))
             )
+            // ── Name approval queue ──────────────────────────────────────────
+            .then(Commands.literal("queue")
+                .executes(ctx -> adminQueue(ctx.getSource()))
+            )
+            .then(Commands.literal("approve")
+                .then(Commands.argument("playerName", StringArgumentType.word())
+                    .executes(ctx -> adminApprove(ctx.getSource(), StringArgumentType.getString(ctx, "playerName")))
+                )
+            )
+            .then(Commands.literal("reject")
+                .then(Commands.argument("playerName", StringArgumentType.word())
+                    .then(Commands.argument("reason", StringArgumentType.greedyString())
+                        .executes(ctx -> adminReject(
+                            ctx.getSource(),
+                            StringArgumentType.getString(ctx, "playerName"),
+                            StringArgumentType.getString(ctx, "reason")))
+                    )
+                )
+            )
         );
     }
 
@@ -120,20 +130,6 @@ public class ProfileCommands {
             source.sendFailure(Component.literal("§cAn error occurred."));
             return 0;
         }
-    }
-
-    private static int setDisplayName(ServerPlayer player, String name) {
-        if (!requireAuth(player)) return 0;
-        PlayerProfile profile = CoffeesAeroAuth.AUTH_MANAGER.getStore().get(player.getUUID());
-        if (profile == null) return 0;
-
-        String error = CoffeesAeroAuth.AUTH_MANAGER.getDisplayNames().trySetDisplayName(profile, name);
-        if (error != null) {
-            player.sendSystemMessage(TextUtil.error(error));
-            return 0;
-        }
-        player.sendSystemMessage(TextUtil.success("Display name set to §f" + name + "§a."));
-        return 1;
     }
 
     private static int setBio(ServerPlayer player, String bio) {
@@ -240,6 +236,64 @@ public class ProfileCommands {
         }
         CoffeesAeroAuth.WATCHDOG.getIpBanManager().clearBan(ip);
         source.sendSuccess(() -> Component.literal("§aBan cleared for IP: §f" + ip), true);
+        return 1;
+    }
+
+    private static int adminQueue(CommandSourceStack source) {
+        if (CoffeesAeroAuth.APPROVAL_QUEUE == null) {
+            source.sendFailure(Component.literal("§cApproval queue not active."));
+            return 0;
+        }
+        java.util.Map<java.util.UUID, NameApprovalQueue.PendingEntry> pending =
+            CoffeesAeroAuth.APPROVAL_QUEUE.getPending();
+        if (pending.isEmpty()) {
+            source.sendSuccess(() -> Component.literal("§a[Queue] No pending name approvals."), false);
+            return 1;
+        }
+        StringBuilder sb = new StringBuilder("§6[Queue] §ePending name approvals:\n");
+        for (NameApprovalQueue.PendingEntry entry : pending.values()) {
+            sb.append("  §f").append(entry.mcName())
+              .append(" §7→ §a").append(entry.proposedName())
+              .append("\n    §8/authmod approve ").append(entry.mcName())
+              .append("  |  /authmod reject ").append(entry.mcName()).append(" <reason>\n");
+        }
+        source.sendSuccess(() -> Component.literal(sb.toString().trim()), false);
+        return 1;
+    }
+
+    private static int adminApprove(CommandSourceStack source, String playerName) {
+        if (CoffeesAeroAuth.APPROVAL_QUEUE == null) {
+            source.sendFailure(Component.literal("§cApproval queue not active."));
+            return 0;
+        }
+        if (CoffeesAeroAuth.WATCHDOG != null) {
+            try { CoffeesAeroAuth.WATCHDOG.recordAdminCommand(source.getPlayerOrException(), "authmod approve " + playerName); }
+            catch (Exception ignored) {}
+        }
+        boolean done = CoffeesAeroAuth.APPROVAL_QUEUE.adminApprove(playerName);
+        if (!done) {
+            source.sendFailure(Component.literal("§cNo pending entry found for §f" + playerName + "§c. Use /authmod queue to list."));
+            return 0;
+        }
+        source.sendSuccess(() -> Component.literal("§aApproved display name for §f" + playerName + "§a."), true);
+        return 1;
+    }
+
+    private static int adminReject(CommandSourceStack source, String playerName, String reason) {
+        if (CoffeesAeroAuth.APPROVAL_QUEUE == null) {
+            source.sendFailure(Component.literal("§cApproval queue not active."));
+            return 0;
+        }
+        if (CoffeesAeroAuth.WATCHDOG != null) {
+            try { CoffeesAeroAuth.WATCHDOG.recordAdminCommand(source.getPlayerOrException(), "authmod reject " + playerName); }
+            catch (Exception ignored) {}
+        }
+        boolean done = CoffeesAeroAuth.APPROVAL_QUEUE.adminReject(playerName, reason);
+        if (!done) {
+            source.sendFailure(Component.literal("§cNo pending entry found for §f" + playerName + "§c. Use /authmod queue to list."));
+            return 0;
+        }
+        source.sendSuccess(() -> Component.literal("§aRejected name for §f" + playerName + "§a. Reason: §e" + reason), true);
         return 1;
     }
 

@@ -105,39 +105,5 @@
 				}
 			}]
 		}
-		{
-			x: 2.0d
-			y: 2.0d
-			shape: "circle"
-			id: "1200000000000030"
-			dependencies: ["1200000000000002"]
-			title: "Power Bridge"
-			subtitle: "Connect FE and Create"
-			description: [
-				"The Coffees Power Bridge mod lets you convert between Forge Energy (FE)",
-				"and Create's rotational power (SU).",
-				"",
-				"FE Electric Motor — feed FE in, get a spinning shaft out.",
-				"Kinetic Dynamo    — spin a shaft, generate FE for IE wire networks.",
-				"",
-				"Build an FE Electric Motor to start bridging your power systems."
-			]
-			tasks: [{
-				id: "1200000000000031"
-				type: "item"
-				item: {
-					id: "coffees_power_bridge:fe_motor"
-					Count: 1
-				}
-			}]
-			rewards: [{
-				id: "1200000000000032"
-				type: "item"
-				item: {
-					id: "coffees_power_bridge:kinetic_dynamo"
-					Count: 1
-				}
-			}]
-		}
 	]
 }

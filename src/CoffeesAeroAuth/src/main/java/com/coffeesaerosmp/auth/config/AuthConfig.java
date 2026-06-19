@@ -10,6 +10,16 @@ public class AuthConfig {
     public static final ModConfigSpec.BooleanValue KICK_ON_NAME_CONFLICT;
     public static final ModConfigSpec.IntValue     MAX_FAILED_ATTEMPTS;
     public static final ModConfigSpec.BooleanValue BYPASS_AUTH_FOR_OPS;
+
+    // ── Velocity proxy bridge ──────────────────────────────────────────────────
+    public static final ModConfigSpec.ConfigValue<String>  VELOCITY_SHARED_SECRET;
+    public static final ModConfigSpec.IntValue     TYPE_RESOLVE_TIMEOUT_SECONDS;
+    public static final ModConfigSpec.BooleanValue TRUST_FORWARDED_UUID;
+
+    // ── Name approval / private room ──────────────────────────────────────────
+    public static final ModConfigSpec.IntValue     AUTO_APPROVE_MINUTES;
+    public static final ModConfigSpec.ConfigValue<String>  BANNED_WORDS;
+
     public static final ModConfigSpec.ConfigValue<String>  RESOURCE_PACK_URL;
     public static final ModConfigSpec.ConfigValue<String>  RESOURCE_PACK_HASH;
     public static final ModConfigSpec.ConfigValue<String>  SERVER_DISPLAY_NAME;
@@ -68,6 +78,24 @@ public class AuthConfig {
         BYPASS_AUTH_FOR_OPS = b
             .comment("Let server operators (level 4) skip auth — useful during initial setup only.")
             .define("bypassAuthForOps", false);
+        VELOCITY_SHARED_SECRET = b
+            .comment("Shared secret that AeroVelocity must echo in its aerosmp:player_type message (set AERO_FORWARDING_SECRET on the proxy to match).",
+                     "If blank, premium/cracked signals are trusted without verification — LOCAL TESTING ONLY. Set this on any public server.")
+            .define("velocityForwardingSecret", "");
+        TYPE_RESOLVE_TIMEOUT_SECONDS = b
+            .comment("Seconds to wait for the proxy's premium/cracked signal before assuming offline (e.g. a direct, non-proxied connection). 0 = wait forever.")
+            .defineInRange("typeResolveTimeoutSeconds", 8, 0, 120);
+        TRUST_FORWARDED_UUID = b
+            .comment("Read premium/offline directly from the forwarded UUID version (v4=premium, v3=offline) instead of waiting for the aerosmp:player_type plugin message.",
+                     "Enable ONLY once Velocity modern forwarding (NeoVelocity) is verified AND the backend game port is firewalled to the proxy IP — otherwise a direct connection could present a v4 UUID and skip auth.",
+                     "false = use the plugin-message route (the proven fallback). This is the safe default until NeoVelocity is confirmed on the live stack.")
+            .define("trustForwardedUuid", false);
+        AUTO_APPROVE_MINUTES = b
+            .comment("Minutes before an unreviewed display name is auto-approved. 0 = never auto-approve.")
+            .defineInRange("autoApproveMinutes", 10, 0, 1440);
+        BANNED_WORDS = b
+            .comment("Comma-separated words that trigger auto-rejection of display names.")
+            .define("bannedWords", "admin,moderator,staff,owner");
         b.pop();
 
         b.comment("Resource Pack").push("resourcepack");

@@ -1,132 +1,87 @@
-Coffees Aero SMP — Mod List
-============================
-Minecraft 1.21.1 | NeoForge 21.1.230
-Total: 71 mods + 2 custom
-Last updated: 2026-05-27
+Aero Server — Mod List
+Generated: 2026-05-30
+Total: 71 mods + 2 custom = 73
+MC 1.21.1 | NeoForge 21.1.230
+=====================================
 
-----------------------------------------------------------------
-CREATE ECOSYSTEM
-----------------------------------------------------------------
- 1. create-1.21.1-6.0.10.jar
- 2. create-aeronautics-bundled-1.21.1-1.2.1.jar
- 3. sable-neoforge-1.21.1-1.2.2.jar
+ 1. Analog-Audio-0.1.0-beta.4.jar
+ 2. BetterPingDisplay-1.21.1-1.1.jar
+ 3. Controlling-neoforge-1.21.1-19.0.5.jar
  4. CreateNumismatics-1.0.20+neoforge-mc1.21.1.jar
- 5. cwb-neoforge-3.0.0+mc1.21.jar
- 6. copycats-3.0.4+mc.1.21.1-neoforge.jar
- 7. sliceanddice-forge-4.2.4.jar
- 8. emi_create_schematics-1.1.0.jar
-
-----------------------------------------------------------------
-AERONAUTICS
-----------------------------------------------------------------
- 9. aero_cam_sync-1.2.0.jar
-10. vista-neoforge-1.21.1-4.3.1.jar
-
-----------------------------------------------------------------
-PERFORMANCE & GRAPHICS
-----------------------------------------------------------------
-11. sodium-neoforge-0.6.13+mc1.21.1.jar
-12. sodium-extra-neoforge-0.6.0+mc1.21.1.jar
-13. reeses-sodium-options-neoforge-1.8.3+mc1.21.4.jar
-14. sodiumdynamiclights-neoforge-1.0.10-1.21.1.jar
-15. iris-neoforge-1.8.12+mc1.21.1.jar
-16. modernfix-neoforge-5.27.7+mc1.21.1.jar
-17. ferritecore-7.0.3-neoforge.jar
-18. entityculling-neoforge-1.10.2-mc1.21.1.jar
-19. moreculling-neoforge-1.21.1-1.0.7.jar
-20. ImmediatelyFast-NeoForge-1.6.10+1.21.1.jar
-21. dynamic-fps-3.11.4+minecraft-1.21.0-neoforge.jar
-22. c2me-neoforge-mc1.21.1-0.3.0+alpha.0.91.jar
-23. DistantHorizons-3.0.3-b-1.21.1-fabric-neoforge.jar
-
-----------------------------------------------------------------
-APIS & LIBRARIES
-----------------------------------------------------------------
-24. architectury-13.0.8-neoforge.jar
-25. cloth-config-15.0.140-neoforge.jar
-26. kotlinforforge-5.11.0-all.jar
-27. moonlight-neoforge-1.21.1-3.0.7.jar
-28. yet_another_config_lib_v3-3.8.2+1.21.1-neoforge.jar
-29. fzzy_config-0.7.6+1.21+neoforge.jar
-30. forgified-fabric-api-0.116.7+2.2.4+1.21.1.jar
-31. connector-2.0.0-beta.14+1.21.1-full.jar
-32. polytone-1.21-3.6.7-neoforge.jar
-33. coroutil-neoforge-1.21.0-1.3.8.jar
-34. konkrete_neoforge_1.9.9_MC_1.21.jar
-
-----------------------------------------------------------------
-RECIPE / INFO / UI
-----------------------------------------------------------------
-35. emi-1.1.23+1.21.1+neoforge.jar
+ 5. DistantHorizons-3.0.3-b-1.21.1-fabric-neoforge.jar
+ 6. FarmersDelight-1.21.1-1.3.1.jar
+ 7. ImmediatelyFast-NeoForge-1.6.10+1.21.1.jar
+ 8. Jade-1.21.1-NeoForge-15.10.5.jar
+ 9. JadeAddons-1.21.1-NeoForge-6.1.0.jar
+10. JustEnoughResources-NeoForge-1.21.1-1.6.0.17.jar
+11. LongerChatHistory-neoforge-1.7.jar
+12. MouseTweaks-neoforge-mc1.21-2.26.1.jar
+13. MyNethersDelight-1.21.1-1.10.2.jar
+14. NoChatReports-NEOFORGE-1.21.1-v2.9.1.jar
+15. Searchables-neoforge-1.21.1-1.0.2.jar
+16. SimpleDiscordRichPresence-neoforge-88.0.1-build.54+mc1.21.1.jar
+17. aero_cam_sync-1.2.0.jar
+18. appleskin-neoforge-mc1.21-3.0.9.jar
+19. architectury-13.0.8-neoforge.jar
+20. autoreconnectrf-neoforge-2.0.1+1.21.1.jar
+21. c2me-neoforge-mc1.21.1-0.3.0+alpha.0.91.jar
+22. chat_heads-0.15.1-neoforge-1.21.jar
+23. chatanimation-neoforge-1.21.1-1.1.3.jar
+24. cloth-config-15.0.140-neoforge.jar
+25. connector-2.0.0-beta.14+1.21.1-full.jar
+26. continuity-3.0.0+1.21.neoforge.jar
+27. copycats-3.0.4+mc.1.21.1-neoforge.jar
+28. coroutil-neoforge-1.21.0-1.3.8.jar
+29. create-1.21.1-6.0.10.jar
+30. create-aeronautics-bundled-1.21.1-1.2.1.jar
+31. cwb-neoforge-3.0.0+mc1.21.jar
+32. dynamic-fps-3.11.4+minecraft-1.21.0-neoforge.jar
+33. ears-neoforge-1.21-1.4.7.jar
+34. emi-1.1.23+1.21.1+neoforge.jar
+35. emi_create_schematics-1.1.0.jar
 36. emi_enchanting-0.1.2+1.21+neoforge.jar
 37. emi_loot-0.7.9+1.21+neoforge.jar
-38. jei-1.21.1-neoforge-19.27.0.340.jar
-39. JustEnoughResources-NeoForge-1.21.1-1.6.0.17.jar
-40. Jade-1.21.1-NeoForge-15.10.5.jar
-41. JadeAddons-1.21.1-NeoForge-6.1.0.jar
+38. ends_delight-2.5.1+neoforge.1.21.1.jar
+39. entityculling-neoforge-1.10.2-mc1.21.1.jar
+40. fancymenu_neoforge_3.9.0_MC_1.21.1.jar
+41. ferritecore-7.0.3-neoforge.jar
+42. forgified-fabric-api-0.116.7+2.2.4+1.21.1.jar
+43. fzzy_config-0.7.6+1.21+neoforge.jar
+44. iris-neoforge-1.8.12+mc1.21.1.jar
+45. jei-1.21.1-neoforge-19.27.0.340.jar
+46. konkrete_neoforge_1.9.9_MC_1.21.jar
+47. kotlinforforge-5.11.0-all.jar
+48. melody_neoforge_1.0.10_MC_1.21.jar
+49. modernfix-neoforge-5.27.7+mc1.21.1.jar
+50. moonlight-neoforge-1.21.1-3.0.7.jar
+51. moreculling-neoforge-1.21.1-1.0.7.jar
+52. moredelight-26.04.30-1.21-neoforge.jar
+53. oceansdelight-neoforge-1.0.4-1.21.1.jar
+54. ok_zoomer-neo-10.0.0-beta.13.jar
+55. polytone-1.21-3.6.7-neoforge.jar
+56. reeses-sodium-options-neoforge-1.8.3+mc1.21.4.jar
+57. rrls-5.0.10+mc1.21.1-forge.jar
+58. sable-neoforge-1.21.1-1.2.2.jar
+59. sittingplus-2.0.6-1.21.1-FABRIC.jar
+60. sliceanddice-forge-4.2.4.jar
+61. sodium-extra-neoforge-0.6.0+mc1.21.1.jar
+62. sodium-neoforge-0.6.13+mc1.21.1.jar
+63. sodiumdynamiclights-neoforge-1.0.10-1.21.1.jar
+64. staaaaaaaaaaaack-neoforge-1.21.1-1.8.jar
+65. vista-neoforge-1.21.1-4.3.1.jar
+66. voicechat-neoforge-1.21.1-2.6.17.jar
+67. watut-neoforge-1.21.0-1.2.7.jar
+68. xaerominimap-neoforge-1.21.1-25.3.13.jar
+69. xaeroworldmap-neoforge-1.21.1-1.40.16.jar
+70. yeetusexperimentus-neoforge-87.0.0.jar
+71. yet_another_config_lib_v3-3.8.2+1.21.1-neoforge.jar
 
-----------------------------------------------------------------
-QOL & GAMEPLAY
-----------------------------------------------------------------
-42. appleskin-neoforge-mc1.21-3.0.9.jar
-43. MouseTweaks-neoforge-mc1.21-2.26.1.jar
-44. Controlling-neoforge-1.21.1-19.0.5.jar
-45. Searchables-neoforge-1.21.1-1.0.2.jar
-46. ok_zoomer-neo-10.0.0-beta.13.jar
-47. staaaaaaaaaaaack-neoforge-1.21.1-1.8.jar
-48. sit-1.21.1-1.4.jar
-49. watut-neoforge-1.21.0-1.2.7.jar
-50. ears-neoforge-1.21-1.4.7.jar
+--- CUSTOM (THIS PACK) ---
+C1. CoffeesAeroCore-1.0.0.jar       [client: title screen + auto-connect]
+C2. CoffeesAeroAuth-1.0.0.jar       [server: auth, lobby rooms, watchdog]
 
-----------------------------------------------------------------
-NAVIGATION
-----------------------------------------------------------------
-51. xaerominimap-neoforge-1.21.1-25.3.13.jar
-52. xaeroworldmap-neoforge-1.21.1-1.40.16.jar
-
-----------------------------------------------------------------
-CHAT & SOCIAL
-----------------------------------------------------------------
-53. chat_heads-0.15.1-neoforge-1.21.jar
-54. chatanimation-neoforge-1.21.1-1.1.3.jar
-55. BetterPingDisplay-1.21.1-1.1.jar
-56. LongerChatHistory-neoforge-1.7.jar
-57. voicechat-neoforge-1.21.1-2.6.17.jar
-58. SimpleDiscordRichPresence-neoforge-88.0.1-build.54+mc1.21.1.jar
-
-----------------------------------------------------------------
-MULTIPLAYER / SERVER
-----------------------------------------------------------------
-59. NoChatReports-NEOFORGE-1.21.1-v2.9.1.jar
-60. autoreconnectrf-neoforge-2.0.1+1.21.1.jar
-61. yeetusexperimentus-neoforge-87.0.0.jar
-62. rrls-5.0.10+mc1.21.1-forge.jar
-
-----------------------------------------------------------------
-FOOD & COOKING
-----------------------------------------------------------------
-63. FarmersDelight-1.21.1-1.3.1.jar
-64. MyNethersDelight-1.21.1-1.10.2.jar
-65. ends_delight-2.5.1+neoforge.1.21.1.jar
-66. moredelight-26.04.30-1.21-neoforge.jar
-67. oceansdelight-neoforge-1.0.4-1.21.1.jar
-
-----------------------------------------------------------------
-MENUS & AUDIO
-----------------------------------------------------------------
-68. fancymenu_neoforge_3.9.0_MC_1.21.1.jar
-69. melody_neoforge_1.0.10_MC_1.21.jar
-70. Analog-Audio-0.1.0-beta.4.jar
-
-----------------------------------------------------------------
-VISUAL
-----------------------------------------------------------------
-71. continuity-3.0.0+1.21.neoforge.jar
-
-----------------------------------------------------------------
-CUSTOM (THIS PACK)
-----------------------------------------------------------------
-C1. CoffeesAeroCore-1.0.0.jar      [src/AeroCore/]
-C2. CoffeesPowerBridge-1.0.0.jar   [src/PowerBridge/]
-
-----------------------------------------------------------------
+--- STATUS (2026-05-30) ---
+All 68 community mods in overrides/mods. Total with custom: 70.
+Substitutions: sittingplus-2.0.6-1.21.1-FABRIC replaces sit-1.21.1-1.4
+Version variants (newer stable used): EMI 1.1.24, FancyMenu 3.9.1, JER 1.6.0.12, JadeAddons 6.0.1,
+  FarmersDelight 1.3.2, reeses-sodium-options 2.0.5+mc1.21.1, moredelight newer build

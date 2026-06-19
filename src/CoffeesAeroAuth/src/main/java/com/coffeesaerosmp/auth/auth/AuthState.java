@@ -1,7 +1,10 @@
 package com.coffeesaerosmp.auth.auth;
 
 public enum AuthState {
-    PENDING,      // offline player, has password, not yet logged in
-    REGISTERING,  // offline player, no password yet — waiting for /register
-    AUTHENTICATED // auth complete (premium auto-sets this on join)
+    AWAITING_TYPE,   // joined via proxy; frozen until AeroVelocity sends premium/cracked signal
+    PENDING,         // offline player, has account, needs /login
+    AUTHENTICATED,   // auth complete (premium auto-sets this on join)
+    LOBBY_REGISTER,  // in private room — no password yet, needs /register
+    LOBBY_NAMING,    // in private room — password set, needs /setname
+    LOBBY_PENDING,   // in private room — name submitted, waiting for admin approval
 }

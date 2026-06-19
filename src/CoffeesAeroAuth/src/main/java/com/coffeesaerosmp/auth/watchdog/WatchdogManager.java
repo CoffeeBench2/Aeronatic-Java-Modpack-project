@@ -11,9 +11,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -94,18 +91,11 @@ public class WatchdogManager {
     // ── Premium name index ────────────────────────────────────────────────────
 
     private void loadPremiumNames(ProfileStore store) {
-        try {
-            Files.list(store.profilesDir()).forEach(f -> {
-                try (var r = Files.newBufferedReader(f)) {
-                    com.google.gson.JsonObject obj = new com.google.gson.Gson().fromJson(r, com.google.gson.JsonObject.class);
-                    if (obj != null && "PREMIUM".equals(obj.get("accountType") != null ? obj.get("accountType").getAsString() : null)) {
-                        String name = obj.get("displayName") != null ? obj.get("displayName").getAsString() : null;
-                        if (name != null) normalizedPremiumNames.put(normalizeLookalike(name), name);
-                    }
-                } catch (Exception ignored) {}
-            });
-        } catch (IOException e) {
-            CoffeesAeroAuth.LOGGER.warn("Could not scan profiles for premium names", e);
+        for (com.coffeesaerosmp.auth.db.PlayerProfile p : store.getAll()) {
+            if (p.getAccountType() == com.coffeesaerosmp.auth.db.PlayerProfile.AccountType.PREMIUM
+                    && p.displayName != null) {
+                normalizedPremiumNames.put(normalizeLookalike(p.displayName), p.displayName);
+            }
         }
     }
 
@@ -115,6 +105,15 @@ public class WatchdogManager {
 
     public void removePremiumName(String displayName) {
         if (displayName != null) normalizedPremiumNames.remove(normalizeLookalike(displayName));
+    }
+
+    /** True if the given name exactly matches a known premium player's display name (case-insensitive). */
+    public boolean isPremiumDisplayName(String name) {
+        if (name == null) return false;
+        for (String premium : normalizedPremiumNames.values()) {
+            if (premium.equalsIgnoreCase(name)) return true;
+        }
+        return false;
     }
 
     // ── Threat Detection ─────────────────────────────────────────────────────
@@ -183,6 +182,11 @@ public class WatchdogManager {
             q.removeIf(f -> now - f.ts() > windowMs);
             checkLoginStorm(subnet, q);
         }
+    }
+
+    /** Audit-log a one-time display-name change (request / approval / rejection). */
+    public void recordNameChange(String detail) {
+        auditLog.log("NAME_CHANGE", detail);
     }
 
     /** Record a successful login. Handles trusted IP logic. */

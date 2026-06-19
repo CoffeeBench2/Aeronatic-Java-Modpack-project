@@ -69,5 +69,38 @@ public class AuthCommands {
                 return 1;
             })
         );
+
+        // /spawn — exit lobby room into main world (lobby dimension only)
+        dispatcher.register(Commands.literal("spawn")
+            .executes(ctx -> {
+                ServerPlayer player = ctx.getSource().getPlayerOrException();
+                CoffeesAeroAuth.AUTH_MANAGER.handleSpawn(player);
+                return 1;
+            })
+        );
+
+        // /changename <newName> — one-time post-approval display name change (authenticated only)
+        dispatcher.register(Commands.literal("changename")
+            .then(Commands.argument("newName", StringArgumentType.word())
+                .executes(ctx -> {
+                    ServerPlayer player = ctx.getSource().getPlayerOrException();
+                    CoffeesAeroAuth.AUTH_MANAGER.handleChangeName(
+                        player, StringArgumentType.getString(ctx, "newName"));
+                    return 1;
+                })
+            )
+        );
+
+        // /setname <displayName> — lobby only: pick a display name for approval
+        dispatcher.register(Commands.literal("setname")
+            .then(Commands.argument("displayName", StringArgumentType.word())
+                .executes(ctx -> {
+                    ServerPlayer player = ctx.getSource().getPlayerOrException();
+                    CoffeesAeroAuth.AUTH_MANAGER.handleSetName(
+                        player, StringArgumentType.getString(ctx, "displayName"));
+                    return 1;
+                })
+            )
+        );
     }
 }
