@@ -422,7 +422,3 @@ metafile = true
 [[files]]
 file = "overrides/mods/CoffeesAeroCore-1.0.0.jar"
 hash = "bb4e0f84c16237adaca6430826bcfbfa01989f528562bbd79b039b1fd3e6476a"
-
-[[files]]
-file = "overrides/mods/CoffeesPowerBridge-1.0.0.jar"
-hash = "b59dc15b87598efefcc9fcaff3fa4a719511970cbeb9081c38a7928111237e7d"
