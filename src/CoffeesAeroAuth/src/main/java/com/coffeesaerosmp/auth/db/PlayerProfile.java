@@ -17,6 +17,7 @@ public class PlayerProfile {
     public long   sessionStartEpoch; // set on auth, cleared on leave
     public String skinUrl;           // null = default skin
     public boolean firstJoinComplete; // true after first-join sequence plays
+    public boolean startupBonusGiven; // true after the one-time starter currency is granted on first /spawn
 
     // Transient: not serialized, computed on load
     public int     nameChangesUsed;  // lifetime counter — capped at 1; 0 = change still available
@@ -46,6 +47,7 @@ public class PlayerProfile {
         this.totalPlaytimeSeconds = 0;
         this.sessionStartEpoch   = 0;
         this.firstJoinComplete   = false;
+        this.startupBonusGiven    = false;
         this.nameApproved         = (type == AccountType.PREMIUM); // premium players auto-approved
         this.nameApprovalPending  = false;
         this.nameRejectionCount   = 0;

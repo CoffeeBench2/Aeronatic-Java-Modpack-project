@@ -104,8 +104,8 @@ public class MigrationRunner {
             "(uuid,username,display_name,account_type,password_hash,password_salt," +
             " name_approved,first_join,last_seen,total_playtime,bio,skin_url," +
             " name_approval_pending,pending_display_name,name_rejection_count," +
-            " name_changes_used,room_slot,room_created_at,first_join_complete)" +
-            " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)" +
+            " name_changes_used,room_slot,room_created_at,first_join_complete,startup_bonus_given)" +
+            " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)" +
             " ON DUPLICATE KEY UPDATE" +
             "  username=VALUES(username),display_name=VALUES(display_name)," +
             "  account_type=VALUES(account_type),password_hash=VALUES(password_hash)," +
@@ -116,7 +116,8 @@ public class MigrationRunner {
             "  name_rejection_count=VALUES(name_rejection_count)," +
             "  name_changes_used=VALUES(name_changes_used)," +
             "  room_slot=VALUES(room_slot),room_created_at=VALUES(room_created_at)," +
-            "  first_join_complete=VALUES(first_join_complete)";
+            "  first_join_complete=VALUES(first_join_complete)," +
+            "  startup_bonus_given=VALUES(startup_bonus_given)";
 
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             String username = str(o, "username", "unknown");
@@ -139,6 +140,7 @@ public class MigrationRunner {
             ps.setInt(17,    num(o, "roomSlot", -1));
             ps.setLong(18,   lng(o, "roomCreatedAt", 0));
             ps.setBoolean(19, bool(o, "firstJoinComplete", false));
+            ps.setBoolean(20, bool(o, "startupBonusGiven", true)); // existing/migrated players: no surprise bonus
             ps.executeUpdate();
         }
     }

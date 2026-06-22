@@ -135,10 +135,19 @@ public class AuthManager {
 
     private void enterPremiumFlow(ServerPlayer player, PlayerProfile profile, boolean isFirstJoin) {
         UUID uuid = player.getUUID();
-        // Premium: auto-authenticate immediately. onAuthenticated lifts the AWAITING_TYPE freeze.
+        // Premium players are Mojang-verified — auto-authenticated, no password.
         authStates.put(uuid, AuthState.AUTHENTICATED);
-        onAuthenticated(player, profile, false);
         com.coffeesaerosmp.auth.events.PlayerAuthEvents.onPremiumResolved(player, isFirstJoin);
+
+        if (!profile.firstJoinComplete) {
+            // First-ever join → orientation in their private lobby, then /spawn into the world.
+            routeToLobbyRoom(uuid, profile);
+            profile.sessionStartEpoch = System.currentTimeMillis();
+            store.save(profile);
+            sendLobbyOrientation(player, profile);
+        } else {
+            onAuthenticated(player, profile, false);   // returning premium → straight into the world
+        }
     }
 
     private void enterOfflineFlow(ServerPlayer player, PlayerProfile profile, String mcName) {
@@ -151,22 +160,22 @@ public class AuthManager {
         }
 
         if (profile.nameApproved) {
-            // Returning approved offline player — straight to /login
-            frozenPos.put(uuid, new double[]{player.getX(), player.getY(), player.getZ()});
-
             String ip = NetUtil.getPlayerIP(player);
             SessionTokenManager.TokenStatus tokenStatus = sessionTokens.check(uuid, ip);
             if (tokenStatus == SessionTokenManager.TokenStatus.VALID) {
+                // Within the reconnect grace window — resume right where they were.
                 authStates.put(uuid, AuthState.AUTHENTICATED);
                 onAuthenticated(player, profile, false);
                 send(player, TextUtil.PREFIX + "§aSession resumed — login skipped.");
             } else {
+                // Grace window passed (or IP changed) → send to the lobby room to /login, then /spawn.
                 if (tokenStatus == SessionTokenManager.TokenStatus.IP_CHANGED) {
                     sessionTokens.invalidate(uuid);
-                    send(player, TextUtil.PREFIX + "§eIP address changed — session invalidated. Please log in again.");
+                    send(player, TextUtil.PREFIX + "§eIP address changed — session invalidated.");
                 }
+                routeToLobbyRoom(uuid, profile);
                 authStates.put(uuid, AuthState.PENDING);
-                send(player, TextUtil.PREFIX + "§ePlease log in: §a/login <password>");
+                send(player, TextUtil.PREFIX + "§eWelcome back — please log in: §a/login <password>");
             }
 
         } else {
@@ -199,6 +208,67 @@ public class AuthManager {
         }
     }
 
+    /** Assigns a private-room slot (if needed) and queues the deferred teleport into it. */
+    private void routeToLobbyRoom(UUID uuid, PlayerProfile profile) {
+        if (profile.roomSlot < 0) {
+            profile.roomSlot      = CoffeesAeroAuth.ROOM_MANAGER != null
+                ? CoffeesAeroAuth.ROOM_MANAGER.assignSlot(uuid) : 0;
+            profile.roomCreatedAt = System.currentTimeMillis();
+            store.save(profile);
+        }
+        pendingLobbyTeleport.add(uuid);
+    }
+
+    /** Welcome shown to a premium player on their first-ever join while they wait in the lobby. */
+    private void sendLobbyOrientation(ServerPlayer player, PlayerProfile profile) {
+        String serverName  = AuthConfig.SERVER_DISPLAY_NAME.get();
+        String displayName = profile.displayName != null ? profile.displayName : profile.username;
+        player.connection.send(new ClientboundSetTitlesAnimationPacket(20, 80, 20));
+        player.connection.send(new ClientboundSetTitleTextPacket(Component.literal("§6§l" + serverName)));
+        player.connection.send(new ClientboundSetSubtitleTextPacket(
+            Component.literal("§aWelcome aboard, §f" + displayName + "§a!")));
+        send(player, TextUtil.PREFIX + "§aWelcome to §6" + serverName + "§a, §f" + displayName + "§a!");
+        send(player, TextUtil.PREFIX + "§eHave a look around the lobby, then type §a/spawn§e to enter the server.");
+        pushResourcePack(player);
+    }
+
+    /**
+     * One-time starter currency on first /spawn, paid as a mixed Numismatics wallet (greedy "change":
+     * cog=64, sprocket=16, bevel=8, spur=1 — e.g. 200 → 3 cogs + 1 bevel). No-op if Numismatics is absent.
+     */
+    private void grantStartupBonus(ServerPlayer player) {
+        int amount = AuthConfig.STARTUP_BONUS_SPURS.get();
+        if (amount <= 0) return;
+        int[]    values = {64, 16, 8, 1};
+        String[] coins  = {"cog", "sprocket", "bevel", "spur"};
+        boolean gaveAny = false;
+        int remaining = amount;
+        for (int i = 0; i < values.length; i++) {
+            int count = remaining / values[i];
+            if (count <= 0) continue;
+            remaining -= count * values[i];
+            if (giveCoin(player, coins[i], count)) gaveAny = true;
+        }
+        if (gaveAny)
+            send(player, TextUtil.PREFIX + "§a✦ Welcome gift: §6" + amount + " spurs §ato get you started!");
+    }
+
+    /** Gives {@code count} of a Numismatics coin item, spilling to the ground if the inventory is full. */
+    private boolean giveCoin(ServerPlayer player, String coinName, int count) {
+        net.minecraft.world.item.Item item = net.minecraft.core.registries.BuiltInRegistries.ITEM.get(
+            net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("numismatics", coinName));
+        if (item == null || item == net.minecraft.world.item.Items.AIR) return false; // Numismatics absent
+        int max = new net.minecraft.world.item.ItemStack(item).getMaxStackSize();
+        int remaining = count;
+        while (remaining > 0) {
+            int n = Math.min(remaining, max);
+            net.minecraft.world.item.ItemStack stack = new net.minecraft.world.item.ItemStack(item, n);
+            if (!player.getInventory().add(stack)) player.drop(stack, false);
+            remaining -= n;
+        }
+        return true;
+    }
+
     private void pushResourcePack(ServerPlayer player) {
         String packUrl  = AuthConfig.RESOURCE_PACK_URL.get();
         String packHash = AuthConfig.RESOURCE_PACK_HASH.get();
@@ -220,6 +290,9 @@ public class AuthManager {
             profile.sessionStartEpoch = 0;
             store.save(profile);
         }
+        // Start the reconnect grace window from logout: a return within SESSION_GRACE_MINUTES skips
+        // login; after it, the session is expired and the player must /login again (in the lobby).
+        sessionTokens.touchOnLogout(uuid);
         authStates.remove(uuid);
         frozenPos.remove(uuid);
         joinTimes.remove(uuid);
@@ -232,6 +305,21 @@ public class AuthManager {
 
     public void onTick(ServerPlayer player) {
         UUID uuid = player.getUUID();
+
+        // Deferred lobby teleport (first tick after join) — runs even for AUTHENTICATED orientation
+        // players (premium first-join), so it precedes the isAuthenticated() early-return.
+        if (pendingLobbyTeleport.remove(uuid)) {
+            PlayerProfile profile = store.get(uuid);
+            if (profile != null && profile.roomSlot >= 0 && CoffeesAeroAuth.ROOM_MANAGER != null) {
+                CoffeesAeroAuth.ROOM_MANAGER.teleportToRoom(player, profile.roomSlot);
+                if (!isAuthenticated(uuid)) {   // offline lobby/login players stay frozen; premium roam free
+                    double[] pos = CoffeesAeroAuth.ROOM_MANAGER.getRoomSpawnPos(profile.roomSlot);
+                    frozenPos.put(uuid, pos);
+                }
+            }
+            return;
+        }
+
         if (isAuthenticated(uuid)) return;
 
         // Awaiting the proxy's premium/cracked signal — keep frozen, fall back to offline on timeout.
@@ -248,20 +336,6 @@ public class AuthManager {
                 }
             }
             return;
-        }
-
-        // Handle deferred lobby teleport (fires on first tick after join)
-        if (pendingLobbyTeleport.remove(uuid)) {
-            AuthState state = authStates.getOrDefault(uuid, AuthState.PENDING);
-            if (isLobbyState(state) && CoffeesAeroAuth.ROOM_MANAGER != null) {
-                PlayerProfile profile = store.get(uuid);
-                if (profile != null && profile.roomSlot >= 0) {
-                    CoffeesAeroAuth.ROOM_MANAGER.teleportToRoom(player, profile.roomSlot);
-                    double[] pos = CoffeesAeroAuth.ROOM_MANAGER.getRoomSpawnPos(profile.roomSlot);
-                    frozenPos.put(uuid, pos);
-                }
-            }
-            return; // skip rest of tick this frame
         }
 
         // Auth timeout (PENDING state only)
@@ -597,6 +671,16 @@ public class AuthManager {
         if (CoffeesAeroAuth.ROOM_MANAGER != null) {
             CoffeesAeroAuth.ROOM_MANAGER.teleportToSpawn(player);
         }
+        // First time entering the world → one-time starter currency + mark first-join complete.
+        PlayerProfile profile = store.get(uuid);
+        if (profile != null) {
+            if (!profile.startupBonusGiven) {
+                grantStartupBonus(player);
+                profile.startupBonusGiven = true;
+            }
+            profile.firstJoinComplete = true;
+            store.save(profile);
+        }
         String serverName = AuthConfig.SERVER_DISPLAY_NAME.get();
         send(player, TextUtil.PREFIX + "§a✈ Welcome to §6§l" + serverName + "§a!");
         return true;
@@ -636,6 +720,11 @@ public class AuthManager {
 
         if (profile.getAccountType() == PlayerProfile.AccountType.OFFLINE) {
             com.coffeesaerosmp.auth.events.PlayerAuthEvents.onOfflinePlayerAuthenticated(player);
+        }
+
+        // Logged in inside the lobby (expired-session return) → guide them out via /spawn.
+        if (player.level().dimension() == com.coffeesaerosmp.auth.lobby.PrivateRoomManager.LOBBY_DIMENSION) {
+            send(player, TextUtil.PREFIX + "§eType §a/spawn§e to enter the server.");
         }
     }
 

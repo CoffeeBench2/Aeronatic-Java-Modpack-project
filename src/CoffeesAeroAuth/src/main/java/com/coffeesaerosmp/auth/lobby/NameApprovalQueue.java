@@ -29,6 +29,7 @@ public class NameApprovalQueue {
     private final Map<UUID, PendingEntry> pending = new ConcurrentHashMap<>();
     private final ProfileStore  store;
     private final WebhookQueue  webhooks;
+    private final com.coffeesaerosmp.auth.discord.DiscordRest discordRest;
     private final MinecraftServer server;
     private final PrivateRoomManager rooms;
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
@@ -38,9 +39,11 @@ public class NameApprovalQueue {
     });
 
     public NameApprovalQueue(ProfileStore store, WebhookQueue webhooks,
+                              com.coffeesaerosmp.auth.discord.DiscordRest discordRest,
                               MinecraftServer server, PrivateRoomManager rooms) {
         this.store   = store;
         this.webhooks = webhooks;
+        this.discordRest = discordRest;
         this.server  = server;
         this.rooms   = rooms;
     }
@@ -236,6 +239,25 @@ public class NameApprovalQueue {
 
     private void postDiscordPending(String mcName, String proposedName, UUID uuid) {
         if (!AuthConfig.DISCORD_ENABLED.get()) return;
+
+        // Preferred: bot message with Approve/Reject BUTTONS in the moderation channel.
+        String channelId = AuthConfig.DISCORD_WATCHDOG_CHANNEL_ID.get();
+        if (discordRest != null && discordRest.isConfigured() && !channelId.isBlank()) {
+            String json = "{"
+                + "\"embeds\":[{\"title\":\"🔔 Name Approval Required\",\"color\":16776960,\"fields\":["
+                +   "{\"name\":\"Player\",\"value\":\"" + jesc(mcName) + "\",\"inline\":true},"
+                +   "{\"name\":\"Requested Name\",\"value\":\"" + jesc(proposedName) + "\",\"inline\":true},"
+                +   "{\"name\":\"UUID\",\"value\":\"" + jesc(uuid.toString()) + "\",\"inline\":false}"
+                + "]}],"
+                + "\"components\":[{\"type\":1,\"components\":["
+                +   "{\"type\":2,\"style\":3,\"label\":\"Approve\",\"custom_id\":\"nameapprove:" + jesc(mcName) + "\"},"
+                +   "{\"type\":2,\"style\":4,\"label\":\"Reject\",\"custom_id\":\"namereject:" + jesc(mcName) + "\"}"
+                + "]}]}";
+            discordRest.postMessage(channelId, json);
+            return;
+        }
+
+        // Fallback: webhook embed with the text commands (no buttons).
         String url = AuthConfig.DISCORD_WEBHOOK_WATCHDOG.get();
         if (url.isBlank()) return;
         webhooks.enqueue(url, String.format("""
@@ -291,6 +313,10 @@ public class NameApprovalQueue {
         String raw = AuthConfig.BANNED_WORDS.get();
         if (raw == null || raw.isBlank()) return new String[0];
         return raw.split(",");
+    }
+
+    private static String jesc(String s) {
+        return s == null ? "" : s.replace("\\", "\\\\").replace("\"", "\\\"");
     }
 
     public void stop() {

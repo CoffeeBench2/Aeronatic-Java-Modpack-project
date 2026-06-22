@@ -33,6 +33,10 @@ dependencies {
     // Embedded in the JAR via NeoForge JarJar — no external install needed
     jarJar(implementation("com.zaxxer:HikariCP:5.1.0"))
     jarJar(implementation("com.mysql:mysql-connector-j:8.3.0"))
+
+    // log4j-core: shipped by Minecraft at runtime (2.22.1), needed at compile time for the
+    // Feature B console-mirror appender. compileOnly so it is NOT bundled into the mod jar.
+    compileOnly("org.apache.logging.log4j:log4j-core:2.22.1")
 }
 
 tasks.withType(JavaCompile).configureEach {

@@ -7,6 +7,8 @@ public class AuthConfig {
     public static final ModConfigSpec SERVER_SPEC;
 
     public static final ModConfigSpec.IntValue     AUTH_TIMEOUT_SECONDS;
+    public static final ModConfigSpec.IntValue     SESSION_GRACE_MINUTES;
+    public static final ModConfigSpec.IntValue     STARTUP_BONUS_SPURS;
     public static final ModConfigSpec.BooleanValue KICK_ON_NAME_CONFLICT;
     public static final ModConfigSpec.IntValue     MAX_FAILED_ATTEMPTS;
     public static final ModConfigSpec.BooleanValue BYPASS_AUTH_FOR_OPS;
@@ -51,6 +53,8 @@ public class AuthConfig {
     public static final ModConfigSpec.ConfigValue<String>  DISCORD_DIGEST_TIME;
     public static final ModConfigSpec.ConfigValue<String>  DISCORD_TO_MC_ROLE_ID;
     public static final ModConfigSpec.ConfigValue<String>  DISCORD_MILESTONE_HOURS;
+    public static final ModConfigSpec.ConfigValue<String>  DISCORD_ADMIN_CHANNEL_ID;
+    public static final ModConfigSpec.ConfigValue<String>  DISCORD_ADMIN_ROLE_ID;
 
     // ── Obsidian ──────────────────────────────────────────────────────────────
     public static final ModConfigSpec.BooleanValue OBSIDIAN_ENABLED;
@@ -69,6 +73,13 @@ public class AuthConfig {
         AUTH_TIMEOUT_SECONDS = b
             .comment("Seconds before an unauthenticated player is kicked. 0 = never kick.")
             .defineInRange("authTimeoutSeconds", 60, 0, 600);
+        SESSION_GRACE_MINUTES = b
+            .comment("Minutes after logout an offline player can reconnect (same IP) without re-logging in.",
+                     "Return after this window requires /login again. Default 20.")
+            .defineInRange("sessionGraceMinutes", 20, 0, 1440);
+        STARTUP_BONUS_SPURS = b
+            .comment("Starter Numismatics currency (spurs) granted once on a player's first /spawn. 0 = disabled.")
+            .defineInRange("startupBonusSpurs", 200, 0, 100000);
         KICK_ON_NAME_CONFLICT = b
             .comment("Kick offline players whose Minecraft username matches a verified player's display name.")
             .define("kickOnNameConflict", true);
@@ -165,6 +176,10 @@ public class AuthConfig {
             .define("discordToMcRoleId", "");
         DISCORD_MILESTONE_HOURS     = b.comment("Comma-separated playtime milestones (hours) for Discord announcements.")
             .define("milestoneHours", "1,5,10,50,100");
+        DISCORD_ADMIN_CHANNEL_ID    = b.comment("Channel ID for the admin console bridge (console mirror + commands from Discord).")
+            .define("adminConsoleChannelId", "");
+        DISCORD_ADMIN_ROLE_ID       = b.comment("Role ID allowed to use moderation buttons (approve/reject) and run console commands from Discord. Blank = no gating (LOCAL TESTING ONLY).")
+            .define("adminRoleId", "");
         b.pop();
 
         b.comment("Obsidian Integration — requires the Obsidian Local REST API community plugin").push("obsidian");

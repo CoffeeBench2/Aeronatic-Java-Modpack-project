@@ -31,6 +31,9 @@ public class PrivateRoomManager {
     // Room grid constants
     private static final int ROOM_BASE_X  = 1_000_000;
     private static final int ROOM_SPACING = 200;
+    private static final int PREVIEW_SLOT  = 9999;   // reserved admin /lobby preview room
+    private static final ResourceLocation LOBBY_TEMPLATE =
+        ResourceLocation.fromNamespaceAndPath("coffees_aero_auth", "lobby_room");
     private static final int FLOOR_Y      = 100;
     private static final int ROOM_W       = 15;
     private static final int ROOM_D       = 10;
@@ -96,6 +99,13 @@ public class PrivateRoomManager {
             Set.of(), 0.0f, 0.0f);
     }
 
+    /** Admin /lobby: drop into a reserved preview room, always rebuilt so design changes show. */
+    public void teleportToPreview(ServerPlayer player) {
+        builtRooms.remove(PREVIEW_SLOT);
+        usedSlots.add(PREVIEW_SLOT);
+        teleportToRoom(player, PREVIEW_SLOT);
+    }
+
     /** Returns the expected frozen position for a player in this slot (in the lobby dimension). */
     public double[] getRoomSpawnPos(int slot) {
         int baseX = ROOM_BASE_X + slot * ROOM_SPACING;
@@ -113,6 +123,9 @@ public class PrivateRoomManager {
         int bx = ROOM_BASE_X + slot * ROOM_SPACING;
         int by = FLOOR_Y;
         int bz = 0;
+
+        // Admin-authored template (saved via /lobby save) wins; otherwise build procedurally.
+        if (placeTemplate(level, bx, by, bz)) return;
 
         // Solid foundation (3 layers below floor — prevents void gap)
         for (int x = bx - 2; x < bx + ROOM_W + 2; x++) {
@@ -161,11 +174,17 @@ public class PrivateRoomManager {
             for (int y = by + 2; y <= by + 3; y++)
                 set(level, x, y, bz, Blocks.IRON_BARS.defaultBlockState());
 
-        // Vista TV: 3×3 black wool on south wall (z = bz + ROOM_D - 1) — panorama placeholder
-        for (int dx = 0; dx < 3; dx++)
+        // Vista TV: framed 3×3 screen on the south wall (z = bz + ROOM_D - 1).
+        // Screen stays BLACK_WOOL as a placeholder until the 360° spawn-pan video is wired into a Vista TV.
+        int tvZ = bz + ROOM_D - 1;
+        for (int dx = -1; dx <= 3; dx++)            // deepslate-tile frame border
+            for (int dy = 2; dy <= 6; dy++)
+                set(level, bx + 6 + dx, by + dy, tvZ, Blocks.DEEPSLATE_TILES.defaultBlockState());
+        for (int dx = 0; dx < 3; dx++)              // 3×3 screen
             for (int dy = 0; dy < 3; dy++)
-                set(level, bx + 6 + dx, by + 3 + dy, bz + ROOM_D - 1,
-                    Blocks.BLACK_WOOL.defaultBlockState());
+                set(level, bx + 6 + dx, by + 3 + dy, tvZ, Blocks.BLACK_WOOL.defaultBlockState());
+        set(level, bx + 5, by + 4, tvZ, Blocks.SEA_LANTERN.defaultBlockState());   // power lights
+        set(level, bx + 9, by + 4, tvZ, Blocks.SEA_LANTERN.defaultBlockState());
 
         // Chains hanging from ceiling (two symmetrical positions)
         set(level, bx + 5, by + ROOM_H - 2, bz + 5, Blocks.CHAIN.defaultBlockState());
@@ -190,7 +209,57 @@ public class PrivateRoomManager {
         set(level, bx + 2, by + 1, bz + 8, Blocks.TRAPPED_CHEST.defaultBlockState());
         set(level, bx + 12, by + 1, bz + 8, Blocks.TRAPPED_CHEST.defaultBlockState());
 
+        // Music station beneath the Vista TV — jukebox flanked by note blocks.
+        // (The Create: Aeronautics disc / looping chill track is the media piece, added later.)
+        set(level, bx + 7, by + 1, tvZ - 1, Blocks.JUKEBOX.defaultBlockState());
+        set(level, bx + 6, by + 1, tvZ - 1, Blocks.NOTE_BLOCK.defaultBlockState());
+        set(level, bx + 8, by + 1, tvZ - 1, Blocks.NOTE_BLOCK.defaultBlockState());
+
+        // Create-themed decor — graceful vanilla fallback if Create isn't present.
+        BlockState casing = createBlock("andesite_casing", Blocks.POLISHED_ANDESITE.defaultBlockState());
+        BlockState brass  = createBlock("brass_block",     Blocks.WAXED_COPPER_BLOCK.defaultBlockState());
+        for (int y = by + 1; y <= by + 4; y++) {          // andesite-casing corner pillars
+            set(level, bx + 1,          y, bz + 1,          casing);
+            set(level, bx + ROOM_W - 2, y, bz + 1,          casing);
+            set(level, bx + 1,          y, bz + ROOM_D - 2, casing);
+            set(level, bx + ROOM_W - 2, y, bz + ROOM_D - 2, casing);
+        }
+        for (int x = bx + 3; x <= bx + ROOM_W - 4; x += 3) // brass ceiling-beam accents
+            set(level, x, by + ROOM_H - 2, bz + 5, brass);
+
         CoffeesAeroAuth.LOGGER.info("[PrivateRoom] Built room for slot {} at X={}", slot, bx);
+    }
+
+    /** Places the saved lobby template at this room's foundation corner. False if no template saved. */
+    private boolean placeTemplate(ServerLevel level, int bx, int by, int bz) {
+        var opt = level.getStructureManager().get(LOBBY_TEMPLATE);
+        if (opt.isEmpty()) return false;
+        BlockPos origin = new BlockPos(bx - 2, by - 3, bz - 2);
+        opt.get().placeInWorld(level, origin, origin,
+            new net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings(),
+            level.getRandom(), 2);
+        return true;
+    }
+
+    /**
+     * Admin /lobby save: captures the current preview room as the template applied to EVERY player's
+     * lobby. Clears the built-room cache so existing rooms rebuild from the new template on next visit.
+     */
+    public boolean saveTemplate() {
+        ServerLevel level = server.getLevel(LOBBY_DIMENSION);
+        if (level == null) return false;
+        int bx = ROOM_BASE_X + PREVIEW_SLOT * ROOM_SPACING;
+        BlockPos start = new BlockPos(bx - 2, FLOOR_Y - 3, -2);
+        net.minecraft.core.Vec3i size = new net.minecraft.core.Vec3i(ROOM_W + 4, ROOM_H + 4, ROOM_D + 4);
+        var mgr = level.getStructureManager();
+        var t = mgr.getOrCreate(LOBBY_TEMPLATE);
+        t.fillFromWorld(level, start, size, true, null);
+        boolean ok = mgr.save(LOBBY_TEMPLATE);
+        if (ok) {
+            builtRooms.clear();   // force all rooms to rebuild from the new template
+            CoffeesAeroAuth.LOGGER.info("[PrivateRoom] Saved lobby template from preview room (X={}).", bx);
+        }
+        return ok;
     }
 
     // ── Room deletion ─────────────────────────────────────────────────────────
@@ -240,5 +309,12 @@ public class PrivateRoomManager {
 
     private static void set(ServerLevel level, int x, int y, int z, BlockState state) {
         level.setBlock(new BlockPos(x, y, z), state, 2);
+    }
+
+    /** Resolves a Create block by path, falling back to a vanilla block if Create isn't installed. */
+    private static BlockState createBlock(String path, BlockState fallback) {
+        net.minecraft.world.level.block.Block b = net.minecraft.core.registries.BuiltInRegistries.BLOCK.get(
+            ResourceLocation.fromNamespaceAndPath("create", path));
+        return (b == null || b == Blocks.AIR) ? fallback : b.defaultBlockState();
     }
 }

@@ -26,6 +26,10 @@ public class DiscordGateway {
     private final String                     channelId;
     private final String                     allowedRoleId;
     private final BiConsumer<String, String> messageHandler; // (authorName, content) → MC
+    private final String                     adminChannelId;  // Feature B: admin console channel
+    private final String                     adminRoleId;     // Feature B: role gating console commands
+    private final BiConsumer<String, String> adminHandler;    // (authorName, content) → run as command
+    private final java.util.function.Consumer<JsonObject> interactionHandler; // INTERACTION_CREATE 'd' → handler
 
     private volatile WebSocket ws;
     private volatile boolean   connected  = false;
@@ -34,12 +38,19 @@ public class DiscordGateway {
 
     public DiscordGateway(MinecraftServer server, String botToken,
                           String channelId, String allowedRoleId,
-                          BiConsumer<String, String> messageHandler) {
+                          BiConsumer<String, String> messageHandler,
+                          String adminChannelId, String adminRoleId,
+                          BiConsumer<String, String> adminHandler,
+                          java.util.function.Consumer<JsonObject> interactionHandler) {
         this.server         = server;
         this.botToken       = botToken;
         this.channelId      = channelId;
         this.allowedRoleId  = allowedRoleId;
         this.messageHandler = messageHandler;
+        this.adminChannelId = adminChannelId == null ? "" : adminChannelId;
+        this.adminRoleId    = adminRoleId == null ? "" : adminRoleId;
+        this.adminHandler   = adminHandler;
+        this.interactionHandler = interactionHandler;
     }
 
     public void connect() {
@@ -105,30 +116,46 @@ public class DiscordGateway {
                 CoffeesAeroAuth.LOGGER.info("[Discord] Gateway bot ready.");
             }
             case "MESSAGE_CREATE" -> {
-                if (!channelId.equals(d.get("channel_id").getAsString())) return;
+                String chan = d.get("channel_id").getAsString();
                 JsonObject author = d.getAsJsonObject("author");
                 if (author.has("bot") && author.get("bot").getAsBoolean()) return;
+                String name    = author.get("username").getAsString();
+                String content = d.has("content") && !d.get("content").isJsonNull()
+                    ? d.get("content").getAsString() : "";
 
-                // Role check
-                if (!allowedRoleId.isBlank()) {
-                    JsonElement member = d.get("member");
-                    boolean hasRole = false;
-                    if (member != null && member.isJsonObject()) {
-                        JsonArray roles = member.getAsJsonObject().getAsJsonArray("roles");
-                        if (roles != null) for (JsonElement r : roles) {
-                            if (allowedRoleId.equals(r.getAsString())) { hasRole = true; break; }
-                        }
+                // Feature B: admin console channel → run as server command (admin-role gated).
+                if (!adminChannelId.isBlank() && adminChannelId.equals(chan)) {
+                    if (!hasRole(d, adminRoleId)) return;
+                    if (!content.isBlank() && adminHandler != null) {
+                        server.execute(() -> adminHandler.accept(name, content));
                     }
-                    if (!hasRole) return;
+                    return;
                 }
 
-                String name    = author.get("username").getAsString();
-                String content = d.get("content").getAsString();
+                // Public chat bridge channel → broadcast to MC chat.
+                if (!channelId.equals(chan)) return;
+                if (!hasRole(d, allowedRoleId)) return;
                 if (!content.isBlank() && messageHandler != null) {
                     server.execute(() -> messageHandler.accept(name, content));
                 }
             }
+            case "INTERACTION_CREATE" -> {
+                if (interactionHandler != null) interactionHandler.accept(d);
+            }
         }
+    }
+
+    /** True if the message author carries {@code roleId}. Blank roleId = no gating (LOCAL TESTING ONLY). */
+    private static boolean hasRole(JsonObject d, String roleId) {
+        if (roleId == null || roleId.isBlank()) return true;
+        JsonElement member = d.get("member");
+        if (member != null && member.isJsonObject()) {
+            JsonArray roles = member.getAsJsonObject().getAsJsonArray("roles");
+            if (roles != null) for (JsonElement r : roles) {
+                if (roleId.equals(r.getAsString())) return true;
+            }
+        }
+        return false;
     }
 
     // ── Heartbeat ─────────────────────────────────────────────────────────────

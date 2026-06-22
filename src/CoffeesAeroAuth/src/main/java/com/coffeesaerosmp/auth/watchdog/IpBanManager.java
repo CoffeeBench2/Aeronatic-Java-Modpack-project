@@ -75,6 +75,12 @@ public class IpBanManager {
         deleteBanFromDb("subnet:" + NetUtil.subnetOf(ip));
     }
 
+    /** Remove a ban by its exact stored key (e.g. {@code "subnet:1.2.3"} or a plain IP). */
+    public void clearByKey(String key) {
+        bans.remove(key);
+        deleteBanFromDb(key);
+    }
+
     public String getBanExpiry(String ip) {
         Long expiry = bans.get(ip);
         if (expiry == null) expiry = bans.get("subnet:" + NetUtil.subnetOf(ip));

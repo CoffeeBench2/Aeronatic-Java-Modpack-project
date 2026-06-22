@@ -8,6 +8,11 @@ build/
 # Local test server — contains world data, logs, and forwarding secrets. Never commit.
 /server-test/
 
+# Local server runtime copy — world, logs, libraries, ops/usercache, installers, secrets.
+# Only the tuned configs + the lobby schematic are force-added (see below); the rest is ignored.
+/server-files/
+/server/
+
 # Pack build artifacts
 *.mrpack
 client-mods-temp/

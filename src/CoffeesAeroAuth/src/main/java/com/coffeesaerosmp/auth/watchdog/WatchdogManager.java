@@ -7,6 +7,8 @@ import com.coffeesaerosmp.auth.db.ProfileStore;
 import com.coffeesaerosmp.auth.discord.AlertFormatter;
 import com.coffeesaerosmp.auth.discord.WebhookQueue;
 import com.coffeesaerosmp.auth.util.NetUtil;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -187,6 +189,11 @@ public class WatchdogManager {
     /** Audit-log a one-time display-name change (request / approval / rejection). */
     public void recordNameChange(String detail) {
         auditLog.log("NAME_CHANGE", detail);
+    }
+
+    /** Audit-log a moderation action taken from Discord (ban / unban via watchdog buttons). */
+    public void recordModAction(String detail) {
+        auditLog.log("MOD_ACTION", detail);
     }
 
     /** Record a successful login. Handles trusted IP logic. */
@@ -394,10 +401,15 @@ public class WatchdogManager {
             });
         }
 
-        // 3. Discord watchdog webhook
-        String watchdogUrl = AuthConfig.DISCORD_WEBHOOK_WATCHDOG.get();
-        if (!watchdogUrl.isBlank()) {
-            webhookQueue.enqueue(watchdogUrl, AlertFormatter.watchdogAlert(event), event.severity());
+        // 3. Discord — interactive bot alert (Ban/Unban buttons) for actionable HIGH+ events;
+        //    otherwise fall back to the plain watchdog webhook (webhooks can't carry components).
+        boolean postedActionable = event.severity().ordinal() >= Severity.HIGH.ordinal()
+            && postActionableAlert(event);
+        if (!postedActionable) {
+            String watchdogUrl = AuthConfig.DISCORD_WEBHOOK_WATCHDOG.get();
+            if (!watchdogUrl.isBlank()) {
+                webhookQueue.enqueue(watchdogUrl, AlertFormatter.watchdogAlert(event), event.severity());
+            }
         }
 
         // 4. Obsidian vault alert
@@ -405,6 +417,78 @@ public class WatchdogManager {
             String playerName = event.fields().getOrDefault("Player", "unknown");
             CoffeesAeroAuth.OBSIDIAN_EXPORTER.onWatchdogAlert(event, playerName);
         }
+    }
+
+    /**
+     * For HIGH/CRITICAL alerts carrying an IP or subnet, posts an interactive bot message to the watchdog
+     * channel with Ban/Unban buttons (which webhooks cannot do). Returns true if it posted, so the caller
+     * can skip the plain webhook. Falls back (returns false) if the bot/channel isn't configured.
+     */
+    private boolean postActionableAlert(WatchdogEvent event) {
+        var rest = CoffeesAeroAuth.DISCORD_REST;
+        String channel = AuthConfig.DISCORD_WATCHDOG_CHANNEL_ID.get();
+        if (rest == null || !rest.isConfigured() || channel == null || channel.isBlank()) return false;
+
+        String ip     = event.fields().get("IP");
+        String subnet = event.fields().get("Subnet");   // e.g. "1.2.3.*"
+        boolean hasIp     = ip != null && !ip.isBlank();
+        boolean hasSubnet = subnet != null && !subnet.isBlank();
+        if (!hasIp && !hasSubnet) return false;
+
+        JsonArray buttons = new JsonArray();
+        if (hasIp) {
+            if (ipBans.isBanned(ip)) buttons.add(button("✅ Unban " + ip, "wdunban:" + ip, 3));
+            else                     buttons.add(button("⛔ Ban IP 1h",    "wdban:" + ip,   4));
+        }
+        if (hasSubnet) {
+            String prefix = subnet.replace(".*", "").trim();
+            buttons.add(button("✅ Unban subnet " + prefix + ".*", "wdunbansub:" + prefix, 3));
+        }
+        if (buttons.size() == 0) return false;
+
+        JsonObject embed = new JsonObject();
+        embed.addProperty("title", event.severity().emoji() + " " + event.severity().label() + " — " + event.title());
+        embed.addProperty("color", event.severity().color());
+        JsonArray fields = new JsonArray();
+        event.fields().forEach((k, v) -> {
+            JsonObject f = new JsonObject();
+            f.addProperty("name", k);
+            f.addProperty("value", v == null || v.isBlank() ? "—" : v);
+            f.addProperty("inline", true);
+            fields.add(f);
+        });
+        if (event.actionTaken() != null && !event.actionTaken().isBlank()) {
+            JsonObject f = new JsonObject();
+            f.addProperty("name", "Action Taken");
+            f.addProperty("value", event.actionTaken());
+            f.addProperty("inline", false);
+            fields.add(f);
+        }
+        embed.add("fields", fields);
+        embed.addProperty("timestamp", DateTimeFormatter.ISO_INSTANT.format(event.timestamp()));
+
+        JsonArray embeds = new JsonArray();
+        embeds.add(embed);
+        JsonObject row = new JsonObject();
+        row.addProperty("type", 1);
+        row.add("components", buttons);
+        JsonArray rows = new JsonArray();
+        rows.add(row);
+
+        JsonObject body = new JsonObject();
+        body.add("embeds", embeds);
+        body.add("components", rows);
+        rest.postMessage(channel, body.toString());
+        return true;
+    }
+
+    private static JsonObject button(String label, String customId, int style) {
+        JsonObject b = new JsonObject();
+        b.addProperty("type", 2);          // button
+        b.addProperty("style", style);     // 3 success, 4 danger, 2 secondary
+        b.addProperty("label", label);
+        b.addProperty("custom_id", customId);
+        return b;
     }
 
     // ── Daily Digest ──────────────────────────────────────────────────────────

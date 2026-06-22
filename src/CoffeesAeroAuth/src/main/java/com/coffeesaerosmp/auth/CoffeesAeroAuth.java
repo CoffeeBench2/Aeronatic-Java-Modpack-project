@@ -54,6 +54,8 @@ public class CoffeesAeroAuth {
     public static volatile AuthManager        AUTH_MANAGER;
     public static volatile WatchdogManager    WATCHDOG;
     public static volatile DiscordBridge      DISCORD_BRIDGE;
+    public static volatile com.coffeesaerosmp.auth.discord.DiscordRest DISCORD_REST;
+    public static volatile com.coffeesaerosmp.auth.discord.AdminConsoleBridge ADMIN_CONSOLE;
     public static volatile WebhookQueue       WEBHOOK_QUEUE;
     public static volatile ObsidianExporter   OBSIDIAN_EXPORTER;
     public static volatile PrivateRoomManager ROOM_MANAGER;
@@ -125,16 +127,29 @@ public class CoffeesAeroAuth {
         if (AuthConfig.DISCORD_ENABLED.get()) {
             WEBHOOK_QUEUE.start();
         }
+        // Bot token: prefer .env (secrets rule), fall back to config.
+        String discordToken = env.getOrDefault("DISCORD_BOT_TOKEN", AuthConfig.DISCORD_BOT_TOKEN.get());
+        DISCORD_REST = new com.coffeesaerosmp.auth.discord.DiscordRest(discordToken);
+        ADMIN_CONSOLE = new com.coffeesaerosmp.auth.discord.AdminConsoleBridge(
+            event.getServer(), DISCORD_REST, AuthConfig.DISCORD_ADMIN_CHANNEL_ID.get());
+        com.coffeesaerosmp.auth.discord.DiscordInteractions interactions =
+            new com.coffeesaerosmp.auth.discord.DiscordInteractions(
+                event.getServer(), DISCORD_REST, AuthConfig.DISCORD_ADMIN_ROLE_ID.get());
         DiscordGateway gateway = new DiscordGateway(
             event.getServer(),
-            AuthConfig.DISCORD_BOT_TOKEN.get(),
+            discordToken,
             AuthConfig.DISCORD_PUBLIC_CHANNEL_ID.get(),
             AuthConfig.DISCORD_TO_MC_ROLE_ID.get(),
-            (author, msg) -> { if (DISCORD_BRIDGE != null) DISCORD_BRIDGE.onDiscordMessage(event.getServer(), author, msg); }
+            (author, msg) -> { if (DISCORD_BRIDGE != null) DISCORD_BRIDGE.onDiscordMessage(event.getServer(), author, msg); },
+            AuthConfig.DISCORD_ADMIN_CHANNEL_ID.get(),
+            AuthConfig.DISCORD_ADMIN_ROLE_ID.get(),
+            (author, msg) -> { if (ADMIN_CONSOLE != null) ADMIN_CONSOLE.runCommand(author, msg); },
+            interactions::handle
         );
         DISCORD_BRIDGE = new DiscordBridge(WEBHOOK_QUEUE, gateway);
-        if (AuthConfig.DISCORD_ENABLED.get() && !AuthConfig.DISCORD_BOT_TOKEN.get().isBlank()) {
+        if (AuthConfig.DISCORD_ENABLED.get() && !discordToken.isBlank()) {
             DISCORD_BRIDGE.startGateway();
+            ADMIN_CONSOLE.startMirror();
         }
 
         WATCHDOG = new WatchdogManager(event.getServer(), ipBans, trustedIps, auditLog, watchdogLog, WEBHOOK_QUEUE);
@@ -142,7 +157,7 @@ public class CoffeesAeroAuth {
 
         // ── Private room + name approval ──────────────────────────────────────
         ROOM_MANAGER   = new PrivateRoomManager(event.getServer());
-        APPROVAL_QUEUE = new NameApprovalQueue(PROFILE_STORE, WEBHOOK_QUEUE, event.getServer(), ROOM_MANAGER);
+        APPROVAL_QUEUE = new NameApprovalQueue(PROFILE_STORE, WEBHOOK_QUEUE, DISCORD_REST, event.getServer(), ROOM_MANAGER);
         ROOM_MANAGER.runStartupCleanup(PROFILE_STORE);
 
         // ── Obsidian stack ────────────────────────────────────────────────────
@@ -175,7 +190,9 @@ public class CoffeesAeroAuth {
         }
         if (APPROVAL_QUEUE != null) { APPROVAL_QUEUE.stop(); APPROVAL_QUEUE = null; }
         if (WATCHDOG != null)       { WATCHDOG.stop();       WATCHDOG = null; }
+        if (ADMIN_CONSOLE != null)  { ADMIN_CONSOLE.stopMirror(); ADMIN_CONSOLE = null; }
         if (DISCORD_BRIDGE != null) { DISCORD_BRIDGE.stop(); DISCORD_BRIDGE = null; }
+        DISCORD_REST = null;
         if (WEBHOOK_QUEUE != null)  { WEBHOOK_QUEUE.stop();  WEBHOOK_QUEUE = null; }
         if (PROFILE_STORE != null)  { PROFILE_STORE.shutdown(); PROFILE_STORE = null; }
         if (DB_MANAGER != null)     { DB_MANAGER.shutdown();    DB_MANAGER = null; }

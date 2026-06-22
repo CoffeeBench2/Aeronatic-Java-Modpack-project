@@ -79,6 +79,32 @@ public class AuthCommands {
             })
         );
 
+        // /lobby — admin only: drop into the lobby preview room to inspect/iterate the design
+        dispatcher.register(Commands.literal("lobby")
+            .requires(src -> src.hasPermission(2))
+            .executes(ctx -> {
+                ServerPlayer player = ctx.getSource().getPlayerOrException();
+                if (CoffeesAeroAuth.ROOM_MANAGER == null) {
+                    player.sendSystemMessage(Component.literal("§cLobby system not ready."));
+                    return 0;
+                }
+                CoffeesAeroAuth.ROOM_MANAGER.teleportToPreview(player);
+                player.sendSystemMessage(Component.literal(
+                    "§6[Lobby] §7Previewing the lobby room — decorate it, then §a/lobby save§7. §a/spawn§7 to leave."));
+                return 1;
+            })
+            .then(Commands.literal("save")
+                .executes(ctx -> {
+                    ServerPlayer player = ctx.getSource().getPlayerOrException();
+                    boolean ok = CoffeesAeroAuth.ROOM_MANAGER != null && CoffeesAeroAuth.ROOM_MANAGER.saveTemplate();
+                    player.sendSystemMessage(Component.literal(ok
+                        ? "§a[Lobby] Saved this room as the template for ALL lobbies — existing rooms rebuild on next visit."
+                        : "§c[Lobby] Save failed — use §e/lobby§c first so the preview room is loaded, then retry."));
+                    return ok ? 1 : 0;
+                })
+            )
+        );
+
         // /changename <newName> — one-time post-approval display name change (authenticated only)
         dispatcher.register(Commands.literal("changename")
             .then(Commands.argument("newName", StringArgumentType.word())

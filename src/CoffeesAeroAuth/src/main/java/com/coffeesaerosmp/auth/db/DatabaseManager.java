@@ -155,8 +155,12 @@ public class DatabaseManager {
                 "  name_changes_used     INT                          NOT NULL DEFAULT 0," +
                 "  room_slot             INT                          NOT NULL DEFAULT -1," +
                 "  room_created_at       BIGINT                       NOT NULL DEFAULT 0," +
-                "  first_join_complete   BOOLEAN                      NOT NULL DEFAULT FALSE" +
+                "  first_join_complete   BOOLEAN                      NOT NULL DEFAULT FALSE," +
+                "  startup_bonus_given   BOOLEAN                      NOT NULL DEFAULT FALSE" +
                 ")");
+            // Forward-compat: add columns missing on pre-existing tables (MySQL lacks ADD COLUMN IF NOT EXISTS).
+            try { s.executeUpdate("ALTER TABLE players ADD COLUMN startup_bonus_given BOOLEAN NOT NULL DEFAULT FALSE"); }
+            catch (SQLException dupCol) { /* column already present — fine */ }
             s.executeUpdate(
                 "CREATE TABLE IF NOT EXISTS trusted_ips (" +
                 "  id          BIGINT AUTO_INCREMENT PRIMARY KEY," +

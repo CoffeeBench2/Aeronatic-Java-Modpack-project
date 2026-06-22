@@ -184,8 +184,8 @@ public class ProfileStore implements CredentialStore {
         "(uuid,username,display_name,account_type,password_hash,password_salt," +
         " name_approved,first_join,last_seen,total_playtime,bio,skin_url," +
         " name_approval_pending,pending_display_name,name_rejection_count," +
-        " name_changes_used,room_slot,room_created_at,first_join_complete)" +
-        " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)" +
+        " name_changes_used,room_slot,room_created_at,first_join_complete,startup_bonus_given)" +
+        " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)" +
         " ON DUPLICATE KEY UPDATE" +
         "  username=VALUES(username),display_name=VALUES(display_name)," +
         "  account_type=VALUES(account_type),password_hash=VALUES(password_hash)," +
@@ -197,7 +197,8 @@ public class ProfileStore implements CredentialStore {
         "  name_rejection_count=VALUES(name_rejection_count)," +
         "  name_changes_used=VALUES(name_changes_used)," +
         "  room_slot=VALUES(room_slot),room_created_at=VALUES(room_created_at)," +
-        "  first_join_complete=VALUES(first_join_complete)";
+        "  first_join_complete=VALUES(first_join_complete)," +
+        "  startup_bonus_given=VALUES(startup_bonus_given)";
 
     private void upsertPlayer(Connection c, PlayerProfile p) throws SQLException {
         try (PreparedStatement ps = c.prepareStatement(UPSERT_SQL)) {
@@ -220,6 +221,7 @@ public class ProfileStore implements CredentialStore {
             ps.setInt(17,    p.roomSlot);
             ps.setLong(18,   p.roomCreatedAt);
             ps.setBoolean(19, p.firstJoinComplete);
+            ps.setBoolean(20, p.startupBonusGiven);
             ps.executeUpdate();
         }
     }
@@ -245,6 +247,7 @@ public class ProfileStore implements CredentialStore {
         p.roomSlot             = rs.getInt("room_slot");
         p.roomCreatedAt        = rs.getLong("room_created_at");
         p.firstJoinComplete    = rs.getBoolean("first_join_complete");
+        p.startupBonusGiven    = rs.getBoolean("startup_bonus_given");
         return p;
     }
 

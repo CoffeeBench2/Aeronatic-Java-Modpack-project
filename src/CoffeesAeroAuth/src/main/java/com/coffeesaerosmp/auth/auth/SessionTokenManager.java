@@ -1,6 +1,7 @@
 package com.coffeesaerosmp.auth.auth;
 
 import com.coffeesaerosmp.auth.CoffeesAeroAuth;
+import com.coffeesaerosmp.auth.config.AuthConfig;
 import com.coffeesaerosmp.auth.db.DatabaseManager;
 
 import java.security.SecureRandom;
@@ -24,12 +25,15 @@ public class SessionTokenManager {
         NONE         // no token — normal login required
     }
 
-    private record SessionToken(String id, String ip) {}
+    private record SessionToken(String id, String ip, long expiresAt) {}
 
     private final Map<UUID, SessionToken> tokens = new ConcurrentHashMap<>();
     private static final SecureRandom RNG = new SecureRandom();
 
-    private static final long SESSION_TTL_MS = 30L * 24 * 60 * 60 * 1000; // 30 days
+    /** Grace window (ms) after login/logout in which a reconnect from the same IP skips login. */
+    private static long graceMs() {
+        return AuthConfig.SESSION_GRACE_MINUTES.get() * 60_000L;
+    }
 
     private DatabaseManager db; // nullable — set after construction
 
@@ -43,17 +47,34 @@ public class SessionTokenManager {
         byte[] bytes = new byte[12];
         RNG.nextBytes(bytes);
         String id = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
-        tokens.put(uuid, new SessionToken(id, ip));
-        persistSession(uuid, id, ip);
+        long expiresAt = System.currentTimeMillis() + graceMs();
+        tokens.put(uuid, new SessionToken(id, ip, expiresAt));
+        persistSession(uuid, id, ip, expiresAt);
     }
 
-    /** Check whether a reconnecting player can skip login. */
+    /**
+     * Refreshes the grace window from "now" — call on logout so a quick reconnect skips login,
+     * but a return after the grace window requires re-login. No-op if there's no session (premium).
+     */
+    public void touchOnLogout(UUID uuid) {
+        SessionToken t = tokens.get(uuid);
+        if (t == null) return;
+        long expiresAt = System.currentTimeMillis() + graceMs();
+        tokens.put(uuid, new SessionToken(t.id(), t.ip(), expiresAt));
+        persistSession(uuid, t.id(), t.ip(), expiresAt);
+    }
+
+    /** Check whether a reconnecting player can skip login. Enforces the grace-window expiry. */
     public TokenStatus check(UUID uuid, String ip) {
         SessionToken t = tokens.get(uuid);
         if (t != null) {
-            return t.ip().equals(ip) ? TokenStatus.VALID : TokenStatus.IP_CHANGED;
+            if (System.currentTimeMillis() > t.expiresAt()) {
+                tokens.remove(uuid, t);          // grace passed → fall through, login required
+            } else {
+                return t.ip().equals(ip) ? TokenStatus.VALID : TokenStatus.IP_CHANGED;
+            }
         }
-        // Not in memory — check DB in case server restarted
+        // Not in memory (or expired) — check DB in case server restarted
         return checkDatabase(uuid, ip);
     }
 
@@ -72,7 +93,7 @@ public class SessionTokenManager {
         long now = System.currentTimeMillis();
         try (Connection c = db.getConnection();
              PreparedStatement ps = c.prepareStatement(
-                "SELECT uuid, session_id, ip_address FROM sessions WHERE expires_at > ?")) {
+                "SELECT uuid, session_id, ip_address, expires_at FROM sessions WHERE expires_at > ?")) {
             ps.setLong(1, now);
             try (ResultSet rs = ps.executeQuery()) {
                 int count = 0;
@@ -81,7 +102,8 @@ public class SessionTokenManager {
                         UUID uuid = UUID.fromString(rs.getString("uuid"));
                         tokens.put(uuid, new SessionToken(
                             rs.getString("session_id"),
-                            rs.getString("ip_address")));
+                            rs.getString("ip_address"),
+                            rs.getLong("expires_at")));
                         count++;
                     } catch (Exception ignored) {}
                 }
@@ -97,16 +119,17 @@ public class SessionTokenManager {
         long now = System.currentTimeMillis();
         try (Connection c = db.getConnection();
              PreparedStatement ps = c.prepareStatement(
-                "SELECT session_id, ip_address FROM sessions WHERE uuid=? AND expires_at>?")) {
+                "SELECT session_id, ip_address, expires_at FROM sessions WHERE uuid=? AND expires_at>?")) {
             ps.setString(1, uuid.toString());
             ps.setLong(2, now);
             try (ResultSet rs = ps.executeQuery()) {
                 if (!rs.next()) return TokenStatus.NONE;
                 String storedIp = rs.getString("ip_address");
                 String sessionId = rs.getString("session_id");
+                long expiresAt = rs.getLong("expires_at");
                 TokenStatus status = storedIp.equals(ip) ? TokenStatus.VALID : TokenStatus.IP_CHANGED;
                 if (status == TokenStatus.VALID) {
-                    tokens.put(uuid, new SessionToken(sessionId, ip));
+                    tokens.put(uuid, new SessionToken(sessionId, ip, expiresAt));
                 }
                 return status;
             }
@@ -115,10 +138,9 @@ public class SessionTokenManager {
         }
     }
 
-    private void persistSession(UUID uuid, String id, String ip) {
+    private void persistSession(UUID uuid, String id, String ip, long expiry) {
         if (db == null || !db.isAvailable()) return;
-        long now    = System.currentTimeMillis();
-        long expiry = now + SESSION_TTL_MS;
+        long now = System.currentTimeMillis();
         try (Connection c = db.getConnection()) {
             try (PreparedStatement del = c.prepareStatement("DELETE FROM sessions WHERE uuid=?")) {
                 del.setString(1, uuid.toString());
