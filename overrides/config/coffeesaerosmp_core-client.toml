@@ -1,0 +1,5 @@
+#CoffeesAeroSMP Core - Client Configuration
+#Server IP shown in and used by the 'Join Coffees Aero SMP' button
+serverIp = "173.212.241.121:25565"
+#Minecraft username that can access the Admin Settings screen
+adminUsername = "MrCoffeeBench"
