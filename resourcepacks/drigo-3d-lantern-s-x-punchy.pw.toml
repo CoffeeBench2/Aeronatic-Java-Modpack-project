@@ -1,0 +1,13 @@
+name = "1.0.0"
+filename = "Drigo 3D Lantern`s x Punchy.zip"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/X4S78Ho4/versions/9Ac9sHNt/Drigo%203D%20Lantern%60s%20x%20Punchy.zip"
+hash-format = "sha512"
+hash = "5dd599a167d49e0aeea349ae7aa3234df2cbaa8fadf310275d7f4acf03aad108a8be0a1249c801dabf55cec8aea98f5dfb6b656943a9b44712d70b1db5668d46"
+
+[update]
+[update.modrinth]
+mod-id = "X4S78Ho4"
+version = "9Ac9sHNt"

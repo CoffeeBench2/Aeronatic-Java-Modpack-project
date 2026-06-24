@@ -1,0 +1,13 @@
+name = "BEStyleWither-1.21.1-1.8.0-NeoForge"
+filename = "bestylewither-neoforge-mc1.21.1-1.8.0.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/OkmRZ5fH/versions/LWpDbDEs/bestylewither-neoforge-mc1.21.1-1.8.0.jar"
+hash-format = "sha512"
+hash = "cfc1f494e36682d0a9474268f394cacc781eb1ef1ff69ebe0513cb27d499b9af76b82a39f5a4872a743515ecbdf9b058bf59931c843c835f6cce1f6f891d58de"
+
+[update]
+[update.modrinth]
+mod-id = "OkmRZ5fH"
+version = "LWpDbDEs"

@@ -1,0 +1,13 @@
+name = "ImmersiveLanterns Neoforge 1.0.6 for 1.21.1"
+filename = "immersivelanterns-neoforge-1.0.6-1.21.1.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/vskzdsyT/versions/CaxJ3tAY/immersivelanterns-neoforge-1.0.6-1.21.1.jar"
+hash-format = "sha512"
+hash = "035fc011a4bb72128e60dbe4678bfc93e29bb06dd0a3563d7e44d4b886780eaaf36a7843b7051b0e97c44d9cbfe15040ca1f61638f3681e63992078e154ffdcc"
+
+[update]
+[update.modrinth]
+mod-id = "vskzdsyT"
+version = "CaxJ3tAY"

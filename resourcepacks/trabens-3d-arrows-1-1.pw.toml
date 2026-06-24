@@ -1,0 +1,13 @@
+name = "1.1"
+filename = "trabens-3d-arrows-1.1.zip"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/bwYhZ5Le/versions/o9in2xmh/trabens-3d-arrows-1.1.zip"
+hash-format = "sha512"
+hash = "01cbbddc85ce577ab63a50608fc2ae35a5fb2c4ea7bdba3d383c493ec3ec70de48a20cd3b73bbb69ac2b2514bbdc3149325eb45972208805c2d59254c3d91df1"
+
+[update]
+[update.modrinth]
+mod-id = "bwYhZ5Le"
+version = "o9in2xmh"

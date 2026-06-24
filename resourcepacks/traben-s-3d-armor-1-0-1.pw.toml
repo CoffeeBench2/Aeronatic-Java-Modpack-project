@@ -1,0 +1,13 @@
+name = "1.0.1"
+filename = "Traben's 3D Armor - 1.0.1.zip"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/unF1UIT0/versions/jk02WXxI/Traben%27s%203D%20Armor%20-%201.0.1.zip"
+hash-format = "sha512"
+hash = "3518601675b4930fcd445ff50ad1a279ab93996d4ae1e8cfd8610d921a07594b735184367b235fac0b54c6d50fea5c0690b3a93179de9d72ba692f2f36e3b3cf"
+
+[update]
+[update.modrinth]
+mod-id = "unF1UIT0"
+version = "jk02WXxI"

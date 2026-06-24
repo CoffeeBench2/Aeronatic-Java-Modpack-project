@@ -1,0 +1,13 @@
+name = "v2.0.1+1.21.1-NeoForge"
+filename = "autoreconnectrf-neoforge-2.0.1+1.21.1.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/PRy8Khga/versions/8pGeRZjP/autoreconnectrf-neoforge-2.0.1%2B1.21.1.jar"
+hash-format = "sha512"
+hash = "45662473c6e4299971d03b1de12552ca69bd82dc354a01c0ba7a869dd3c08ca0bf2247017cb4f3bcbb62ef7233f79d8b67881ff9446bfcbeaf25030155200e01"
+
+[update]
+[update.modrinth]
+mod-id = "PRy8Khga"
+version = "8pGeRZjP"
