@@ -1,0 +1,8 @@
+name = "integrated_api-1.7.4+1.21.1-neoforge"
+filename = "integrated_api-1.7.4+1.21.1-neoforge.jar"
+side = "both"
+
+[download]
+url = "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/download/v1.3.0/integrated_api-1.7.4%2B1.21.1-neoforge.jar"
+hash-format = "sha256"
+hash = "9c6f772d0f50dc91474f887c25447d388555e3a3d9dd581ce6ebf6783b7cc03e"

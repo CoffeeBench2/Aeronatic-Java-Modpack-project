@@ -415,6 +415,11 @@ hash = "42ec87d60514109ad980f7530aeca07043de2796d50889a1611184f35c09effb"
 metafile = true
 
 [[files]]
+file = "mods/cameraoverhaul-v2-0-4-neoforge-clothfix.pw.toml"
+hash = "ce152acf36c0547d34a70256c22b40b2ae8d8aafb0748ef6e675f9b98026bda2"
+metafile = true
+
+[[files]]
 file = "mods/carryon-neoforge-1-21-1-2-2-4-4.pw.toml"
 hash = "99fc7833f0cdd0243f19a164e86d5cab75167f177411dcdd84931d0d19b359bd"
 metafile = true
@@ -447,6 +452,16 @@ metafile = true
 [[files]]
 file = "mods/clumps-neoforge-1-21-1-19-0-0-1.pw.toml"
 hash = "1986dc220ede706a7f86fa7d9dc100114dc54623df96f6d246c983bd21994efa"
+metafile = true
+
+[[files]]
+file = "mods/coffeesaeroauth-1-0-0.pw.toml"
+hash = "474a277df4cec6fe56776cbc5bf9c56285ce48f71b0b407275e0c1c110bbfdc6"
+metafile = true
+
+[[files]]
+file = "mods/coffeesaerocore-1-0-0.pw.toml"
+hash = "07652c50ae0e456ffa1a36a56ae76e0421d158edc33d7279b9ee312a840f4bd9"
 metafile = true
 
 [[files]]
@@ -497,6 +512,11 @@ metafile = true
 [[files]]
 file = "mods/create-aquatic-ambitions-1-21-1-2-0-2.pw.toml"
 hash = "20fecec3bee3ee028fa58ecca57f5ecaf6fda93ef92a7322452e822a3efd3457"
+metafile = true
+
+[[files]]
+file = "mods/create-connected-1-1-16-mc1-21-1.pw.toml"
+hash = "a983b31c92758cc2a7ae60b75e8b322d152d5c12c58ad1c1b5b4504018b35344"
 metafile = true
 
 [[files]]
@@ -615,6 +635,11 @@ hash = "7a3c3d45ba3acc753fb237c4f18409e3a7f0f3b4a682a11cb30d113b08119191"
 metafile = true
 
 [[files]]
+file = "mods/extra-create-recipes-1-21-1-v1.pw.toml"
+hash = "77ca6c8a163631b6941e6511a5851550695a44fb12ff127d5ad4072e9bcf24be"
+metafile = true
+
+[[files]]
 file = "mods/fancymenu-neoforge-3-9-1-mc-1-21-1.pw.toml"
 hash = "1f70bc9024c7ce489ac91175cfbdf5bdd1897bb27b4933e65d4f58721bf31f0b"
 metafile = true
@@ -632,6 +657,26 @@ metafile = true
 [[files]]
 file = "mods/forgified-fabric-api-0-116-7-2-2-4-1-21-1.pw.toml"
 hash = "98ca88f94adcd099e7553ee85e772f62869fc47cac1155d38874f1f640a25c57"
+metafile = true
+
+[[files]]
+file = "mods/ftb-chunks-neoforge-2101-1-19.pw.toml"
+hash = "fdaa2bf7c64f792a393f1707cd10fe38a6ea2d347c0958d34919215f1d63ee80"
+metafile = true
+
+[[files]]
+file = "mods/ftb-library-neoforge-2101-1-32.pw.toml"
+hash = "a1789fa8775f758461b4dbba0cbbe9f1a3898615d7affcc568f294973b6956e7"
+metafile = true
+
+[[files]]
+file = "mods/ftb-quests-neoforge-2101-1-27.pw.toml"
+hash = "f30fdea0a0bdd8873438b9fc41b1f5e738efacb2f04e239c8f062ac6281616b1"
+metafile = true
+
+[[files]]
+file = "mods/ftb-teams-neoforge-2101-1-10.pw.toml"
+hash = "0222f20c0e6266aa3acc04d9d99c273187241b78bf1e3712d9e54e07992ea9e1"
 metafile = true
 
 [[files]]
@@ -662,6 +707,11 @@ metafile = true
 [[files]]
 file = "mods/immersivelanterns-neoforge-1-0-6-1-21-1.pw.toml"
 hash = "f6add2ed5e4b6e0802a61a4f8d121572dcabf5282da205e5d35fb657d8a68793"
+metafile = true
+
+[[files]]
+file = "mods/integrated-api-1-7-4-1-21-1-neoforge.pw.toml"
+hash = "b14faba0d15e75afb095366cf72d1d99004ba2428d4b94176494a27a585d1c9c"
 metafile = true
 
 [[files]]
@@ -1627,6 +1677,16 @@ file = "overrides/options.txt"
 hash = "8ecaed181e1c15daec71cc1107b834884e5f85906c8f41f424ac70fd336b0b2b"
 
 [[files]]
+file = "resourcepacks/3d-mace.pw.toml"
+hash = "91e94f1c6fef7c43c99b2c70fe36dc654a316d94f136e07e5587bacc5a4a39d4"
+metafile = true
+
+[[files]]
+file = "resourcepacks/actually-3d-stuff.pw.toml"
+hash = "28388cb1d78afadfd583d18f51b6d256ba36fa6f02a8ee8c4b059259f949f3ca"
+metafile = true
+
+[[files]]
 file = "resourcepacks/armory-conglomery-v2.pw.toml"
 hash = "6fd453c35885431ab720a12a2977f5ea1ad5e66821d48e109a59d77ef16987ad"
 metafile = true
@@ -1642,6 +1702,11 @@ hash = "7c70562eb2ed19090400730e9aa48f7d7dc65788fe977aa9f2d6ce80c1791d1e"
 metafile = true
 
 [[files]]
+file = "resourcepacks/better-trident-v2.pw.toml"
+hash = "7cca364aa037b1a2a6a2e93fab553c7034797a58a66eefcdb28eb235ab222fab"
+metafile = true
+
+[[files]]
 file = "resourcepacks/blockier-goat-horn-v1-1-f9-34.pw.toml"
 hash = "9d995d169560e2f5e64bb1638fb5b799b2317749117abf15175acc034ba208e5"
 metafile = true
@@ -1649,6 +1714,11 @@ metafile = true
 [[files]]
 file = "resourcepacks/drigo-3d-lantern-s-x-punchy.pw.toml"
 hash = "738d2d8073ad1921260492e8b0ecee53755c9b9e2d7508bb10c5c9c899d4ab65"
+metafile = true
+
+[[files]]
+file = "resourcepacks/fa-details-v2-3.pw.toml"
+hash = "34af5c556e56eed2c6fa4e381b43e15a28ad2fcbd79acc6ef4e5737c72d9f267"
 metafile = true
 
 [[files]]
