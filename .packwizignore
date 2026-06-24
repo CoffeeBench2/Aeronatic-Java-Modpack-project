@@ -1,40 +1,47 @@
-# Server installation
+# packwiz indexes EVERY on-disk file unless ignored here. The client pack is ONLY:
+#   mods/*.pw.toml + resourcepacks/*.pw.toml (metafiles) and the committed overrides/ tree.
+# Everything else in this repo is dev/server/build junk and must be excluded, or packwiz tries to
+# serve it from raw GitHub and 404s (the "141 errored" / client-mods-temp 404 bugs).
+
+# Server install + test instances
 server-files/
 server/
+server-test/
 
-# Source code & build artifacts
+# Staging / temp mod folders (jars are delivered via the mods/*.pw.toml metafiles, not raw overrides)
+client-mods-temp/
+client-mods-temp.zip
+overrides/mods/
+overrides/resourcepacks/
+
+# Server-only secret config — must never ship to clients
+overrides/config/velocity/
+
+# Docs vault (decoy copy) + source + build artifacts
+obsidian-vault/
 src/
 build/
+reports/
+scripts/
+docs/
 
-# Development / IDE files
+# IDE / tooling
 .claude/
 .idea/
 *.iml
 
-# Scripts & docs (not part of the client pack)
-scripts/
-docs/
-reports/
-
-# Root-level text files
+# Root metadata / exports that are not pack files
+version.json
+modrinth.index.json
+nf_versions.json
+cf-manifest.json
+.env.example
+temp_output.txt
+modlist.txt
+Aero_SMP_Mod_List.txt
 CLAUDE.md
 CHANGELOG.md
 MODLIST.md
 README.md
-modlist.txt
-Aero_SMP_Mod_List.txt
-cf-manifest.json
-
-# Pack exports (don't re-include the output)
 *.mrpack
 *.zip
-
-# Mod/resourcepack JARs are delivered via the mods/*.pw.toml + resourcepacks/*.pw.toml metafiles
-# (Modrinth CDN / GitHub Release URLs). They live in overrides/ only so build_mrpack can bundle them
-# into the .mrpack — they must NOT be packwiz-indexed (they aren't committed → raw-fetch 404 = the
-# "141 errored" bug). The committed custom jars (CoffeesAero*) also ship via their metafiles.
-overrides/mods/
-overrides/resourcepacks/
-
-# Server-only secret config (Velocity forwarding secret) — must never ship to clients.
-overrides/config/velocity/
