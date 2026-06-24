@@ -1,0 +1,9 @@
+# packwiz serves these files from raw GitHub, and packwiz-installer verifies each against the sha256
+# in index.toml. They MUST be byte-identical to what `packwiz refresh` hashed locally, so disable all
+# end-of-line conversion (CRLF<->LF) for them — otherwise git stores a normalized copy and the raw
+# bytes no longer match the index hash ("hash mismatch after download").
+index.toml        -text
+pack.toml         -text
+mods/**           -text
+resourcepacks/**  -text
+overrides/**      -text
