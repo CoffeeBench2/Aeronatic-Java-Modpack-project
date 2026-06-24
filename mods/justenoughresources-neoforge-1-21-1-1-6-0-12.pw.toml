@@ -1,0 +1,13 @@
+name = "1.6.0.12 for NeoForge 1.21.1"
+filename = "JustEnoughResources-NeoForge-1.21.1-1.6.0.12.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/uEfK2CXF/versions/XOsqpm0l/JustEnoughResources-NeoForge-1.21.1-1.6.0.12.jar"
+hash-format = "sha512"
+hash = "276a335c917ccc76a0e18b93faf25d26cbfb4ca1136ee012077f1ca0fd7f7abff5f6bbc73939efa5511a0c2d92983f619b0ea9dcf8e3df830c60a2edfd9b18dd"
+
+[update]
+[update.modrinth]
+mod-id = "uEfK2CXF"
+version = "XOsqpm0l"

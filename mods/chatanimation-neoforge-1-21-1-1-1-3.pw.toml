@@ -1,0 +1,13 @@
+name = "Chat Animation 1.1.3"
+filename = "chatanimation-neoforge-1.21.1-1.1.3.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/DnNYdJsx/versions/fo7IaI89/chatanimation-neoforge-1.21.1-1.1.3.jar"
+hash-format = "sha512"
+hash = "e7f8b57e72b0a82dd549638303ad5e94aad7dd712769352deff4d215ed747654190717e496a3be49a3958c99e1712a9c66713404f7f5eeac62debcc737ee51d6"
+
+[update]
+[update.modrinth]
+mod-id = "DnNYdJsx"
+version = "fo7IaI89"

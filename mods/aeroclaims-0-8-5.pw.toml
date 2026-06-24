@@ -1,0 +1,13 @@
+name = "Aeronautics Claims 0.8.5"
+filename = "aeroclaims-0.8.5.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/CwZ8q37q/versions/vfDhOeyL/aeroclaims-0.8.5.jar"
+hash-format = "sha512"
+hash = "ce19613471d9a7c211b0dc74adb53ddfc49f6b10df2c1ff227e29119ffb4319a19433c59b472db01a29c979e5167420f5013f57600797a38fda997c3d3a3a2da"
+
+[update]
+[update.modrinth]
+mod-id = "CwZ8q37q"
+version = "vfDhOeyL"

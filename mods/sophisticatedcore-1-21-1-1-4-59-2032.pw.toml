@@ -1,0 +1,13 @@
+name = "1.21.1-1.4.59.2032"
+filename = "sophisticatedcore-1.21.1-1.4.59.2032.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/nmoqTijg/versions/PaNVpd0p/sophisticatedcore-1.21.1-1.4.59.2032.jar"
+hash-format = "sha512"
+hash = "6e1f5d8730d4c810d87aedd31112f243b4574eb393b58580b29454a976b1f8a7c4dd2243fa3cedf6cca298244b00e5c1c255a85a17796a50bada5032e4605935"
+
+[update]
+[update.modrinth]
+mod-id = "nmoqTijg"
+version = "PaNVpd0p"

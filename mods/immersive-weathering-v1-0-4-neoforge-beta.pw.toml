@@ -1,0 +1,13 @@
+name = "Patch Release"
+filename = "Immersive-weathering-V1.0.4-neoforge-beta.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/AtjxBimt/versions/n3NgrJOg/Immersive-weathering-V1.0.4-neoforge-beta.jar"
+hash-format = "sha512"
+hash = "a2a7ebd8a0d101ec6c470ad6451b6fd86f526cd88f188cd6afe9673580be7264567be76f2d2ab19194c5332cbbe56eec2e67b359c34b610d65c9d4733aff9ad8"
+
+[update]
+[update.modrinth]
+mod-id = "AtjxBimt"
+version = "n3NgrJOg"

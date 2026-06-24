@@ -1,0 +1,13 @@
+name = "Analog Audio 0.1.0 for NeoForge 1.21.1"
+filename = "Analog-Audio-0.1.0.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/iMAVG2nH/versions/UlajPCS1/Analog-Audio-0.1.0.jar"
+hash-format = "sha512"
+hash = "e282c1b9887e61863f04ad6eab8d7e1a8fe0e51cdbe3978197f9b875ca567d247cae7506d9b7e7f3f47170eac5142331459a36b8f045ff8215433f0360dde496"
+
+[update]
+[update.modrinth]
+mod-id = "iMAVG2nH"
+version = "UlajPCS1"

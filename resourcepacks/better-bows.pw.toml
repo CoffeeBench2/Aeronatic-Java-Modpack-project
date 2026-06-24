@@ -1,0 +1,13 @@
+name = "Better Bows"
+filename = "Better Bows.zip"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/IPRL7R5J/versions/eTMgM5yw/Better%20Bows.zip"
+hash-format = "sha512"
+hash = "b15adbb2dee1bee41fcd877f94b8a63d369efd7b33aafd83aa70e405c8c7dfa8fcda9210a3be8611a27f8dec7e9b29e22e57ba362a1bc6f62f07c82dbb3b7b6d"
+
+[update]
+[update.modrinth]
+mod-id = "IPRL7R5J"
+version = "eTMgM5yw"

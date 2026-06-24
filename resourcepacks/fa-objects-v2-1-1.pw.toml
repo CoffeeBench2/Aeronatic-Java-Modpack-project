@@ -1,0 +1,13 @@
+name = "Objects Add-on 2.1.1"
+filename = "FA+Objects-v2.1.1.zip"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/23O9JVMV/versions/Qf2NGZhY/FA%2BObjects-v2.1.1.zip"
+hash-format = "sha512"
+hash = "ca02163ac3579939a7e372699a545df0e3a50f80a92f55e46658e32f8b16f9c823c433d99a85d97360fad39ddc73fba60b8f85046d9b12a9a4bdcb68d3d98d55"
+
+[update]
+[update.modrinth]
+mod-id = "23O9JVMV"
+version = "Qf2NGZhY"
