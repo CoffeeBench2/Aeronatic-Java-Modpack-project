@@ -2,6 +2,8 @@ package com.coffeesaerosmp.core.mixin;
 
 import com.coffeesaerosmp.core.config.AeroConfig;
 import com.coffeesaerosmp.core.screen.AdminSettingsScreen;
+import com.coffeesaerosmp.core.screen.UpdateScreen;
+import com.coffeesaerosmp.core.version.VersionCheck;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.ConnectScreen;
@@ -28,6 +30,9 @@ public abstract class TitleScreenMixin extends Screen {
 
     @Inject(method = "init", at = @At("RETURN"))
     private void onInit(CallbackInfo ci) {
+        // Poll the pack version once per session so the Join button can block a stale pack.
+        VersionCheck.startAsync();
+
         boolean isAdmin = Minecraft.getInstance().getUser().getName()
                 .equalsIgnoreCase(AeroConfig.ADMIN_USERNAME.get());
 
@@ -57,10 +62,18 @@ public abstract class TitleScreenMixin extends Screen {
             }
         });
 
-        // "Join Coffees Aero SMP" as the single main action button
+        // "Join Coffees Aero SMP" as the single main action button.
+        // If the version check already knows the pack is stale, route to the update screen
+        // instead of connecting (prevents the raw registry-mismatch wall). Fail-open otherwise.
         this.addRenderableWidget(Button.builder(
                 Component.literal("Join Coffees Aero SMP"),
-                b -> connectToServer()
+                b -> {
+                    if (VersionCheck.isOutdated()) {
+                        Minecraft.getInstance().setScreen(new UpdateScreen(this));
+                    } else {
+                        connectToServer();
+                    }
+                }
         ).bounds(this.width / 2 - 100, this.height / 4 + 48, 200, 20).build());
 
         // Admin-only corner buttons (bottom-left stack)

@@ -5,8 +5,21 @@ import zipfile, json, os
 
 ROOT = r"D:\MC Project\untitled"
 OVERRIDES = os.path.join(ROOT, "overrides")
-VERSION = "1.2.1"
+VERSION = "1.3.0"
 OUT = os.path.expanduser(rf"~\Downloads\CoffeesAeroSMP-{VERSION}.mrpack")
+
+# Stamp the version into the CoffeesAeroCore client config so the in-game version check
+# and the pack are always built in lockstep (no hand-editing).
+import re as _re
+_CORE_CFG = os.path.join(OVERRIDES, "config", "coffeesaerosmp_core-client.toml")
+if os.path.isfile(_CORE_CFG):
+    with open(_CORE_CFG, "r", encoding="utf-8") as fh:
+        _cfg = fh.read()
+    _new = _re.sub(r'(?m)^packVersion\s*=\s*".*"$', f'packVersion = "{VERSION}"', _cfg)
+    if _new != _cfg:
+        with open(_CORE_CFG, "w", encoding="utf-8") as fh:
+            fh.write(_new)
+        print(f"stamped packVersion = {VERSION} into coffeesaerosmp_core-client.toml")
 
 INCLUDE_DIRS = {"config", "mods", "resourcepacks", "shaderpacks"}
 INCLUDE_FILES = {"options.txt"}
@@ -18,7 +31,7 @@ manifest = {
     "name": "Coffees Aero SMP",
     "summary": "Create: Aeronautics SMP modpack by MrCoffeeBench",
     "files": [],
-    "dependencies": {"minecraft": "1.21.1", "neoforge": "21.1.230"},
+    "dependencies": {"minecraft": "1.21.1", "neoforge": "21.1.233"},
 }
 
 def _add(zf, full, rel):
