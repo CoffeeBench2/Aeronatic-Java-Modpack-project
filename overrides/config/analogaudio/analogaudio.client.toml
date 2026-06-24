@@ -30,7 +30,13 @@ enablePlayerSuppliedAudio = false
 cassetteTapeDisclaimers = true
 
 # Disables the welcome screen prompting you to install Lavaplayer. Highly recommended you don't disable this unless you know what you're doing.
-lavaplayerWelcomeScreen = false
+# AeroSMP: restored to default (true). The pack BUNDLES analogplayer-1.0.2.jar at
+# .analogaudio/internal/, so LavaplayerLoader.isInstalled() is already true and the
+# welcome screen never fires (gate = lavaplayerWelcomeScreen && isMissing()). Leaving
+# this true keeps the prompt only as a graceful fallback if the bundled jar is ever absent.
+lavaplayerWelcomeScreen = true
 
 # Whether a lavaplayer download attempt has been made.
-lavaplayerDownloadAttempted = true
+# AeroSMP: restored to default (false). The previous value (true) plus welcomeScreen=false
+# suppressed the prompt AND blocked the download = silent no-audio. Bundling fixes it.
+lavaplayerDownloadAttempted = false

@@ -1,0 +1,7 @@
+# This file stores configuration options for the Euphoria Patcher mod
+
+[display]
+# Option for the sodium message popup logging.
+# Disabled by AeroSMP pack: suppresses the "EuphoriaPatches was successfully installed" toast.
+# Default = true
+doPopUpLogging = false

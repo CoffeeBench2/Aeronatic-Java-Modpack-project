@@ -416,7 +416,7 @@ metafile = true
 
 [[files]]
 file = "mods/cameraoverhaul-v2-0-4-neoforge-clothfix.pw.toml"
-hash = "ce152acf36c0547d34a70256c22b40b2ae8d8aafb0748ef6e675f9b98026bda2"
+hash = "fc1053c9014b06c4c481f312fa4d02bd10fb33802d17408511d3104ab0642e8c"
 metafile = true
 
 [[files]]
@@ -456,12 +456,12 @@ metafile = true
 
 [[files]]
 file = "mods/coffeesaeroauth-1-0-0.pw.toml"
-hash = "474a277df4cec6fe56776cbc5bf9c56285ce48f71b0b407275e0c1c110bbfdc6"
+hash = "dcd2fb378cfc52254a427c6fa38611aa7dab65c083d074fe867e91064cc14836"
 metafile = true
 
 [[files]]
 file = "mods/coffeesaerocore-1-0-0.pw.toml"
-hash = "07652c50ae0e456ffa1a36a56ae76e0421d158edc33d7279b9ee312a840f4bd9"
+hash = "82263defe64fc3309f4e35ae8860fdf97878136c09c49cfb9531e8a87676226f"
 metafile = true
 
 [[files]]
@@ -516,7 +516,7 @@ metafile = true
 
 [[files]]
 file = "mods/create-connected-1-1-16-mc1-21-1.pw.toml"
-hash = "a983b31c92758cc2a7ae60b75e8b322d152d5c12c58ad1c1b5b4504018b35344"
+hash = "f13b094afde697c86512a86b370055f44a4ae880c165b3660f11be017d399bc5"
 metafile = true
 
 [[files]]
@@ -636,7 +636,7 @@ metafile = true
 
 [[files]]
 file = "mods/extra-create-recipes-1-21-1-v1.pw.toml"
-hash = "77ca6c8a163631b6941e6511a5851550695a44fb12ff127d5ad4072e9bcf24be"
+hash = "c71c69ea6f2cc528955da6388d4789a5b49569c3b8ac8e717a0803605a67b74c"
 metafile = true
 
 [[files]]
@@ -661,22 +661,22 @@ metafile = true
 
 [[files]]
 file = "mods/ftb-chunks-neoforge-2101-1-19.pw.toml"
-hash = "fdaa2bf7c64f792a393f1707cd10fe38a6ea2d347c0958d34919215f1d63ee80"
+hash = "c4d19cdbb930c012db98e4e43d1adbec5bcf2c4c560f02e8fa143feacf4595cc"
 metafile = true
 
 [[files]]
 file = "mods/ftb-library-neoforge-2101-1-32.pw.toml"
-hash = "a1789fa8775f758461b4dbba0cbbe9f1a3898615d7affcc568f294973b6956e7"
+hash = "fd2c0ae3a57b52dce6435e0d3b0491b8d9c2e1168f0b47571e9d71df007c0c18"
 metafile = true
 
 [[files]]
 file = "mods/ftb-quests-neoforge-2101-1-27.pw.toml"
-hash = "f30fdea0a0bdd8873438b9fc41b1f5e738efacb2f04e239c8f062ac6281616b1"
+hash = "3bb5ac586dcc53c1be07c80d508d45b389a9848b26d4e1c7f850b870623aba72"
 metafile = true
 
 [[files]]
 file = "mods/ftb-teams-neoforge-2101-1-10.pw.toml"
-hash = "0222f20c0e6266aa3acc04d9d99c273187241b78bf1e3712d9e54e07992ea9e1"
+hash = "156b816b16c225c40b3a7d60b4cb6fc72405a4206935b7f3bea1c621bb688aa4"
 metafile = true
 
 [[files]]
@@ -711,7 +711,7 @@ metafile = true
 
 [[files]]
 file = "mods/integrated-api-1-7-4-1-21-1-neoforge.pw.toml"
-hash = "b14faba0d15e75afb095366cf72d1d99004ba2428d4b94176494a27a585d1c9c"
+hash = "7e50013af9e450aca678052c4621d92202385f4762265a7f28552b8623412767"
 metafile = true
 
 [[files]]
@@ -1113,12 +1113,24 @@ file = "obsidian-vault/AeroSMP/planning/server-plan.md"
 hash = "81c7faf350af7af29d967af75de1ebb03244a4156e8940060b79a1053bbe6d26"
 
 [[files]]
+file = "overrides/.analogaudio/internal/analogplayer-1.0.2.jar"
+hash = "5b53779dca71a5d9f9e15cf9137a6b44d4ca3bb578c9027b30c30578819cebd7"
+
+[[files]]
 file = "overrides/config/analogaudio/analogaudio.client.toml"
-hash = "cbaf02bd65f64a4881f3b25dc47396a8bfcf1dd16d6ab3ae6f97d5751711a3ff"
+hash = "ff15da34b5f6f825dcc32399ab150c2462393031a41c8ea6938d6dd61b11fb04"
 
 [[files]]
 file = "overrides/config/coffeesaerosmp_core-client.toml"
-hash = "509544cd93a577056d370392645c33eeeccd2dcac806cd4a26fe18a11db92c59"
+hash = "f4b9b55a10eec8eb1d12c9801faeb01ea13153f00b514ece00ef860ef030d20a"
+
+[[files]]
+file = "overrides/config/euphoria_patcher/settings.toml"
+hash = "4e13895b1c18cbcc44f9ecaa03d7162f4d287b1c49b7273a4824e5a2d55140f1"
+
+[[files]]
+file = "overrides/config/fancymenu/options.txt"
+hash = "234b6d136f8441350283b5730ee2c603d5a8c5d57cfd46f9e114ad3a4a84b59c"
 
 [[files]]
 file = "overrides/config/ftbquests/quests/chapter_groups.snbt"
@@ -1147,6 +1159,10 @@ hash = "28d2a0756a8132642f80bcb53bca6b527b3af8928750a65325a008048c2bbe7e"
 [[files]]
 file = "overrides/config/velocity/velocity.toml"
 hash = "bfe87a92c058eef0bc6620869a942034b0d66d961ee0b845fb2d4151f4692fdf"
+
+[[files]]
+file = "overrides/config/vista-client.toml"
+hash = "84ba4a985b613d11f4ee39c39ca7b0a5d77c10b567b866d2504df15a88b8dca1"
 
 [[files]]
 file = "overrides/config/voicechat/voicechat-server.properties"
@@ -1182,7 +1198,7 @@ hash = "b524ccdace2ef8fd19f5b2074f7de1103ac5065c52553f064c00e098346c293e"
 
 [[files]]
 file = "overrides/mods/CoffeesAeroAuth-1.0.0.jar"
-hash = "4686a79c8d99b2461208193fa95ffe59b286a83e4979703c5cfd801e8c71b9ce"
+hash = "00caadc3ad4ec0d117a8063be8a429f911217a09c1e5f4c9ec4443b1465d482a"
 
 [[files]]
 file = "overrides/mods/CoffeesAeroCore-1.0.0.jar"
@@ -1674,16 +1690,16 @@ hash = "b5c30321b46cfaa521645a04aff89d2804d8167a25bb23ad4b1ae8da73093a2f"
 
 [[files]]
 file = "overrides/options.txt"
-hash = "8ecaed181e1c15daec71cc1107b834884e5f85906c8f41f424ac70fd336b0b2b"
+hash = "4bc099b05b1350941a3716795800cf5f75c8c3900c003cdad59b94610ae0f8a0"
 
 [[files]]
 file = "resourcepacks/3d-mace.pw.toml"
-hash = "91e94f1c6fef7c43c99b2c70fe36dc654a316d94f136e07e5587bacc5a4a39d4"
+hash = "3d262c081ab82297c70b3d13d03d38a861c4dd70d6fed79803153dd18da82122"
 metafile = true
 
 [[files]]
 file = "resourcepacks/actually-3d-stuff.pw.toml"
-hash = "28388cb1d78afadfd583d18f51b6d256ba36fa6f02a8ee8c4b059259f949f3ca"
+hash = "b48f2da91f48fb4013762f63d63fc317f853366b984d019a18cdc31abf5e3140"
 metafile = true
 
 [[files]]
@@ -1703,7 +1719,7 @@ metafile = true
 
 [[files]]
 file = "resourcepacks/better-trident-v2.pw.toml"
-hash = "7cca364aa037b1a2a6a2e93fab553c7034797a58a66eefcdb28eb235ab222fab"
+hash = "232586597723d39d08b92c4b786c147ec1cc691032c4c6322323127da5f6e61f"
 metafile = true
 
 [[files]]
@@ -1714,11 +1730,6 @@ metafile = true
 [[files]]
 file = "resourcepacks/drigo-3d-lantern-s-x-punchy.pw.toml"
 hash = "738d2d8073ad1921260492e8b0ecee53755c9b9e2d7508bb10c5c9c899d4ab65"
-metafile = true
-
-[[files]]
-file = "resourcepacks/fa-details-v2-3.pw.toml"
-hash = "34af5c556e56eed2c6fa4e381b43e15a28ad2fcbd79acc6ef4e5737c72d9f267"
 metafile = true
 
 [[files]]

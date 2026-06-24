@@ -3,6 +3,6 @@ filename = "extra_create_recipes_1.21.1_v1.jar"
 side = "both"
 
 [download]
-url = "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/download/v1.3.0/extra_create_recipes_1.21.1_v1.jar"
+url = "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/download/v1.4.0/extra_create_recipes_1.21.1_v1.jar"
 hash-format = "sha256"
 hash = "40b20257d3bef83319d2f21e437c2896fc732cfe68fb21f642dc051af17e2a23"
