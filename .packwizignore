@@ -28,3 +28,13 @@ cf-manifest.json
 # Pack exports (don't re-include the output)
 *.mrpack
 *.zip
+
+# Mod/resourcepack JARs are delivered via the mods/*.pw.toml + resourcepacks/*.pw.toml metafiles
+# (Modrinth CDN / GitHub Release URLs). They live in overrides/ only so build_mrpack can bundle them
+# into the .mrpack — they must NOT be packwiz-indexed (they aren't committed → raw-fetch 404 = the
+# "141 errored" bug). The committed custom jars (CoffeesAero*) also ship via their metafiles.
+overrides/mods/
+overrides/resourcepacks/
+
+# Server-only secret config (Velocity forwarding secret) — must never ship to clients.
+overrides/config/velocity/
