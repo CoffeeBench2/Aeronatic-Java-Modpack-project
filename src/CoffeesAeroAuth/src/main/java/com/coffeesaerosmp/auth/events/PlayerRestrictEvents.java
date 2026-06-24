@@ -1,6 +1,8 @@
 package com.coffeesaerosmp.auth.events;
 
 import com.coffeesaerosmp.auth.CoffeesAeroAuth;
+import com.coffeesaerosmp.auth.lobby.LobbyInventoryStash;
+import com.coffeesaerosmp.auth.lobby.PrivateRoomManager;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.event.tick.EntityTickEvent;
 import net.neoforged.neoforge.event.entity.player.AttackEntityEvent;
@@ -23,6 +25,19 @@ public class PlayerRestrictEvents {
     }
 
     public static void onRightClickItem(PlayerInteractEvent.RightClickItem event) {
+        // "Teleport to Spawn" lobby paper: an authenticated player in the lobby uses it to enter the
+        // world (same as /spawn — which restores their stashed inventory). Always consume the click so
+        // the paper itself never does anything else.
+        if (event.getEntity() instanceof ServerPlayer player
+                && LobbyInventoryStash.isLobbyPaper(event.getItemStack())
+                && player.level().dimension() == PrivateRoomManager.LOBBY_DIMENSION) {
+            event.setCanceled(true);
+            if (CoffeesAeroAuth.AUTH_MANAGER != null
+                    && CoffeesAeroAuth.AUTH_MANAGER.isAuthenticated(player.getUUID())) {
+                CoffeesAeroAuth.AUTH_MANAGER.handleSpawn(player);
+            }
+            return;
+        }
         if (shouldBlock(event.getEntity())) event.setCanceled(true);
     }
 

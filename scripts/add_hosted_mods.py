@@ -10,7 +10,7 @@ import os, hashlib, json, subprocess, re
 
 ROOT = r"D:\MC Project\untitled"
 REPO = "CoffeeBench2/Aeronatic-Java-Modpack-project"
-TAG  = "v1.3.0"
+TAG  = "v1.4.0"
 
 TARGETS = {
     "mods": [
@@ -29,7 +29,6 @@ TARGETS = {
         "3d-mace.zip",
         "Actually 3D Stuff.zip",
         "Better Trident v2.zip",
-        "FA+Details-v2.3.zip",
     ],
 }
 

@@ -5,7 +5,7 @@ import zipfile, json, os
 
 ROOT = r"D:\MC Project\untitled"
 OVERRIDES = os.path.join(ROOT, "overrides")
-VERSION = "1.3.0"
+VERSION = "1.4.0"
 OUT = os.path.expanduser(rf"~\Downloads\CoffeesAeroSMP-{VERSION}.mrpack")
 
 # Stamp the version into the CoffeesAeroCore client config so the in-game version check
@@ -21,7 +21,10 @@ if os.path.isfile(_CORE_CFG):
             fh.write(_new)
         print(f"stamped packVersion = {VERSION} into coffeesaerosmp_core-client.toml")
 
-INCLUDE_DIRS = {"config", "mods", "resourcepacks", "shaderpacks"}
+# .analogaudio holds the bundled analogplayer-1.0.2.jar (Lavaplayer runtime) so Analog
+# Audio's first-launch download prompt never fires and audio works offline. isInstalled()
+# checks <gamedir>/.analogaudio/internal/analogplayer-1.0.2.jar — keep this dir bundled.
+INCLUDE_DIRS = {"config", "mods", "resourcepacks", "shaderpacks", ".analogaudio"}
 INCLUDE_FILES = {"options.txt"}
 
 manifest = {

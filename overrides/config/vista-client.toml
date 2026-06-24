@@ -1,0 +1,7 @@
+#General configuration settings
+[television.wave_gate]
+	#Enable FFmpeg use. This is needed if you want to use the Wave Gate
+	# Disabled by AeroSMP pack: suppresses the first-launch "Welcome to the Vista Mod"
+	# FFmpeg download prompt. canUseFFmpeg() == ffmpeg_enabled, and the welcome screen
+	# only shows when canUseFFmpeg() is true, so false = pre-chosen "Don't install".
+	ffmpeg_enabled = false

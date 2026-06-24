@@ -557,7 +557,7 @@ public class WatchdogManager {
         }
     }
 
-    private static String normalizeLookalike(String name) {
+    public static String normalizeLookalike(String name) {
         if (name == null) return "";
         String s = name.toLowerCase(Locale.ROOT)
             // Strip invisible/zero-width Unicode
@@ -568,9 +568,61 @@ public class WatchdogManager {
              .replace('i', 'l')
              .replace('@', 'a')
              .replace('3', 'e')
+             .replace('4', 'a')
+             .replace('7', 't')
              .replace('$', 's').replace('5', 's');
         // Sequence substitutions
         s = s.replace("rn", "m").replace("vv", "w");
+        // Strip separators/punctuation so "x_Coffee", "x-coffee", "x.coffee" all collapse to "xcoffee".
+        s = s.replaceAll("[^a-z0-9]", "");
         return s;
+    }
+
+    /**
+     * STRICT impersonation test used by /setname. True if {@code candidate} normalizes to a string that
+     * equals, contains, or is within edit-distance 1 of {@code protectedName}'s normalized form.
+     * Catches: Coffee → Coffee123, xCoffee (substring), C0ffee (homoglyph→exact), Cof3ee (homoglyph→dist 1).
+     */
+    public static boolean impersonates(String candidate, String protectedName) {
+        String c = normalizeLookalike(candidate);
+        String p = normalizeLookalike(protectedName);
+        if (c.isEmpty() || p.isEmpty()) return false;
+        if (c.equals(p)) return true;
+        // Substring either direction (squatting a longer/shorter variant). Guard tiny fragments:
+        // only treat a protected name as a substring trigger when it is ≥3 normalized chars.
+        if (p.length() >= 3 && c.contains(p)) return true;
+        if (c.length() >= 3 && p.contains(c)) return true;
+        // Near-miss homoglyph that didn't collapse to an exact match (e.g. Cof3ee → cofeee vs coffee).
+        return levenshtein(c, p) <= 1;
+    }
+
+    /** Bounded Levenshtein edit distance; returns early (cap+1) once it provably exceeds {@code cap}. */
+    static int levenshtein(String a, String b) {
+        final int cap = 1;
+        int la = a.length(), lb = b.length();
+        if (Math.abs(la - lb) > cap) return cap + 1;
+        int[] prev = new int[lb + 1];
+        int[] curr = new int[lb + 1];
+        for (int j = 0; j <= lb; j++) prev[j] = j;
+        for (int i = 1; i <= la; i++) {
+            curr[0] = i;
+            int rowMin = curr[0];
+            for (int j = 1; j <= lb; j++) {
+                int cost = a.charAt(i - 1) == b.charAt(j - 1) ? 0 : 1;
+                curr[j] = Math.min(Math.min(prev[j] + 1, curr[j - 1] + 1), prev[j - 1] + cost);
+                rowMin = Math.min(rowMin, curr[j]);
+            }
+            if (rowMin > cap) return cap + 1; // whole row already over the cap — no point continuing
+            int[] tmp = prev; prev = curr; curr = tmp;
+        }
+        return prev[lb];
+    }
+
+    /** Returns the first known premium display name that {@code candidate} impersonates, or null. */
+    public String findImpersonatedPremium(String candidate) {
+        for (String premium : normalizedPremiumNames.values()) {
+            if (impersonates(candidate, premium)) return premium;
+        }
+        return null;
     }
 }

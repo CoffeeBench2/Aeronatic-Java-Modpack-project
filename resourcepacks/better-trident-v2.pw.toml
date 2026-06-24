@@ -3,6 +3,6 @@ filename = "Better Trident v2.zip"
 side = "both"
 
 [download]
-url = "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/download/v1.3.0/Better.Trident.v2.zip"
+url = "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/download/v1.4.0/Better.Trident.v2.zip"
 hash-format = "sha256"
 hash = "712460ce0a4d8e83469979963ba93ea6e03540f9de76130f88535caeb2de16b8"

@@ -43,7 +43,24 @@ public class DisplayNameManager {
             return ownerProfile; // signal: premium conflict, kick if configured
         }
 
-        // Offline conflict: auto-suffix until we find a free name
+        // Owner here is an OFFLINE player. Premium precedence: if the NEW profile is verified (premium),
+        // it reclaims the name and the offline squatter is bounced back to /setname on their next join.
+        // (claimInitialName is only invoked for new premium joins today, but branch defensively.)
+        if (newProfile.getAccountType() == PlayerProfile.AccountType.PREMIUM) {
+            store.releaseDisplayName(name);
+            if (ownerProfile != null) {
+                ownerProfile.displayName         = ownerProfile.username; // drop the contested name (keeps index rebuild correct)
+                ownerProfile.nameApproved        = false;                 // force the lobby naming flow again
+                ownerProfile.nameApprovalPending = false;
+                ownerProfile.pendingDisplayName  = null;
+                store.save(ownerProfile);
+            }
+            store.registerDisplayName(name, newProfile.getUUID());
+            store.save(newProfile);
+            return null;
+        }
+
+        // Offline-vs-offline conflict: auto-suffix until we find a free name.
         String resolved = findFreeName(name, newProfile.getUUID());
         newProfile.displayName = resolved;
         store.registerDisplayName(resolved, newProfile.getUUID());

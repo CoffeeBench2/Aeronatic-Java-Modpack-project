@@ -10,8 +10,10 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Public channel bridge: MC events → Discord, Discord messages → MC chat.
- * Owns the DiscordGateway and routes incoming Discord messages to the server thread.
+ * Discord bridge: MC events → Discord, Discord messages → MC chat.
+ * Chat / deaths / playtime milestones go to the public webhook; join, leave and achievements are
+ * routed to the watchdog (admin-only) webhook instead. Owns the DiscordGateway and routes incoming
+ * Discord messages to the server thread.
  */
 public class DiscordBridge {
 
@@ -37,7 +39,8 @@ public class DiscordBridge {
     // ── MC → Discord ──────────────────────────────────────────────────────────
 
     public void onPlayerJoin(ServerPlayer player, boolean isFirstEver, String badge) {
-        String url = AuthConfig.DISCORD_WEBHOOK_PUBLIC.get();
+        // Routed to the watchdog channel (admin-only), not public chat — 2026-06-24 feedback, move-only.
+        String url = AuthConfig.DISCORD_WEBHOOK_WATCHDOG.get();
         if (url.isBlank()) return;
         String desc = isFirstEver
             ? "🌟 **" + player.getGameProfile().getName() + "** joined for the first time! Welcome!"
@@ -48,7 +51,8 @@ public class DiscordBridge {
     }
 
     public void onPlayerLeave(ServerPlayer player) {
-        String url = AuthConfig.DISCORD_WEBHOOK_PUBLIC.get();
+        // Routed to the watchdog channel (admin-only), not public chat — 2026-06-24 feedback, move-only.
+        String url = AuthConfig.DISCORD_WEBHOOK_WATCHDOG.get();
         if (url.isBlank()) return;
         queue.enqueue(url,
             AlertFormatter.publicEmbed("💨 **" + player.getGameProfile().getName() + "** left the server", 0xED4245),
@@ -72,7 +76,8 @@ public class DiscordBridge {
     }
 
     public void onAdvancement(ServerPlayer player, String title) {
-        String url = AuthConfig.DISCORD_WEBHOOK_PUBLIC.get();
+        // Routed to the watchdog channel (admin-only), not public chat — 2026-06-24 feedback, move-only.
+        String url = AuthConfig.DISCORD_WEBHOOK_WATCHDOG.get();
         if (url.isBlank()) return;
         queue.enqueue(url,
             AlertFormatter.publicEmbed("🏆 **" + player.getGameProfile().getName() + "** just earned **[" + title + "]**", 0xFEE75C),

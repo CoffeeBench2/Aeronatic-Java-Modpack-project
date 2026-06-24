@@ -37,6 +37,11 @@ dependencies {
     // log4j-core: shipped by Minecraft at runtime (2.22.1), needed at compile time for the
     // Feature B console-mirror appender. compileOnly so it is NOT bundled into the mod jar.
     compileOnly("org.apache.logging.log4j:log4j-core:2.22.1")
+
+    // FTB Chunks/Library/Teams API for the rail auto-claim protection. compileOnly — these mods are
+    // present at runtime in the pack; we guard every call behind a ModList isLoaded check so the
+    // classes are never linked if FTB Chunks is absent. Local jars (offline-friendly).
+    compileOnly(files("libs/ftb-chunks.jar", "libs/ftb-library.jar", "libs/ftb-teams.jar"))
 }
 
 tasks.withType(JavaCompile).configureEach {

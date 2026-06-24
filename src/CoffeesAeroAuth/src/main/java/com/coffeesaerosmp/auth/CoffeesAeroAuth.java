@@ -60,6 +60,7 @@ public class CoffeesAeroAuth {
     public static volatile ObsidianExporter   OBSIDIAN_EXPORTER;
     public static volatile PrivateRoomManager ROOM_MANAGER;
     public static volatile NameApprovalQueue  APPROVAL_QUEUE;
+    public static volatile com.coffeesaerosmp.auth.lobby.LobbyInventoryStash LOBBY_STASH;
 
     public CoffeesAeroAuth(IEventBus modBus, ModContainer container) {
         container.registerConfig(ModConfig.Type.SERVER, AuthConfig.SERVER_SPEC);
@@ -92,6 +93,9 @@ public class CoffeesAeroAuth {
         NeoForge.EVENT_BUS.addListener(WatchdogEvents::onLivingTick);
         NeoForge.EVENT_BUS.addListener(WatchdogEvents::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(WatchdogEvents::onAdvancement);
+
+        // Rail anti-grief: auto-claim chunks where players build Create rail (no-op without FTB Chunks).
+        NeoForge.EVENT_BUS.addListener(com.coffeesaerosmp.auth.protect.RailAutoClaim::onBlockPlace);
     }
 
     private static void onServerStarting(ServerStartingEvent event) {
@@ -159,6 +163,8 @@ public class CoffeesAeroAuth {
         ROOM_MANAGER   = new PrivateRoomManager(event.getServer());
         APPROVAL_QUEUE = new NameApprovalQueue(PROFILE_STORE, WEBHOOK_QUEUE, DISCORD_REST, event.getServer(), ROOM_MANAGER);
         ROOM_MANAGER.runStartupCleanup(PROFILE_STORE);
+        LOBBY_STASH    = new com.coffeesaerosmp.auth.lobby.LobbyInventoryStash(dataDir);
+        LOBBY_STASH.initialize();
 
         // ── Obsidian stack ────────────────────────────────────────────────────
         if (AuthConfig.OBSIDIAN_ENABLED.get()) {
@@ -199,6 +205,7 @@ public class CoffeesAeroAuth {
         DISPLAY_NAMES = null;
         AUTH_MANAGER  = null;
         ROOM_MANAGER  = null;
+        LOBBY_STASH   = null;
     }
 
     private static void onRegisterCommands(RegisterCommandsEvent event) {

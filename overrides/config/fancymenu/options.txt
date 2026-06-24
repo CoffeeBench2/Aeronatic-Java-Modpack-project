@@ -1,0 +1,8 @@
+##[tutorial]
+
+B:show_welcome_screen = 'false';
+
+
+##[customization]
+
+B:show_customization_overlay = 'false';

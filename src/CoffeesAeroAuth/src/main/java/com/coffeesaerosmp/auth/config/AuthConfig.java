@@ -43,6 +43,13 @@ public class AuthConfig {
     public static final ModConfigSpec.ConfigValue<String>  QUIET_HOURS_START;
     public static final ModConfigSpec.ConfigValue<String>  QUIET_HOURS_END;
 
+    // ── Rail protection ─────────────────────────────────────────────────────────
+    public static final ModConfigSpec.BooleanValue RAIL_AUTOCLAIM_ENABLED;
+    public static final ModConfigSpec.IntValue     RAIL_AUTOCLAIM_RADIUS;
+    public static final ModConfigSpec.BooleanValue RAIL_AUTOCLAIM_AUTOGRANT;
+    public static final ModConfigSpec.IntValue     RAIL_AUTOCLAIM_MAX;
+    public static final ModConfigSpec.ConfigValue<String>  RAIL_PROTECTED_BLOCKS;
+
     // ── Discord ───────────────────────────────────────────────────────────────
     public static final ModConfigSpec.BooleanValue DISCORD_ENABLED;
     public static final ModConfigSpec.ConfigValue<String>  DISCORD_BOT_TOKEN;
@@ -157,6 +164,31 @@ public class AuthConfig {
             .define("quietHoursEnd", "08:00");
         b.pop();
 
+        b.comment("Rail Protection — auto-claim chunks where players build Create rail (anti-grief).")
+            .push("railprotection");
+        RAIL_AUTOCLAIM_ENABLED = b
+            .comment("When a player places a Create rail block, auto-claim that chunk to their FTB Chunks",
+                     "team so others can't break/grief it. Requires FTB Chunks. No-op if it's absent.")
+            .define("railAutoClaimEnabled", true);
+        RAIL_AUTOCLAIM_RADIUS = b
+            .comment("Extra chunk radius claimed around each placed rail block (0 = only that chunk,",
+                     "1 = 3x3, 2 = 5x5). Bigger = protects more surrounding landscape/track per placement.")
+            .defineInRange("railAutoClaimRadius", 0, 0, 4);
+        RAIL_AUTOCLAIM_AUTOGRANT = b
+            .comment("If a player is out of claim allowance, grant extra so rail is ALWAYS protected.",
+                     "false = respect their normal claim limit (safer against land-grab via track spam).")
+            .define("railAutoClaimAutoGrant", false);
+        RAIL_AUTOCLAIM_MAX = b
+            .comment("Hard cap on chunks auto-claimed per player via rail (only matters when autoGrant=true).")
+            .defineInRange("railAutoClaimMaxChunks", 256, 16, 4096);
+        RAIL_PROTECTED_BLOCKS = b
+            .comment("Comma-separated block IDs that trigger rail auto-claim when placed.")
+            .define("railProtectedBlocks",
+                "create:track,create:fake_track,create:track_station,create:track_signal,"
+                + "create:track_observer,create:content_observer,create:small_bogey,create:large_bogey,"
+                + "create:metal_girder,create:metal_girder_encased_shaft");
+        b.pop();
+
         b.comment("Discord Integration").push("discord");
         DISCORD_ENABLED             = b.comment("Enable Discord integration (webhooks + bot).")
             .define("enabled", false);
@@ -166,9 +198,9 @@ public class AuthConfig {
             .define("watchdogChannelId", "");
         DISCORD_PUBLIC_CHANNEL_ID   = b.comment("Channel ID for the public Discord chat bridge.")
             .define("publicChannelId", "");
-        DISCORD_WEBHOOK_WATCHDOG    = b.comment("Webhook URL for watchdog alerts (admin/owner only channel).")
+        DISCORD_WEBHOOK_WATCHDOG    = b.comment("Webhook URL for the watchdog/admin channel: security alerts AND join/leave/achievement events.")
             .define("webhookWatchdog", "");
-        DISCORD_WEBHOOK_PUBLIC      = b.comment("Webhook URL for public events (join/leave/chat/advancements).")
+        DISCORD_WEBHOOK_PUBLIC      = b.comment("Webhook URL for public events (chat bridge, deaths, playtime milestones). Join/leave/achievements moved to the watchdog channel.")
             .define("webhookPublic", "");
         DISCORD_DIGEST_TIME         = b.comment("Time (HH:mm UTC) to send the daily security digest.")
             .define("digestTime", "00:00");

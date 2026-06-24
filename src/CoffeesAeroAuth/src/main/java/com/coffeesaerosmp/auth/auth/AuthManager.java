@@ -316,6 +316,9 @@ public class AuthManager {
                     double[] pos = CoffeesAeroAuth.ROOM_MANAGER.getRoomSpawnPos(profile.roomSlot);
                     frozenPos.put(uuid, pos);
                 }
+                // Empty their real inventory (persisted) and hand them the "Teleport to Spawn" paper.
+                // Idempotent across reconnects; restored on /spawn (handleSpawn) or via the paper.
+                if (CoffeesAeroAuth.LOBBY_STASH != null) CoffeesAeroAuth.LOBBY_STASH.stashAndClear(player);
             }
             return;
         }
@@ -462,6 +465,14 @@ public class AuthManager {
             return false;
         }
 
+        // Premium players are Mojang-verified and keep their username — they never enter LOBBY_NAMING,
+        // so this is defensive: if one somehow reaches here, refuse rather than let them rename.
+        PlayerProfile selfProfile = store.get(uuid);
+        if (selfProfile != null && selfProfile.getAccountType() == PlayerProfile.AccountType.PREMIUM) {
+            send(player, TextUtil.PREFIX + "§aVerified accounts keep their Mojang name — no §a/setname§a needed.");
+            return false;
+        }
+
         if (!DisplayNameManager.isValidName(name)) {
             send(player, TextUtil.PREFIX + "§cDisplay name must be 3-20 characters (letters, numbers, underscores only).");
             return false;
@@ -479,7 +490,9 @@ public class AuthManager {
             }
         }
 
-        // Check availability in local index
+        String suggestion = suggestOfflineName(player.getGameProfile().getName());
+
+        // Exact availability in local index
         UUID existing = store.getDisplayNameOwner(name);
         if (existing != null && !existing.equals(uuid)) {
             PlayerProfile ownerProfile = store.get(existing);
@@ -488,12 +501,23 @@ public class AuthManager {
             } else {
                 send(player, TextUtil.PREFIX + "§cThat display name is already taken.");
             }
+            send(player, TextUtil.PREFIX + "§7Try a unique offline name, e.g. §a" + suggestion);
             return false;
         }
 
-        // Check watchdog premium name index
+        // Exact premium-name match (watchdog index)
         if (CoffeesAeroAuth.WATCHDOG != null && CoffeesAeroAuth.WATCHDOG.isPremiumDisplayName(name)) {
             send(player, TextUtil.PREFIX + "§cThat name is reserved by a verified player.");
+            send(player, TextUtil.PREFIX + "§7Try a unique offline name, e.g. §a" + suggestion);
+            return false;
+        }
+
+        // STRICT impersonation block: reject names that contain OR are a lookalike of any existing
+        // display name or known premium username (Coffee → Coffee123 / xCoffee / Cof3ee / C0ffee).
+        String conflict = findNameConflict(name, uuid);
+        if (conflict != null) {
+            send(player, TextUtil.PREFIX + "§cThat name is too similar to an existing player (§e" + conflict + "§c).");
+            send(player, TextUtil.PREFIX + "§7Pick a clearly different name, e.g. §a" + suggestion);
             return false;
         }
 
@@ -522,6 +546,36 @@ public class AuthManager {
             CoffeesAeroAuth.APPROVAL_QUEUE.submit(player, name);
         }
         return true;
+    }
+
+    /**
+     * STRICT name-conflict scan for /setname. Returns the existing protected name that {@code candidate}
+     * impersonates (substring / lookalike / edit-distance 1), or null if it is clearly unique. Checks
+     * known premium names plus every other player's current display name.
+     */
+    private String findNameConflict(String candidate, UUID self) {
+        if (CoffeesAeroAuth.WATCHDOG != null) {
+            String premium = CoffeesAeroAuth.WATCHDOG.findImpersonatedPremium(candidate);
+            if (premium != null) return premium;
+        }
+        // getAll() is a bulk scan only on the concrete ProfileStore, not the CredentialStore interface.
+        if (CoffeesAeroAuth.PROFILE_STORE != null) {
+            for (PlayerProfile p : CoffeesAeroAuth.PROFILE_STORE.getAll()) {
+                if (p.getUUID().equals(self)) continue;
+                String existing = p.displayName != null ? p.displayName : p.username;
+                if (existing == null || existing.isBlank()) continue;
+                if (com.coffeesaerosmp.auth.watchdog.WatchdogManager.impersonates(candidate, existing)) return existing;
+            }
+        }
+        return null;
+    }
+
+    /** Suggests a unique-ish offline handle "aerosmp_&lt;username&gt;", sanitized and clamped to 20 chars. */
+    private static String suggestOfflineName(String mcName) {
+        String base = mcName == null ? "" : mcName.replaceAll("[^a-zA-Z0-9_]", "");
+        if (base.isBlank()) base = "player";
+        String s = "aerosmp_" + base;
+        return s.length() > 20 ? s.substring(0, 20) : s;
     }
 
     /** /changename — one-time post-approval display name change. */
@@ -667,6 +721,11 @@ public class AuthManager {
         if (player.level().dimension() != com.coffeesaerosmp.auth.lobby.PrivateRoomManager.LOBBY_DIMENSION) {
             send(player, TextUtil.PREFIX + "§7You're already in the main world.");
             return false;
+        }
+        // Restore the real inventory (and drop the lobby paper) BEFORE the starter bonus is granted,
+        // so the bonus stacks on top of the restored items. No-op for brand-new players (empty stash).
+        if (CoffeesAeroAuth.LOBBY_STASH != null) {
+            CoffeesAeroAuth.LOBBY_STASH.restore(player);
         }
         if (CoffeesAeroAuth.ROOM_MANAGER != null) {
             CoffeesAeroAuth.ROOM_MANAGER.teleportToSpawn(player);
