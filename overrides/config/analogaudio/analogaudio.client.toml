@@ -1,0 +1,36 @@
+# ============================================================
+# Client Settings
+# ============================================================
+
+# Enables rendering of the cassette tape inside the radio and cassette deck blocks.
+enableCassetteAnimation = true
+
+# Enables the pulsing animation for Speaker blocks when playing audio.
+enableSpeakerAnimation = true
+
+# Toggles rendering of the name of the cassette on the tape when inserted into a block.
+renderCassetteText = true
+
+# Enables directional audio for blocks that play audio.
+enableSpatialAudio = true
+
+# Blends directional and non-directional audio to smoothen the effect. 1.0 = fully directional, 0.0 = fully non-directional
+spatialityThreshold = 0.3
+
+# Controls your master volume for radios.
+globalRadioVolume = 1.0
+
+# Enables being able to hear your own walkie talkie input through speaker blocks.
+speakerEcho = false
+
+# Enables playback for audio files uploaded by other players.
+enablePlayerSuppliedAudio = false
+
+# Enables disclaimers for different audio types on cassette tapes.
+cassetteTapeDisclaimers = true
+
+# Disables the welcome screen prompting you to install Lavaplayer. Highly recommended you don't disable this unless you know what you're doing.
+lavaplayerWelcomeScreen = false
+
+# Whether a lavaplayer download attempt has been made.
+lavaplayerDownloadAttempted = true
