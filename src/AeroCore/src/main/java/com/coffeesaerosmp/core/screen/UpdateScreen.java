@@ -10,9 +10,9 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 /**
- * Shown when the player's pack is out of date — either because they clicked "Join" on a stale pack
- * (blocked up front by {@link com.coffeesaerosmp.core.mixin.TitleScreenMixin}) or because they were
- * registry-kicked. Replaces the cryptic mod/registry wall with a clear instruction to re-import.
+ * Shown when the player's pack is out of date (clicking "Join" on a stale pack, or a registry kick).
+ * "Update Now" hands off to {@link UpdatingScreen}, which downloads the changed files in-client (with a
+ * progress bar) and applies them via a windowless helper after the game closes — no console, no link.
  */
 public class UpdateScreen extends Screen {
 
@@ -29,17 +29,14 @@ public class UpdateScreen extends Screen {
         int y  = this.height / 2 + 24;
 
         this.addRenderableWidget(Button.builder(
-                Component.literal("Copy download link"),
-                b -> {
-                    Minecraft.getInstance().keyboardHandler.setClipboard(VersionCheck.downloadUrl());
-                    b.setMessage(Component.literal("Link copied!").withStyle(ChatFormatting.GREEN));
-                })
-            .bounds(cx - 154, y, 150, 20).build());
+                Component.literal("Update Now").withStyle(ChatFormatting.GREEN),
+                b -> Minecraft.getInstance().setScreen(new UpdatingScreen(parent)))
+            .bounds(cx - 100, y, 200, 20).build());
 
         this.addRenderableWidget(Button.builder(
                 Component.literal("Back"),
                 b -> Minecraft.getInstance().setScreen(parent))
-            .bounds(cx + 4, y, 150, 20).build());
+            .bounds(cx - 100, y + 24, 200, 20).build());
     }
 
     @Override
@@ -55,14 +52,11 @@ public class UpdateScreen extends Screen {
             Component.literal("Your Coffees Aero SMP pack is outdated").withStyle(ChatFormatting.YELLOW),
             cx, y, 0xFFFFFF);
         g.drawCenteredString(this.font,
-            Component.literal("Re-import " + ver + " to join.").withStyle(ChatFormatting.WHITE),
+            Component.literal("Click \"Update Now\" to download " + ver + " and relaunch.").withStyle(ChatFormatting.WHITE),
             cx, y + 16, 0xFFFFFF);
         g.drawCenteredString(this.font,
             Component.literal("Current bundled version: v" + AeroConfig.PACK_VERSION.get()).withStyle(ChatFormatting.GRAY),
             cx, y + 36, 0xFFFFFF);
-        g.drawCenteredString(this.font,
-            Component.literal(VersionCheck.downloadUrl()).withStyle(ChatFormatting.AQUA),
-            cx, y + 56, 0xFFFFFF);
     }
 
     @Override
