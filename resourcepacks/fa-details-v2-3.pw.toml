@@ -1,0 +1,8 @@
+name = "FA+Details-v2.3"
+filename = "FA+Details-v2.3.zip"
+side = "both"
+
+[download]
+url = "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/download/v1.3.0/FA%2BDetails-v2.3.zip"
+hash-format = "sha256"
+hash = "78fe8605a5d7b9b6a6ed30c7b38fddb9f5e4d69a6670f998eee8ebb14c4c9c52"
