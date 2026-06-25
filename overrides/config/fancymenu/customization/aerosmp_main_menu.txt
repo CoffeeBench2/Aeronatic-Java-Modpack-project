@@ -12,7 +12,7 @@ render_custom_elements_behind_vanilla:false
 type:background
 
 background_type:fancymenu.backgrounds.image
-image_path:local:config/fancymenu/assets/background.png
+image:local:config/fancymenu/assets/background.png
 
 }
 
@@ -20,18 +20,18 @@ image_path:local:config/fancymenu/assets/background.png
 type:vanilla_button
 
 identifier:title_screen_logo
-vanillaButtonHidden:true
+is_hidden:true
 
 }
 
 {
-type:element
+type:deep_element
 
 element_type:fancymenu.elements.image
 identifier:aero_logo
 instance_identifier:aero_logo_01
 layer:normal
-anchorPoint:TOP_CENTERED
+anchor_point:TOP_CENTERED
 advanced_posx:-200
 advanced_posy:15
 advanced_width:400
@@ -45,13 +45,13 @@ source:local:config/fancymenu/assets/logo.png
 }
 
 {
-type:element
+type:deep_element
 
 element_type:fancymenu.elements.image
 identifier:aero_cogwheel_1
 instance_identifier:aero_cogwheel_1_01
 layer:normal
-anchorPoint:BOTTOM_LEFT
+anchor_point:BOTTOM_LEFT
 advanced_posx:30
 advanced_posy:-110
 advanced_width:80
@@ -66,13 +66,13 @@ source:local:config/fancymenu/assets/cogwheel.png
 }
 
 {
-type:element
+type:deep_element
 
 element_type:fancymenu.elements.image
 identifier:aero_cogwheel_2
 instance_identifier:aero_cogwheel_2_01
 layer:normal
-anchorPoint:BOTTOM_LEFT
+anchor_point:BOTTOM_LEFT
 advanced_posx:100
 advanced_posy:-100
 advanced_width:60

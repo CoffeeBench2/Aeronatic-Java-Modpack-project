@@ -670,11 +670,11 @@ hash = "e0583450795a604063439598ddb47d4db40db3db4b9bff6bbc183bf51bf01db6"
 
 [[files]]
 file = "overrides/config/fancymenu/customization/aerosmp_loading.txt"
-hash = "3a9603b9801d3fc5c8f4e17ccfc38ec653555f10ddeefb3d2aec5e805dfb24a7"
+hash = "c6d2667fb8dea8fa627f0c927f204e33d6e9ec0ee59a1ee790ba70cd03661d97"
 
 [[files]]
 file = "overrides/config/fancymenu/customization/aerosmp_main_menu.txt"
-hash = "6efe2a3cc988c1c194e9bb87923f4d625638d757736c5857c06e151006429fb4"
+hash = "884ebb5fb02ddae16c9d754ef39c8d94a6ee2cea47bd4209e199592b5b58dca8"
 
 [[files]]
 file = "overrides/config/fancymenu/options.txt"
