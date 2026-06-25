@@ -12,18 +12,18 @@ render_custom_elements_behind_vanilla:false
 type:background
 
 background_type:fancymenu.backgrounds.image
-image_path:local:config/fancymenu/assets/background.png
+image:local:config/fancymenu/assets/background.png
 
 }
 
 {
-type:element
+type:deep_element
 
 element_type:fancymenu.elements.image
 identifier:load_cogwheel_big
 instance_identifier:load_cogwheel_big_01
 layer:normal
-anchorPoint:MID_CENTERED
+anchor_point:MID_CENTERED
 advanced_posx:-60
 advanced_posy:-60
 advanced_width:120
@@ -38,13 +38,13 @@ source:local:config/fancymenu/assets/cogwheel.png
 }
 
 {
-type:element
+type:deep_element
 
 element_type:fancymenu.elements.image
 identifier:load_cogwheel_small
 instance_identifier:load_cogwheel_small_01
 layer:normal
-anchorPoint:MID_CENTERED
+anchor_point:MID_CENTERED
 advanced_posx:30
 advanced_posy:10
 advanced_width:80
