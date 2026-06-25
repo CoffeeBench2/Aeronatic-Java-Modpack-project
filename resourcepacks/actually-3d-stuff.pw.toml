@@ -3,6 +3,6 @@ filename = "Actually 3D Stuff.zip"
 side = "both"
 
 [download]
-url = "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/download/v1.4.0/Actually.3D.Stuff.zip"
+url = "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/download/v1.5.0/Actually.3D.Stuff.zip"
 hash-format = "sha256"
 hash = "cb732dbcd81bb49db5d46186b8da45f8cc88b51d1529cb24009cc5f1f98dbd58"

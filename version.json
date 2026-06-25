@@ -1,7 +1,7 @@
 {
-  "version": "1.4.0",
+  "version": "1.5.0",
   "url": "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/latest",
   "neoforge": "21.1.233",
   "minecraft": "1.21.1",
-  "notes": "SetName hardening, lobby empty-inventory + Teleport-to-Spawn paper, join/leave/achievements to the watchdog channel, launcher popup pass (FancyMenu/Vista/EuphoriaPatcher off, Analog Audio lavaplayer bundled), removed FA+Details, Create rail anti-grief (FTB Chunks auto-claim)."
+  "notes": "Custom main menu (airship background, Coffee's Create Aeronautics SMP logo), cogwheel loading screen, Create rail drag-track corridor auto-claim fix."
 }

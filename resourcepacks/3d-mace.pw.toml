@@ -3,6 +3,6 @@ filename = "3d-mace.zip"
 side = "both"
 
 [download]
-url = "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/download/v1.4.0/3d-mace.zip"
+url = "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/download/v1.5.0/3d-mace.zip"
 hash-format = "sha256"
 hash = "04e4354b7c9d9efbd5f3d01d4fd9a3a3185a653d7afbe934c57f0062393af7ac"

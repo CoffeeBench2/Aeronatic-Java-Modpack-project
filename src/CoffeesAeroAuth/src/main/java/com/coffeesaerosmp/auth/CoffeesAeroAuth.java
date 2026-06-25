@@ -96,6 +96,7 @@ public class CoffeesAeroAuth {
 
         // Rail anti-grief: auto-claim chunks where players build Create rail (no-op without FTB Chunks).
         NeoForge.EVENT_BUS.addListener(com.coffeesaerosmp.auth.protect.RailAutoClaim::onBlockPlace);
+        NeoForge.EVENT_BUS.addListener(com.coffeesaerosmp.auth.protect.RailAutoClaim::onRightClickBlock);
     }
 
     private static void onServerStarting(ServerStartingEvent event) {

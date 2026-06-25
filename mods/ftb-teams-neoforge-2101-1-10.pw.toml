@@ -3,6 +3,6 @@ filename = "ftb-teams-neoforge-2101.1.10.jar"
 side = "both"
 
 [download]
-url = "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/download/v1.4.0/ftb-teams-neoforge-2101.1.10.jar"
+url = "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/download/v1.5.0/ftb-teams-neoforge-2101.1.10.jar"
 hash-format = "sha256"
 hash = "a656f2aa0e11a933aab3ba697690aa0eb2041f65e6c5daa448897ee0a6d37a6c"

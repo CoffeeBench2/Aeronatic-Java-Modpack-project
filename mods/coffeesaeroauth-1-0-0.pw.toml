@@ -3,6 +3,6 @@ filename = "CoffeesAeroAuth-1.0.0.jar"
 side = "both"
 
 [download]
-url = "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/download/v1.4.0/CoffeesAeroAuth-1.0.0.jar"
+url = "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/download/v1.5.0/CoffeesAeroAuth-1.0.0.jar"
 hash-format = "sha256"
-hash = "00caadc3ad4ec0d117a8063be8a429f911217a09c1e5f4c9ec4443b1465d482a"
+hash = "578348f6d0fdfa845e67a10d5a5985ec79836866e0a3128846e037095b26d32d"

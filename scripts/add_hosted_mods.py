@@ -10,7 +10,7 @@ import os, hashlib, json, subprocess, re
 
 ROOT = r"D:\MC Project\untitled"
 REPO = "CoffeeBench2/Aeronatic-Java-Modpack-project"
-TAG  = "v1.4.0"
+TAG  = "v1.5.0"
 
 TARGETS = {
     "mods": [
