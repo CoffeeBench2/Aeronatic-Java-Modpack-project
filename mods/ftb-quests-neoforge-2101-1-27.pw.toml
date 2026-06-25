@@ -3,6 +3,6 @@ filename = "ftb-quests-neoforge-2101.1.27.jar"
 side = "both"
 
 [download]
-url = "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/download/v1.4.0/ftb-quests-neoforge-2101.1.27.jar"
+url = "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/download/v1.5.0/ftb-quests-neoforge-2101.1.27.jar"
 hash-format = "sha256"
 hash = "460b163ebefb4580e1ad32e1f94f1ea4bdc8f763692ee821628ace10bde49a03"

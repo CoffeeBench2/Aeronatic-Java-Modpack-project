@@ -3,6 +3,6 @@ filename = "ftb-chunks-neoforge-2101.1.19.jar"
 side = "both"
 
 [download]
-url = "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/download/v1.4.0/ftb-chunks-neoforge-2101.1.19.jar"
+url = "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/download/v1.5.0/ftb-chunks-neoforge-2101.1.19.jar"
 hash-format = "sha256"
 hash = "f50bb491f1153609856980c1b5dbc533e9ae19b2e83761ae6b8caae65eef34fb"

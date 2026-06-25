@@ -3,6 +3,6 @@ filename = "create_connected-1.1.16-mc1.21.1.jar"
 side = "both"
 
 [download]
-url = "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/download/v1.4.0/create_connected-1.1.16-mc1.21.1.jar"
+url = "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/download/v1.5.0/create_connected-1.1.16-mc1.21.1.jar"
 hash-format = "sha256"
 hash = "5eae502854bcfc210c495f54e474ffde6099c396d4a0089aaa3a08a17554ce27"

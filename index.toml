@@ -72,7 +72,7 @@ metafile = true
 
 [[files]]
 file = "mods/cameraoverhaul-v2-0-4-neoforge-clothfix.pw.toml"
-hash = "fc1053c9014b06c4c481f312fa4d02bd10fb33802d17408511d3104ab0642e8c"
+hash = "cdde4150f9977c4efd329f6c04e93893db0a255c52f941f4edb17f2bf096a274"
 metafile = true
 
 [[files]]
@@ -112,12 +112,12 @@ metafile = true
 
 [[files]]
 file = "mods/coffeesaeroauth-1-0-0.pw.toml"
-hash = "dcd2fb378cfc52254a427c6fa38611aa7dab65c083d074fe867e91064cc14836"
+hash = "739feb859a81e4efe449cb07e7917df080581c8c174ca9825500c4b5664159c2"
 metafile = true
 
 [[files]]
 file = "mods/coffeesaerocore-1-0-0.pw.toml"
-hash = "6011b1b2d32120d9d9884bbd4913b8143f168b856b37feadbd5ddc2bc84f74b2"
+hash = "22c3af41dcc60d620072aa56560ae42be7c479a82458ba5bb85e6e1daddfcf55"
 metafile = true
 
 [[files]]
@@ -172,7 +172,7 @@ metafile = true
 
 [[files]]
 file = "mods/create-connected-1-1-16-mc1-21-1.pw.toml"
-hash = "f13b094afde697c86512a86b370055f44a4ae880c165b3660f11be017d399bc5"
+hash = "f2a07c9352dd62d9d89bd8f6390cd19fd859f79ab70595db5f8c2ffc78e82402"
 metafile = true
 
 [[files]]
@@ -292,7 +292,7 @@ metafile = true
 
 [[files]]
 file = "mods/extra-create-recipes-1-21-1-v1.pw.toml"
-hash = "c71c69ea6f2cc528955da6388d4789a5b49569c3b8ac8e717a0803605a67b74c"
+hash = "2ab84b80e68495a5a25952bddc0f3e4498f1dcbcb73247fd29928f697eddb37e"
 metafile = true
 
 [[files]]
@@ -317,22 +317,22 @@ metafile = true
 
 [[files]]
 file = "mods/ftb-chunks-neoforge-2101-1-19.pw.toml"
-hash = "c4d19cdbb930c012db98e4e43d1adbec5bcf2c4c560f02e8fa143feacf4595cc"
+hash = "fbb52a8d5bae146baa6878740e2802443a30182f4552ac065e9107316169133c"
 metafile = true
 
 [[files]]
 file = "mods/ftb-library-neoforge-2101-1-32.pw.toml"
-hash = "fd2c0ae3a57b52dce6435e0d3b0491b8d9c2e1168f0b47571e9d71df007c0c18"
+hash = "dac7dbf50d1221069a5a0f309be56e5a4113fbf81ecc34bff2833ab402181837"
 metafile = true
 
 [[files]]
 file = "mods/ftb-quests-neoforge-2101-1-27.pw.toml"
-hash = "3bb5ac586dcc53c1be07c80d508d45b389a9848b26d4e1c7f850b870623aba72"
+hash = "e096841fab99b9404f050a4b86eb4acd497beafdb569d3fd629b64385e433e22"
 metafile = true
 
 [[files]]
 file = "mods/ftb-teams-neoforge-2101-1-10.pw.toml"
-hash = "156b816b16c225c40b3a7d60b4cb6fc72405a4206935b7f3bea1c621bb688aa4"
+hash = "538e95da0d469d0ceaee08e7d10820cca41ddcb8e8788d4aa100c240388ffb66"
 metafile = true
 
 [[files]]
@@ -367,7 +367,7 @@ metafile = true
 
 [[files]]
 file = "mods/integrated-api-1-7-4-1-21-1-neoforge.pw.toml"
-hash = "7e50013af9e450aca678052c4621d92202385f4762265a7f28552b8623412767"
+hash = "8783c899e0d15585805dd5b1a128334e3258ad826970de619746700937886520"
 metafile = true
 
 [[files]]
@@ -650,11 +650,31 @@ hash = "ff15da34b5f6f825dcc32399ab150c2462393031a41c8ea6938d6dd61b11fb04"
 
 [[files]]
 file = "overrides/config/coffeesaerosmp_core-client.toml"
-hash = "f4b9b55a10eec8eb1d12c9801faeb01ea13153f00b514ece00ef860ef030d20a"
+hash = "ec4852d4d3d1c9f051ea72812030de56aaee0cf17a640881a485af393107f025"
 
 [[files]]
 file = "overrides/config/euphoria_patcher/settings.toml"
 hash = "4e13895b1c18cbcc44f9ecaa03d7162f4d287b1c49b7273a4824e5a2d55140f1"
+
+[[files]]
+file = "overrides/config/fancymenu/assets/background.png"
+hash = "5adac99ba70a3502f0c5007dbbd189c082e79996ffb4a01f1e3a047b360af342"
+
+[[files]]
+file = "overrides/config/fancymenu/assets/cogwheel.png"
+hash = "f7679206809a5be8149747778aa7e906efc5c65464a3644c57fc6312bcdfa1dc"
+
+[[files]]
+file = "overrides/config/fancymenu/assets/logo.png"
+hash = "e0583450795a604063439598ddb47d4db40db3db4b9bff6bbc183bf51bf01db6"
+
+[[files]]
+file = "overrides/config/fancymenu/customization/aerosmp_loading.txt"
+hash = "3a9603b9801d3fc5c8f4e17ccfc38ec653555f10ddeefb3d2aec5e805dfb24a7"
+
+[[files]]
+file = "overrides/config/fancymenu/customization/aerosmp_main_menu.txt"
+hash = "6efe2a3cc988c1c194e9bb87923f4d625638d757736c5857c06e151006429fb4"
 
 [[files]]
 file = "overrides/config/fancymenu/options.txt"
@@ -706,12 +726,12 @@ hash = "4bc099b05b1350941a3716795800cf5f75c8c3900c003cdad59b94610ae0f8a0"
 
 [[files]]
 file = "resourcepacks/3d-mace.pw.toml"
-hash = "3d262c081ab82297c70b3d13d03d38a861c4dd70d6fed79803153dd18da82122"
+hash = "48c92491a2b3a1f0cfcb50da78f6852c3d25e59fdc2edab7b2514c1ce59d02b7"
 metafile = true
 
 [[files]]
 file = "resourcepacks/actually-3d-stuff.pw.toml"
-hash = "b48f2da91f48fb4013762f63d63fc317f853366b984d019a18cdc31abf5e3140"
+hash = "1ef4e9b71a5d91d06b482cde913c0d27852ee2d94de1651218521e73c6706d0e"
 metafile = true
 
 [[files]]
@@ -731,7 +751,7 @@ metafile = true
 
 [[files]]
 file = "resourcepacks/better-trident-v2.pw.toml"
-hash = "232586597723d39d08b92c4b786c147ec1cc691032c4c6322323127da5f6e61f"
+hash = "6b83fd942c145c1635a4895229133f98abdddac287e2292788edac374bcb53fc"
 metafile = true
 
 [[files]]

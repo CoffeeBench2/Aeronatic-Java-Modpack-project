@@ -19,6 +19,7 @@ overrides/config/velocity/
 
 # Docs vault (decoy copy) + source + build artifacts
 obsidian-vault/
+Menu asssets/
 src/
 build/
 reports/
