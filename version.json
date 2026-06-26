@@ -1,7 +1,7 @@
 {
-  "version": "1.5.0",
+  "version": "1.5.1",
   "url": "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/latest",
   "neoforge": "21.1.233",
   "minecraft": "1.21.1",
-  "notes": "Custom main menu (airship background, Coffee's Create Aeronautics SMP logo), cogwheel loading screen, Create rail drag-track corridor auto-claim fix."
+  "notes": "1.5.1 patch: fixes FancyMenu custom main menu and loading screen not appearing after 1.5.0 update (layout format corrections)."
 }
