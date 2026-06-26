@@ -1,7 +1,7 @@
 {
-  "version": "1.5.1",
+  "version": "1.5.2",
   "url": "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/latest",
   "neoforge": "21.1.233",
   "minecraft": "1.21.1",
-  "notes": "1.5.1 patch: fixes FancyMenu custom main menu and loading screen not appearing after 1.5.0 update (layout format corrections)."
+  "notes": "1.5.2 patch: repoint the 'Join Coffees Aero SMP' button to the new Apex server (69.41.165.143:25606) after the Contabo->Apex migration."
 }
