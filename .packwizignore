@@ -7,6 +7,11 @@
 server-files/
 server/
 server-test/
+server-mods/
+
+# WIP assets not referenced by any shipped layout (animated-cogwheel feature unshipped)
+overrides/config/fancymenu/assets/cogwheel_spin_cw.png
+overrides/config/fancymenu/assets/cogwheel_spin_ccw.png
 
 # Staging / temp mod folders (jars are delivered via the mods/*.pw.toml metafiles, not raw overrides)
 client-mods-temp/
