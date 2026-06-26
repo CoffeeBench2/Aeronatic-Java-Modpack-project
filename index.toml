@@ -650,7 +650,7 @@ hash = "ff15da34b5f6f825dcc32399ab150c2462393031a41c8ea6938d6dd61b11fb04"
 
 [[files]]
 file = "overrides/config/coffeesaerosmp_core-client.toml"
-hash = "ec4852d4d3d1c9f051ea72812030de56aaee0cf17a640881a485af393107f025"
+hash = "02fd54bcedd6486dee6f4c63ada22d944836161ba8c73f2d1fc15a0e7d4d22d5"
 
 [[files]]
 file = "overrides/config/euphoria_patcher/settings.toml"
