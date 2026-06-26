@@ -4,7 +4,7 @@ serverIp = "69.41.165.143:25606"
 #Minecraft username that can access the Admin Settings screen
 adminUsername = "MrCoffeeBench"
 #Bundled pack version - auto-stamped by the build script every build. Do not edit by hand.
-packVersion = "1.5.2"
+packVersion = "1.5.3"
 #Where players download the latest pack (shown when their pack is outdated).
 updateUrl = "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project"
 #Raw URL of version.json the client polls for the latest pack version. Blank = disable the check.

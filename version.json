@@ -1,7 +1,7 @@
 {
-  "version": "1.5.2",
+  "version": "1.5.3",
   "url": "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/latest",
-  "neoforge": "21.1.233",
+  "neoforge": "21.1.234",
   "minecraft": "1.21.1",
-  "notes": "1.5.2 patch: repoint the 'Join Coffees Aero SMP' button to the new Apex server (69.41.165.143:25606) after the Contabo->Apex migration."
+  "notes": "1.5.3: bump NeoForge loader 21.1.233 -> 21.1.234 to match the Apex server (strict loader-version check). Reinstall the NeoForge loader / re-import the profile once; mods are unchanged from 1.5.2."
 }
