@@ -8,6 +8,7 @@ server-files/
 server/
 server-test/
 server-mods/
+dist/
 
 # WIP assets not referenced by any shipped layout (animated-cogwheel feature unshipped)
 overrides/config/fancymenu/assets/cogwheel_spin_cw.png
