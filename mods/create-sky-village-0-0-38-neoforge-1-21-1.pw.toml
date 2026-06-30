@@ -1,0 +1,13 @@
+name = "create_sky_village-0.0.38-neoforge-1.21.1"
+filename = "create_sky_village-0.0.38-neoforge-1.21.1.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/1sKEbgoN/versions/W6ckOMnh/create_sky_village-0.0.38%20NeoForge%201.21.1.jar"
+hash-format = "sha512"
+hash = "e535c100f16d4c3a0e7b3bba3e210b2dd6388504130ebabeb5f64b206474dbfd7c9b75388b6175e07944ada4d88dc51042f066a6094a40ab41374c8740a157de"
+
+[update]
+[update.modrinth]
+mod-id = "1sKEbgoN"
+version = "W6ckOMnh"

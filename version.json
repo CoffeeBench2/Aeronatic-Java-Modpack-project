@@ -1,7 +1,7 @@
 {
-  "version": "1.5.4",
+  "version": "1.6.0",
   "url": "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/latest",
   "neoforge": "21.1.234",
   "minecraft": "1.21.1",
-  "notes": "1.5.4: removed CoffeesAeroAuth from the client pack (it is a server-side mod and shouldn't ship to clients). No gameplay change for players; the updater simply drops the unused jar. Mods otherwise unchanged from 1.5.3."
+  "notes": "1.6.0: +24 mods. Create addons (Encased, Parallel Pipes, Jetpack, Enchantment Industry, Ultimate Factory, New Age, Broken Bad, Radars, Structure, Sky Village, Structures Arise), content (Mowzie's Mobs, Lootr, Dynamic Village, DnDesires, Waystones), Vista video stack (WaterMedia + All The Tapes + Aeronautics Fix), perf (Noisium, Spark, Better Chunk Loading), client QoL (3D Skin Layers, Zoomify). Updated Design-n-Decor 2.2b, aeroclaims 0.9.1. AeroCore 1.1.0 (pack version shown on title screen). NOTE: Sable 2.x batch held for staging."
 }

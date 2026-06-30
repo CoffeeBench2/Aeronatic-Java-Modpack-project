@@ -1,0 +1,13 @@
+name = "vistaallthetapes-1.2.0-neoforge-1.21.1"
+filename = "vistaallthetapes-1.2.0-neoforge-1.21.1.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/LmEe7LrV/versions/Gyjt65TV/vistaallthetapes%20-%201.2.0%20-%20neoforge%20-%201.21.1.jar"
+hash-format = "sha512"
+hash = "8e82d3dcdcf536b96551b72d2ad2dfb4e5193bbf25c8505b3ba969283c1f49ba314954596833e0be58939caa417fdd7285ae433e7fb716eed0433e90a0be634c"
+
+[update]
+[update.modrinth]
+mod-id = "LmEe7LrV"
+version = "Gyjt65TV"
