@@ -1,0 +1,8 @@
+name = "betterchunkloading-1.21-5.4"
+filename = "betterchunkloading-1.21-5.4.jar"
+side = "both"
+
+[download]
+url = "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/download/v1.6.2/betterchunkloading-1.21-5.4.jar"
+hash-format = "sha256"
+hash = "4d13bdaaee282b7c0dcfba5f54e0eff7f0850d95d866ed1935fc2b95e5f626b0"
