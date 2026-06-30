@@ -1,7 +1,7 @@
 {
-  "version": "1.6.1",
+  "version": "1.6.2",
   "url": "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/latest",
   "neoforge": "21.1.234",
   "minecraft": "1.21.1",
-  "notes": "1.6.1 HOTFIX: removed 5 mods from 1.6.0 that had missing hard dependencies and crashed the client on launch (create-enchantment-industry needs create_dragons_plus; create_structure needs createdeco+create_easy_structures; betterchunkloading needs cupboard; create_radar needs createbigcannons; zoomify needs fabric-language-kotlin). zoomify + betterchunkloading will return with their dependency libs in a later update. All other 1.6.0 additions remain."
+  "notes": "1.6.2: restored the 5 mods removed in 1.6.1 now that their dependencies are bundled. Re-added create-enchantment-industry, create_structure, create_radar, betterchunkloading, zoomify, plus their deps: CreateDragonsPlus, createdeco, create_easy_structures, cupboard, createbigcannons, ritchiesprojectilelib, fabric-language-kotlin. Full pack is now ~165 mods."
 }

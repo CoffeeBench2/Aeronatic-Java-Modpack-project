@@ -1,0 +1,13 @@
+name = "create_easy_structures-0.2a-neoforge-1.21.1"
+filename = "create_easy_structures-0.2a-neoforge-1.21.1.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/z69Pxatv/versions/ECkmsrG4/create_easy_structures-0.2a-neoforge-1.21.1.jar"
+hash-format = "sha512"
+hash = "69c340c6ef729d41e3ecb71de5d7d8db53a32dd08780458bb8828a960cd54d5d53dc19ad2aa948a0e7328013fef49dc5276edb6641eec33a52fe5f6ba373c75c"
+
+[update]
+[update.modrinth]
+mod-id = "z69Pxatv"
+version = "ECkmsrG4"
