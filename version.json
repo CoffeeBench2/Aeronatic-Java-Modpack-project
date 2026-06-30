@@ -1,7 +1,7 @@
 {
-  "version": "1.6.0",
+  "version": "1.6.1",
   "url": "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/latest",
   "neoforge": "21.1.234",
   "minecraft": "1.21.1",
-  "notes": "1.6.0: +24 mods. Create addons (Encased, Parallel Pipes, Jetpack, Enchantment Industry, Ultimate Factory, New Age, Broken Bad, Radars, Structure, Sky Village, Structures Arise), content (Mowzie's Mobs, Lootr, Dynamic Village, DnDesires, Waystones), Vista video stack (WaterMedia + All The Tapes + Aeronautics Fix), perf (Noisium, Spark, Better Chunk Loading), client QoL (3D Skin Layers, Zoomify). Updated Design-n-Decor 2.2b, aeroclaims 0.9.1. AeroCore 1.1.0 (pack version shown on title screen). NOTE: Sable 2.x batch held for staging."
+  "notes": "1.6.1 HOTFIX: removed 5 mods from 1.6.0 that had missing hard dependencies and crashed the client on launch (create-enchantment-industry needs create_dragons_plus; create_structure needs createdeco+create_easy_structures; betterchunkloading needs cupboard; create_radar needs createbigcannons; zoomify needs fabric-language-kotlin). zoomify + betterchunkloading will return with their dependency libs in a later update. All other 1.6.0 additions remain."
 }

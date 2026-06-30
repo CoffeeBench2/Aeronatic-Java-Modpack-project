@@ -56,11 +56,6 @@ hash = "e605225b92f8f56f0abe545be190205a3826c17d6622f647d42004e4d873e1c1"
 metafile = true
 
 [[files]]
-file = "mods/betterchunkloading-1-21-5-4.pw.toml"
-hash = "ee839ee7571e95cfbd88153c95d142700ae306b9aa2ebc9fc768a9a4b16e7152"
-metafile = true
-
-[[files]]
 file = "mods/betterpingdisplay-1-21-1-1-1.pw.toml"
 hash = "9b51f953a619a158fb99b9df7646db71b7483a02d45cb3e0a421d70cf13eb80d"
 metafile = true
@@ -186,11 +181,6 @@ hash = "36a062b5d2ea4efd1e9aff28a31efdd74ed8ef6220819f52d3c874c5818f4d1d"
 metafile = true
 
 [[files]]
-file = "mods/create-enchantment-industry-2-4-2.pw.toml"
-hash = "12d1a6b7980c3ec83b53160a27bf85ee55bc66d7e9971cbf05ce3591163e8086"
-metafile = true
-
-[[files]]
 file = "mods/create-jetpack-forge-5-1-2.pw.toml"
 hash = "0b428bfc190d493d9355480637b67879795b90671fc1b3903a3fc9e6fe36543a"
 metafile = true
@@ -201,18 +191,8 @@ hash = "056d99bd8598fbce1cf04f987e68640ebb8ad1126bc5b20dfa5b271c5eb43147"
 metafile = true
 
 [[files]]
-file = "mods/create-radar-0-4-9-4-1-21-1.pw.toml"
-hash = "2ca08e050aafd478aaa595fd3a090ffe8dab7d95e32f9975c5e561e3e1c40c3b"
-metafile = true
-
-[[files]]
 file = "mods/create-sky-village-0-0-38-neoforge-1-21-1.pw.toml"
 hash = "1109edda8a886094e0f9ef59f7e1780bc338f4ad7f63072f13fc52da706ec1a8"
-metafile = true
-
-[[files]]
-file = "mods/create-structure-1-0-9-5-neoforge-1-21-1.pw.toml"
-hash = "410355a2e80a25e154e1d6d359179163ce3c1be424cfed1829924fa0070db962"
 metafile = true
 
 [[files]]
@@ -751,11 +731,6 @@ hash = "e4f06ff0a0d81a300771a8f12ade2729ad7f81d8d03088cacc42672f9a2aacf2"
 metafile = true
 
 [[files]]
-file = "mods/zoomify-2-15-2-1-21-1.pw.toml"
-hash = "3868378340253b6b8b323592dec58907b6497f78b7734355b3255a1800103819"
-metafile = true
-
-[[files]]
 file = "overrides/.analogaudio/internal/analogplayer-1.0.2.jar"
 hash = "5b53779dca71a5d9f9e15cf9137a6b44d4ca3bb578c9027b30c30578819cebd7"
 
@@ -765,7 +740,7 @@ hash = "ff15da34b5f6f825dcc32399ab150c2462393031a41c8ea6938d6dd61b11fb04"
 
 [[files]]
 file = "overrides/config/coffeesaerosmp_core-client.toml"
-hash = "aa385f9591cdc52b10c491b7b7b26d1530e4742b033a9bd34a8c6bfe01e6fead"
+hash = "d4c995c192c2fb489f3222ddecced63b0ee92b650be8b97022317fb380ca64af"
 
 [[files]]
 file = "overrides/config/euphoria_patcher/settings.toml"
