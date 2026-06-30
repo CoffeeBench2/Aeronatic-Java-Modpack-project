@@ -1,11 +1,11 @@
 name = "Coffees Aero SMP"
-version = "1.6.2"
+version = "1.6.3"
 pack-format = "packwiz:1.1.0"
 
 [index]
 file = "index.toml"
 hash-format = "sha256"
-hash = "b95e059b15bfbb76c50c4604ce82c265bee4836af76fc470ab18b6b3c69700a6"
+hash = "c04cc7de9653a1fef145ef67c8ba86abc86bf644e3114a7b435cdceabacfcd1d"
 
 [versions]
 minecraft = "1.21.1"
