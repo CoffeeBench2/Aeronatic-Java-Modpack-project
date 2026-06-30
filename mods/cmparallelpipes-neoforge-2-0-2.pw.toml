@@ -1,0 +1,13 @@
+name = "cmparallelpipes-neoforge-2.0.2"
+filename = "cmparallelpipes-neoforge-2.0.2.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/5jfUeix5/versions/aYrPugrv/cmparallelpipes-neoforge-2.0.2.jar"
+hash-format = "sha512"
+hash = "1a08dba7a1cef3d9e4aedbdb3616eac6c1d2f0b3f77aa936c5a293e6099f40bb7805b1f53461feb9bd8a9196cf10dd8fbd27de35dd9fd5bc48a7a9de1158b072"
+
+[update]
+[update.modrinth]
+mod-id = "5jfUeix5"
+version = "aYrPugrv"

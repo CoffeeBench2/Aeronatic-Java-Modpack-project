@@ -1,0 +1,8 @@
+name = "createbb-4.0.1"
+filename = "createbb-4.0.1.jar"
+side = "both"
+
+[download]
+url = "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/download/v1.6.0/createbb-4.0.1.jar"
+hash-format = "sha256"
+hash = "de26c071de38451b27828229fac6b5dd718ab1a03f010a461f11f20ad69565b0"

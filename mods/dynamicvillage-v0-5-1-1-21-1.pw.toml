@@ -1,0 +1,13 @@
+name = "dynamicvillage-v0.5.1-1.21.1"
+filename = "dynamicvillage-v0.5.1-1.21.1.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/YCPmkFAm/versions/9maBydxx/dynamicvillage-v0.5.1-1.21.1.jar"
+hash-format = "sha512"
+hash = "f16317ca147cb3558441d3e984fb21d477a061154dabaa497371a9fe4533b66e7af7ff4233f068beb089e1c9565697200e2dca990894c87c56339382fe5b9cc6"
+
+[update]
+[update.modrinth]
+mod-id = "YCPmkFAm"
+version = "9maBydxx"
