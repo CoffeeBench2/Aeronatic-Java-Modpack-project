@@ -206,11 +206,6 @@ hash = "056d99bd8598fbce1cf04f987e68640ebb8ad1126bc5b20dfa5b271c5eb43147"
 metafile = true
 
 [[files]]
-file = "mods/create-radar-0-4-9-4-1-21-1.pw.toml"
-hash = "2ca08e050aafd478aaa595fd3a090ffe8dab7d95e32f9975c5e561e3e1c40c3b"
-metafile = true
-
-[[files]]
 file = "mods/create-sky-village-0-0-38-neoforge-1-21-1.pw.toml"
 hash = "1109edda8a886094e0f9ef59f7e1780bc338f4ad7f63072f13fc52da706ec1a8"
 metafile = true
@@ -238,11 +233,6 @@ metafile = true
 [[files]]
 file = "mods/createbb-4-0-1.pw.toml"
 hash = "3f3c2936963cdc75f32104e065d4bd0e2ead38b2d4fafa8f511069a586e266ad"
-metafile = true
-
-[[files]]
-file = "mods/createbigcannons-5-11-7-mc-1-21-1.pw.toml"
-hash = "2643e3728146372e45e36947099e451fb1059beae2acccd8a3e585deb60a4d6b"
 metafile = true
 
 [[files]]
@@ -626,11 +616,6 @@ hash = "dac9e24635d5a192cb31ee6249f134d59f337913856b6cd2574a4b2585c3a427"
 metafile = true
 
 [[files]]
-file = "mods/ritchiesprojectilelib-2-1-2-mc-1-21-1-neoforge.pw.toml"
-hash = "49d94df8155565bd5b22cca19b787f496f3fce081fe33a4b4f6e0d52d226405e"
-metafile = true
-
-[[files]]
 file = "mods/rrls-5-0-10-mc1-21-1-forge.pw.toml"
 hash = "bbcd3387d2f9d0576537a3b18550ef78cacc6ab5c1a04c6ae4289e74cce8bfff"
 metafile = true
@@ -800,7 +785,7 @@ hash = "ff15da34b5f6f825dcc32399ab150c2462393031a41c8ea6938d6dd61b11fb04"
 
 [[files]]
 file = "overrides/config/coffeesaerosmp_core-client.toml"
-hash = "c3c634e0fe291d0c2decee49287d1e864316dcbcb4ac861e8378c276098dd4d3"
+hash = "a3eff744aa5e21b594b6d9132898e404a6c9b9d8abc6448d16f7433b8458038e"
 
 [[files]]
 file = "overrides/config/euphoria_patcher/settings.toml"
