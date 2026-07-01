@@ -122,7 +122,7 @@ metafile = true
 
 [[files]]
 file = "mods/coffeesaerocore-1-1-0.pw.toml"
-hash = "8d6d6b1e8ff871cf99639ca9274470774a9659bce1893663cf1db7dd027d634a"
+hash = "5042d348d3dcdba95c02e835198f370d0341e7276fef1826e7d68748aa858327"
 metafile = true
 
 [[files]]
@@ -778,6 +778,10 @@ metafile = true
 [[files]]
 file = "overrides/.analogaudio/internal/analogplayer-1.0.2.jar"
 hash = "5b53779dca71a5d9f9e15cf9137a6b44d4ca3bb578c9027b30c30578819cebd7"
+
+[[files]]
+file = "overrides/config/alexsmobs-common.toml"
+hash = "8c21beba7b66ac6277e371b70bceaee56d91d295b55474fc4734d79e4c59b09b"
 
 [[files]]
 file = "overrides/config/analogaudio/analogaudio.client.toml"
