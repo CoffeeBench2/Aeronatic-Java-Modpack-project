@@ -94,15 +94,6 @@ public abstract class TitleScreenMixin extends Screen {
         }
     }
 
-    /** Stamp the bundled pack version in the TOP-LEFT corner, styled like vanilla's own version
-     *  line (same font/shadow), so it's easy to tell at a glance which pack build is installed.
-     *  Kept clear of NeoForge's mod-loader/version branding, which renders in the bottom-left. */
-    @Inject(method = "render", at = @At("RETURN"))
-    private void onRender(GuiGraphics graphics, int mouseX, int mouseY, float partialTick, CallbackInfo ci) {
-        String label = "Coffees Aero SMP v" + AeroConfig.PACK_VERSION.get();
-        graphics.drawString(this.font, label, 2, 2, 0xFFFFFF);
-    }
-
     private void connectToServer() {
         Minecraft mc = Minecraft.getInstance();
         String ip = AeroConfig.SERVER_IP.get();

@@ -1,6 +1,9 @@
 package com.coffeesaerosmp.core.client;
 
+import com.coffeesaerosmp.core.config.AeroConfig;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.gui.screens.multiplayer.JoinMultiplayerScreen;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -8,6 +11,23 @@ import net.neoforged.neoforge.client.event.ScreenEvent;
 import org.lwjgl.glfw.GLFW;
 
 public class MainMenuEvents {
+
+    /**
+     * Draw the bundled pack version in the TOP-LEFT of the main menu, styled like vanilla's
+     * version line but with a dark backdrop pill so it stays readable over any FancyMenu
+     * background. Uses {@link ScreenEvent.Render.Post} so it renders AFTER FancyMenu's layer
+     * (the earlier mixin-based draw could sit underneath a custom menu background).
+     */
+    @SubscribeEvent
+    public static void onTitleScreenRender(ScreenEvent.Render.Post event) {
+        if (!(event.getScreen() instanceof TitleScreen)) return;
+        GuiGraphics graphics = event.getGuiGraphics();
+        Font font = Minecraft.getInstance().font;
+        String label = "Coffees Aero SMP v" + AeroConfig.PACK_VERSION.get();
+        int w = font.width(label);
+        graphics.fill(1, 1, 5 + w, 12, 0x90000000); // semi-transparent backdrop for contrast
+        graphics.drawString(font, label, 3, 3, 0xFFFFFF);
+    }
 
     // Primary button manipulation is handled by TitleScreenMixin.
     @SubscribeEvent

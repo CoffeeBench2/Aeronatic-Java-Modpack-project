@@ -5,4 +5,4 @@ side = "both"
 [download]
 url = "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/download/v1.6.4/CoffeesAeroCore-1.1.0.jar"
 hash-format = "sha256"
-hash = "8d40e52e20bc4264186223b9fc6155c985f1e1efe17592f37f5608d83fe7f4d6"
+hash = "b012708d58d7ffb86888e69a64cb6e04387a9a828c545bda08b528b5af7588a7"
