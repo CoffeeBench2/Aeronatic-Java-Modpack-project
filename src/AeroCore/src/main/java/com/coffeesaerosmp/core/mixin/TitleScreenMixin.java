@@ -5,6 +5,7 @@ import com.coffeesaerosmp.core.screen.AdminSettingsScreen;
 import com.coffeesaerosmp.core.screen.UpdateScreen;
 import com.coffeesaerosmp.core.version.VersionCheck;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.ConnectScreen;
 import net.minecraft.client.gui.screens.Screen;
@@ -91,6 +92,15 @@ public abstract class TitleScreenMixin extends Screen {
                     }
             ).bounds(5, this.height - 25, 90, 20).build());
         }
+    }
+
+    /** Stamp the bundled pack version in the TOP-LEFT corner, styled like vanilla's own version
+     *  line (same font/shadow), so it's easy to tell at a glance which pack build is installed.
+     *  Kept clear of NeoForge's mod-loader/version branding, which renders in the bottom-left. */
+    @Inject(method = "render", at = @At("RETURN"))
+    private void onRender(GuiGraphics graphics, int mouseX, int mouseY, float partialTick, CallbackInfo ci) {
+        String label = "Coffees Aero SMP v" + AeroConfig.PACK_VERSION.get();
+        graphics.drawString(this.font, label, 2, 2, 0xFFFFFF);
     }
 
     private void connectToServer() {
