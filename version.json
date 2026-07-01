@@ -3,5 +3,5 @@
   "url": "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/latest",
   "neoforge": "21.1.234",
   "minecraft": "1.21.1",
-  "notes": "1.6.4: upgraded Create Slice & Dice 4.2.4 -> 4.3.2 (native NeoForge) to fix the Create Encased startup crash (missing SDBlockEntities); removed betterchunkloading (C2ME discourages it -> mod-conflict warning); pack version now renders top-left on the main menu; client now connects to the gate 92.4.65.219:25565."
+  "notes": "1.6.4: upgraded Create Slice & Dice 4.2.4 -> 4.3.2 (native NeoForge) to fix the Create Encased startup crash (missing SDBlockEntities); removed betterchunkloading (C2ME discourages it -> mod-conflict warning); pack version now renders top-left on the main menu; client connects to Apex 69.41.165.143:25606 directly (transfer-gate deferred — needs a client-side negotiation-suppression mixin before players can route through it)."
 }

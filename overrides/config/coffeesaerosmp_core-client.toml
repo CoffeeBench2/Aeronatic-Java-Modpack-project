@@ -1,6 +1,6 @@
 #CoffeesAeroSMP Core - Client Configuration
 #Server IP shown in and used by the 'Join Coffees Aero SMP' button
-serverIp = "92.4.65.219:25565"
+serverIp = "69.41.165.143:25606"
 #Minecraft username that can access the Admin Settings screen
 adminUsername = "MrCoffeeBench"
 #Bundled pack version - auto-stamped by the build script every build. Do not edit by hand.
