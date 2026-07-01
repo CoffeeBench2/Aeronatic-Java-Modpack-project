@@ -56,11 +56,6 @@ hash = "e605225b92f8f56f0abe545be190205a3826c17d6622f647d42004e4d873e1c1"
 metafile = true
 
 [[files]]
-file = "mods/betterchunkloading-1-21-5-4.pw.toml"
-hash = "55dadaff6468f89fb48f2620b147c0f1a15a8f62aa22ae282ba416f1b67c654f"
-metafile = true
-
-[[files]]
 file = "mods/betterpingdisplay-1-21-1-1-1.pw.toml"
 hash = "9b51f953a619a158fb99b9df7646db71b7483a02d45cb3e0a421d70cf13eb80d"
 metafile = true
@@ -122,7 +117,7 @@ metafile = true
 
 [[files]]
 file = "mods/coffeesaerocore-1-1-0.pw.toml"
-hash = "57542d78236e642b695878a0f0a887aae5b3d7259e3438d917db98ec96e57e48"
+hash = "8d6d6b1e8ff871cf99639ca9274470774a9659bce1893663cf1db7dd027d634a"
 metafile = true
 
 [[files]]
@@ -641,8 +636,8 @@ hash = "60359f80b9a0d546bd7dd99958c21a76edec4f6e4970c97c9d2b83f1c020141d"
 metafile = true
 
 [[files]]
-file = "mods/sliceanddice-forge-4-2-4.pw.toml"
-hash = "793699642d84d4fd1d963095f0e90947ee828929985c347b40396a012f1ab7f6"
+file = "mods/slice-and-dice.pw.toml"
+hash = "47f7a98662dff8dae871424d210f1f8144617140a9d84b9f502a6d620c124883"
 metafile = true
 
 [[files]]
@@ -785,7 +780,7 @@ hash = "ff15da34b5f6f825dcc32399ab150c2462393031a41c8ea6938d6dd61b11fb04"
 
 [[files]]
 file = "overrides/config/coffeesaerosmp_core-client.toml"
-hash = "a3eff744aa5e21b594b6d9132898e404a6c9b9d8abc6448d16f7433b8458038e"
+hash = "7a48e603dce01725f78e85fa6a0599ed0ccf23509024e4fe86e149d89c7a4c51"
 
 [[files]]
 file = "overrides/config/euphoria_patcher/settings.toml"
