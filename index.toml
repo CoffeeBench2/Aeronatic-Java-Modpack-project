@@ -787,6 +787,10 @@ file = "overrides/config/coffeesaerosmp_core-client.toml"
 hash = "7a48e603dce01725f78e85fa6a0599ed0ccf23509024e4fe86e149d89c7a4c51"
 
 [[files]]
+file = "overrides/config/entity_texture_features.json"
+hash = "1d98d40f15d3a6ce7f1c191a8f458176479ef2fe251dae01ce45b38cdf8a9816"
+
+[[files]]
 file = "overrides/config/euphoria_patcher/settings.toml"
 hash = "4e13895b1c18cbcc44f9ecaa03d7162f4d287b1c49b7273a4824e5a2d55140f1"
 
