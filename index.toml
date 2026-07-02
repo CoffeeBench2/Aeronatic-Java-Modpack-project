@@ -96,11 +96,6 @@ hash = "5c7f0d96d789b0c4b6601cba9a1bd655210a9be54da4ff422442da422b2ec7ba"
 metafile = true
 
 [[files]]
-file = "mods/chunky-neoforge-1-4-23.pw.toml"
-hash = "c27806d3f971612b93b0f990e443cc69ddb1831bd577b1f1ebbc3c77db8dd0c9"
-metafile = true
-
-[[files]]
 file = "mods/citadel-2-7-0-1-21-1.pw.toml"
 hash = "84d0f213f7803fc54e82a467e122279ee9c9e557017eb0a46892729d925ade2f"
 metafile = true
