@@ -42,6 +42,10 @@ dependencies {
     // present at runtime in the pack; we guard every call behind a ModList isLoaded check so the
     // classes are never linked if FTB Chunks is absent. Local jars (offline-friendly).
     compileOnly(files("libs/ftb-chunks.jar", "libs/ftb-library.jar", "libs/ftb-teams.jar"))
+
+    // CoffeesAeroSkins API for the skins backend bridge (SkinsHook). compileOnly + ModList-guarded,
+    // same pattern as FTB. Build CoffeesAeroSkins first (sibling project).
+    compileOnly(files("../CoffeesAeroSkins/build/libs/CoffeesAeroSkins-1.0.0.jar"))
 }
 
 tasks.withType(JavaCompile).configureEach {

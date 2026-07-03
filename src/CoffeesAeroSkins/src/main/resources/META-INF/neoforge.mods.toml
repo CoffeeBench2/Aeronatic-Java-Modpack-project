@@ -1,0 +1,36 @@
+modLoader = "javafml"
+loaderVersion = "[4,)"
+license = "MIT"
+
+[[mixins]]
+config = "coffeesaeroskins.mixins.json"
+
+[[mods]]
+modId           = "coffeesaeroskins"
+version         = "${file.jarVersion}"
+displayName     = "Coffees Aero Skins"
+authors         = "MrCoffeeBench"
+credits         = "Coffees Aero SMP"
+logoFile        = "logo.png"
+description     = '''
+Skin engine for Coffees Aero SMP.
+
+Premium players auto-wear their real Mojang skin and cape on the offline-mode
+backend; offline players copy any Java skin with /skin <name>. A dedicated
+skin-sync channel keeps every modded client's view correct — including the
+wearer's own, which vanilla otherwise refuses on offline servers.
+'''
+
+[[dependencies.coffeesaeroskins]]
+    modId        = "neoforge"
+    type         = "required"
+    versionRange = "[21.1,)"
+    ordering     = "NONE"
+    side         = "BOTH"
+
+[[dependencies.coffeesaeroskins]]
+    modId        = "minecraft"
+    type         = "required"
+    versionRange = "[1.21.1,1.22)"
+    ordering     = "NONE"
+    side         = "BOTH"

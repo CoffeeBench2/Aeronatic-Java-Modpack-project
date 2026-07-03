@@ -34,6 +34,42 @@ public final class TabListManager {
         if (players.isEmpty()) return;
         ClientboundTabListPacket packet = new ClientboundTabListPacket(header(), footer(server));
         for (ServerPlayer p : players) p.connection.send(packet);
+        sendAdminNameOverlay(server, players);
+    }
+
+    /**
+     * Admin-only tab overlay: ops see "DisplayName §8(RealName)" for every masked player
+     * (regular players just see the display name from the NameMask profile swap). Sent on the same
+     * 2/s cadence as the header — UPDATE_DISPLAY_NAME entries are idempotent.
+     */
+    private static void sendAdminNameOverlay(MinecraftServer server,
+                                             java.util.List<ServerPlayer> players) {
+        if (com.coffeesaerosmp.auth.CoffeesAeroAuth.AUTH_MANAGER == null) return;
+        var store = com.coffeesaerosmp.auth.CoffeesAeroAuth.AUTH_MANAGER.getStore();
+
+        java.util.List<net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket.Entry> entries =
+            new java.util.ArrayList<>();
+        for (ServerPlayer p : players) {
+            var profile = store.get(p.getUUID());
+            if (profile == null || profile.username == null) continue;
+            String display = p.getGameProfile().getName();
+            if (profile.username.equals(display)) continue;   // not masked — nothing to reveal
+            boolean premium = profile.getAccountType()
+                == com.coffeesaerosmp.auth.db.PlayerProfile.AccountType.PREMIUM;
+            Component c = Component.literal(
+                (premium ? "§6✈ §f" : "§8◈ §7") + display + " §8(" + profile.username + ")");
+            entries.add(new net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket.Entry(
+                p.getUUID(), null, true, p.connection.latency(), p.gameMode.getGameModeForPlayer(), c, null));
+        }
+        if (entries.isEmpty()) return;
+
+        var pkt = new net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket(
+            java.util.EnumSet.of(net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket.Action.UPDATE_DISPLAY_NAME),
+            java.util.List.of());
+        ((com.coffeesaerosmp.auth.mixin.PlayerInfoPacketAccessor) (Object) pkt).aeroauth$setEntries(entries);
+        for (ServerPlayer viewer : players) {
+            if (viewer.hasPermissions(2)) viewer.connection.send(pkt);
+        }
     }
 
     private static Component header() {

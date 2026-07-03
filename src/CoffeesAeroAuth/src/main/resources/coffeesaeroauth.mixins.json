@@ -3,10 +3,14 @@
     "minVersion": "0.8",
     "package": "com.coffeesaerosmp.auth.mixin",
     "compatibilityLevel": "JAVA_21",
-    "mixins": [],
+    "mixins": [
+        "PlayerGameProfileAccessor"
+    ],
     "server": [
         "ServerPacketListenerMixin",
-        "ServerCommonCookieMixin"
+        "ServerCommonCookieMixin",
+        "ServerPlayerDisplayNameMixin",
+        "PlayerInfoPacketAccessor"
     ],
     "client": [],
     "injectors": {

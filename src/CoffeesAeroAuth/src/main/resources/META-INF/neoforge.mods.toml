@@ -4,8 +4,11 @@ license = "MIT"
 
 [[mods]]
 modId       = "coffees_aero_auth"
-version     = "1.4.0"
+version     = "${file.jarVersion}"
 displayName = "Coffees Aero Auth"
+authors     = "MrCoffeeBench"
+credits     = "Coffees Aero SMP"
+logoFile    = "logo.png"
 description = '''
 Authentication and profile system for Coffees Aero SMP public server.
 Supports Mojang-authenticated (premium) and offline (cracked) players.

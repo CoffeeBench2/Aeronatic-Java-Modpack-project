@@ -15,6 +15,7 @@ import java.nio.file.*;
 import java.security.MessageDigest;
 import java.time.Duration;
 import java.util.*;
+import java.util.stream.Stream;
 
 /**
  * In-client packwiz updater. Reads the live {@code pack.toml} + {@code index.toml} + metafiles, hashes
@@ -99,6 +100,13 @@ public final class InClientUpdater {
 
             // Orphans: files a previous in-client update installed that the pack no longer lists.
             List<String> removals = orphans(gameDir, managed);
+
+            // mods/ is FULLY managed: any jar not in the pack index is stale — an old-version
+            // leftover from a filename-changing release or from the original mrpack import (which
+            // writes no manifest, so plain orphan tracking can never catch it). This is what left
+            // CoffeesAeroCore-1.0.0.jar sitting next to 1.2.0 on Prism installs: both declared the
+            // same mod version, and FML silently picked the OLD file.
+            removals.addAll(staleModJars(gameDir, managed));
 
             if (plan.isEmpty() && removals.isEmpty()) {
                 phase = "Already up to date."; success = true; finished = true; return;
@@ -231,6 +239,23 @@ public final class InClientUpdater {
     private static void writeManifest(Path gameDir, Set<String> managed) throws IOException {
         Files.createDirectories(manifestPath(gameDir).getParent());
         Files.write(manifestPath(gameDir), managed, StandardCharsets.UTF_8);
+    }
+
+    /** Every *.jar under mods/ that the pack index doesn't manage. The pack is a closed set —
+     *  a jar the index doesn't know is either an outdated leftover or breaks server negotiation. */
+    private static List<String> staleModJars(Path gameDir, Set<String> managed) {
+        List<String> out = new ArrayList<>();
+        Path mods = gameDir.resolve("mods");
+        if (!Files.isDirectory(mods)) return out;
+        try (Stream<Path> s = Files.list(mods)) {
+            for (Path jar : (Iterable<Path>) s::iterator) {
+                String name = jar.getFileName().toString();
+                if (!name.toLowerCase(Locale.ROOT).endsWith(".jar")) continue;
+                String rel = "mods/" + name;
+                if (!managed.contains(rel)) out.add(rel);
+            }
+        } catch (IOException ignored) {}
+        return out;
     }
 
     private static List<String> orphans(Path gameDir, Set<String> nowManaged) {

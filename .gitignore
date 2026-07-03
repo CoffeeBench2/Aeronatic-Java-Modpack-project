@@ -24,3 +24,4 @@ nf_versions.json
 
 # IDE
 *.iml
+run/

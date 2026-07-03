@@ -21,9 +21,6 @@ public class ProfileCommands {
     private static final DateTimeFormatter DATE_FMT =
         DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.of("UTC"));
 
-    /** Lifetime cap on /skin <name> uses per offline player. */
-    public static final int MAX_SKIN_CHANGES = 2;
-
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
 
         // /profile [player]
@@ -44,52 +41,8 @@ public class ProfileCommands {
             )
         );
 
-        // /skin <java_username> | /skin reset — copy any Java account's public skin (offline players);
-        // premium players auto-get their real Mojang skin on join, /skin lets them override it.
-        dispatcher.register(Commands.literal("skin")
-            .then(Commands.literal("reset")
-                .executes(ctx -> {
-                    ServerPlayer player = ctx.getSource().getPlayerOrException();
-                    if (!requireAuth(player) || !requireOffline(player)) return 0;
-                    com.coffeesaerosmp.auth.auth.SkinManager.reset(player);
-                    player.sendSystemMessage(TextUtil.success("Skin reset. Premium players get their real skin back on next join."));
-                    return 1;
-                })
-            )
-            .then(Commands.argument("username", StringArgumentType.word())
-                .executes(ctx -> {
-                    ServerPlayer player = ctx.getSource().getPlayerOrException();
-                    if (!requireAuth(player) || !requireOffline(player)) return 0;
-                    // Lifetime cap: each offline player gets MAX_SKIN_CHANGES /skin uses (reset is free
-                    // and doesn't refund). Checked here + consumed only on a SUCCESSFUL apply.
-                    var profile = CoffeesAeroAuth.AUTH_MANAGER != null
-                        ? CoffeesAeroAuth.AUTH_MANAGER.getStore().get(player.getUUID()) : null;
-                    if (profile != null && profile.skinChangesUsed >= MAX_SKIN_CHANGES) {
-                        player.sendSystemMessage(TextUtil.error(
-                            "You've used all " + MAX_SKIN_CHANGES + " of your skin changes."));
-                        return 0;
-                    }
-                    String name = StringArgumentType.getString(ctx, "username");
-                    player.sendSystemMessage(TextUtil.info("Fetching skin for '" + name + "'…"));
-                    com.coffeesaerosmp.auth.auth.SkinManager.applyByName(player, name, result -> {
-                        if (result == null) {
-                            player.sendSystemMessage(TextUtil.error("No Java account named '" + name + "' found."));
-                            return;
-                        }
-                        int left = MAX_SKIN_CHANGES;
-                        if (profile != null) {
-                            profile.skinChangesUsed++;
-                            CoffeesAeroAuth.AUTH_MANAGER.getStore().save(profile);
-                            left = MAX_SKIN_CHANGES - profile.skinChangesUsed;
-                        }
-                        player.sendSystemMessage(TextUtil.success(
-                            "Skin applied from '" + result + "'. §7(" + left + " of " + MAX_SKIN_CHANGES
-                            + " skin change" + (left == 1 ? "" : "s") + " left.)"));
-                    });
-                    return 1;
-                })
-            )
-        );
+        // (/skin lives in the CoffeesAeroSkins mod since auth 1.6.0 — policy comes back through
+        // SkinsHook's backend: authenticated + offline-only, lifetime change cap.)
 
         // /mytrustedips — shows own trusted IPs (partially masked)
         dispatcher.register(Commands.literal("mytrustedips")
@@ -205,6 +158,7 @@ public class ProfileCommands {
         source.sendSuccess(() -> Component.literal(
             "§6[AuthMod Admin] §7" + target.getGameProfile().getName() + "\n" +
             "§7UUID:      §f" + p.uuidStr + "\n" +
+            "§7Real name: §f" + p.username + "\n" +
             "§7Display:   §f" + p.displayName + "\n" +
             "§7Type:      §f" + p.accountType + "\n" +
             "§7HasPass:   §f" + (p.passwordHash != null) + "\n" +
@@ -350,16 +304,6 @@ public class ProfileCommands {
     private static boolean requireAuth(ServerPlayer player) {
         if (CoffeesAeroAuth.AUTH_MANAGER == null || !CoffeesAeroAuth.AUTH_MANAGER.isAuthenticated(player.getUUID())) {
             player.sendSystemMessage(TextUtil.error("Authenticate first."));
-            return false;
-        }
-        return true;
-    }
-
-    /** /skin is offline-only — premium players already have their real Mojang skin & cape. */
-    private static boolean requireOffline(ServerPlayer player) {
-        PlayerProfile p = CoffeesAeroAuth.AUTH_MANAGER.getStore().get(player.getUUID());
-        if (p != null && p.getAccountType() == PlayerProfile.AccountType.PREMIUM) {
-            player.sendSystemMessage(TextUtil.error("Premium players already use their own Mojang skin & cape — /skin is for offline players."));
             return false;
         }
         return true;

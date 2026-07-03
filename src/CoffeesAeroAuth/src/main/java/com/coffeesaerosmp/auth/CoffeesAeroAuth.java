@@ -83,9 +83,9 @@ public class CoffeesAeroAuth {
         NeoForge.EVENT_BUS.addListener(PlayerAuthEvents::onPlayerJoin);
         NeoForge.EVENT_BUS.addListener(PlayerAuthEvents::onPlayerLeave);
 
-        // Skins: re-apply a player's saved custom skin on join (premium real skins come via the cookie).
-        // Own-view delivery is the aerosmp:self_skin payload to CoffeesAeroCore — no server-side timers.
-        NeoForge.EVENT_BUS.addListener(com.coffeesaerosmp.auth.auth.SkinManager::onPlayerJoin);
+        // Skins: owned by the CoffeesAeroSkins mod since 1.6.0 — auth just plugs in its profile
+        // store as storage/policy backend and forwards gate-verified premium UUIDs (SkinsHook).
+        com.coffeesaerosmp.auth.compat.SkinsHook.install();
 
         // Restrictions: movement, interaction, inventory
         NeoForge.EVENT_BUS.addListener(PlayerRestrictEvents::onLivingTick);
@@ -259,7 +259,7 @@ public class CoffeesAeroAuth {
             name, v.premium() ? "PREMIUM" : "OFFLINE", v.uuid());
         AUTH_MANAGER.resolvePlayerType(player, v.premium());
         // Premium: show their REAL Mojang skin (fetched by the gate-verified UUID) on this offline server.
-        if (v.premium()) com.coffeesaerosmp.auth.auth.SkinManager.applyPremium(player, v.uuid());
+        if (v.premium()) com.coffeesaerosmp.auth.compat.SkinsHook.applyPremium(player, v.uuid());
     }
 
     private static void onRegisterCommands(RegisterCommandsEvent event) {

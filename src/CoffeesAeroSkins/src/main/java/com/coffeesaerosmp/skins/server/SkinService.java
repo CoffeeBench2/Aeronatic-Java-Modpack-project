@@ -1,21 +1,18 @@
-package com.coffeesaerosmp.auth.auth;
+package com.coffeesaerosmp.skins.server;
 
-import com.coffeesaerosmp.auth.CoffeesAeroAuth;
-import com.coffeesaerosmp.auth.db.PlayerProfile;
+import com.coffeesaerosmp.skins.CoffeesAeroSkins;
+import com.coffeesaerosmp.skins.api.AeroSkinsApi;
+import com.coffeesaerosmp.skins.network.SkinSyncPayload;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.mojang.authlib.properties.Property;
 import com.mojang.authlib.properties.PropertyMap;
+import net.minecraft.network.protocol.common.ClientboundCustomPayloadPacket;
 import net.minecraft.network.protocol.game.ClientboundPlayerInfoRemovePacket;
 import net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket;
-import net.minecraft.network.protocol.game.ClientboundRespawnPacket;
-import net.minecraft.network.protocol.game.ClientboundSetCarriedItemPacket;
-import net.minecraft.network.protocol.game.ClientboundUpdateMobEffectPacket;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.effect.MobEffectInstance;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 
 import java.net.URI;
@@ -24,35 +21,45 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
 /**
- * Applies player skins on the offline-mode backend (online-mode=false), where players otherwise
+ * Server-side skin engine for the offline-mode backend (online-mode=false), where players otherwise
  * get the default Steve/Alex skin because Mojang doesn't attach a textures property.
  *
  * <ul>
- *   <li><b>Premium</b> — fetch the player's REAL Mojang skin via the gate-verified UUID and apply it,
- *       so their actual skin shows. Re-fetched every join (unless they've set a custom skin).</li>
- *   <li><b>Offline</b> — {@code /skin <java_username>} copies any Java account's public skin; saved
- *       to the profile so it persists across sessions.</li>
+ *   <li><b>Premium</b> — the gate-verified UUID fetches the player's REAL Mojang skin+cape.</li>
+ *   <li><b>Offline</b> — {@code /skin <java_username>} copies any Java account's public skin.</li>
  * </ul>
  *
- * <p>Skins are stored UNSIGNED (the backend runs {@code enforce-secure-profile=false}, so clients
- * don't require a Mojang signature) as the base64 "textures" value on {@link PlayerProfile#skinUrl}.
- * All Mojang HTTP is off-thread; the actual GameProfile mutation + client refresh runs on the server
- * thread. Fail-closed: any lookup error leaves the current skin untouched.</p>
+ * <p>Every applied skin is (1) written into the player's GameProfile + player-info rebroadcast, the
+ * vanilla path any un-modded client understands, and (2) recorded in {@link #ACTIVE} and pushed over
+ * {@code aerosmp:skin_sync} to every modded client — including the full table to each joining client.
+ * The payload path is authoritative for pack clients: it survives vanilla's local-player secure-skin
+ * filter and observer-side render caches that miss the one-shot rebroadcast.</p>
+ *
+ * <p>All Mojang HTTP is off-thread; GameProfile mutation + broadcasts run on the server thread.
+ * Fail-closed: any lookup error leaves the current skin untouched.</p>
  */
-public final class SkinManager {
+public final class SkinService {
 
-    private SkinManager() {}
+    private SkinService() {}
 
     private static final HttpClient HTTP = HttpClient.newBuilder()
         .connectTimeout(Duration.ofSeconds(6)).build();
 
-    /** UUID used for a "revert to default skin" self-skin payload (no donor profile). */
-    private static final UUID NO_SKIN_UUID = new UUID(0L, 0L);
+    /** Donor UUID for a "revert to default skin" entry (no donor profile). */
+    public static final UUID NO_SKIN_UUID = new UUID(0L, 0L);
+
+    /** One applied skin: donor profile UUID + base64 textures value. */
+    public record ActiveSkin(UUID donorId, String textures) {}
+
+    /** Online players' applied skins — the table replayed to every joining client. */
+    private static final Map<UUID, ActiveSkin> ACTIVE = new ConcurrentHashMap<>();
 
     // ── Public entry points ─────────────────────────────────────────────────────
 
@@ -61,43 +68,43 @@ public final class SkinManager {
         MinecraftServer server = player.getServer();
         if (server == null) return;
         String name = player.getGameProfile().getName();
-        CoffeesAeroAuth.LOGGER.info("[Skin] {} PREMIUM — fetching real Mojang skin for {}", name, realMojangUuid);
+        CoffeesAeroSkins.LOGGER.info("[Skins] {} PREMIUM — fetching real Mojang skin for {}", name, realMojangUuid);
         fetchTexturesValue(realMojangUuid).thenAccept(value -> {
-            if (value == null) {                           // real skin + cape, as-is from Mojang
-                CoffeesAeroAuth.LOGGER.warn("[Skin] {} — Mojang skin fetch returned nothing (Mojang unreachable from Apex, or no textures).", name);
+            if (value == null) {
+                CoffeesAeroSkins.LOGGER.warn("[Skins] {} — Mojang skin fetch returned nothing (Mojang unreachable, or no textures).", name);
                 return;
             }
             server.execute(() -> {
                 apply(player, value, realMojangUuid);
-                saveSkin(player, value);
-                CoffeesAeroAuth.LOGGER.info("[Skin] {} — applied real skin+cape ({} chars).", name, value.length());
+                AeroSkinsApi.backend().saveTextures(player.getUUID(), value);
+                CoffeesAeroSkins.LOGGER.info("[Skins] {} — applied real skin+cape ({} chars).", name, value.length());
             });
         });
     }
 
     /** Re-apply the custom skin saved on the profile. Call on join (server thread). */
     public static void applySaved(ServerPlayer player) {
-        String saved = savedSkin(player);
-        if (saved != null) apply(player, saved, profileIdFromTextures(saved));
+        String saved = AeroSkinsApi.backend().savedTextures(player.getUUID());
+        if (saved != null && !saved.isBlank()) apply(player, saved, profileIdFromTextures(saved));
     }
 
     /** {@code /skin <name>}: copy a Java account's public SKIN (cape stripped unless the player is
-     *  cape-enabled — i.e. premium). Persisted. Callback on server thread. Offline-only in practice. */
+     *  cape-enabled — i.e. premium). Persisted. Callback on server thread. */
     public static void applyByName(ServerPlayer player, String javaName, Consumer<String> onResult) {
         MinecraftServer server = player.getServer();
         if (server == null) return;
-        boolean allowCape = capeEnabled(player); // offline players (default false) never get capes
+        boolean allowCape = AeroSkinsApi.backend().capeAllowed(player.getUUID());
         resolveName(javaName)
             .thenCompose(uuid -> uuid == null
-                ? CompletableFuture.completedFuture((java.util.Map.Entry<UUID, String>) null)
+                ? CompletableFuture.completedFuture((Map.Entry<UUID, String>) null)
                 : fetchTexturesValue(uuid).thenApply(v ->
-                    v == null ? null : java.util.Map.entry(uuid, v)))
+                    v == null ? null : Map.entry(uuid, v)))
             .thenAccept(donor -> server.execute(() -> {
                 if (donor == null) { onResult.accept(null); return; }
                 String applied = allowCape ? donor.getValue() : stripCape(donor.getValue());
                 apply(player, applied, donor.getKey());
-                saveSkin(player, applied);
-                CoffeesAeroAuth.LOGGER.info("[Skin] {} — applied skin from '{}' (cape={}).",
+                AeroSkinsApi.backend().saveTextures(player.getUUID(), applied);
+                CoffeesAeroSkins.LOGGER.info("[Skins] {} — applied skin from '{}' (cape={}).",
                     player.getGameProfile().getName(), javaName, allowCape);
                 onResult.accept(javaName);
             }));
@@ -106,35 +113,46 @@ public final class SkinManager {
     /** {@code /skin reset}: clear the custom skin (offline → default; premium → real skin on next join). */
     public static void reset(ServerPlayer player) {
         player.getGameProfile().getProperties().removeAll("textures");
-        saveSkin(player, null);
+        AeroSkinsApi.backend().saveTextures(player.getUUID(), null);
         refresh(player);
-        sendSelfSkin(player, NO_SKIN_UUID, "");   // client reverts own view to the default skin
+        ACTIVE.remove(player.getUUID());
+        broadcast(new SkinSyncPayload(player.getUUID(), NO_SKIN_UUID, ""), player.getServer());
     }
 
-    /** Join listener — re-applies the saved custom skin so it survives relogs. */
+    // ── Join / leave sync ───────────────────────────────────────────────────────
+
+    /** Join: re-apply the saved custom skin AND replay the whole skin table to the joining client. */
     public static void onPlayerJoin(PlayerEvent.PlayerLoggedInEvent event) {
-        if (event.getEntity() instanceof ServerPlayer sp) {
-            try { applySaved(sp); } catch (Exception ignored) {}
+        if (!(event.getEntity() instanceof ServerPlayer sp)) return;
+        try { applySaved(sp); } catch (Exception ignored) {}
+        try { syncAllTo(sp); } catch (Exception ignored) {}
+    }
+
+    public static void onPlayerLeave(PlayerEvent.PlayerLoggedOutEvent event) {
+        if (event.getEntity() instanceof ServerPlayer sp) ACTIVE.remove(sp.getUUID());
+    }
+
+    /** Replays every online player's applied skin to one (newly joined) client. */
+    private static void syncAllTo(ServerPlayer viewer) {
+        for (Map.Entry<UUID, ActiveSkin> e : ACTIVE.entrySet()) {
+            if (e.getKey().equals(viewer.getUUID())) continue;   // own entry arrives via applySaved/applyPremium
+            send(viewer, new SkinSyncPayload(e.getKey(), e.getValue().donorId(), e.getValue().textures()));
         }
     }
 
-    // ── GameProfile mutation + client refresh (server thread only) ───────────────
+    // ── GameProfile mutation + client sync (server thread only) ─────────────────
 
-    private static void apply(ServerPlayer player, String value, UUID skinProfileId) {
+    private static void apply(ServerPlayer player, String value, UUID donorId) {
+        UUID donor = donorId != null ? donorId : NO_SKIN_UUID;
         PropertyMap props = player.getGameProfile().getProperties();
         props.removeAll("textures");
         props.put("textures", new Property("textures", value)); // unsigned OK (enforce-secure-profile=false)
         refresh(player);
-        // The wearer's OWN view: vanilla filters non-"secure" skins for the local player
-        // (PlayerInfo.createSkinLookup: skin.secure() || !isLocalPlayer), and on an offline-UUID
-        // backend the signature can never validate — so no rebroadcast/respawn can ever update the
-        // wearer's own model. CoffeesAeroCore on the client handles this payload and installs its own
-        // lookup instead. Sent AFTER refresh() so it lands on the re-created player-info entry.
-        sendSelfSkin(player, skinProfileId != null ? skinProfileId : NO_SKIN_UUID, value);
+        ACTIVE.put(player.getUUID(), new ActiveSkin(donor, value));
+        broadcast(new SkinSyncPayload(player.getUUID(), donor, value), player.getServer());
     }
 
-    /** Rebroadcasts the player-info entry so all OTHER clients re-read the skin. The wearer's own
-     *  client is updated by the {@code aerosmp:self_skin} payload (see {@link #apply}). */
+    /** Vanilla fallback path: rebroadcasts the player-info entry so un-modded clients re-read the skin. */
     private static void refresh(ServerPlayer player) {
         MinecraftServer server = player.getServer();
         if (server == null) return;
@@ -143,23 +161,24 @@ public final class SkinManager {
             ClientboundPlayerInfoUpdatePacket.createPlayerInitializing(List.of(player)));
     }
 
-    /** Sends the own-view skin payload; silently skipped for clients without CoffeesAeroCore. */
-    private static void sendSelfSkin(ServerPlayer player, UUID skinProfileId, String value) {
+    /** Pushes one skin entry to EVERY connected modded client (skin_sync is an optional channel). */
+    private static void broadcast(SkinSyncPayload payload, MinecraftServer server) {
+        if (server == null) return;
+        for (ServerPlayer viewer : server.getPlayerList().getPlayers()) send(viewer, payload);
+    }
+
+    private static void send(ServerPlayer viewer, SkinSyncPayload payload) {
         try {
-            var payload = new com.coffeesaerosmp.auth.network.SelfSkinPayload(skinProfileId, value == null ? "" : value);
-            if (player.connection.hasChannel(payload.type())) {
-                player.connection.send(new net.minecraft.network.protocol.common.ClientboundCustomPayloadPacket(payload));
-                CoffeesAeroAuth.LOGGER.info("[Skin] {} — sent self_skin payload (profile {}).",
-                    player.getGameProfile().getName(), skinProfileId);
-            } else {
-                CoffeesAeroAuth.LOGGER.warn("[Skin] {} — client lacks aerosmp:self_skin channel (no CoffeesAeroCore?); own view will show default.",
-                    player.getGameProfile().getName());
+            if (viewer.connection.hasChannel(payload.type())) {
+                viewer.connection.send(new ClientboundCustomPayloadPacket(payload));
             }
         } catch (Exception e) {
-            CoffeesAeroAuth.LOGGER.warn("[Skin] self_skin payload failed for {}: {}",
-                player.getGameProfile().getName(), e.toString());
+            CoffeesAeroSkins.LOGGER.warn("[Skins] skin_sync to {} failed: {}",
+                viewer.getGameProfile().getName(), e.toString());
         }
     }
+
+    // ── Textures helpers ────────────────────────────────────────────────────────
 
     /** Extracts the profileId embedded in a base64 textures value (null-safe → NO_SKIN_UUID). */
     private static UUID profileIdFromTextures(String texturesValue) {
@@ -172,16 +191,6 @@ public final class SkinManager {
         } catch (Exception e) {
             return NO_SKIN_UUID;
         }
-    }
-
-    // ── Profile helpers ──────────────────────────────────────────────────────────
-
-    private static boolean capeEnabled(ServerPlayer player) {
-        try {
-            if (CoffeesAeroAuth.AUTH_MANAGER == null) return false;
-            PlayerProfile p = CoffeesAeroAuth.AUTH_MANAGER.getStore().get(player.getUUID());
-            return p != null && p.capeEnabled;
-        } catch (Exception e) { return false; }
     }
 
     /** Remove the CAPE entry from a textures value so offline players get only the skin. */
@@ -200,24 +209,6 @@ public final class SkinManager {
         } catch (Exception e) {
             return texturesValue; // malformed value — apply as-is (it likely won't render anyway)
         }
-    }
-
-    private static String savedSkin(ServerPlayer player) {
-        try {
-            if (CoffeesAeroAuth.AUTH_MANAGER == null) return null;
-            PlayerProfile p = CoffeesAeroAuth.AUTH_MANAGER.getStore().get(player.getUUID());
-            return (p != null && p.skinUrl != null && !p.skinUrl.isBlank()) ? p.skinUrl : null;
-        } catch (Exception e) { return null; }
-    }
-
-    private static void saveSkin(ServerPlayer player, String value) {
-        try {
-            if (CoffeesAeroAuth.AUTH_MANAGER == null) return;
-            PlayerProfile p = CoffeesAeroAuth.AUTH_MANAGER.getStore().get(player.getUUID());
-            if (p == null) return;
-            p.skinUrl = value;
-            CoffeesAeroAuth.AUTH_MANAGER.getStore().save(p);
-        } catch (Exception ignored) {}
     }
 
     // ── Mojang API (off-thread, fail-closed) ─────────────────────────────────────

@@ -392,6 +392,7 @@ public class AuthManager {
         if (isAuthenticated(uuid)) {
             if (nameHidden.remove(uuid)) {
                 PlayerProfile prof = store.get(uuid);
+                NameMask.apply(player);   // masked BEFORE reveal so the badge team keys on the display name
                 NameVisibility.reveal(player, prof != null
                     && prof.getAccountType() == PlayerProfile.AccountType.PREMIUM);
             }
@@ -962,7 +963,9 @@ public class AuthManager {
     /** Tells an offline player how many /skin uses they have left (silent once exhausted). */
     private void sendSkinTip(ServerPlayer player, PlayerProfile profile) {
         if (profile.getAccountType() != PlayerProfile.AccountType.OFFLINE) return;
-        int max  = com.coffeesaerosmp.auth.commands.ProfileCommands.MAX_SKIN_CHANGES;
+        // Compile-time constant from CoffeesAeroSkins — javac inlines the value (2), so this is
+        // safe even though the skins jar is compileOnly.
+        int max  = com.coffeesaerosmp.skins.server.SkinCommands.MAX_SKIN_CHANGES;
         int left = max - profile.skinChangesUsed;
         if (left <= 0) return;
         send(player, TextUtil.PREFIX + "§b✦ Skins: §7use §a/skin <java_username>§7 to wear any Java account's skin — §e"

@@ -7,14 +7,17 @@ config = "coffeesaerosmp_core.mixins.json"
 
 [[mods]]
 modId           = "coffeesaerosmp_core"
-version         = "1.0.0"
+version         = "${file.jarVersion}"
 displayName     = "CoffeesAeroSMP Core"
+authors         = "MrCoffeeBench"
+credits         = "Coffees Aero SMP"
+logoFile        = "logo.png"
 description     = '''
 Core mod for Coffees Aero SMP.
 
-Locks singleplayer access for regular players, replaces the Multiplayer button
-with a direct "Join Coffees Aero SMP" button, and provides an Admin Settings
-screen for configuring the server IP and admin username at runtime.
+Native pack title screen (pack logo, spinning cogwheels, one-click Join with
+version gating), in-client packwiz updater, and an Admin Settings screen. The
+managed server address ships encrypted and is only decrypted in memory.
 '''
 
 [[dependencies.coffeesaerosmp_core]]

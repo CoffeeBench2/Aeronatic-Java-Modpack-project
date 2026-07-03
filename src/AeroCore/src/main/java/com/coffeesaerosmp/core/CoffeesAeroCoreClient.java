@@ -1,24 +1,19 @@
 package com.coffeesaerosmp.core;
 
-import com.coffeesaerosmp.core.client.MainMenuEvents;
-import com.coffeesaerosmp.core.client.SelfSkinHandler;
-import com.coffeesaerosmp.core.network.SelfSkinPayload;
+import com.coffeesaerosmp.core.client.TitleReplacer;
 import net.neoforged.bus.api.IEventBus;
-import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.common.NeoForge;
-import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
+import net.neoforged.neoforge.client.event.ScreenEvent;
 
 public class CoffeesAeroCoreClient {
 
     public static void init(IEventBus modBus) {
-        NeoForge.EVENT_BUS.register(MainMenuEvents.class);
+        // Native title screen (replaced FancyMenu in 1.3.0) — panorama + pack logo + cogwheels,
+        // Join button with version gating, admin corner buttons.
+        NeoForge.EVENT_BUS.addListener((ScreenEvent.Opening e) -> TitleReplacer.onScreenOpening(e));
+        NeoForge.EVENT_BUS.addListener((ScreenEvent.Init.Post e) -> TitleReplacer.onScreenInit(e));
 
-        // aerosmp:self_skin — own-view skin fix on the offline-UUID backend. Registrar version and
-        // optional() must match the server side (CoffeesAeroAuth's AeroNetworking).
-        modBus.addListener((RegisterPayloadHandlersEvent event) ->
-            event.registrar("1.0.0").optional()
-                .playToClient(SelfSkinPayload.TYPE, SelfSkinPayload.STREAM_CODEC, SelfSkinHandler::onPayload));
-        NeoForge.EVENT_BUS.addListener(SelfSkinHandler::onClientTick);
-        NeoForge.EVENT_BUS.addListener((ClientPlayerNetworkEvent.LoggingOut e) -> SelfSkinHandler.reset());
+        // (The 1.2.0-era aerosmp:self_skin channel + own-view skin fix moved to the CoffeesAeroSkins
+        // mod, which owns skin sync for every player on its aerosmp:skin_sync channel.)
     }
 }

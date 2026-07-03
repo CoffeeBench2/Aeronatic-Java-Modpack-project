@@ -42,7 +42,15 @@ public class ChatEvents {
         String rawText     = event.getRawText();
 
         Component formatted = Component.literal(badge + nameColor + displayName + " §8» §r" + rawText);
-        player.getServer().getPlayerList().broadcastSystemMessage(formatted, false);
+        // Admins get the real account name inline; everyone else sees only the display name.
+        String realName = profile.username;
+        Component adminVariant = realName != null && !realName.equals(displayName)
+            ? Component.literal(badge + nameColor + displayName + " §8(" + realName + ")§r §8» §r" + rawText)
+            : formatted;
+        for (ServerPlayer viewer : player.getServer().getPlayerList().getPlayers()) {
+            viewer.sendSystemMessage(viewer.hasPermissions(2) ? adminVariant : formatted);
+        }
+        player.getServer().sendSystemMessage(adminVariant);   // console log keeps both names
 
         // Bridge to Discord public channel (no IPs ever go here)
         if (CoffeesAeroAuth.DISCORD_BRIDGE != null) {

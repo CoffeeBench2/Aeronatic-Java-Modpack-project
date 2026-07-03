@@ -37,10 +37,9 @@ public final class AeroNetworking {
     public static void register(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar("1.0.0").optional();
         registrar.playToServer(PlayerTypePayload.TYPE, PlayerTypePayload.STREAM_CODEC, AeroNetworking::handle);
-        // Clientbound own-skin channel — handled by CoffeesAeroCore on the client (this mod is
-        // server-only, so the handler below never runs; it exists to satisfy registration).
-        registrar.playToClient(SelfSkinPayload.TYPE, SelfSkinPayload.STREAM_CODEC, (payload, ctx) -> {});
-        CoffeesAeroAuth.LOGGER.info("[Net] Registered aerosmp:player_type (playToServer) + aerosmp:self_skin (playToClient), optional.");
+        // (aerosmp:self_skin was retired in auth 1.6.0 — skin sync now lives in CoffeesAeroSkins
+        // on its own aerosmp:skin_sync channel.)
+        CoffeesAeroAuth.LOGGER.info("[Net] Registered aerosmp:player_type (playToServer), optional.");
     }
 
     private static void handle(PlayerTypePayload payload, IPayloadContext context) {
