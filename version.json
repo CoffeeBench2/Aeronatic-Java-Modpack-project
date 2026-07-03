@@ -1,7 +1,7 @@
 {
-  "version": "1.6.4",
+  "version": "1.6.5",
   "url": "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/latest",
   "neoforge": "21.1.234",
   "minecraft": "1.21.1",
-  "notes": "1.6.4: upgraded Create Slice & Dice 4.2.4 -> 4.3.2 (native NeoForge) to fix the Create Encased startup crash (missing SDBlockEntities); removed betterchunkloading (C2ME discourages it -> mod-conflict warning); pack version now renders top-left on the main menu; client connects to the transfer-gate 92.4.65.219:25565."
+  "notes": "1.6.5: skins are here — premium players auto-wear their real Mojang skin+cape, offline players get /skin <name> (2 changes); CoffeesAeroCore 1.2.0 fixes seeing YOUR OWN skin (vanilla blocked it on offline servers); removed Chunky (client-useless, DH warning); disabled ETF player-skin caching; chat now shows icon badges (gold star = verified, grey = guest)."
 }

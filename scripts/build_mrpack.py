@@ -5,7 +5,7 @@ import zipfile, json, os
 
 ROOT = r"D:\MC Project\untitled"
 OVERRIDES = os.path.join(ROOT, "overrides")
-VERSION = "1.6.4"
+VERSION = "1.6.5"
 OUT = os.path.expanduser(rf"~\Downloads\CoffeesAeroSMP-{VERSION}.mrpack")
 
 # Stamp the version into the CoffeesAeroCore client config so the in-game version check
