@@ -1,0 +1,18 @@
+name: AeroLobby
+version: 1.0.0
+main: com.coffeesaerosmp.lobby.AeroLobbyPlugin
+api-version: '1.21'
+description: Coffees Aero SMP - Lobby auth and routing
+authors:
+  - MrCoffeeBench
+
+commands:
+  spawn:
+    description: View the spawn area preview
+    usage: /spawn
+  joinmain:
+    description: Connect to the main server after authentication
+    usage: /joinmain
+
+channels:
+  - BungeeCord

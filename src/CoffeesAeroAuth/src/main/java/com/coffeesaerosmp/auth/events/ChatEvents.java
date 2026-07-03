@@ -35,13 +35,13 @@ public class ChatEvents {
 
         event.setCanceled(true);
 
-        String badge       = profile.getAccountType() == PlayerProfile.AccountType.PREMIUM
-                             ? TextUtil.VERIFIED_BADGE
-                             : TextUtil.OFFLINE_BADGE;
+        boolean premium    = profile.getAccountType() == PlayerProfile.AccountType.PREMIUM;
+        String badge       = premium ? TextUtil.VERIFIED_BADGE : TextUtil.OFFLINE_BADGE;
+        String nameColor   = premium ? "§f" : "§7";   // offline names greyish, premium white
         String displayName = profile.displayName != null ? profile.displayName : profile.username;
         String rawText     = event.getRawText();
 
-        Component formatted = Component.literal(badge + "§f" + displayName + " §8» §r" + rawText);
+        Component formatted = Component.literal(badge + nameColor + displayName + " §8» §r" + rawText);
         player.getServer().getPlayerList().broadcastSystemMessage(formatted, false);
 
         // Bridge to Discord public channel (no IPs ever go here)

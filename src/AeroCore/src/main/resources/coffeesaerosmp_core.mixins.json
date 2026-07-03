@@ -6,7 +6,8 @@
   "client": [
     "TitleScreenMixin",
     "DisconnectedScreenMixin",
-    "GUIAnimalDictionaryMixin"
+    "GUIAnimalDictionaryMixin",
+    "PlayerInfoAccessor"
   ],
   "injectors": {
     "defaultRequire": 1

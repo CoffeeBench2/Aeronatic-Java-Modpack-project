@@ -35,6 +35,7 @@ public class AuthManager {
     private final Map<UUID, Integer>   failedAttempts       = new ConcurrentHashMap<>();
     private final Set<UUID>            pendingLobbyTeleport = ConcurrentHashMap.newKeySet();
     private final Set<UUID>            awaitingType         = ConcurrentHashMap.newKeySet();
+    private final Set<UUID>            nameHidden           = ConcurrentHashMap.newKeySet();
     private final SessionTokenManager  sessionTokens        = new SessionTokenManager();
 
     private static final UUID PACK_UUID = UUID.fromString("c0ffee00-ae40-4001-8000-cafebabe0001");
@@ -65,6 +66,8 @@ public class AuthManager {
         frozenPos.put(uuid, new double[]{player.getX(), player.getY(), player.getZ()});
         authStates.put(uuid, AuthState.AWAITING_TYPE);
         awaitingType.add(uuid);
+        NameVisibility.hide(player);   // hide their name during the login session
+        nameHidden.add(uuid);
 
         pushResourcePack(player);
 
@@ -78,8 +81,12 @@ public class AuthManager {
                 player.getGameProfile().getName(), forwarded);
             resolvePlayerType(player, forwarded == PlayerIdentityReader.Identity.PREMIUM);
         } else {
-            CoffeesAeroAuth.LOGGER.info("[Auth] {} frozen in AWAITING_TYPE — waiting for proxy player_type signal.",
+            CoffeesAeroAuth.LOGGER.info("[Auth] {} frozen in AWAITING_TYPE — requesting gate auth cookie.",
                 player.getGameProfile().getName());
+            try {
+                player.connection.send(new net.minecraft.network.protocol.cookie.ClientboundCookieRequestPacket(
+                    CoffeesAeroAuth.AUTH_COOKIE_KEY));
+            } catch (Exception ignored) {}
         }
     }
 
@@ -96,23 +103,40 @@ public class AuthManager {
         String mcName = player.getGameProfile().getName();
         CoffeesAeroAuth.LOGGER.info("[Auth] Resolving {} as {}.", mcName, premium ? "PREMIUM" : "OFFLINE");
 
-        // Anti-spoof: block offline player whose MC name is already a verified player's display name
+        // Anti-spoof: a cracked player whose MC name IS (or is too close to) a verified player's name is
+        // turned away with the standard message + an example offline handle to relaunch with.
         if (!premium && AuthConfig.KICK_ON_NAME_CONFLICT.get()) {
+            String reservedBy = null;
+            // exact: their MC name equals a verified player's display name
             UUID nameOwner = store.getDisplayNameOwner(mcName);
             if (nameOwner != null && !nameOwner.equals(uuid)) {
                 PlayerProfile ownerProfile = store.get(nameOwner);
                 if (ownerProfile != null && ownerProfile.getAccountType() == PlayerProfile.AccountType.PREMIUM) {
-                    player.connection.disconnect(Component.literal(
-                        "§cYour username §e" + mcName + "§c is reserved by a verified player.\n" +
-                        "§7Please change your Minecraft username and try again."));
-                    return;
+                    reservedBy = mcName;
                 }
+            }
+            // near: their MC name impersonates a known premium username (lookalike / substring / edit-distance 1)
+            if (reservedBy == null && CoffeesAeroAuth.WATCHDOG != null) {
+                reservedBy = CoffeesAeroAuth.WATCHDOG.findImpersonatedPremium(mcName);
+            }
+            if (reservedBy != null) {
+                String suggestion = suggestOfflineName(mcName);
+                player.connection.disconnect(Component.literal(
+                    "§cThe name §e" + mcName + "§c is reserved by (or too close to) a verified player §7(" + reservedBy + ")§c.\n" +
+                    "§7Relaunch your account with a different name — for example §a" + suggestion + "§7."));
+                return;
             }
         }
 
         PlayerProfile.AccountType type = premium ? PlayerProfile.AccountType.PREMIUM : PlayerProfile.AccountType.OFFLINE;
         CredentialStore.GetOrCreateResult r = store.getOrCreate(uuid, mcName, type);
         PlayerProfile profile = r.profile();
+
+        // Record the first IP this account ever logged in from (set once, never overwritten).
+        if (profile.firstIp == null || profile.firstIp.isBlank()) {
+            profile.firstIp = NetUtil.getPlayerIP(player);
+            store.save(profile);
+        }
 
         // A returning player first created offline but now Mojang-verified is upgraded to premium.
         if (premium && profile.getAccountType() != PlayerProfile.AccountType.PREMIUM) {
@@ -157,6 +181,24 @@ public class AuthManager {
         if (!profile.nameApproved && profile.firstJoinComplete && profile.passwordHash != null) {
             profile.nameApproved = true;
             store.save(profile);
+        }
+
+        // Premium reclaim: if this offline player's approved display name has since become reserved by
+        // (or too close to) a verified player, revoke it and send them back through /setname in the
+        // lobby. They can't re-pick a name near the verified one — findNameConflict enforces that.
+        if (profile.nameApproved && CoffeesAeroAuth.WATCHDOG != null) {
+            String current = profile.displayName != null ? profile.displayName : profile.username;
+            String clash   = CoffeesAeroAuth.WATCHDOG.findImpersonatedPremium(current);
+            if (clash != null) {
+                if (profile.displayName != null) store.releaseDisplayName(profile.displayName);
+                profile.nameApproved        = false;
+                profile.nameApprovalPending = false;
+                profile.pendingDisplayName  = null;
+                store.save(profile);
+                send(player, TextUtil.PREFIX + "§eYour name §f" + current + "§e is now reserved by a verified player §7(" + clash + ")§e.");
+                send(player, TextUtil.PREFIX + "§ePlease choose a new display name — for example §a" + suggestOfflineName(mcName) + "§e.");
+                CoffeesAeroAuth.LOGGER.info("[Auth] Revoked offline name '{}' for {} — impersonates verified '{}'.", current, mcName, clash);
+            }
         }
 
         if (profile.nameApproved) {
@@ -284,10 +326,22 @@ public class AuthManager {
     public void onPlayerLeave(ServerPlayer player) {
         UUID uuid = player.getUUID();
         PlayerProfile profile = store.get(uuid);
-        if (profile != null && profile.sessionStartEpoch > 0) {
-            long secs = (System.currentTimeMillis() - profile.sessionStartEpoch) / 1000;
-            profile.totalPlaytimeSeconds += secs;
-            profile.sessionStartEpoch = 0;
+        if (profile != null) {
+            if (profile.sessionStartEpoch > 0) {
+                long secs = (System.currentTimeMillis() - profile.sessionStartEpoch) / 1000;
+                profile.totalPlaytimeSeconds += secs;
+                profile.sessionStartEpoch = 0;
+            }
+            // Remember the logoff spot in the MAIN world so /spawn resumes the player here on their next
+            // return instead of dumping them at world spawn. Never record a lobby position — a returning
+            // player restored into the void room grid would fall. First-timers have no return pos yet.
+            if (isAuthenticated(uuid)
+                    && player.level().dimension() != com.coffeesaerosmp.auth.lobby.PrivateRoomManager.LOBBY_DIMENSION) {
+                profile.returnDim = player.level().dimension().location().toString();
+                profile.returnX   = player.getX();
+                profile.returnY   = player.getY();
+                profile.returnZ   = player.getZ();
+            }
             store.save(profile);
         }
         // Start the reconnect grace window from logout: a return within SESSION_GRACE_MINUTES skips
@@ -299,12 +353,24 @@ public class AuthManager {
         failedAttempts.remove(uuid);
         pendingLobbyTeleport.remove(uuid);
         awaitingType.remove(uuid);
+        nameHidden.remove(uuid);
+        NameVisibility.clear(player);
     }
 
     // ── Per-tick ──────────────────────────────────────────────────────────────
 
     public void onTick(ServerPlayer player) {
         UUID uuid = player.getUUID();
+
+        // No background music in the auth lobby: stop the MUSIC category client-side, re-sent
+        // periodically because the client's music tracker keeps scheduling the next track.
+        if (player.level().dimension() == com.coffeesaerosmp.auth.lobby.PrivateRoomManager.LOBBY_DIMENSION
+                && player.tickCount % 100 == 0) {
+            try {
+                player.connection.send(new net.minecraft.network.protocol.game.ClientboundStopSoundPacket(
+                    null, net.minecraft.sounds.SoundSource.MUSIC));
+            } catch (Exception ignored) {}
+        }
 
         // Deferred lobby teleport (first tick after join) — runs even for AUTHENTICATED orientation
         // players (premium first-join), so it precedes the isAuthenticated() early-return.
@@ -323,7 +389,14 @@ public class AuthManager {
             return;
         }
 
-        if (isAuthenticated(uuid)) return;
+        if (isAuthenticated(uuid)) {
+            if (nameHidden.remove(uuid)) {
+                PlayerProfile prof = store.get(uuid);
+                NameVisibility.reveal(player, prof != null
+                    && prof.getAccountType() == PlayerProfile.AccountType.PREMIUM);
+            }
+            return;
+        }
 
         // Awaiting the proxy's premium/cracked signal — keep frozen, fall back to offline on timeout.
         if (authStates.get(uuid) == AuthState.AWAITING_TYPE) {
@@ -708,6 +781,7 @@ public class AuthManager {
         send(player, TextUtil.PREFIX + "§a✦ Display name approved: §f" + profile.displayName);
         send(player, TextUtil.PREFIX + "§eLook around your hangar, then type §a/spawn§e to enter the server.");
         send(player, TextUtil.PREFIX + "§7(Resource pack required on first join — accept when prompted.)");
+        sendSkinTip(player, profile);
         com.coffeesaerosmp.auth.events.PlayerAuthEvents.onOfflinePlayerAuthenticated(player);
     }
 
@@ -727,11 +801,22 @@ public class AuthManager {
         if (CoffeesAeroAuth.LOBBY_STASH != null) {
             CoffeesAeroAuth.LOBBY_STASH.restore(player);
         }
-        if (CoffeesAeroAuth.ROOM_MANAGER != null) {
+        // Destination: a returning player resumes at their last main-world position; a first-timer
+        // (no saved return position, or its dimension no longer loads) goes to the world spawn point.
+        PlayerProfile profile = store.get(uuid);
+        boolean resumed = false;
+        if (profile != null && profile.returnDim != null) {
+            net.minecraft.server.level.ServerLevel target = resolveLevel(player, profile.returnDim);
+            if (target != null) {
+                player.teleportTo(target, profile.returnX, profile.returnY, profile.returnZ,
+                    Set.of(), player.getYRot(), player.getXRot());
+                resumed = true;
+            }
+        }
+        if (!resumed && CoffeesAeroAuth.ROOM_MANAGER != null) {
             CoffeesAeroAuth.ROOM_MANAGER.teleportToSpawn(player);
         }
         // First time entering the world → one-time starter currency + mark first-join complete.
-        PlayerProfile profile = store.get(uuid);
         if (profile != null) {
             if (!profile.startupBonusGiven) {
                 grantStartupBonus(player);
@@ -779,10 +864,13 @@ public class AuthManager {
 
         if (profile.getAccountType() == PlayerProfile.AccountType.OFFLINE) {
             com.coffeesaerosmp.auth.events.PlayerAuthEvents.onOfflinePlayerAuthenticated(player);
+            sendSkinTip(player, profile);
         }
 
-        // Logged in inside the lobby (expired-session return) → guide them out via /spawn.
+        // Logged in inside the lobby (expired-session return, or a persisted lobby position) → make
+        // sure they aren't standing over void before they type /spawn, then guide them out.
         if (player.level().dimension() == com.coffeesaerosmp.auth.lobby.PrivateRoomManager.LOBBY_DIMENSION) {
+            if (CoffeesAeroAuth.ROOM_MANAGER != null) CoffeesAeroAuth.ROOM_MANAGER.ensureSafeFooting(player);
             send(player, TextUtil.PREFIX + "§eType §a/spawn§e to enter the server.");
         }
     }
@@ -867,7 +955,29 @@ public class AuthManager {
             conn.disconnect();
             return code == 200;
         } catch (Exception e) {
-            return false; // fail open — can't verify, allow
+            return true; // #1 fail CLOSED — can't verify, assume the name is taken (reject it)
+        }
+    }
+
+    /** Tells an offline player how many /skin uses they have left (silent once exhausted). */
+    private void sendSkinTip(ServerPlayer player, PlayerProfile profile) {
+        if (profile.getAccountType() != PlayerProfile.AccountType.OFFLINE) return;
+        int max  = com.coffeesaerosmp.auth.commands.ProfileCommands.MAX_SKIN_CHANGES;
+        int left = max - profile.skinChangesUsed;
+        if (left <= 0) return;
+        send(player, TextUtil.PREFIX + "§b✦ Skins: §7use §a/skin <java_username>§7 to wear any Java account's skin — §e"
+            + left + " of " + max + "§7 change" + (left == 1 ? "" : "s") + " available (choose wisely!).");
+    }
+
+    /** Resolves a saved dimension id (e.g. "minecraft:overworld") to a loaded level, or null. */
+    private static net.minecraft.server.level.ServerLevel resolveLevel(ServerPlayer player, String dimId) {
+        try {
+            net.minecraft.resources.ResourceLocation loc = net.minecraft.resources.ResourceLocation.parse(dimId);
+            net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level> key =
+                net.minecraft.resources.ResourceKey.create(net.minecraft.core.registries.Registries.DIMENSION, loc);
+            return player.getServer() != null ? player.getServer().getLevel(key) : null;
+        } catch (Exception e) {
+            return null;
         }
     }
 

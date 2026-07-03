@@ -62,6 +62,12 @@ public class CoffeesAeroAuth {
     public static volatile NameApprovalQueue  APPROVAL_QUEUE;
     public static volatile com.coffeesaerosmp.auth.lobby.LobbyInventoryStash LOBBY_STASH;
 
+    /** Cookie key the gate sets on the client and we read here (matches AeroGate's aerosmp:auth). */
+    public static final net.minecraft.resources.ResourceLocation AUTH_COOKIE_KEY =
+        net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("aerosmp", "auth");
+    /** Verifier for gate-signed auth cookies — disabled until AERO_GATE_SECRET is set in .env. */
+    public static volatile com.coffeesaerosmp.auth.auth.CookieAuth COOKIE_AUTH;
+
     public CoffeesAeroAuth(IEventBus modBus, ModContainer container) {
         container.registerConfig(ModConfig.Type.SERVER, AuthConfig.SERVER_SPEC);
 
@@ -77,6 +83,10 @@ public class CoffeesAeroAuth {
         NeoForge.EVENT_BUS.addListener(PlayerAuthEvents::onPlayerJoin);
         NeoForge.EVENT_BUS.addListener(PlayerAuthEvents::onPlayerLeave);
 
+        // Skins: re-apply a player's saved custom skin on join (premium real skins come via the cookie).
+        // Own-view delivery is the aerosmp:self_skin payload to CoffeesAeroCore — no server-side timers.
+        NeoForge.EVENT_BUS.addListener(com.coffeesaerosmp.auth.auth.SkinManager::onPlayerJoin);
+
         // Restrictions: movement, interaction, inventory
         NeoForge.EVENT_BUS.addListener(PlayerRestrictEvents::onLivingTick);
         NeoForge.EVENT_BUS.addListener(PlayerRestrictEvents::onRightClickBlock);
@@ -84,6 +94,13 @@ public class CoffeesAeroAuth {
         NeoForge.EVENT_BUS.addListener(PlayerRestrictEvents::onEntityInteract);
         NeoForge.EVENT_BUS.addListener(PlayerRestrictEvents::onLeftClickBlock);
         NeoForge.EVENT_BUS.addListener(PlayerRestrictEvents::onAttackEntity);
+        NeoForge.EVENT_BUS.addListener(PlayerRestrictEvents::onBlockBreak);
+        NeoForge.EVENT_BUS.addListener(PlayerRestrictEvents::onBlockPlace);
+        NeoForge.EVENT_BUS.addListener(PlayerRestrictEvents::onItemToss);
+
+        // Animated tab-list header/footer (airship + live pilot count + rotating tips).
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.tick.ServerTickEvent.Post e) ->
+            com.coffeesaerosmp.auth.tablist.TabListManager.onServerTick(e.getServer()));
 
         // Chat formatting + Discord bridge
         NeoForge.EVENT_BUS.addListener(ChatEvents::onServerChat);
@@ -103,6 +120,13 @@ public class CoffeesAeroAuth {
         Path dataDir = event.getServer().getWorldPath(LevelResource.ROOT).resolve("coffeesaeroauth");
         Map<String, String> env = EnvLoader.load();
         AeroNetworking.initSecret(env);
+
+        // Gate cookie verifier — shared HMAC secret with the Velocity AeroGate plugin (secret.txt).
+        COOKIE_AUTH = new com.coffeesaerosmp.auth.auth.CookieAuth(
+            com.coffeesaerosmp.auth.auth.CookieAuth.hexToBytes(env.getOrDefault("AERO_GATE_SECRET", "")));
+        LOGGER.info("[Gate] Cookie auth {} ({}).",
+            COOKIE_AUTH.enabled() ? "ENABLED" : "DISABLED",
+            COOKIE_AUTH.enabled() ? "AERO_GATE_SECRET loaded" : "AERO_GATE_SECRET missing — gate logins resolve OFFLINE");
 
         // ── Database ──────────────────────────────────────────────────────────
         DB_MANAGER = new DatabaseManager();
@@ -207,6 +231,35 @@ public class CoffeesAeroAuth {
         AUTH_MANAGER  = null;
         ROOM_MANAGER  = null;
         LOBBY_STASH   = null;
+    }
+
+    /**
+     * Called on the server thread when a transferred client returns the gate's auth cookie
+     * (see {@code ServerCommonCookieMixin}). Verifies it and resolves premium/offline. No / bad /
+     * expired / replayed cookie → OFFLINE, never premium.
+     */
+    public static void handleAuthCookie(net.minecraft.server.level.ServerPlayer player, byte[] payload) {
+        if (AUTH_MANAGER == null) return;
+        String name = player.getGameProfile().getName();
+        if (COOKIE_AUTH == null || !COOKIE_AUTH.enabled()) {
+            AUTH_MANAGER.resolvePlayerType(player, false);   // no secret → cannot trust cookies
+            return;
+        }
+        if (payload == null) {                               // direct connect / not via the gate
+            AUTH_MANAGER.resolvePlayerType(player, false);
+            return;
+        }
+        com.coffeesaerosmp.auth.auth.CookieAuth.Verified v = COOKIE_AUTH.verify(payload);
+        if (v == null) {
+            LOGGER.warn("[Gate] Cookie REJECTED for {} (invalid/expired/replay) — treating as OFFLINE.", name);
+            AUTH_MANAGER.resolvePlayerType(player, false);
+            return;
+        }
+        LOGGER.info("[Gate] Cookie OK: {} -> {} (verified UUID {}).",
+            name, v.premium() ? "PREMIUM" : "OFFLINE", v.uuid());
+        AUTH_MANAGER.resolvePlayerType(player, v.premium());
+        // Premium: show their REAL Mojang skin (fetched by the gate-verified UUID) on this offline server.
+        if (v.premium()) com.coffeesaerosmp.auth.auth.SkinManager.applyPremium(player, v.uuid());
     }
 
     private static void onRegisterCommands(RegisterCommandsEvent event) {

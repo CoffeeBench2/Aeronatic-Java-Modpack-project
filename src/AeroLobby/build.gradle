@@ -1,0 +1,37 @@
+plugins {
+    id 'java'
+    id 'io.github.goooler.shadow' version '8.1.8'
+}
+
+group = 'com.coffeesaerosmp'
+version = '1.0.0'
+
+repositories {
+    maven { url 'https://repo.papermc.io/repository/maven-public/' }
+    mavenCentral()
+}
+
+dependencies {
+    compileOnly 'io.papermc.paper:paper-api:1.21.1-R0.1-SNAPSHOT'
+    implementation 'org.xerial:sqlite-jdbc:3.44.1.0'
+    implementation 'org.mindrot:jbcrypt:0.4'
+    implementation 'com.google.code.gson:gson:2.10.1'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+
+shadowJar {
+    archiveClassifier.set('')
+    // sqlite-jdbc must NOT be relocated — the native .dll is extracted by class name at runtime
+    relocate 'org.mindrot', 'com.coffeesaerosmp.lobby.libs.bcrypt'
+    relocate 'com.google.gson', 'com.coffeesaerosmp.lobby.libs.gson'
+}
+
+build.dependsOn shadowJar

@@ -184,8 +184,9 @@ public class ProfileStore implements CredentialStore {
         "(uuid,username,display_name,account_type,password_hash,password_salt," +
         " name_approved,first_join,last_seen,total_playtime,bio,skin_url," +
         " name_approval_pending,pending_display_name,name_rejection_count," +
-        " name_changes_used,room_slot,room_created_at,first_join_complete,startup_bonus_given)" +
-        " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)" +
+        " name_changes_used,room_slot,room_created_at,first_join_complete,startup_bonus_given," +
+        " first_ip,cape_enabled,return_dim,return_x,return_y,return_z,skin_changes_used)" +
+        " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)" +
         " ON DUPLICATE KEY UPDATE" +
         "  username=VALUES(username),display_name=VALUES(display_name)," +
         "  account_type=VALUES(account_type),password_hash=VALUES(password_hash)," +
@@ -198,7 +199,11 @@ public class ProfileStore implements CredentialStore {
         "  name_changes_used=VALUES(name_changes_used)," +
         "  room_slot=VALUES(room_slot),room_created_at=VALUES(room_created_at)," +
         "  first_join_complete=VALUES(first_join_complete)," +
-        "  startup_bonus_given=VALUES(startup_bonus_given)";
+        "  startup_bonus_given=VALUES(startup_bonus_given)," +
+        "  cape_enabled=VALUES(cape_enabled)," +
+        "  return_dim=VALUES(return_dim),return_x=VALUES(return_x)," +
+        "  return_y=VALUES(return_y),return_z=VALUES(return_z)," +
+        "  skin_changes_used=VALUES(skin_changes_used)";
 
     private void upsertPlayer(Connection c, PlayerProfile p) throws SQLException {
         try (PreparedStatement ps = c.prepareStatement(UPSERT_SQL)) {
@@ -222,6 +227,13 @@ public class ProfileStore implements CredentialStore {
             ps.setLong(18,   p.roomCreatedAt);
             ps.setBoolean(19, p.firstJoinComplete);
             ps.setBoolean(20, p.startupBonusGiven);
+            ps.setString(21, p.firstIp);   // only persisted on initial INSERT (not in ON DUPLICATE UPDATE)
+            ps.setBoolean(22, p.capeEnabled);
+            ps.setString(23, p.returnDim);
+            ps.setDouble(24, p.returnX);
+            ps.setDouble(25, p.returnY);
+            ps.setDouble(26, p.returnZ);
+            ps.setInt(27, p.skinChangesUsed);
             ps.executeUpdate();
         }
     }
@@ -237,9 +249,11 @@ public class ProfileStore implements CredentialStore {
         p.passwordSalt         = rs.getString("password_salt");
         p.nameApproved         = rs.getBoolean("name_approved");
         p.joinDate             = rs.getLong("first_join");
+        p.firstIp              = rs.getString("first_ip");
         p.totalPlaytimeSeconds = rs.getLong("total_playtime");
         p.bio                  = rs.getString("bio");
         p.skinUrl              = rs.getString("skin_url");
+        p.capeEnabled          = rs.getBoolean("cape_enabled");
         p.nameApprovalPending  = rs.getBoolean("name_approval_pending");
         p.pendingDisplayName   = rs.getString("pending_display_name");
         p.nameRejectionCount   = rs.getInt("name_rejection_count");
@@ -248,6 +262,11 @@ public class ProfileStore implements CredentialStore {
         p.roomCreatedAt        = rs.getLong("room_created_at");
         p.firstJoinComplete    = rs.getBoolean("first_join_complete");
         p.startupBonusGiven    = rs.getBoolean("startup_bonus_given");
+        p.returnDim            = rs.getString("return_dim");
+        p.returnX              = rs.getDouble("return_x");
+        p.returnY              = rs.getDouble("return_y");
+        p.returnZ              = rs.getDouble("return_z");
+        p.skinChangesUsed      = rs.getInt("skin_changes_used");
         return p;
     }
 

@@ -148,7 +148,8 @@ public class DatabaseManager {
                 "  last_seen             BIGINT                       NOT NULL DEFAULT 0," +
                 "  total_playtime        BIGINT                       NOT NULL DEFAULT 0," +
                 "  bio                   TEXT                         NULL," +
-                "  skin_url              VARCHAR(512)                 NULL," +
+                "  skin_url              TEXT                         NULL," +
+                "  cape_enabled          BOOLEAN                      NOT NULL DEFAULT FALSE," +
                 "  name_approval_pending BOOLEAN                      NOT NULL DEFAULT FALSE," +
                 "  pending_display_name  VARCHAR(20)                  NULL," +
                 "  name_rejection_count  INT                          NOT NULL DEFAULT 0," +
@@ -156,11 +157,35 @@ public class DatabaseManager {
                 "  room_slot             INT                          NOT NULL DEFAULT -1," +
                 "  room_created_at       BIGINT                       NOT NULL DEFAULT 0," +
                 "  first_join_complete   BOOLEAN                      NOT NULL DEFAULT FALSE," +
-                "  startup_bonus_given   BOOLEAN                      NOT NULL DEFAULT FALSE" +
+                "  startup_bonus_given   BOOLEAN                      NOT NULL DEFAULT FALSE," +
+                "  first_ip              VARCHAR(45)                  NULL," +
+                "  skin_changes_used     INT                          NOT NULL DEFAULT 0," +
+                "  return_dim            VARCHAR(64)                  NULL," +
+                "  return_x              DOUBLE                       NOT NULL DEFAULT 0," +
+                "  return_y              DOUBLE                       NOT NULL DEFAULT 0," +
+                "  return_z              DOUBLE                       NOT NULL DEFAULT 0" +
                 ")");
             // Forward-compat: add columns missing on pre-existing tables (MySQL lacks ADD COLUMN IF NOT EXISTS).
             try { s.executeUpdate("ALTER TABLE players ADD COLUMN startup_bonus_given BOOLEAN NOT NULL DEFAULT FALSE"); }
             catch (SQLException dupCol) { /* column already present — fine */ }
+            try { s.executeUpdate("ALTER TABLE players ADD COLUMN first_ip VARCHAR(45) NULL"); }
+            catch (SQLException dupCol) { /* column already present — fine */ }
+            try { s.executeUpdate("ALTER TABLE players ADD COLUMN cape_enabled BOOLEAN NOT NULL DEFAULT FALSE"); }
+            catch (SQLException dupCol) { /* column already present — fine */ }
+            try { s.executeUpdate("ALTER TABLE players ADD COLUMN skin_changes_used INT NOT NULL DEFAULT 0"); }
+            catch (SQLException dupCol) { /* column already present — fine */ }
+            // Return-position (resume-where-you-logged-off on /spawn) — added on pre-existing tables.
+            try { s.executeUpdate("ALTER TABLE players ADD COLUMN return_dim VARCHAR(64) NULL"); }
+            catch (SQLException dupCol) { /* column already present — fine */ }
+            try { s.executeUpdate("ALTER TABLE players ADD COLUMN return_x DOUBLE NOT NULL DEFAULT 0"); }
+            catch (SQLException dupCol) { /* column already present — fine */ }
+            try { s.executeUpdate("ALTER TABLE players ADD COLUMN return_y DOUBLE NOT NULL DEFAULT 0"); }
+            catch (SQLException dupCol) { /* column already present — fine */ }
+            try { s.executeUpdate("ALTER TABLE players ADD COLUMN return_z DOUBLE NOT NULL DEFAULT 0"); }
+            catch (SQLException dupCol) { /* column already present — fine */ }
+            // Widen skin_url on pre-existing tables (was VARCHAR(512) — too small for a skin+cape textures blob).
+            try { s.executeUpdate("ALTER TABLE players MODIFY COLUMN skin_url TEXT NULL"); }
+            catch (SQLException ignored) { /* already TEXT — fine */ }
             s.executeUpdate(
                 "CREATE TABLE IF NOT EXISTS trusted_ips (" +
                 "  id          BIGINT AUTO_INCREMENT PRIMARY KEY," +

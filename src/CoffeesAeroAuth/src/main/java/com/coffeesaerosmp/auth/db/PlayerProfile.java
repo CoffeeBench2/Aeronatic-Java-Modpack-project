@@ -13,9 +13,12 @@ public class PlayerProfile {
     public String passwordHash;     // null for premium accounts
     public String passwordSalt;     // null for premium accounts
     public long   joinDate;         // epoch millis of first join
+    public String firstIp;          // IP recorded on the very first login (set once, never overwritten)
     public long   totalPlaytimeSeconds;
     public long   sessionStartEpoch; // set on auth, cleared on leave
-    public String skinUrl;           // null = default skin
+    public String skinUrl;           // base64 "textures" value; null = default skin. Offline skins are cape-stripped.
+    public boolean capeEnabled;      // true = allowed a cape (premium only). Offline players never get capes.
+    public int    skinChangesUsed;   // lifetime /skin <name> uses (offline players) — capped at MAX_SKIN_CHANGES.
     public boolean firstJoinComplete; // true after first-join sequence plays
     public boolean startupBonusGiven; // true after the one-time starter currency is granted on first /spawn
 
@@ -29,6 +32,12 @@ public class PlayerProfile {
     public int     nameRejectionCount;   // rejections this account lifetime (not reset on reconnect)
     public int     roomSlot;             // assigned room slot index (-1 = unassigned)
     public long    roomCreatedAt;        // epoch ms when room was first built
+
+    // Last position in the MAIN world (never the lobby) — restored on /spawn so a returning player
+    // resumes where they logged off instead of being dumped at world spawn. null dim = never entered
+    // the world yet → first /spawn goes to the world spawn point.
+    public String  returnDim;            // dimension id, e.g. "minecraft:overworld"; null = none
+    public double  returnX, returnY, returnZ;
 
     public transient UUID uuid;
 
@@ -48,6 +57,7 @@ public class PlayerProfile {
         this.sessionStartEpoch   = 0;
         this.firstJoinComplete   = false;
         this.startupBonusGiven    = false;
+        this.capeEnabled          = (type == AccountType.PREMIUM); // capes are premium-only
         this.nameApproved         = (type == AccountType.PREMIUM); // premium players auto-approved
         this.nameApprovalPending  = false;
         this.nameRejectionCount   = 0;

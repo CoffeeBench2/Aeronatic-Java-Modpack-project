@@ -1,0 +1,19 @@
+# AeroLobby configuration
+
+# Spawn viewing position (set these to the Vista TV viewing spot in your lobby)
+spawn-view:
+  world: world
+  x: 0.5
+  y: 64.0
+  z: 0.5
+  yaw: 0.0
+  pitch: 15.0
+
+# How long premium players see the welcome screen before auto-transfer (seconds)
+premium-welcome-delay: 3
+
+# Vista TV block location (the block players look at during /spawn)
+vista-tv:
+  x: 0
+  y: 65
+  z: -5

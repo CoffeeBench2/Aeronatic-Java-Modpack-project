@@ -72,8 +72,20 @@ public class LobbyInventoryStash {
      */
     public void stashAndClear(ServerPlayer player) {
         UUID uuid = player.getUUID();
-        if (stash.containsKey(uuid)) {
-            // Already stashed (reconnect / re-entry) — DO NOT overwrite real items with the empty inv.
+        String existing = stash.get(uuid);
+        if (existing != null) {
+            // Already stashed (reconnect / re-entry) — DO NOT overwrite the persisted stash. But the
+            // player may be CARRYING real items: a death in the lobby respawns them at world spawn
+            // WITHOUT going through /spawn-restore, and a failed restore sends them into the world
+            // empty-handed with the stash kept — either way they can return holding items the loadout
+            // clear below would destroy. Merge those into the stash (persisted first) so nothing is lost.
+            try {
+                mergeCarriedIntoStash(player, existing);
+            } catch (Exception e) {
+                CoffeesAeroAuth.LOGGER.error("[LobbyStash] Could not merge carried items for {} — leaving inventory intact",
+                    player.getGameProfile().getName(), e);
+                return;                         // never clear what we failed to persist
+            }
             applyLobbyLoadout(player);
             return;
         }
@@ -141,23 +153,62 @@ public class LobbyInventoryStash {
         return data != null && data.copyTag().getBoolean(MARKER);
     }
 
+    /**
+     * Folds any real (non-paper) items the player is carrying into their existing stash. Slot layout of
+     * the original stash is preserved; carried items go into an "Overflow" list that {@code decodeInto}
+     * re-adds on restore (spilling at the player's feet in the world if the inventory is full). The
+     * merged stash is persisted BEFORE the caller clears the inventory — same no-loss ordering as above.
+     */
+    private void mergeCarriedIntoStash(ServerPlayer player, String existing) throws IOException {
+        List<ItemStack> carried = new ArrayList<>();
+        var inv = player.getInventory();
+        for (int i = 0; i < inv.getContainerSize(); i++) {
+            ItemStack s = inv.getItem(i);
+            if (!s.isEmpty() && !isLobbyPaper(s)) carried.add(s.copy());
+        }
+        if (carried.isEmpty()) return;          // just the paper / empty — nothing to merge
+        CompoundTag wrapper = decodeWrapper(existing);
+        ListTag overflow = wrapper.getList("Overflow", Tag.TAG_COMPOUND);
+        for (ItemStack s : carried) overflow.add(s.save(player.registryAccess()));
+        wrapper.put("Overflow", overflow);
+        stash.put(player.getUUID(), encodeWrapper(wrapper));
+        saveToFile();
+        CoffeesAeroAuth.LOGGER.info("[LobbyStash] Merged {} carried stacks into existing stash for {}.",
+            carried.size(), player.getGameProfile().getName());
+    }
+
     // ── (De)serialization ──────────────────────────────────────────────────────
 
     private static String encode(ServerPlayer player) throws IOException {
         ListTag items = player.getInventory().save(new ListTag());
         CompoundTag wrapper = new CompoundTag();
         wrapper.put("Items", items);
+        return encodeWrapper(wrapper);
+    }
+
+    private static String encodeWrapper(CompoundTag wrapper) throws IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         NbtIo.writeCompressed(wrapper, baos);
         return Base64.getEncoder().encodeToString(baos.toByteArray());
     }
 
-    private static void decodeInto(ServerPlayer player, String encoded) throws IOException {
+    private static CompoundTag decodeWrapper(String encoded) throws IOException {
         byte[] bytes = Base64.getDecoder().decode(encoded);
-        CompoundTag wrapper = NbtIo.readCompressed(new ByteArrayInputStream(bytes), NbtAccounter.unlimitedHeap());
+        return NbtIo.readCompressed(new ByteArrayInputStream(bytes), NbtAccounter.unlimitedHeap());
+    }
+
+    private static void decodeInto(ServerPlayer player, String encoded) throws IOException {
+        CompoundTag wrapper = decodeWrapper(encoded);
         ListTag items = wrapper.getList("Items", Tag.TAG_COMPOUND);
         player.getInventory().clearContent();
         player.getInventory().load(items);
+        // Overflow: items merged in from a re-entry while carrying (see mergeCarriedIntoStash).
+        ListTag overflow = wrapper.getList("Overflow", Tag.TAG_COMPOUND);
+        for (int i = 0; i < overflow.size(); i++) {
+            ItemStack s = ItemStack.parse(player.registryAccess(), overflow.getCompound(i))
+                .orElse(ItemStack.EMPTY);
+            if (!s.isEmpty() && !player.getInventory().add(s)) player.drop(s, false);
+        }
     }
 
     private synchronized void saveToFile() {

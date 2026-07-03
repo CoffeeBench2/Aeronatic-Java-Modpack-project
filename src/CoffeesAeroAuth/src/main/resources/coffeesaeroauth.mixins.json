@@ -5,7 +5,8 @@
     "compatibilityLevel": "JAVA_21",
     "mixins": [],
     "server": [
-        "ServerPacketListenerMixin"
+        "ServerPacketListenerMixin",
+        "ServerCommonCookieMixin"
     ],
     "client": [],
     "injectors": {

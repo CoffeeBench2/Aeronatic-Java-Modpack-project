@@ -4,7 +4,7 @@ license = "MIT"
 
 [[mods]]
 modId       = "coffees_aero_auth"
-version     = "1.0.0"
+version     = "1.4.0"
 displayName = "Coffees Aero Auth"
 description = '''
 Authentication and profile system for Coffees Aero SMP public server.
