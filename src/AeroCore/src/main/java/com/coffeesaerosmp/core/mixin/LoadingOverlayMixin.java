@@ -12,6 +12,7 @@ import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
 /**
@@ -35,6 +36,27 @@ public abstract class LoadingOverlayMixin {
     @Shadow private float currentProgress;
     @Shadow @Final private Minecraft minecraft;
 
+    /** Dark bronze replacing vanilla's red "brand background" everywhere in this overlay. */
+    private static final int AERO_DARK_RGB = 0x1A0F06;
+
+    /** The fade veil fills (fade-in during resource-pack reloads + fade-out): keep vanilla's
+     *  computed alpha, but swap the RED brand color for dark bronze. */
+    @ModifyArg(method = "render", require = 0, index = 5, at = @At(value = "INVOKE",
+        target = "Lnet/minecraft/client/gui/GuiGraphics;fill(Lnet/minecraft/client/renderer/RenderType;IIIII)V"))
+    private int aerocore$deRedVeil(int color) {
+        return (color & 0xFF000000) | AERO_DARK_RGB;
+    }
+
+    /** The no-fade launch branch clears the framebuffer with the red brand color — darken that too. */
+    @Redirect(method = "render", require = 0, at = @At(value = "INVOKE",
+        target = "Lcom/mojang/blaze3d/platform/GlStateManager;_clearColor(FFFF)V"))
+    private void aerocore$deRedClear(float r, float g, float b, float a) {
+        com.mojang.blaze3d.platform.GlStateManager._clearColor(
+            ((AERO_DARK_RGB >> 16) & 0xFF) / 255.0F,
+            ((AERO_DARK_RGB >> 8) & 0xFF) / 255.0F,
+            (AERO_DARK_RGB & 0xFF) / 255.0F, 1.0F);
+    }
+
     @Redirect(method = "render", require = 0, at = @At(value = "INVOKE",
         target = "Lnet/minecraft/client/gui/GuiGraphics;setColor(FFFF)V", ordinal = 0))
     private void aerocore$bgThenColor(GuiGraphics g, float r, float green, float b, float a) {
@@ -46,48 +68,56 @@ public abstract class LoadingOverlayMixin {
     @Redirect(method = "render", require = 0, at = @At(value = "INVOKE",
         target = "Lnet/minecraft/client/gui/GuiGraphics;blit(Lnet/minecraft/resources/ResourceLocation;IIIIFFIIII)V",
         ordinal = 0))
-    private void aerocore$cogInsteadOfLogo(GuiGraphics g, ResourceLocation tex,
-                                           int x, int y, int w, int h,
-                                           float u, float v, int uw, int vh, int tw, int th) {
-        // Spinning cogwheel where the Mojang logo sat; shader color already carries the fade alpha.
-        int cx = g.guiWidth() / 2;
-        int cy = g.guiHeight() / 2;
-        int size = (int) (Math.min(g.guiWidth() * 0.75, g.guiHeight()) * 0.28);
-        float angle = (Util.getMillis() % 7200L) / 20.0F;   // one turn / 7.2s
-        g.pose().pushPose();
-        g.pose().translate(cx, cy, 0);
-        g.pose().mulPose(Axis.ZP.rotationDegrees(angle));
-        float s = size / (float) EarlyAssets.COG_W;
-        g.pose().scale(s, s, 1.0F);
-        g.blit(EarlyAssets.COG, -EarlyAssets.COG_W / 2, -EarlyAssets.COG_H / 2,
-            0.0F, 0.0F, EarlyAssets.COG_W, EarlyAssets.COG_H, EarlyAssets.COG_W, EarlyAssets.COG_H);
-        g.pose().popPose();
+    private void aerocore$dropLogoFirstHalf(GuiGraphics g, ResourceLocation tex,
+                                            int x, int y, int w, int h,
+                                            float u, float v, int uw, int vh, int tw, int th) {
+        // no-op — no center emblem; the airship art + cog-row bar carry the loading screen
     }
 
     @Redirect(method = "render", require = 0, at = @At(value = "INVOKE",
         target = "Lnet/minecraft/client/gui/GuiGraphics;blit(Lnet/minecraft/resources/ResourceLocation;IIIIFFIIII)V",
         ordinal = 1))
-    private void aerocore$dropSecondLogoHalf(GuiGraphics g, ResourceLocation tex,
+    private void aerocore$dropLogoSecondHalf(GuiGraphics g, ResourceLocation tex,
                                              int x, int y, int w, int h,
                                              float u, float v, int uw, int vh, int tw, int th) {
-        // no-op — the cog is drawn by the ordinal-0 redirect
+        // no-op
     }
 
+    /** The vanilla progress BAR becomes a row of small meshing cogwheels: slots light up left to
+     *  right as loading advances, neighbours counter-rotate like a real gear train, and the
+     *  not-yet-reached slots sit as dim silhouettes. */
     @Redirect(method = "render", require = 0, at = @At(value = "INVOKE",
         target = "Lnet/minecraft/client/gui/screens/LoadingOverlay;drawProgressBar(Lnet/minecraft/client/gui/GuiGraphics;IIIIF)V"))
-    private void aerocore$brassProgressBar(LoadingOverlay self, GuiGraphics g,
-                                           int minX, int minY, int maxX, int maxY, float alpha) {
-        int a = Math.round(alpha * 255.0F) << 24;
-        int border = 0x009C7430 | a;   // brass
-        int fill   = 0x00F0C05A | a;   // bright brass
-        int back   = 0x00241505 | a;   // dark bronze channel
-        g.fill(minX, minY, maxX, maxY, back);
-        g.fill(minX, minY, maxX, minY + 1, border);
-        g.fill(minX, maxY - 1, maxX, maxY, border);
-        g.fill(minX, minY, minX + 1, maxY, border);
-        g.fill(maxX - 1, minY, maxX, maxY, border);
-        int w = (int) ((maxX - minX - 4) * Mth.clamp(this.currentProgress, 0.0F, 1.0F));
-        g.fill(minX + 2, minY + 2, minX + 2 + w, maxY - 2, fill);
+    private void aerocore$cogRowProgressBar(LoadingOverlay self, GuiGraphics g,
+                                            int minX, int minY, int maxX, int maxY, float alpha) {
+        int cogSize = Math.max(12, (maxY - minY) + 8);            // slightly taller than the old bar
+        int spacing = cogSize + 2;                                // teeth nearly touch — gear train
+        int count = Math.max(4, (maxX - minX) / spacing);
+        int rowW = count * spacing - 2;
+        int startX = (minX + maxX - rowW) / 2;
+        int cy = (minY + maxY) / 2;
+        float progress = Mth.clamp(this.currentProgress, 0.0F, 1.0F);
+        float lit = progress * count;                              // fractional: last cog fades in
+        float spin = (Util.getMillis() % 5400L) / 15.0F;           // one turn / 5.4s
+
+        for (int slot = 0; slot < count; slot++) {
+            float visibility = Mth.clamp(lit - slot, 0.0F, 1.0F);  // 0 = upcoming, 1 = fully lit
+            float slotAlpha = alpha * (0.18F + 0.82F * visibility);
+            float shade = 0.35F + 0.65F * visibility;              // dim silhouette → full color
+            float angle = (slot % 2 == 0 ? spin : -spin);          // mesh: alternate directions
+            int cx = startX + slot * spacing + cogSize / 2;
+
+            g.setColor(shade, shade, shade, slotAlpha);
+            g.pose().pushPose();
+            g.pose().translate(cx, cy, 0);
+            g.pose().mulPose(Axis.ZP.rotationDegrees(angle));
+            float s = cogSize / (float) EarlyAssets.COG_W;
+            g.pose().scale(s, s, 1.0F);
+            g.blit(EarlyAssets.COG, -EarlyAssets.COG_W / 2, -EarlyAssets.COG_H / 2,
+                0.0F, 0.0F, EarlyAssets.COG_W, EarlyAssets.COG_H, EarlyAssets.COG_W, EarlyAssets.COG_H);
+            g.pose().popPose();
+        }
+        g.setColor(1.0F, 1.0F, 1.0F, 1.0F);
     }
 
     /** Cover-scaled airship art at the given alpha (the overlay's fade value). */

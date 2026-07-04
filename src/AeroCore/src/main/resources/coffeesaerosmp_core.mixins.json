@@ -6,7 +6,8 @@
   "client": [
     "DisconnectedScreenMixin",
     "GUIAnimalDictionaryMixin",
-    "LoadingOverlayMixin"
+    "LoadingOverlayMixin",
+    "ScreenBackgroundMixin"
   ],
   "injectors": {
     "defaultRequire": 1

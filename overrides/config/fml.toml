@@ -1,0 +1,6 @@
+# Coffees Aero SMP — FML early-window config.
+# The pre-mod loading window runs before ANY mod code, so it can't show custom art;
+# dark mode keeps it black/bronze-adjacent instead of vanilla orange-red so it blends
+# into the pack's branded LoadingOverlay that follows.
+earlyWindowControl = true
+earlyWindowDarkMode = true

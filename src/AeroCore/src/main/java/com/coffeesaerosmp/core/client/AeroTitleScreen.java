@@ -32,7 +32,7 @@ public class AeroTitleScreen extends Screen {
 
     private static final ResourceLocation LOGO =
         ResourceLocation.fromNamespaceAndPath("coffeesaerosmp_core", "textures/gui/title_logo.png");
-    private static final int LOGO_W = 1404, LOGO_H = 752;
+    private static final int LOGO_W = 1024, LOGO_H = 548;
 
     public AeroTitleScreen() {
         super(Component.literal("Coffees Aero SMP"));
