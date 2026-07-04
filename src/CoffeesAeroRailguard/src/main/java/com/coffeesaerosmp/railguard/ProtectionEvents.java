@@ -59,13 +59,17 @@ public final class ProtectionEvents {
         event.setCanceled(true);
     }
 
-    /** Railway chunks are server property — players can't place blocks in them either. */
+    /** Railway chunks are server property — players can't place blocks in them either. Outside
+     *  them, a player's own track placement rolls back any tentative machine-path auto-record
+     *  (the setBlock hook can't see WHO placed; this event can). */
     public static void onPlace(BlockEvent.EntityPlaceEvent event) {
         if (!(event.getLevel() instanceof ServerLevel level)) return;
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        if (BYPASS.contains(player.getUUID())) return;
         RailguardData data = RailguardData.get(level);
-        if (!data.isChunkProtected(event.getPos())) return;
+        if (BYPASS.contains(player.getUUID()) || !data.isChunkProtected(event.getPos())) {
+            data.rollbackAuto(event.getPos());   // player track stays player property
+            return;
+        }
         deny("place", player.getGameProfile().getName(), event.getPos(), level, data);
         player.displayClientMessage(player.hasPermissions(2) ? MSG_PROTECTED_OP : MSG_PROTECTED, true);
         event.setCanceled(true);

@@ -75,6 +75,36 @@ public class RailguardData extends SavedData {
         if (positions.remove(pos.asLong())) setDirty();
     }
 
+    /** Chunks claimed by the machine-placement auto-recorder THIS session — kept so a player
+     *  placement in the same spot can roll the claim back (never confiscate player track).
+     *  In-memory only; on restart these chunks are already legitimately persisted or gone. */
+    private final transient LongOpenHashSet autoClaimedChunks = new LongOpenHashSet();
+
+    /** Is any chunk in the 3×3 neighborhood of this position's chunk protected? Lets machine-placed
+     *  curve blocks chain protection into fresh chunks as Create walks the bezier outward. */
+    public boolean isNearProtectedChunk(BlockPos pos) {
+        int cx = pos.getX() >> 4, cz = pos.getZ() >> 4;
+        for (int dx = -1; dx <= 1; dx++)
+            for (int dz = -1; dz <= 1; dz++)
+                if (chunks.contains(ChunkPos.asLong(cx + dx, cz + dz))) return true;
+        return false;
+    }
+
+    /** Auto-record from the machine-placement path (tracks whether the chunk claim was new). */
+    public void addAuto(BlockPos pos) {
+        boolean a = positions.add(pos.asLong());
+        long ck = chunkKey(pos);
+        if (chunks.add(ck)) autoClaimedChunks.add(ck);
+        if (a) setDirty();
+    }
+
+    /** A PLAYER legitimately placed here after a tentative auto-record — give it back. */
+    public void rollbackAuto(BlockPos pos) {
+        if (positions.remove(pos.asLong())) setDirty();
+        long ck = chunkKey(pos);
+        if (autoClaimedChunks.remove(ck) && chunks.remove(ck)) setDirty();
+    }
+
     public void addChunk(long chunkKey) {
         if (chunks.add(chunkKey)) setDirty();
     }

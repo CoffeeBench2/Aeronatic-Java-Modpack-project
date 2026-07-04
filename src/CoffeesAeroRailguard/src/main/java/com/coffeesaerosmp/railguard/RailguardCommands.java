@@ -63,14 +63,8 @@ public final class RailguardCommands {
         );
     }
 
-    /** Blocks the railway is made of — used ONLY by the admin-driven /railguard trace. */
     private static boolean isRailwayBlock(net.minecraft.world.level.block.state.BlockState state) {
-        var id = net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(state.getBlock());
-        String ns = id.getNamespace(), path = id.getPath();
-        if (ns.equals("railwaysuntold")) return true;
-        if (ns.equals("create") && (path.contains("track") || path.contains("girder"))) return true;
-        if (ns.equals("railways") && path.contains("track")) return true;   // Steam 'n' Rails
-        return ns.equals("minecraft") && path.endsWith("rail");
+        return RailwayPalette.isRailwayBlock(state);
     }
 
     /** Safety cap so trace can't freeze the server on a pathological flood. */
