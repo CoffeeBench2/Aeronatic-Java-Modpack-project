@@ -40,6 +40,18 @@ public final class ProtectionEvents {
     private static final Component MSG_PROTECTED_OP =
         Component.literal("§6⚙ §cProtected railway. §7Use §e/railguard bypass§7 to edit.");
 
+    /** Called by the CurvedTrackDestroyPacket mixin — Create deletes BEZIER curve spans (the long
+     *  angled tracks, which are graph edges, not blocks) through its own packet, invisible to every
+     *  block-level hook. Returns true when the deletion must be blocked. */
+    public static boolean guardCurveDestroy(ServerLevel level, BlockPos anchorPos, ServerPlayer player) {
+        RailguardData data = RailguardData.get(level);
+        if (!data.isProtected(anchorPos)) return false;
+        if (BYPASS.contains(player.getUUID())) return false;
+        deny("curve-destroy", player.getGameProfile().getName(), anchorPos, level, data);
+        player.displayClientMessage(player.hasPermissions(2) ? MSG_PROTECTED_OP : MSG_PROTECTED, true);
+        return true;
+    }
+
     public static void onBreak(BlockEvent.BreakEvent event) {
         if (!(event.getLevel() instanceof ServerLevel level)) return;
         RailguardData data = RailguardData.get(level);

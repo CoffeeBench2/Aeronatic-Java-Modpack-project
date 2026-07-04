@@ -5,6 +5,7 @@
   "mixins": [
     "LevelSetBlockMixin",
     "LevelDestroyBlockMixin",
+    "CurvedTrackDestroyPacketMixin",
     "RailwaysTickHandlerMixin",
     "DeferredSchematicPlacerMixin",
     "DeferredTunnelFinisherMixin",
