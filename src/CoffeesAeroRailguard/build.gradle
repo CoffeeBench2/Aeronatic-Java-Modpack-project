@@ -28,6 +28,15 @@ neoForge {
     }
 }
 
+dependencies {
+    // FTB Chunks claim-guard bridge (FtbClaimGuard). compileOnly + ModList-guarded — the classes
+    // are only touched when ftbchunks is actually loaded. Jars come from the server mod set.
+    compileOnly(files(
+        "../CoffeesAeroAuth/libs/ftb-chunks.jar",
+        "../CoffeesAeroAuth/libs/ftb-library.jar",
+        "../../server-mods/architectury-13.0.8-neoforge.jar"))
+}
+
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
 }

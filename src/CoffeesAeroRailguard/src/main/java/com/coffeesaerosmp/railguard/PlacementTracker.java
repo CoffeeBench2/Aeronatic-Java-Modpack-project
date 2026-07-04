@@ -25,10 +25,11 @@ public final class PlacementTracker {
     public static boolean active() { return ACTIVE.get(); }
 
     public static void record(ServerLevel level, BlockPos pos) {
-        RailguardData.get(level).add(pos.asLong());
+        RailguardData data = RailguardData.get(level);
+        data.add(pos);
         if (++recorded % 5000 == 0) {
-            CoffeesAeroRailguard.LOGGER.info("[Railguard] {} railway blocks recorded so far ({} protected in {}).",
-                recorded, RailguardData.get(level).size(), level.dimension().location());
+            CoffeesAeroRailguard.LOGGER.info("[Railguard] {} railway blocks recorded so far ({} positions / {} chunks protected in {}).",
+                recorded, data.positionCount(), data.chunkCount(), level.dimension().location());
         }
     }
 }

@@ -1,15 +1,19 @@
 package com.coffeesaerosmp.railguard;
 
+import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.saveddata.SavedData;
 
 /**
- * Per-dimension persistent set of protected railway block positions ({@code BlockPos.asLong}).
- * Populated live by {@link PlacementTracker} as Railways Untold generates track, and manually by
- * {@code /railguard mark} for sections that existed before this mod was installed.
+ * Per-dimension persistent railway "server property": exact block positions ({@code BlockPos.asLong})
+ * PLUS every chunk the railway touches ({@code ChunkPos.toLong}). Chunks are derived automatically —
+ * recording a position claims its chunk, and on load the chunk set is backfilled from all stored
+ * positions (so worlds recorded by older versions gain chunk coverage instantly).
  */
 public class RailguardData extends SavedData {
 
@@ -18,6 +22,7 @@ public class RailguardData extends SavedData {
         new SavedData.Factory<>(RailguardData::new, RailguardData::load, null);
 
     private final LongOpenHashSet positions = new LongOpenHashSet();
+    private final LongOpenHashSet chunks = new LongOpenHashSet();
 
     public static RailguardData get(ServerLevel level) {
         return level.getDataStorage().computeIfAbsent(FACTORY, NAME);
@@ -26,24 +31,59 @@ public class RailguardData extends SavedData {
     public static RailguardData load(CompoundTag tag, HolderLookup.Provider provider) {
         RailguardData data = new RailguardData();
         for (long l : tag.getLongArray("positions")) data.positions.add(l);
+        for (long l : tag.getLongArray("chunks")) data.chunks.add(l);
+        // Backfill: chunk coverage for positions recorded by pre-chunk versions.
+        LongIterator it = data.positions.iterator();
+        while (it.hasNext()) data.chunks.add(chunkKeyOfPacked(it.nextLong()));
         return data;
     }
 
     @Override
     public CompoundTag save(CompoundTag tag, HolderLookup.Provider provider) {
         tag.putLongArray("positions", positions.toLongArray());
+        tag.putLongArray("chunks", chunks.toLongArray());
         return tag;
     }
 
-    public boolean contains(long packedPos) { return positions.contains(packedPos); }
-
-    public void add(long packedPos) {
-        if (positions.add(packedPos)) setDirty();
+    public static long chunkKey(BlockPos pos) {
+        return ChunkPos.asLong(pos.getX() >> 4, pos.getZ() >> 4);
     }
 
-    public void remove(long packedPos) {
-        if (positions.remove(packedPos)) setDirty();
+    private static long chunkKeyOfPacked(long packedPos) {
+        return ChunkPos.asLong(BlockPos.getX(packedPos) >> 4, BlockPos.getZ(packedPos) >> 4);
     }
 
-    public int size() { return positions.size(); }
+    /** Exact recorded railway block, OR anywhere inside a railway chunk. */
+    public boolean isProtected(BlockPos pos) {
+        return positions.contains(pos.asLong()) || chunks.contains(chunkKey(pos));
+    }
+
+    public boolean isPositionProtected(BlockPos pos) { return positions.contains(pos.asLong()); }
+
+    public boolean isChunkProtected(BlockPos pos) { return chunks.contains(chunkKey(pos)); }
+
+    public boolean isChunkKeyProtected(long chunkKey) { return chunks.contains(chunkKey); }
+
+    public void add(BlockPos pos) {
+        boolean a = positions.add(pos.asLong());
+        boolean b = chunks.add(chunkKey(pos));
+        if (a || b) setDirty();
+    }
+
+    /** Releases the exact position (chunk coverage stays unless explicitly unmarked). */
+    public void releasePosition(BlockPos pos) {
+        if (positions.remove(pos.asLong())) setDirty();
+    }
+
+    public void addChunk(long chunkKey) {
+        if (chunks.add(chunkKey)) setDirty();
+    }
+
+    public void removeChunk(long chunkKey) {
+        if (chunks.remove(chunkKey)) setDirty();
+    }
+
+    public int positionCount() { return positions.size(); }
+
+    public int chunkCount() { return chunks.size(); }
 }

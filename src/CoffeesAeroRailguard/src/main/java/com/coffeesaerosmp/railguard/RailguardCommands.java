@@ -49,7 +49,55 @@ public final class RailguardCommands {
             .then(Commands.literal("bypass")
                 .requires(src -> src.hasPermission(2))
                 .executes(ctx -> toggleBypass(ctx.getSource())))
+            .then(Commands.literal("debug")
+                .executes(ctx -> toggleDebug(ctx.getSource())))
+            .then(Commands.literal("chunkhere")
+                .executes(ctx -> chunkHere(ctx.getSource(), 0))
+                .then(Commands.argument("radius", com.mojang.brigadier.arguments.IntegerArgumentType.integer(0, 8))
+                    .executes(ctx -> chunkHere(ctx.getSource(),
+                        com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "radius")))))
+            .then(Commands.literal("unclaimchunkhere")
+                .executes(ctx -> unclaimChunkHere(ctx.getSource())))
         );
+    }
+
+    private static int toggleDebug(CommandSourceStack source) {
+        ProtectionEvents.DEBUG = !ProtectionEvents.DEBUG;
+        boolean on = ProtectionEvents.DEBUG;
+        source.sendSuccess(() -> Component.literal("§6[Railguard]§7 Debug logging "
+            + (on ? "§aON§7 — every denial is logged with actor, path and position." : "§coff§7.")), true);
+        return 1;
+    }
+
+    /** Marks the sender's chunk (± radius) as server railway property — the quick tool for the
+     *  spawn station and other sections generated before the guard existed. */
+    private static int chunkHere(CommandSourceStack source, int radius) {
+        var player = source.getPlayer();
+        if (player == null) { source.sendFailure(Component.literal("§cPlayers only.")); return 0; }
+        RailguardData data = RailguardData.get(source.getLevel());
+        int cx = player.blockPosition().getX() >> 4, cz = player.blockPosition().getZ() >> 4;
+        int n = 0;
+        for (int dx = -radius; dx <= radius; dx++)
+            for (int dz = -radius; dz <= radius; dz++) {
+                data.addChunk(net.minecraft.world.level.ChunkPos.asLong(cx + dx, cz + dz));
+                n++;
+            }
+        int added = n;
+        source.sendSuccess(() -> Component.literal("§6[Railguard]§a Marked " + added
+            + " chunk" + (added == 1 ? "" : "s") + " around you as railway property. §7(total: "
+            + data.chunkCount() + ")"), true);
+        return 1;
+    }
+
+    private static int unclaimChunkHere(CommandSourceStack source) {
+        var player = source.getPlayer();
+        if (player == null) { source.sendFailure(Component.literal("§cPlayers only.")); return 0; }
+        RailguardData data = RailguardData.get(source.getLevel());
+        data.removeChunk(net.minecraft.world.level.ChunkPos.asLong(
+            player.blockPosition().getX() >> 4, player.blockPosition().getZ() >> 4));
+        source.sendSuccess(() -> Component.literal("§6[Railguard]§a This chunk is no longer railway property. §7(total: "
+            + data.chunkCount() + ")"), true);
+        return 1;
     }
 
     private static int toggleBypass(CommandSourceStack source) {
@@ -85,29 +133,34 @@ public final class RailguardCommands {
         for (BlockPos pos : BlockPos.betweenClosed(min, max)) {
             if (protect) {
                 if (level.getBlockState(pos).isAir()) continue;   // only real railway blocks
-                data.add(pos.asLong());
+                data.add(pos.immutable());
             } else {
-                data.remove(pos.asLong());
+                data.releasePosition(pos.immutable());
             }
             changed++;
         }
         int n = changed;
         source.sendSuccess(() -> Component.literal("§6[Railguard]§a " + (protect ? "Protected " : "Released ")
-            + n + " position" + (n == 1 ? "" : "s") + ". §7(dimension total: " + data.size() + ")"), true);
+            + n + " position" + (n == 1 ? "" : "s") + ". §7(dimension: " + data.positionCount()
+            + " positions / " + data.chunkCount() + " chunks)"), true);
         return 1;
     }
 
     private static int check(CommandSourceStack source, BlockPos pos) {
-        boolean hit = RailguardData.get(source.getLevel()).contains(pos.asLong());
+        RailguardData data = RailguardData.get(source.getLevel());
+        boolean p = data.isPositionProtected(pos);
+        boolean c = data.isChunkProtected(pos);
         source.sendSuccess(() -> Component.literal("§6[Railguard]§7 " + pos.toShortString() + " → "
-            + (hit ? "§aPROTECTED" : "§cnot protected")), false);
-        return hit ? 1 : 0;
+            + (p || c ? "§aPROTECTED §7(" + (p ? "position" : "") + (p && c ? " + " : "") + (c ? "chunk" : "") + ")"
+                      : "§cnot protected")), false);
+        return p || c ? 1 : 0;
     }
 
     private static int count(CommandSourceStack source) {
-        int n = RailguardData.get(source.getLevel()).size();
-        source.sendSuccess(() -> Component.literal("§6[Railguard]§7 " + n + " protected position"
-            + (n == 1 ? "" : "s") + " in this dimension."), false);
+        RailguardData data = RailguardData.get(source.getLevel());
+        source.sendSuccess(() -> Component.literal("§6[Railguard]§7 " + data.positionCount()
+            + " protected positions, " + data.chunkCount() + " railway chunks in this dimension. §8Bypassing: "
+            + ProtectionEvents.BYPASS.size() + ", debug: " + (ProtectionEvents.DEBUG ? "on" : "off")), false);
         return 1;
     }
 }

@@ -23,10 +23,15 @@ public class CoffeesAeroRailguard {
 
     public CoffeesAeroRailguard(IEventBus modBus) {
         NeoForge.EVENT_BUS.addListener(ProtectionEvents::onBreak);
+        NeoForge.EVENT_BUS.addListener(ProtectionEvents::onPlace);
+        NeoForge.EVENT_BUS.addListener(ProtectionEvents::onRightClick);
         NeoForge.EVENT_BUS.addListener(ProtectionEvents::onExplosion);
         NeoForge.EVENT_BUS.addListener(ProtectionEvents::onPiston);
+        NeoForge.EVENT_BUS.addListener(ProtectionEvents::onLivingDestroy);
         NeoForge.EVENT_BUS.addListener((RegisterCommandsEvent event) ->
             RailguardCommands.register(event.getDispatcher()));
+
+        FtbClaimGuard.install();   // railway chunks can't be FTB-claimed by players
 
         if (ModList.get().isLoaded("railwaysuntold")) {
             LOGGER.info("[Railguard] initialized — live-tracking Railways Untold placements.");
