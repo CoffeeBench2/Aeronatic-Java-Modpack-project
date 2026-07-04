@@ -31,10 +31,15 @@ import org.spongepowered.asm.mixin.injection.Redirect;
  * degrade to whatever it does rather than crash.
  */
 @Mixin(LoadingOverlay.class)
-public abstract class LoadingOverlayMixin {
+public abstract class LoadingOverlayMixin implements com.coffeesaerosmp.core.client.AeroOverlayProgress {
 
     @Shadow private float currentProgress;
     @Shadow @Final private Minecraft minecraft;
+
+    @Override
+    public float aerocore$progress() {
+        return this.currentProgress;
+    }
 
     /** Dark bronze replacing vanilla's red "brand background" everywhere in this overlay. */
     private static final int AERO_DARK_RGB = 0x1A0F06;

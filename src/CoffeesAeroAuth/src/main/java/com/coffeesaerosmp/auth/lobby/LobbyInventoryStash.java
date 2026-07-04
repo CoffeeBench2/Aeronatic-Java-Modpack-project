@@ -107,9 +107,18 @@ public class LobbyInventoryStash {
      */
     public boolean restore(ServerPlayer player) {
         UUID uuid = player.getUUID();
-        player.getInventory().clearContent();   // drop the lobby loadout (paper)
+        // Vendor exception: the lobby steak vendor's Cooked Beef is the ONLY item allowed out of the
+        // lobby — collect it before the clear, re-add after the restore. Everything else is capped.
+        List<ItemStack> allowedOut = new ArrayList<>();
+        var inv = player.getInventory();
+        for (int i = 0; i < inv.getContainerSize(); i++) {
+            ItemStack s = inv.getItem(i);
+            if (!s.isEmpty() && s.is(Items.COOKED_BEEF)) allowedOut.add(s.copy());
+        }
+        player.getInventory().clearContent();   // drop the lobby loadout (paper) + anything else
         String encoded = stash.remove(uuid);
         if (encoded == null) {
+            giveAll(player, allowedOut);
             player.inventoryMenu.broadcastChanges();
             return false;
         }
@@ -118,14 +127,22 @@ public class LobbyInventoryStash {
         } catch (Exception e) {
             stash.put(uuid, encoded);           // keep it for a retry rather than losing items
             saveToFile();
+            giveAll(player, allowedOut);
             player.inventoryMenu.broadcastChanges();
             CoffeesAeroAuth.LOGGER.error("[LobbyStash] Restore failed for {} — kept stash for retry",
                 player.getGameProfile().getName(), e);
             return false;
         }
         saveToFile();
+        giveAll(player, allowedOut);
         player.inventoryMenu.broadcastChanges();
         return true;
+    }
+
+    private static void giveAll(ServerPlayer player, List<ItemStack> stacks) {
+        for (ItemStack s : stacks) {
+            if (!player.getInventory().add(s)) player.drop(s, false);
+        }
     }
 
     // ── Lobby loadout (the "Teleport to Spawn" paper) ──────────────────────────

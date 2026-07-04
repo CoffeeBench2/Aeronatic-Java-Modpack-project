@@ -1,0 +1,42 @@
+modLoader = "javafml"
+loaderVersion = "[4,)"
+license = "MIT"
+
+[[mixins]]
+config = "coffeesaerorailguard.mixins.json"
+
+[[mods]]
+modId           = "coffeesaerorailguard"
+version         = "${file.jarVersion}"
+displayName     = "Coffees Aero Railguard"
+authors         = "MrCoffeeBench"
+credits         = "Coffees Aero SMP"
+logoFile        = "logo.png"
+description     = '''
+Server-side protection for the worldgen railway network (Railways Untold).
+
+Records every block the railway generator places and makes exactly those
+blocks unbreakable (players, explosions, pistons) — player-placed blocks are
+never affected. Ops bypass the protection; /railguard marks pre-existing
+sections retroactively.
+'''
+
+[[dependencies.coffeesaerorailguard]]
+    modId        = "neoforge"
+    type         = "required"
+    versionRange = "[21.1,)"
+    ordering     = "NONE"
+    side         = "SERVER"
+
+[[dependencies.coffeesaerorailguard]]
+    modId        = "minecraft"
+    type         = "required"
+    versionRange = "[1.21.1,1.22)"
+    ordering     = "NONE"
+    side         = "SERVER"
+
+[[dependencies.coffeesaerorailguard]]
+    modId        = "railwaysuntold"
+    type         = "optional"
+    ordering     = "AFTER"
+    side         = "SERVER"

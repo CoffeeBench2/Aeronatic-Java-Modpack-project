@@ -1,0 +1,14 @@
+{
+  "required": false,
+  "package": "com.coffeesaerosmp.railguard.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "LevelSetBlockMixin",
+    "RailwaysTickHandlerMixin"
+  ],
+  "client": [],
+  "server": [],
+  "injectors": {
+    "defaultRequire": 0
+  }
+}

@@ -1,0 +1,46 @@
+plugins {
+    id 'net.neoforged.moddev' version '2.0.141'
+}
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+
+group   = project.mod_group_id
+version = project.mod_version
+
+repositories {
+    mavenCentral()
+}
+
+neoForge {
+    version = project.neoforge_version
+
+    runs {
+        server {
+            server()
+            programArgument '--nogui'
+        }
+    }
+
+    mods {
+        "${project.mod_id}" {
+            sourceSet(sourceSets.main)
+        }
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+jar {
+    manifest {
+        attributes([
+            'Specification-Title'   : project.mod_id,
+            'Specification-Vendor'  : project.mod_authors,
+            'Specification-Version' : '1',
+            'Implementation-Title'  : project.mod_name,
+            'Implementation-Version': project.version,
+            'Implementation-Vendor' : project.mod_authors,
+        ])
+    }
+}
