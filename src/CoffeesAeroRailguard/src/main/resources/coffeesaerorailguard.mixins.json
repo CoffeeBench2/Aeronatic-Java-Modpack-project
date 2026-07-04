@@ -8,7 +8,13 @@
     "DeferredSchematicPlacerMixin",
     "DeferredTunnelFinisherMixin",
     "DeferredConnectionManagerMixin",
-    "DeferredBlockEntityCreatorMixin"
+    "DeferredBlockEntityCreatorMixin",
+    "ChunkLoadTrackExpanderMixin",
+    "TrackPlacementInitializerMixin",
+    "DeferredCompanionQueueMixin",
+    "SurveyManagerMixin",
+    "DeferredTerrainClearerMixin",
+    "TrackGraphReadyListenerMixin"
   ],
   "client": [],
   "server": [],

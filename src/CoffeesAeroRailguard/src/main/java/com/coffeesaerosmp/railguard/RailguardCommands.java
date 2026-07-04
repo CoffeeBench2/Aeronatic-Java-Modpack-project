@@ -46,7 +46,29 @@ public final class RailguardCommands {
                         BlockPosArgument.getLoadedBlockPos(ctx, "pos")))))
             .then(Commands.literal("count")
                 .executes(ctx -> count(ctx.getSource())))
+            .then(Commands.literal("bypass")
+                .requires(src -> src.hasPermission(2))
+                .executes(ctx -> toggleBypass(ctx.getSource())))
         );
+    }
+
+    private static int toggleBypass(CommandSourceStack source) {
+        var player = source.getPlayer();
+        if (player == null) {
+            source.sendFailure(Component.literal("§cPlayers only."));
+            return 0;
+        }
+        boolean on;
+        if (ProtectionEvents.BYPASS.remove(player.getUUID())) {
+            on = false;
+        } else {
+            ProtectionEvents.BYPASS.add(player.getUUID());
+            on = true;
+        }
+        source.sendSuccess(() -> Component.literal(on
+            ? "§6[Railguard]§e BYPASS ON §7— your breaks now go through AND un-protect those positions."
+            : "§6[Railguard]§a Bypass off — the railway is protected from you again."), true);
+        return 1;
     }
 
     private static int mark(CommandSourceStack source, BlockPos from, BlockPos to, boolean protect) {

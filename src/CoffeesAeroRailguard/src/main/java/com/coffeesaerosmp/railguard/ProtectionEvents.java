@@ -10,12 +10,17 @@ import net.neoforged.neoforge.event.level.PistonEvent;
 
 /**
  * Enforcement: recorded railway positions can't be broken by players, blown up, or moved by
- * pistons. Ops (permission level 2+) bypass — and their break UNREGISTERS the position, so admins
- * can permanently remodel a section without fighting the guard.
+ * pistons. EVERYONE is blocked by default — including ops, so admin test-breaks behave like a
+ * player's (the 1.0.1 silent op bypass made the guard look broken and quietly stripped protection).
+ * Admins toggle {@code /railguard bypass} to edit; bypassed breaks un-protect the position.
  */
 public final class ProtectionEvents {
 
     private ProtectionEvents() {}
+
+    /** Players currently in /railguard bypass mode (in-memory; resets on restart). */
+    public static final java.util.Set<java.util.UUID> BYPASS =
+        java.util.concurrent.ConcurrentHashMap.newKeySet();
 
     public static void onBreak(BlockEvent.BreakEvent event) {
         if (!(event.getLevel() instanceof ServerLevel level)) return;
@@ -24,12 +29,15 @@ public final class ProtectionEvents {
         if (!data.contains(packed)) return;
 
         if (event.getPlayer() instanceof ServerPlayer player) {
-            if (player.hasPermissions(2)) {
-                data.remove(packed);   // admin maintenance: breaking un-protects the position
+            if (BYPASS.contains(player.getUUID())) {
+                data.remove(packed);   // bypass edit: breaking un-protects the position
+                player.displayClientMessage(
+                    Component.literal("§6⚙ §7Railguard: position released (bypass on)."), true);
                 return;
             }
-            player.displayClientMessage(
-                Component.literal("§6⚙ §cThe railway is protected — it belongs to everyone."), true);
+            player.displayClientMessage(player.hasPermissions(2)
+                ? Component.literal("§6⚙ §cProtected railway. §7Use §e/railguard bypass§7 to edit.")
+                : Component.literal("§6⚙ §cThe railway is protected — it belongs to everyone."), true);
         }
         event.setCanceled(true);
     }
