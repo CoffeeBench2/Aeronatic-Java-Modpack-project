@@ -117,7 +117,7 @@ metafile = true
 
 [[files]]
 file = "mods/coffeesaerocore-1-3-0.pw.toml"
-hash = "11a110668e70c234f9a3671c6aabda819966f02ba86067112cc770af02453100"
+hash = "59563b68977acc4cd01fde35c8a70971d27e1cd26e5b357bf9c75a6c5b224fba"
 metafile = true
 
 [[files]]
@@ -783,6 +783,10 @@ hash = "1d98d40f15d3a6ce7f1c191a8f458176479ef2fe251dae01ce45b38cdf8a9816"
 [[files]]
 file = "overrides/config/euphoria_patcher/settings.toml"
 hash = "4e13895b1c18cbcc44f9ecaa03d7162f4d287b1c49b7273a4824e5a2d55140f1"
+
+[[files]]
+file = "overrides/config/fml.toml"
+hash = "63460e67d5d376353030d84cad79c9d8985f9522ae01cc5782b61c990b04f096"
 
 [[files]]
 file = "overrides/config/ftbquests/quests/chapter_groups.snbt"
