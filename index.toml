@@ -116,8 +116,13 @@ hash = "c3c17be6b2484103b31cdc01714ab392d1f28171e70e0042ae0494f8f8504b20"
 metafile = true
 
 [[files]]
-file = "mods/coffeesaerocore-1-2-0.pw.toml"
-hash = "33232964ff1823dfb6adbdcfa73732ccc309d378b3d7ff36810ca7ffaa02dcd4"
+file = "mods/coffeesaerocore-1-3-0.pw.toml"
+hash = "11a110668e70c234f9a3671c6aabda819966f02ba86067112cc770af02453100"
+metafile = true
+
+[[files]]
+file = "mods/coffeesaeroskins-1-0-0.pw.toml"
+hash = "c1f1b8b0b373b86424bd746c2bec4df38009a8658ab1e86a3b6fc854a859353b"
 metafile = true
 
 [[files]]
@@ -376,11 +381,6 @@ hash = "b5273318132edc21ef370a1726ca6694de6584a290d1387ef3dda87e83c5c092"
 metafile = true
 
 [[files]]
-file = "mods/fancymenu-neoforge-3-9-1-mc-1-21-1.pw.toml"
-hash = "1f70bc9024c7ce489ac91175cfbdf5bdd1897bb27b4933e65d4f58721bf31f0b"
-metafile = true
-
-[[files]]
 file = "mods/farmersdelight-1-21-1-1-3-2.pw.toml"
 hash = "cb0b283b5f15e768bf960253e95239e42e8cfa5275d1664ee93aaef395b7486c"
 metafile = true
@@ -491,11 +491,6 @@ hash = "deef103113f2cdc5da105029173b41303f938cbce02e9e19d1a7a5262eb5b6ca"
 metafile = true
 
 [[files]]
-file = "mods/konkrete-neoforge-1-9-9-mc-1-21.pw.toml"
-hash = "4829c03d3972ccd5ee8985a727c282c66241e483ccf8a0824dd7386e9b037021"
-metafile = true
-
-[[files]]
 file = "mods/kotlinforforge-5-11-0-all.pw.toml"
 hash = "7e5a1ce4a5352d43e57b0536b6fa2f033d8418275782c81f5b916dc604e40ab6"
 metafile = true
@@ -518,11 +513,6 @@ metafile = true
 [[files]]
 file = "mods/lootr-neoforge-1-21-1-1-11-37-121.pw.toml"
 hash = "e967fbb6b792418ebc16515ba718c0b4566f620a604370a2466c1aee49d3a1bb"
-metafile = true
-
-[[files]]
-file = "mods/melody-neoforge-1-0-10-mc-1-21.pw.toml"
-hash = "3652dc01afd8f1a974247d05458501c6ddb25b444b3bb87b3fa64a608f48b998"
 metafile = true
 
 [[files]]
@@ -784,7 +774,7 @@ hash = "ff15da34b5f6f825dcc32399ab150c2462393031a41c8ea6938d6dd61b11fb04"
 
 [[files]]
 file = "overrides/config/coffeesaerosmp_core-client.toml"
-hash = "2f24aac5a5501784e5286e7cf988a7ed2525dc30801d94946f3d44161a960eb8"
+hash = "771ec5575d8bccbd1d5ef18069490363422a001b4764e705b12368b910b93f27"
 
 [[files]]
 file = "overrides/config/entity_texture_features.json"
@@ -793,30 +783,6 @@ hash = "1d98d40f15d3a6ce7f1c191a8f458176479ef2fe251dae01ce45b38cdf8a9816"
 [[files]]
 file = "overrides/config/euphoria_patcher/settings.toml"
 hash = "4e13895b1c18cbcc44f9ecaa03d7162f4d287b1c49b7273a4824e5a2d55140f1"
-
-[[files]]
-file = "overrides/config/fancymenu/assets/background.png"
-hash = "5adac99ba70a3502f0c5007dbbd189c082e79996ffb4a01f1e3a047b360af342"
-
-[[files]]
-file = "overrides/config/fancymenu/assets/cogwheel.png"
-hash = "f7679206809a5be8149747778aa7e906efc5c65464a3644c57fc6312bcdfa1dc"
-
-[[files]]
-file = "overrides/config/fancymenu/assets/logo.png"
-hash = "e0583450795a604063439598ddb47d4db40db3db4b9bff6bbc183bf51bf01db6"
-
-[[files]]
-file = "overrides/config/fancymenu/customization/aerosmp_loading.txt"
-hash = "c6d2667fb8dea8fa627f0c927f204e33d6e9ec0ee59a1ee790ba70cd03661d97"
-
-[[files]]
-file = "overrides/config/fancymenu/customization/aerosmp_main_menu.txt"
-hash = "884ebb5fb02ddae16c9d754ef39c8d94a6ee2cea47bd4209e199592b5b58dca8"
-
-[[files]]
-file = "overrides/config/fancymenu/options.txt"
-hash = "234b6d136f8441350283b5730ee2c603d5a8c5d57cfd46f9e114ad3a4a84b59c"
 
 [[files]]
 file = "overrides/config/ftbquests/quests/chapter_groups.snbt"
