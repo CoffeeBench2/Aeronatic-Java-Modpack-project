@@ -1,7 +1,7 @@
 {
-  "version": "1.7.0",
+  "version": "1.7.1",
   "url": "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/latest",
   "neoforge": "21.1.234",
   "minecraft": "1.21.1",
-  "notes": "1.7.0: NEW dedicated skin engine (CoffeesAeroSkins) — skins now sync reliably for EVERYONE, including your own view, on every launcher; /setname display names now show everywhere (tab, nametag, chat, join/death messages) — real account names are recorded but visible only to admins; brand-new native main menu with the pack logo and spinning cogwheels (FancyMenu removed = faster startup); updater now auto-cleans outdated leftover mods; server address is no longer stored in configs."
+  "notes": "1.7.1: the launch loading screen is now fully themed (airship + gear-train bar, no more see-through menu \u2014 removed the mod that was hiding it); server side: the worldgen railway network is now grief-protected (only generated railway blocks \u2014 your own builds are untouched), and the lobby steak vendor's food now travels with you to spawn."
 }
