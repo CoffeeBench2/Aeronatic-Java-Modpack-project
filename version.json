@@ -1,7 +1,7 @@
 {
-  "version": "1.7.1",
+  "version": "1.7.2",
   "url": "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/latest",
   "neoforge": "21.1.234",
   "minecraft": "1.21.1",
-  "notes": "1.7.1: the launch loading screen is now fully themed (airship + gear-train bar, no more see-through menu \u2014 removed the mod that was hiding it); server side: the worldgen railway network is now grief-protected (only generated railway blocks \u2014 your own builds are untouched), and the lobby steak vendor's food now travels with you to spawn."
+  "notes": "1.7.2: distribution-readiness release \u2014 all Coffees Aero mods now carry MrCoffeeBench copyright; several bundled files switched to official Modrinth downloads; NEW CoffeesAeroTweaks (our own recipe tweaks); removed two obsolete files. No gameplay changes."
 }
