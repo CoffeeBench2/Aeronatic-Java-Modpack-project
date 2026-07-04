@@ -1,7 +1,7 @@
 {
-  "version": "1.6.5",
+  "version": "1.7.0",
   "url": "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/latest",
   "neoforge": "21.1.234",
   "minecraft": "1.21.1",
-  "notes": "1.6.5: skins are here — premium players auto-wear their real Mojang skin+cape, offline players get /skin <name> (2 changes); CoffeesAeroCore 1.2.0 fixes seeing YOUR OWN skin (vanilla blocked it on offline servers); removed Chunky (client-useless, DH warning); disabled ETF player-skin caching; chat now shows icon badges (gold star = verified, grey = guest)."
+  "notes": "1.7.0: NEW dedicated skin engine (CoffeesAeroSkins) — skins now sync reliably for EVERYONE, including your own view, on every launcher; /setname display names now show everywhere (tab, nametag, chat, join/death messages) — real account names are recorded but visible only to admins; brand-new native main menu with the pack logo and spinning cogwheels (FancyMenu removed = faster startup); updater now auto-cleans outdated leftover mods; server address is no longer stored in configs."
 }
