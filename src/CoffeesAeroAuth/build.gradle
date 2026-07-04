@@ -45,7 +45,7 @@ dependencies {
 
     // CoffeesAeroSkins API for the skins backend bridge (SkinsHook). compileOnly + ModList-guarded,
     // same pattern as FTB. Build CoffeesAeroSkins first (sibling project).
-    compileOnly(files("../CoffeesAeroSkins/build/libs/CoffeesAeroSkins-1.0.0.jar"))
+    compileOnly(files("../CoffeesAeroSkins/build/libs/CoffeesAeroSkins-1.0.1.jar"))
 }
 
 tasks.withType(JavaCompile).configureEach {

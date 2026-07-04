@@ -1,6 +1,6 @@
 modLoader = "javafml"
 loaderVersion = "[4,)"
-license = "MIT"
+license = "All Rights Reserved (c) 2026 MrCoffeeBench"
 
 [[mixins]]
 config = "coffeesaerorailguard.mixins.json"

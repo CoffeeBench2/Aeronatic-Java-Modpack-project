@@ -1,0 +1,13 @@
+name = "Create: Connected"
+filename = "create_connected-1.1.16-mc1.21.1.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/Vg5TIO6d/versions/EHyCRpCV/create_connected-1.1.16-mc1.21.1.jar"
+hash-format = "sha512"
+hash = "75feee95543d8b4e077ff40d5abd39a7a14035c1ebce7cfa4875df909de77c52137217a5de49a4ef5127a7e9c615232e15b9299d49cb56f08e4128dcfc07b94e"
+
+[update]
+[update.modrinth]
+mod-id = "Vg5TIO6d"
+version = "EHyCRpCV"
