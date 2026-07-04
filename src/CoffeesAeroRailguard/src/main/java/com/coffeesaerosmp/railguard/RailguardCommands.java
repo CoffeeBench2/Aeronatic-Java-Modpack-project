@@ -58,7 +58,84 @@ public final class RailguardCommands {
                         com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "radius")))))
             .then(Commands.literal("unclaimchunkhere")
                 .executes(ctx -> unclaimChunkHere(ctx.getSource())))
+            .then(Commands.literal("trace")
+                .executes(ctx -> trace(ctx.getSource())))
         );
+    }
+
+    /** Blocks the railway is made of — used ONLY by the admin-driven /railguard trace. */
+    private static boolean isRailwayBlock(net.minecraft.world.level.block.state.BlockState state) {
+        var id = net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(state.getBlock());
+        String ns = id.getNamespace(), path = id.getPath();
+        if (ns.equals("railwaysuntold")) return true;
+        if (ns.equals("create") && (path.contains("track") || path.contains("girder"))) return true;
+        if (ns.equals("railways") && path.contains("track")) return true;   // Steam 'n' Rails
+        return ns.equals("minecraft") && path.endsWith("rail");
+    }
+
+    /** Safety cap so trace can't freeze the server on a pathological flood. */
+    private static final int TRACE_CAP = 150_000;
+
+    /**
+     * RETRO-CAPTURE for sections generated before the guard existed: stand ON the railway and this
+     * flood-follows connected railway blocks (5×5×5 neighborhood — bridges bezier gaps between
+     * track anchors via the girders) through LOADED chunks, recording every block and claiming
+     * every chunk it passes through (stations sit on the line, so their chunks get claimed too).
+     * Stops at unloaded chunks — ride/fly along the line and re-run to continue.
+     */
+    private static int trace(CommandSourceStack source) {
+        var player = source.getPlayer();
+        if (player == null) { source.sendFailure(Component.literal("§cPlayers only.")); return 0; }
+        ServerLevel level = source.getLevel();
+        RailguardData data = RailguardData.get(level);
+
+        // Find a starting railway block near the player's feet.
+        BlockPos feet = player.blockPosition();
+        BlockPos start = null;
+        outer:
+        for (int dy = -2; dy <= 1; dy++)
+            for (int dx = -2; dx <= 2; dx++)
+                for (int dz = -2; dz <= 2; dz++) {
+                    BlockPos p = feet.offset(dx, dy, dz);
+                    if (isRailwayBlock(level.getBlockState(p))) { start = p.immutable(); break outer; }
+                }
+        if (start == null) {
+            source.sendFailure(Component.literal("§6[Railguard]§c Stand ON the railway (no track/girder within 2 blocks)."));
+            return 0;
+        }
+
+        var visited = new it.unimi.dsi.fastutil.longs.LongOpenHashSet();
+        var queue = new java.util.ArrayDeque<BlockPos>();
+        queue.add(start);
+        visited.add(start.asLong());
+        int recorded = 0, frontier = 0;
+        long t0 = System.currentTimeMillis();
+
+        while (!queue.isEmpty() && visited.size() < TRACE_CAP) {
+            BlockPos pos = queue.poll();
+            data.add(pos);
+            recorded++;
+            for (int dx = -2; dx <= 2; dx++)
+                for (int dy = -2; dy <= 2; dy++)
+                    for (int dz = -2; dz <= 2; dz++) {
+                        if (dx == 0 && dy == 0 && dz == 0) continue;
+                        BlockPos n = pos.offset(dx, dy, dz);
+                        if (!visited.add(n.asLong())) continue;
+                        if (!level.isLoaded(n)) { frontier++; continue; }
+                        if (isRailwayBlock(level.getBlockState(n))) queue.add(n.immutable());
+                    }
+        }
+
+        int rec = recorded, fr = frontier;
+        long ms = System.currentTimeMillis() - t0;
+        boolean capped = visited.size() >= TRACE_CAP;
+        source.sendSuccess(() -> Component.literal("§6[Railguard]§a Traced " + rec + " railway blocks in " + ms
+            + "ms. §7Dimension now: " + data.positionCount() + " positions / " + data.chunkCount() + " chunks."
+            + (fr > 0 ? " §e" + fr + " unloaded edge(s) — move along the line and re-run." : "")
+            + (capped ? " §c(Hit the " + TRACE_CAP + " safety cap — re-run to continue.)" : "")), true);
+        CoffeesAeroRailguard.LOGGER.info("[Railguard] TRACE by {}: {} blocks recorded ({} ms), {} unloaded edges{}.",
+            player.getGameProfile().getName(), rec, ms, fr, capped ? ", CAPPED" : "");
+        return 1;
     }
 
     private static int toggleDebug(CommandSourceStack source) {
