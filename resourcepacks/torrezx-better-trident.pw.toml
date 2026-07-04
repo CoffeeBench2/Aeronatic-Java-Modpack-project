@@ -1,0 +1,13 @@
+name = "Torrezx-Better trident"
+filename = "Torrezx-Better_trident.zip"
+side = "client"
+
+[download]
+url = "https://cdn.modrinth.com/data/ZQpWNN1B/versions/c5XZ9Oq3/Torrezx-Better_trident.zip"
+hash-format = "sha512"
+hash = "7d5bbb163ba38f57e80726c916b46eace740c67947ffb98a59a1b52d7a5cdf8c4080ec3b9ea7c7f5dcffdca2049c8d4270b3630376fb0eb34ae5fddda2bf9bac"
+
+[update]
+[update.modrinth]
+mod-id = "ZQpWNN1B"
+version = "c5XZ9Oq3"

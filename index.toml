@@ -116,13 +116,18 @@ hash = "c3c17be6b2484103b31cdc01714ab392d1f28171e70e0042ae0494f8f8504b20"
 metafile = true
 
 [[files]]
-file = "mods/coffeesaerocore-1-3-1.pw.toml"
-hash = "c3d6f1435ab4cc9895ea411b81422ad19d2f1c6d2e4f65ee0ca4314a3199cc3a"
+file = "mods/coffeesaerocore-1-3-2.pw.toml"
+hash = "2614d64202b15f9f8172812dfbcd3df9303995397bb606e8c28c816436e89311"
 metafile = true
 
 [[files]]
-file = "mods/coffeesaeroskins-1-0-0.pw.toml"
-hash = "c1f1b8b0b373b86424bd746c2bec4df38009a8658ab1e86a3b6fc854a859353b"
+file = "mods/coffeesaeroskins-1-0-1.pw.toml"
+hash = "259da058c2ee0517663be7bf7a672c89a9ecbc942349bf8ae744dc4944c41e43"
+metafile = true
+
+[[files]]
+file = "mods/coffeesaerotweaks-1-0-0.pw.toml"
+hash = "2f33758db5209cadbffd48bb1b6e296ba30ff1cadf5d6772383455586cac805b"
 metafile = true
 
 [[files]]
@@ -176,8 +181,8 @@ hash = "20fecec3bee3ee028fa58ecca57f5ecaf6fda93ef92a7322452e822a3efd3457"
 metafile = true
 
 [[files]]
-file = "mods/create-connected-1-1-16-mc1-21-1.pw.toml"
-hash = "f2a07c9352dd62d9d89bd8f6390cd19fd859f79ab70595db5f8c2ffc78e82402"
+file = "mods/create-connected.pw.toml"
+hash = "a548a99f9d9ba0d237aaf64acee67b29271d05a40c1c3ef87bc1bc18267c640c"
 metafile = true
 
 [[files]]
@@ -268,11 +273,6 @@ metafile = true
 [[files]]
 file = "mods/createrailwaysnavigator-neoforge-1-21-1-beta-0-9-0-c6.pw.toml"
 hash = "6957e01ae49867a5aba2c49a82539aa9dc8e7bf291c9389e3f31eac9fa96abbf"
-metafile = true
-
-[[files]]
-file = "mods/cupboard-1-21-1-3-8.pw.toml"
-hash = "35176713ef5967fdbaf92e16a0a5909e12a8f0a4c681d7ecf86a40f772460102"
 metafile = true
 
 [[files]]
@@ -368,11 +368,6 @@ metafile = true
 [[files]]
 file = "mods/euphoriapatcher-1-9-3-r5-8-1-neoforge.pw.toml"
 hash = "7a3c3d45ba3acc753fb237c4f18409e3a7f0f3b4a682a11cb30d113b08119191"
-metafile = true
-
-[[files]]
-file = "mods/extra-create-recipes-1-21-1-v1.pw.toml"
-hash = "2ab84b80e68495a5a25952bddc0f3e4498f1dcbcb73247fd29928f697eddb37e"
 metafile = true
 
 [[files]]
@@ -769,7 +764,7 @@ hash = "ff15da34b5f6f825dcc32399ab150c2462393031a41c8ea6938d6dd61b11fb04"
 
 [[files]]
 file = "overrides/config/coffeesaerosmp_core-client.toml"
-hash = "ffaa120252b87670ef5a5bb1606998a0f9f3256554ea8522939f8718ff1ec913"
+hash = "c31087b8d66de71c855ef5419d7543debb4b02b9493fa46b8d08d414adf60879"
 
 [[files]]
 file = "overrides/config/entity_texture_features.json"
@@ -825,16 +820,16 @@ hash = "6e021d45c48931bb84e306a4a9644a6b84d81b46272774e37bab3f0eccbae532"
 
 [[files]]
 file = "overrides/options.txt"
-hash = "4bc099b05b1350941a3716795800cf5f75c8c3900c003cdad59b94610ae0f8a0"
-
-[[files]]
-file = "resourcepacks/3d-mace.pw.toml"
-hash = "48c92491a2b3a1f0cfcb50da78f6852c3d25e59fdc2edab7b2514c1ce59d02b7"
-metafile = true
+hash = "0199ee862af725352e459e5ebe14ff4407ff543f95ff789aff4e40a79fea009b"
 
 [[files]]
 file = "resourcepacks/actually-3d-stuff.pw.toml"
-hash = "1ef4e9b71a5d91d06b482cde913c0d27852ee2d94de1651218521e73c6706d0e"
+hash = "59bf9e81a40bfed44d95699392fc52223913b8110bc7070885d53d832b298275"
+metafile = true
+
+[[files]]
+file = "resourcepacks/amazing-mace-3d.pw.toml"
+hash = "2549b579d2d38e4e281cfa90174c13d51769c00d0fe5941bc64e90e05ac863d8"
 metafile = true
 
 [[files]]
@@ -850,11 +845,6 @@ metafile = true
 [[files]]
 file = "resourcepacks/better-lanterns-v1-2-mc-1-21.pw.toml"
 hash = "7c70562eb2ed19090400730e9aa48f7d7dc65788fe977aa9f2d6ce80c1791d1e"
-metafile = true
-
-[[files]]
-file = "resourcepacks/better-trident-v2.pw.toml"
-hash = "6b83fd942c145c1635a4895229133f98abdddac287e2292788edac374bcb53fc"
 metafile = true
 
 [[files]]
@@ -883,6 +873,11 @@ hash = "aa65ac32ae6b6b8f8a7a5b99d488c21f95666c384c5e517a1114e4d0fa4856bd"
 metafile = true
 
 [[files]]
+file = "resourcepacks/torrezx-better-trident.pw.toml"
+hash = "13e35977e7d9daf109db027092d2e5a56be8c9155d159277b8e0487a2457015c"
+metafile = true
+
+[[files]]
 file = "resourcepacks/traben-s-3d-armor-1-0-1.pw.toml"
 hash = "a0398523d4cb9ff8263621f9b5699b93a10ea88ac98e22212133674a70ab0719"
 metafile = true
@@ -890,4 +885,9 @@ metafile = true
 [[files]]
 file = "resourcepacks/trabens-3d-arrows-1-1.pw.toml"
 hash = "a5fbfa8f1d8c32bb47aea0e64750e8306a3777427d237f6078a33137f22fec64"
+metafile = true
+
+[[files]]
+file = "shaderpacks/complementary-reimagined.pw.toml"
+hash = "ea258ed5bf495d9017eeadc3cbf9bd67b1e672d843826bc077135548b5bc699e"
 metafile = true
