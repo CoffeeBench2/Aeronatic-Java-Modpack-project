@@ -4,7 +4,11 @@
   "compatibilityLevel": "JAVA_21",
   "mixins": [
     "LevelSetBlockMixin",
-    "RailwaysTickHandlerMixin"
+    "RailwaysTickHandlerMixin",
+    "DeferredSchematicPlacerMixin",
+    "DeferredTunnelFinisherMixin",
+    "DeferredConnectionManagerMixin",
+    "DeferredBlockEntityCreatorMixin"
   ],
   "client": [],
   "server": [],
