@@ -116,8 +116,8 @@ hash = "c3c17be6b2484103b31cdc01714ab392d1f28171e70e0042ae0494f8f8504b20"
 metafile = true
 
 [[files]]
-file = "mods/coffeesaerocore-1-3-0.pw.toml"
-hash = "59563b68977acc4cd01fde35c8a70971d27e1cd26e5b357bf9c75a6c5b224fba"
+file = "mods/coffeesaerocore-1-3-1.pw.toml"
+hash = "c3d6f1435ab4cc9895ea411b81422ad19d2f1c6d2e4f65ee0ca4314a3199cc3a"
 metafile = true
 
 [[files]]
@@ -601,11 +601,6 @@ hash = "dac9e24635d5a192cb31ee6249f134d59f337913856b6cd2574a4b2585c3a427"
 metafile = true
 
 [[files]]
-file = "mods/rrls-5-0-10-mc1-21-1-forge.pw.toml"
-hash = "bbcd3387d2f9d0576537a3b18550ef78cacc6ab5c1a04c6ae4289e74cce8bfff"
-metafile = true
-
-[[files]]
 file = "mods/sable-neoforge-1-21-1-1-2-2.pw.toml"
 hash = "563615de1de32874d959e9424206062c87a6b59ee33ca34349b4272f3f9a6492"
 metafile = true
@@ -774,7 +769,7 @@ hash = "ff15da34b5f6f825dcc32399ab150c2462393031a41c8ea6938d6dd61b11fb04"
 
 [[files]]
 file = "overrides/config/coffeesaerosmp_core-client.toml"
-hash = "771ec5575d8bccbd1d5ef18069490363422a001b4764e705b12368b910b93f27"
+hash = "ffaa120252b87670ef5a5bb1606998a0f9f3256554ea8522939f8718ff1ec913"
 
 [[files]]
 file = "overrides/config/entity_texture_features.json"
