@@ -25,3 +25,10 @@ nf_versions.json
 # IDE
 *.iml
 run/
+
+# Internal docs / tooling — never commit to the public repo
+CLAUDE.md
+obsidian-vault/
+reports/
+.idea/
+.claude/
