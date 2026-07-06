@@ -44,8 +44,12 @@ public final class VersionCheck {
     private static void fetch(String url) {
         try {
             HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
-            HttpRequest req = HttpRequest.newBuilder(URI.create(url))
-                .timeout(Duration.ofSeconds(8)).GET().build();
+            // Cache-bust version.json too (like the updater): GitHub's raw CDN caches each path ~300s and
+            // ignores no-cache, so without this a version.json flip isn't seen for ~5 min → players relaunch
+            // and think nothing happened. One tiny request per session, so no rate-limit concern.
+            String bustedUrl = url + (url.indexOf('?') < 0 ? "?" : "&") + "aerocb=" + System.nanoTime();
+            HttpRequest req = HttpRequest.newBuilder(URI.create(bustedUrl))
+                .timeout(Duration.ofSeconds(8)).header("Cache-Control", "no-cache").GET().build();
             HttpResponse<String> resp = http.send(req, HttpResponse.BodyHandlers.ofString());
             if (resp.statusCode() != 200) { state = State.ERROR; return; }
 
