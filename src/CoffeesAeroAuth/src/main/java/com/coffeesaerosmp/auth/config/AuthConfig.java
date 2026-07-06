@@ -56,6 +56,9 @@ public class AuthConfig {
     public static final ModConfigSpec.IntValue     BACK_COOLDOWN_SECONDS;
     public static final ModConfigSpec.BooleanValue COMBAT_LOG_PUNISH;
 
+    // ── /tpa (our own — replaces FTB Essentials' selector-based one) ──────────
+    public static final ModConfigSpec.IntValue     TPA_TIMEOUT_SECONDS;
+
     // ── Discord ───────────────────────────────────────────────────────────────
     public static final ModConfigSpec.BooleanValue DISCORD_ENABLED;
     public static final ModConfigSpec.ConfigValue<String>  DISCORD_BOT_TOKEN;
@@ -246,6 +249,11 @@ public class AuthConfig {
             .defineInRange("backCooldownSeconds", 600, 0, 86400);
         COMBAT_LOG_PUNISH     = b.comment("Kill players who disconnect while combat-tagged (items drop at the fight).")
             .define("combatLogPunish", true);
+        b.pop();
+
+        b.comment("Our own /tpa — replaces FTB Essentials' (disabled via ftbessentials.snbt)").push("tpa");
+        TPA_TIMEOUT_SECONDS = b.comment("A /tpa request expires if not accepted/denied within this many seconds.")
+            .defineInRange("tpaTimeoutSeconds", 60, 10, 600);
         b.pop();
 
         SERVER_SPEC = b.build();

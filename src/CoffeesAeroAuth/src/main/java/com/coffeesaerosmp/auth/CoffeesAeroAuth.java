@@ -273,5 +273,6 @@ public class CoffeesAeroAuth {
         AuthCommands.register(event.getDispatcher());
         ProfileCommands.register(event.getDispatcher());
         com.coffeesaerosmp.auth.pvp.CombatGuard.registerCommands(event.getDispatcher());
+        com.coffeesaerosmp.auth.commands.TpaCommands.register(event.getDispatcher());
     }
 }
