@@ -4,8 +4,8 @@ side = "both"
 
 [download]
 url = "https://mediafilez.forgecdn.net/files/8373/528/tombstone-neoforge-1.21.1-9.5.2.jar"
-hash-format = "sha1"
-hash = "cc57c6e33e1dadb8f516f21fdde841db9c092e88"
+hash-format = "sha512"
+hash = "852febc2183badc9f6b3054820da212c42133ea7f9d21ee75f69529e90a7b769447c6362f4e4fd46d0fbcaeb2b065261f96e5b5d54d7fcbff4ff04afff447161"
 
 [update]
 [update.curseforge]
