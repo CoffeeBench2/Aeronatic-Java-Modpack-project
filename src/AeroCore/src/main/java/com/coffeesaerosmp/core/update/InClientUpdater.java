@@ -64,6 +64,10 @@ public final class InClientUpdater {
 
             phase = "Reading pack…";
             Map<String, String> pack = parseToml(get(packUrl));
+            // From here on, key raw fetches on the index hash (see bust()): one cached copy of index.toml
+            // + every metafile serves the whole player base per release, instead of each client punching
+            // origin ~150× — the 429 that broke 1.7.3. pack.toml above still used a unique key (fresh).
+            bustToken = pack.get("index.hash");
             String indexFile   = pack.getOrDefault("index.file", "index.toml");
             String indexUrl    = base + indexFile;
             String indexRaw    = get(indexUrl);
@@ -212,10 +216,18 @@ public final class InClientUpdater {
      * Only raw.githubusercontent is busted; mod jars live on immutable, content-addressed CDNs
      * (Modrinth) or hash-stamped release URLs, where a query string is pointless and best avoided.
      */
+    /** Set to the pack's index hash once pack.toml is read. Every raw request in a run then shares one
+     *  STABLE per-release cache key, so Fastly serves index.toml + all ~150 metafiles to every client
+     *  from ONE cached copy instead of each client forcing an origin miss — the thundering-herd HTTP 429
+     *  that broke the 1.7.3 rollout. A new release (new index hash) still forces a fresh fetch, and the
+     *  index-integrity gate still catches a stale/mismatched index. Null before pack.toml is read, so
+     *  pack.toml itself uses a unique key (its own freshness is what everything else keys off). */
+    private static volatile String bustToken = null;
+
     private static String bust(String url) {
-        if (url.contains("raw.githubusercontent.com"))
-            return url + (url.indexOf('?') < 0 ? "?" : "&") + "aerocb=" + System.nanoTime();
-        return url;
+        if (!url.contains("raw.githubusercontent.com")) return url;
+        String token = (bustToken != null && !bustToken.isBlank()) ? bustToken : Long.toString(System.nanoTime());
+        return url + (url.indexOf('?') < 0 ? "?" : "&") + "aerocb=" + token;
     }
 
     private static String get(String url) throws IOException, InterruptedException {
@@ -242,10 +254,19 @@ public final class InClientUpdater {
         return Files.exists(file) && hashMatches(file, expected, fmt);
     }
 
+    /** Map a packwiz hash-format to a MessageDigest. Handles sha512/sha256/sha1 — CurseForge metadata
+     *  metafiles carry sha1, which the old two-way (512-or-256) check hashed as SHA-256 and always
+     *  failed (the Corail "hash mismatch after download"). Defaults to SHA-256. */
+    private static MessageDigest digestFor(String fmt) throws java.security.NoSuchAlgorithmException {
+        String f = fmt == null ? "" : fmt.toLowerCase(Locale.ROOT);
+        String algo = f.contains("512") ? "SHA-512" : f.contains("256") ? "SHA-256"
+                    : f.contains("1")   ? "SHA-1"   : "SHA-256";
+        return MessageDigest.getInstance(algo);
+    }
+
     private static boolean hashStringMatches(String content, String expected, String fmt) {
         try {
-            MessageDigest md = MessageDigest.getInstance(
-                fmt != null && fmt.toLowerCase(Locale.ROOT).contains("512") ? "SHA-512" : "SHA-256");
+            MessageDigest md = digestFor(fmt);
             byte[] d = md.digest(content.getBytes(StandardCharsets.UTF_8));
             StringBuilder sb = new StringBuilder();
             for (byte b : d) sb.append(String.format("%02x", b));
@@ -255,8 +276,7 @@ public final class InClientUpdater {
 
     private static boolean hashMatches(Path file, String expected, String fmt) {
         try {
-            MessageDigest md = MessageDigest.getInstance(
-                fmt != null && fmt.toLowerCase(Locale.ROOT).contains("512") ? "SHA-512" : "SHA-256");
+            MessageDigest md = digestFor(fmt);
             byte[] buf = new byte[1 << 16];
             try (var in = Files.newInputStream(file)) {
                 int n; while ((n = in.read(buf)) > 0) md.update(buf, 0, n);
