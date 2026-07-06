@@ -1,7 +1,7 @@
 {
-  "version": "1.7.2",
+  "version": "1.7.3",
   "url": "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/latest",
   "neoforge": "21.1.234",
   "minecraft": "1.21.1",
-  "notes": "1.7.2: distribution-readiness release \u2014 all Coffees Aero mods now carry MrCoffeeBench copyright; several bundled files switched to official Modrinth downloads; NEW CoffeesAeroTweaks (our own recipe tweaks); removed two obsolete files. No gameplay changes."
+  "notes": "1.7.3: client QoL. Client Sort (middle-click to sort any container) replaces Inventory Profiles Next; FallingTree (break the base log, the tree falls); Corail Tombstone (a grave holds your items on death); emote wheel moved from B to = so it stops blocking backpacks."
 }
