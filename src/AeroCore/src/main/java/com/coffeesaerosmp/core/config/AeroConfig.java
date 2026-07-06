@@ -17,8 +17,9 @@ public class AeroConfig {
         builder.comment("CoffeesAeroSMP Core — Client Configuration");
 
         SERVER_IP = builder
-            .comment("Server IP shown in and used by the 'Join Coffees Aero SMP' button")
-            .define("serverIp", "play.coffeesaerosmp.net");
+            .comment("Server IP shown in and used by the 'Join Coffees Aero SMP' button.",
+                     "\"managed\" = use the address built into CoffeesAeroCore. Any other value is a verbatim override.")
+            .define("serverIp", "managed");
 
         ADMIN_USERNAME = builder
             .comment("Minecraft username that can access the Admin Settings screen")

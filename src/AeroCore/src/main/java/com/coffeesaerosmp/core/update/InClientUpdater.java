@@ -69,6 +69,16 @@ public final class InClientUpdater {
             String indexRaw    = get(indexUrl);
             String idxHashFmt  = firstValue(indexRaw, "hash-format", "sha256");
 
+            // Integrity gate: the fetched index MUST match the hash pack.toml declares for it. With
+            // cache-busting both come fresh from origin, so a failure here means the pushed pack is
+            // genuinely inconsistent (index not refreshed after an edit) — fail loud rather than march
+            // on with stale per-file hashes and surface a misleading "hash mismatch after download".
+            String declaredIdxHash = pack.get("index.hash");
+            if (declaredIdxHash != null && !hashStringMatches(indexRaw, declaredIdxHash,
+                    pack.getOrDefault("index.hash-format", "sha256")))
+                throw new IOException("pack index is inconsistent (index.toml does not match pack.toml)"
+                    + " — the pack was published without a packwiz refresh; try again shortly");
+
             phase = "Checking files…";
             List<Target> plan = new ArrayList<>();
             Set<String>  managed = new LinkedHashSet<>();         // target paths this update controls
@@ -194,9 +204,23 @@ public final class InClientUpdater {
 
     // ── HTTP ────────────────────────────────────────────────────────────────────
 
+    /**
+     * GitHub's raw CDN (Fastly) caches each path for ~300s and does NOT reliably honour a request
+     * {@code Cache-Control: no-cache}. That means for ~5 min after a pack push, some edges hand clients
+     * a STALE index.toml/config while others are fresh — the classic "hash mismatch after download".
+     * We defeat it by making every raw request a unique URL (unique cache key ⇒ guaranteed origin miss).
+     * Only raw.githubusercontent is busted; mod jars live on immutable, content-addressed CDNs
+     * (Modrinth) or hash-stamped release URLs, where a query string is pointless and best avoided.
+     */
+    private static String bust(String url) {
+        if (url.contains("raw.githubusercontent.com"))
+            return url + (url.indexOf('?') < 0 ? "?" : "&") + "aerocb=" + System.nanoTime();
+        return url;
+    }
+
     private static String get(String url) throws IOException, InterruptedException {
         HttpResponse<String> r = HTTP.send(
-            HttpRequest.newBuilder(URI.create(url)).timeout(Duration.ofSeconds(30))
+            HttpRequest.newBuilder(URI.create(bust(url))).timeout(Duration.ofSeconds(30))
                 .header("Cache-Control", "no-cache").header("Pragma", "no-cache").GET().build(),
             HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
         if (r.statusCode() != 200) throw new IOException("HTTP " + r.statusCode() + " for " + url);
@@ -205,7 +229,7 @@ public final class InClientUpdater {
 
     private static void download(String url, Path target) throws IOException, InterruptedException {
         HttpResponse<Path> r = HTTP.send(
-            HttpRequest.newBuilder(URI.create(url)).timeout(Duration.ofMinutes(5))
+            HttpRequest.newBuilder(URI.create(bust(url))).timeout(Duration.ofMinutes(5))
                 .header("Cache-Control", "no-cache").GET().build(),
             HttpResponse.BodyHandlers.ofFile(target));
         if (r.statusCode() != 200) throw new IOException("HTTP " + r.statusCode() + " downloading " + url);
@@ -216,6 +240,17 @@ public final class InClientUpdater {
     private static boolean matches(Path file, String expected, String fmt) {
         if (expected == null) return true;
         return Files.exists(file) && hashMatches(file, expected, fmt);
+    }
+
+    private static boolean hashStringMatches(String content, String expected, String fmt) {
+        try {
+            MessageDigest md = MessageDigest.getInstance(
+                fmt != null && fmt.toLowerCase(Locale.ROOT).contains("512") ? "SHA-512" : "SHA-256");
+            byte[] d = md.digest(content.getBytes(StandardCharsets.UTF_8));
+            StringBuilder sb = new StringBuilder();
+            for (byte b : d) sb.append(String.format("%02x", b));
+            return sb.toString().equalsIgnoreCase(expected.trim());
+        } catch (Exception e) { return false; }
     }
 
     private static boolean hashMatches(Path file, String expected, String fmt) {
