@@ -101,6 +101,11 @@ hash = "84d0f213f7803fc54e82a467e122279ee9c9e557017eb0a46892729d925ade2f"
 metafile = true
 
 [[files]]
+file = "mods/clientsort.pw.toml"
+hash = "1575c645b68ae61e6848cc26ededa351235dd4bb5e58aef19b78c02c79afd447"
+metafile = true
+
+[[files]]
 file = "mods/cloth-config-15-0-140-neoforge.pw.toml"
 hash = "023e9d99524af89d2871e0aad5c3bc2c62151da2b1efbef58de0c1262ba677f5"
 metafile = true
@@ -153,6 +158,11 @@ metafile = true
 [[files]]
 file = "mods/copycats-3-0-4-mc-1-21-1-neoforge.pw.toml"
 hash = "a53ab9553b31f59af56d4ce71d07b44cef7235da401d3485dfe54f5c3d635f8c"
+metafile = true
+
+[[files]]
+file = "mods/corail-tombstone.pw.toml"
+hash = "0734c8dbd8383cb5f3ff7c39e1000585fe105be2764f1b3ee3cc01a49e4150e5"
 metafile = true
 
 [[files]]
@@ -376,6 +386,11 @@ hash = "b5273318132edc21ef370a1726ca6694de6584a290d1387ef3dda87e83c5c092"
 metafile = true
 
 [[files]]
+file = "mods/fallingtree.pw.toml"
+hash = "7d61ad815f97afb27f7e97475e80376aa19fecf25a1b04a500a4c3a6e5055973"
+metafile = true
+
+[[files]]
 file = "mods/farmersdelight-1-21-1-1-3-2.pw.toml"
 hash = "cb0b283b5f15e768bf960253e95239e42e8cfa5275d1664ee93aaef395b7486c"
 metafile = true
@@ -451,11 +466,6 @@ hash = "06bef0e212f0a9b7cad14e7752ff072e07bf63151517431ef873aca1cba255f4"
 metafile = true
 
 [[files]]
-file = "mods/inventoryprofilesnext-neoforge-1-21-1-2-2-5.pw.toml"
-hash = "267280296e559b8a30f8676f8a6f3f2bbe9238d12abc0abeebff00b074dcd015"
-metafile = true
-
-[[files]]
 file = "mods/iris-neoforge-1-8-12-mc1-21-1.pw.toml"
 hash = "e92d64ccc87e892911f377969838c620042124903c606e04be21ec52077bb96f"
 metafile = true
@@ -488,11 +498,6 @@ metafile = true
 [[files]]
 file = "mods/kotlinforforge-5-11-0-all.pw.toml"
 hash = "7e5a1ce4a5352d43e57b0536b6fa2f033d8418275782c81f5b916dc604e40ab6"
-metafile = true
-
-[[files]]
-file = "mods/libipn-neoforge-1-21-1-6-6-3.pw.toml"
-hash = "466aa56b32a0c2fa61c9366e2eb54551408d879649d07fdad19538f61592c91f"
 metafile = true
 
 [[files]]
@@ -764,7 +769,7 @@ hash = "ff15da34b5f6f825dcc32399ab150c2462393031a41c8ea6938d6dd61b11fb04"
 
 [[files]]
 file = "overrides/config/coffeesaerosmp_core-client.toml"
-hash = "decac5bfdbbf38bc16c0d95042bec0c164e9fa5b29f8a77b7c10b90877aa8db7"
+hash = "ae419ce926cfe2c5cdd663255ce11bb61405b7b0f5ba7207d055bbd71ff8cea0"
 
 [[files]]
 file = "overrides/config/entity_texture_features.json"
@@ -820,7 +825,7 @@ hash = "6e021d45c48931bb84e306a4a9644a6b84d81b46272774e37bab3f0eccbae532"
 
 [[files]]
 file = "overrides/options.txt"
-hash = "0199ee862af725352e459e5ebe14ff4407ff543f95ff789aff4e40a79fea009b"
+hash = "30ce7ab89780a3e6bfd1ad1028e5516f09910557b9dbff34e41178e256428f07"
 
 [[files]]
 file = "resourcepacks/actually-3d-stuff.pw.toml"
@@ -889,5 +894,5 @@ metafile = true
 
 [[files]]
 file = "shaderpacks/complementary-reimagined.pw.toml"
-hash = "5adb3ad39696f956017ad3bd8c5db4266eacbb73d2a7a5c7d259ea3888f8000c"
+hash = "ea258ed5bf495d9017eeadc3cbf9bd67b1e672d843826bc077135548b5bc699e"
 metafile = true
