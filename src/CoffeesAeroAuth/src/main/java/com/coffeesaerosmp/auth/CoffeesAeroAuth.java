@@ -114,6 +114,13 @@ public class CoffeesAeroAuth {
         // Rail anti-grief: auto-claim chunks where players build Create rail (no-op without FTB Chunks).
         NeoForge.EVENT_BUS.addListener(com.coffeesaerosmp.auth.protect.RailAutoClaim::onBlockPlace);
         NeoForge.EVENT_BUS.addListener(com.coffeesaerosmp.auth.protect.RailAutoClaim::onRightClickBlock);
+
+        // PvP combat guard: tag on player-vs-player damage, block escape commands while tagged,
+        // punish combat-logging, and track deaths for the /back death-return.
+        NeoForge.EVENT_BUS.addListener(com.coffeesaerosmp.auth.pvp.CombatGuard::onLivingDamage);
+        NeoForge.EVENT_BUS.addListener(com.coffeesaerosmp.auth.pvp.CombatGuard::onLivingDeath);
+        NeoForge.EVENT_BUS.addListener(com.coffeesaerosmp.auth.pvp.CombatGuard::onPlayerLoggedOut);
+        NeoForge.EVENT_BUS.addListener(com.coffeesaerosmp.auth.pvp.CombatGuard::onCommand);
     }
 
     private static void onServerStarting(ServerStartingEvent event) {
@@ -265,5 +272,6 @@ public class CoffeesAeroAuth {
     private static void onRegisterCommands(RegisterCommandsEvent event) {
         AuthCommands.register(event.getDispatcher());
         ProfileCommands.register(event.getDispatcher());
+        com.coffeesaerosmp.auth.pvp.CombatGuard.registerCommands(event.getDispatcher());
     }
 }

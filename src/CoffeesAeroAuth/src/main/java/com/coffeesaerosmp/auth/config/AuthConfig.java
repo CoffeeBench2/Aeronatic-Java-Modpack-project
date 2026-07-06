@@ -50,6 +50,12 @@ public class AuthConfig {
     public static final ModConfigSpec.IntValue     RAIL_AUTOCLAIM_MAX;
     public static final ModConfigSpec.ConfigValue<String>  RAIL_PROTECTED_BLOCKS;
 
+    // ── PvP combat guard + /back ──────────────────────────────────────────────
+    public static final ModConfigSpec.IntValue     COMBAT_TAG_SECONDS;
+    public static final ModConfigSpec.IntValue     BACK_WINDOW_SECONDS;
+    public static final ModConfigSpec.IntValue     BACK_COOLDOWN_SECONDS;
+    public static final ModConfigSpec.BooleanValue COMBAT_LOG_PUNISH;
+
     // ── Discord ───────────────────────────────────────────────────────────────
     public static final ModConfigSpec.BooleanValue DISCORD_ENABLED;
     public static final ModConfigSpec.ConfigValue<String>  DISCORD_BOT_TOKEN;
@@ -229,6 +235,17 @@ public class AuthConfig {
             .define("syncPlayerUpdates", true);
         OBSIDIAN_SYNC_WATCHDOG = b.comment("Append watchdog alert lines to the monthly alerts file.")
             .define("syncWatchdogAlerts", true);
+        b.pop();
+
+        b.comment("PvP combat guard + /back death-return").push("combat");
+        COMBAT_TAG_SECONDS    = b.comment("Seconds a player stays combat-tagged after PvP damage (refreshed per hit).")
+            .defineInRange("combatTagSeconds", 30, 5, 600);
+        BACK_WINDOW_SECONDS   = b.comment("/back only works within this many seconds of dying.")
+            .defineInRange("backWindowSeconds", 300, 30, 3600);
+        BACK_COOLDOWN_SECONDS = b.comment("After a successful /back, it locks for this many seconds.")
+            .defineInRange("backCooldownSeconds", 600, 0, 86400);
+        COMBAT_LOG_PUNISH     = b.comment("Kill players who disconnect while combat-tagged (items drop at the fight).")
+            .define("combatLogPunish", true);
         b.pop();
 
         SERVER_SPEC = b.build();
