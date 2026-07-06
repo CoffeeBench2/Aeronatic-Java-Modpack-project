@@ -107,32 +107,49 @@ public class LobbyInventoryStash {
      */
     public boolean restore(ServerPlayer player) {
         UUID uuid = player.getUUID();
-        // Vendor exception: the lobby steak vendor's Cooked Beef is the ONLY item allowed out of the
-        // lobby — collect it before the clear, re-add after the restore. Everything else is capped.
+        String encoded = stash.get(uuid);       // peek — do NOT consume until a restore actually succeeds
+
+        // NO STASH → the player reached the lobby without being stashed: an op using /lobby, or a second
+        // lobby trip after the first /spawn already consumed the stash. Their inventory is REAL (carried
+        // in), so the old unconditional clearContent() here DESTROYED it — the reported "everything gone
+        // but steaks" bug. Fix: never wipe an unstashed player. Just strip the lobby paper (if any) and
+        // keep everything else. A brand-new player is ALWAYS stashed (empty inv) via stashAndClear, so
+        // they never fall into this branch holding a lobby loadout.
+        if (encoded == null) {
+            var inv = player.getInventory();
+            boolean changed = false; int kept = 0;
+            for (int i = 0; i < inv.getContainerSize(); i++) {
+                ItemStack s = inv.getItem(i);
+                if (s.isEmpty()) continue;
+                if (isLobbyPaper(s)) { inv.setItem(i, ItemStack.EMPTY); changed = true; }
+                else kept++;
+            }
+            if (changed) player.inventoryMenu.broadcastChanges();
+            if (kept > 0) CoffeesAeroAuth.LOGGER.info(
+                "[LobbyStash] {} left the lobby with no stash — kept {} carried stacks (no wipe).",
+                player.getGameProfile().getName(), kept);
+            return false;
+        }
+
+        // STASH EXISTS → the intended swap. Vendor exception: the lobby steak vendor's Cooked Beef is the
+        // ONLY lobby item allowed out — collect it before the clear, re-add after the restore.
         List<ItemStack> allowedOut = new ArrayList<>();
         var inv = player.getInventory();
         for (int i = 0; i < inv.getContainerSize(); i++) {
             ItemStack s = inv.getItem(i);
             if (!s.isEmpty() && s.is(Items.COOKED_BEEF)) allowedOut.add(s.copy());
         }
-        player.getInventory().clearContent();   // drop the lobby loadout (paper) + anything else
-        String encoded = stash.remove(uuid);
-        if (encoded == null) {
-            giveAll(player, allowedOut);
-            player.inventoryMenu.broadcastChanges();
-            return false;
-        }
+        player.getInventory().clearContent();   // drop the lobby loadout (paper) + capped extras
         try {
             decodeInto(player, encoded);
         } catch (Exception e) {
-            stash.put(uuid, encoded);           // keep it for a retry rather than losing items
-            saveToFile();
-            giveAll(player, allowedOut);
+            giveAll(player, allowedOut);         // stash left in place (not yet removed) for a retry
             player.inventoryMenu.broadcastChanges();
             CoffeesAeroAuth.LOGGER.error("[LobbyStash] Restore failed for {} — kept stash for retry",
                 player.getGameProfile().getName(), e);
             return false;
         }
+        stash.remove(uuid);                      // consume ONLY after a successful restore
         saveToFile();
         giveAll(player, allowedOut);
         player.inventoryMenu.broadcastChanges();
