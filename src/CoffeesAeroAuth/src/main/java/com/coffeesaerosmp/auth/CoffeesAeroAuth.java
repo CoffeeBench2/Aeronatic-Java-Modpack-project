@@ -221,7 +221,17 @@ public class CoffeesAeroAuth {
     }
 
     private static void onServerStopping(ServerStoppingEvent event) {
-        // Obsidian first — needs AUTH_MANAGER + WATCHDOG to write devlog
+        // Close live sessions FIRST: playtime only accumulates in onPlayerLeave, so a panel
+        // restart/stop with players online silently lost their whole session (playtime AND the
+        // /spawn return-position). Idempotent — the natural PlayerLoggedOutEvent that follows
+        // finds sessionStartEpoch already 0 and adds nothing twice.
+        if (AUTH_MANAGER != null && event.getServer() != null) {
+            for (net.minecraft.server.level.ServerPlayer p :
+                    new java.util.ArrayList<>(event.getServer().getPlayerList().getPlayers())) {
+                try { AUTH_MANAGER.onPlayerLeave(p); } catch (Exception ignored) {}
+            }
+        }
+        // Obsidian next — needs AUTH_MANAGER + WATCHDOG to write devlog
         if (OBSIDIAN_EXPORTER != null) {
             OBSIDIAN_EXPORTER.onServerStop(AUTH_MANAGER, WATCHDOG);
             OBSIDIAN_EXPORTER = null;

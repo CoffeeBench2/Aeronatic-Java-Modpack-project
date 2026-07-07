@@ -6,8 +6,10 @@ import com.coffeesaerosmp.auth.lobby.NameApprovalQueue;
 import com.coffeesaerosmp.auth.util.TextUtil;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.suggestion.SuggestionProvider;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -20,6 +22,16 @@ public class ProfileCommands {
 
     private static final DateTimeFormatter DATE_FMT =
         DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.of("UTC"));
+
+    private static final DateTimeFormatter DATETIME_FMT =
+        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm 'UTC'").withZone(ZoneId.of("UTC"));
+
+    /** Online player names (real usernames) for admin tab-complete — plain names, never selectors. */
+    private static final SuggestionProvider<CommandSourceStack> ONLINE_NAMES = (ctx, builder) ->
+        SharedSuggestionProvider.suggest(
+            ctx.getSource().getServer().getPlayerList().getPlayers().stream()
+                .map(p -> p.getGameProfile().getName()),
+            builder);
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
 
@@ -60,9 +72,20 @@ public class ProfileCommands {
                     .executes(ctx -> adminInfo(ctx.getSource(), EntityArgument.getPlayer(ctx, "player")))
                 )
             )
+            // Name-based (NOT EntityArgument) so it works for OFFLINE players too — the usual case
+            // is "player forgot password and can't get in". Accepts username or display name.
             .then(Commands.literal("resetpassword")
-                .then(Commands.argument("player", EntityArgument.player())
-                    .executes(ctx -> adminResetPassword(ctx.getSource(), EntityArgument.getPlayer(ctx, "player")))
+                .then(Commands.argument("name", StringArgumentType.word())
+                    .suggests(ONLINE_NAMES)
+                    .executes(ctx -> adminResetPassword(ctx.getSource(), StringArgumentType.getString(ctx, "name")))
+                )
+            )
+            // Full admin player card (works for offline players; also usable from the Discord
+            // watchdog channel via the console bridge: type `authmod player <name>` there).
+            .then(Commands.literal("player")
+                .then(Commands.argument("name", StringArgumentType.word())
+                    .suggests(ONLINE_NAMES)
+                    .executes(ctx -> adminPlayerCard(ctx.getSource(), StringArgumentType.getString(ctx, "name")))
                 )
             )
             .then(Commands.literal("clearips")
@@ -167,26 +190,87 @@ public class ProfileCommands {
         return 1;
     }
 
-    private static int adminResetPassword(CommandSourceStack source, ServerPlayer target) {
-        PlayerProfile p = CoffeesAeroAuth.AUTH_MANAGER.getStore().get(target.getUUID());
+    private static int adminResetPassword(CommandSourceStack source, String name) {
+        PlayerProfile p = CoffeesAeroAuth.PROFILE_STORE != null
+            ? CoffeesAeroAuth.PROFILE_STORE.findByAnyName(name) : null;
         if (p == null) {
-            source.sendFailure(Component.literal("§cNo profile for that player."));
+            source.sendFailure(Component.literal("§cNo profile found for '" + name + "' (username or display name)."));
             return 0;
         }
         if (p.getAccountType() == PlayerProfile.AccountType.PREMIUM) {
-            source.sendFailure(Component.literal("§cPremium accounts have no password."));
+            source.sendFailure(Component.literal("§cPremium accounts have no password (Mojang-verified)."));
             return 0;
         }
         p.passwordHash = null;
         p.passwordSalt = null;
-        CoffeesAeroAuth.AUTH_MANAGER.getStore().save(p);
-        CoffeesAeroAuth.AUTH_MANAGER.invalidateSessionToken(target.getUUID());
+        CoffeesAeroAuth.PROFILE_STORE.save(p);
+        CoffeesAeroAuth.AUTH_MANAGER.invalidateSessionToken(p.getUUID());
         source.sendSuccess(() -> Component.literal(
             "§aPassword reset for §f" + p.displayName + "§a. They will need to /register on next login."
         ), true);
-        target.connection.disconnect(Component.literal(
-            "§eYour password was reset by an admin.\n§7Reconnect and use §a/register§7 to set a new one."
-        ));
+        // If they're connected right now, kick with instructions; offline players just re-register next join.
+        ServerPlayer online = source.getServer().getPlayerList().getPlayer(p.getUUID());
+        if (online != null) {
+            online.connection.disconnect(Component.literal(
+                "§eYour password was reset by an admin.\n§7Reconnect and use §a/register§7 to set a new one."
+            ));
+        }
+        return 1;
+    }
+
+    /** Full admin player card — everything the DB knows about one player, in one readable block.
+     *  Plain text (no color codes) so the Discord console-bridge output stays clean. The password is a
+     *  one-way salted hash — the plaintext is unrecoverable by design; only "set: yes/no" is shown. */
+    private static int adminPlayerCard(CommandSourceStack source, String name) {
+        PlayerProfile p = CoffeesAeroAuth.PROFILE_STORE != null
+            ? CoffeesAeroAuth.PROFILE_STORE.findByAnyName(name) : null;
+        if (p == null) {
+            source.sendFailure(Component.literal("No profile found for '" + name + "' (username or display name)."));
+            return 0;
+        }
+        ServerPlayer online = source.getServer().getPlayerList().getPlayer(p.getUUID());
+
+        long secs = p.totalPlaytimeSeconds;
+        // include the live session so the card is current while they're playing
+        if (online != null && p.sessionStartEpoch > 0)
+            secs += (System.currentTimeMillis() - p.sessionStartEpoch) / 1000;
+        String playtime = (secs / 3600) + "h " + ((secs % 3600) / 60) + "m";
+
+        String ips = "(none)";
+        if (CoffeesAeroAuth.WATCHDOG != null) {
+            java.util.List<String> list = CoffeesAeroAuth.WATCHDOG.getTrustedIpStore().getTrustedIps(p.getUUID());
+            if (!list.isEmpty()) ips = String.join(", ", list);
+        }
+        String nameState = p.nameApproved ? "approved"
+            : p.nameApprovalPending ? ("PENDING (wants '" + p.pendingDisplayName + "')") : "not approved";
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("=== Player card: ").append(p.displayName).append(" ===\n");
+        sb.append("Account    : ").append(p.accountType)
+          .append("  |  password set: ").append(p.passwordHash != null ? "yes" : "no").append('\n');
+        sb.append("Username   : ").append(p.username)
+          .append("  |  display: ").append(p.displayName).append('\n');
+        sb.append("UUID       : ").append(p.uuidStr).append('\n');
+        sb.append("First join : ").append(p.joinDate > 0 ? DATETIME_FMT.format(Instant.ofEpochMilli(p.joinDate)) : "?")
+          .append("  |  first IP: ").append(p.firstIp != null ? p.firstIp : "?").append('\n');
+        sb.append("Playtime   : ").append(playtime)
+          .append("  |  online now: ").append(online != null
+              ? ("YES (" + com.coffeesaerosmp.auth.util.NetUtil.getPlayerIP(online) + ")") : "no").append('\n');
+        sb.append("Name       : ").append(nameState)
+          .append("  |  rejections: ").append(p.nameRejectionCount)
+          .append("  |  changes used: ").append(p.nameChangesUsed).append('\n');
+        sb.append("Room slot  : ").append(p.roomSlot)
+          .append("  |  skin changes: ").append(p.skinChangesUsed)
+          .append("  |  cape: ").append(p.capeEnabled).append('\n');
+        if (p.returnDim != null)
+            sb.append("Return pos : ").append(p.returnDim).append(" ")
+              .append(Math.round(p.returnX)).append(", ").append(Math.round(p.returnY))
+              .append(", ").append(Math.round(p.returnZ)).append('\n');
+        sb.append("Trusted IPs: ").append(ips);
+        if (p.bio != null && !p.bio.isBlank()) sb.append('\n').append("Bio        : ").append(p.bio);
+
+        String card = sb.toString();
+        source.sendSuccess(() -> Component.literal(card), false);
         return 1;
     }
 

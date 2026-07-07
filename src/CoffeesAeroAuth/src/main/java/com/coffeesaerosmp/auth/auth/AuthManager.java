@@ -202,6 +202,18 @@ public class AuthManager {
         }
 
         if (profile.nameApproved) {
+            if (profile.passwordHash == null) {
+                // Admin reset their password: an ESTABLISHED account (approved name, room, playtime,
+                // claims + world data all keyed by the unchanged UUID) that just needs a new password.
+                // Without this branch they deadlock: /login says "use /register" while /register
+                // requires LOBBY_REGISTER state. Nothing else on the profile is touched.
+                routeToLobbyRoom(uuid, profile);
+                authStates.put(uuid, AuthState.LOBBY_REGISTER);
+                frozenPos.put(uuid, new double[]{player.getX(), player.getY(), player.getZ()});
+                send(player, TextUtil.PREFIX + "§eYour password was reset by an admin.");
+                send(player, TextUtil.PREFIX + "§eSet a new one: §a/register <password> <confirmPassword>");
+                return;
+            }
             String ip = NetUtil.getPlayerIP(player);
             SessionTokenManager.TokenStatus tokenStatus = sessionTokens.check(uuid, ip);
             if (tokenStatus == SessionTokenManager.TokenStatus.VALID) {
@@ -524,6 +536,21 @@ public class AuthManager {
         profile.passwordSalt = salt;
         profile.passwordHash = PasswordUtil.hash(password, salt);
         store.save(profile);
+
+        if (profile.nameApproved) {
+            // Re-registration after an admin password reset — the account is fully established
+            // (approved name, room, playtime, claims/world data on the same UUID). Complete auth
+            // exactly like a successful /login: no /setname, nothing else changes.
+            failedAttempts.put(uuid, 0);
+            authStates.put(uuid, AuthState.AUTHENTICATED);
+            onAuthenticated(player, profile, false);
+            if (CoffeesAeroAuth.WATCHDOG != null) {
+                CoffeesAeroAuth.WATCHDOG.recordSuccessfulLogin(uuid, NetUtil.getPlayerIP(player), profile.displayName, false);
+            }
+            sessionTokens.createToken(uuid, NetUtil.getPlayerIP(player));
+            send(player, TextUtil.PREFIX + "§aNew password set — welcome back, §f" + profile.displayName + "§a! Use §a/spawn§a to head out.");
+            return true;
+        }
 
         authStates.put(uuid, AuthState.LOBBY_NAMING);
         send(player, TextUtil.PREFIX + "§aPassword set! Now choose your display name:");

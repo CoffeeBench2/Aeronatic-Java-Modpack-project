@@ -161,6 +161,22 @@ public class ProfileStore implements CredentialStore {
         if (!db.isAvailable()) writeNameIndexToFile();
     }
 
+    /** Admin lookup by display name OR Minecraft username, case-insensitive — works for OFFLINE
+     *  players (all profiles are cached at boot). Display-name index first (O(1)), then a username
+     *  scan. Used by /authmod resetpassword + /authmod player. */
+    public PlayerProfile findByAnyName(String name) {
+        if (name == null || name.isBlank()) return null;
+        UUID byDisplay = nameIndex.get(name.toLowerCase(Locale.ROOT));
+        if (byDisplay != null) {
+            PlayerProfile p = get(byDisplay);
+            if (p != null) return p;
+        }
+        for (PlayerProfile p : cache.values()) {
+            if (name.equalsIgnoreCase(p.username) || name.equalsIgnoreCase(p.displayName)) return p;
+        }
+        return null;
+    }
+
     // ── DB helpers ────────────────────────────────────────────────────────────
 
     private void loadAllFromDatabase() {
