@@ -1,3 +1,4 @@
+version:3955
 renderDistance:16
 simulationDistance:10
 resourcePacks:["vanilla","file/FreshAnimations_v1.10.4.zip","file/FA+Player-v1.1.zip","file/FA+Objects-v2.1.1.zip","file/Drigo 3D Lantern`s x Punchy.zip","file/Better+Lanterns+v1.2(mc-1.21).zip","file/Actually 3D Stuff.zip","file/armory-conglomery-v2.zip","file/Better Bows.zip","file/Torrezx-Better_trident.zip","file/trabens-3d-arrows-1.1.zip","file/Amazing Mace 3D.zip","file/Blockier Goat Horn v1.1 f9-34.zip","file/Traben's 3D Armor - 1.0.1.zip"]

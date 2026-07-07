@@ -51,27 +51,52 @@ public final class Applier {
 
     private static void applyStaging(Path gameDir, Path staging) throws IOException {
         if (!Files.isDirectory(staging)) return;
+        // Per-file fault isolation: one stubborn file (AV scan / launcher briefly holding a jar) must
+        // not abort the rest of the apply. A failed file keeps its PREVIOUS copy — an old jar still
+        // loads; a missing jar cascades into "balm is not installed" dependency errors for players.
+        List<String> failed = new java.util.ArrayList<>();
         try (Stream<Path> walk = Files.walk(staging)) {
             for (Path src : (Iterable<Path>) walk.filter(Files::isRegularFile)::iterator) {
                 Path rel = staging.relativize(src);
                 Path dst = gameDir.resolve(rel);
-                Files.createDirectories(dst.getParent());
-                moveReplacing(src, dst);
+                try {
+                    Files.createDirectories(dst.getParent());
+                    moveReplacing(src, dst);
+                } catch (IOException e) {
+                    failed.add(rel + " -> " + e);
+                }
             }
+        }
+        if (!failed.isEmpty()) {
+            System.err.println("[Applier] " + failed.size() + " file(s) kept their previous copy (apply failed):");
+            for (String f : failed) System.err.println("  " + f);
         }
     }
 
     private static void moveReplacing(Path src, Path dst) throws IOException {
-        try {
-            Files.move(src, dst, StandardCopyOption.REPLACE_EXISTING);
-        } catch (IOException atomicFail) {
-            // cross-device or locked: copy then delete, with a couple of retries for stubborn locks
-            for (int i = 0; i < 5; i++) {
-                try { Files.copy(src, dst, StandardCopyOption.REPLACE_EXISTING); Files.deleteIfExists(src); return; }
-                catch (IOException e) { sleep(500); }
+        // NEVER remove the existing file before its replacement is safely next to it. The old
+        // move(REPLACE_EXISTING) could delete the target and then fail the rename (transient lock),
+        // leaving a HOLE in mods/ — the "balm/kotlinforforge is not installed" incident. Now: copy the
+        // staged file to a sibling temp, then atomically swap; any failure leaves the old file intact.
+        Path tmp = dst.resolveSibling(dst.getFileName() + ".aero-new");
+        IOException last = null;
+        for (int i = 0; i < 10; i++) {
+            try {
+                Files.copy(src, tmp, StandardCopyOption.REPLACE_EXISTING);
+                try {
+                    Files.move(tmp, dst, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+                } catch (AtomicMoveNotSupportedException e) {
+                    Files.move(tmp, dst, StandardCopyOption.REPLACE_EXISTING);
+                }
+                Files.deleteIfExists(src);
+                return;
+            } catch (IOException e) {
+                last = e;
+                sleep(700);
             }
-            throw atomicFail;
         }
+        try { Files.deleteIfExists(tmp); } catch (IOException ignored) {}
+        throw last;
     }
 
     private static void applyRemovals(Path gameDir, Path removalsFile) throws IOException {
