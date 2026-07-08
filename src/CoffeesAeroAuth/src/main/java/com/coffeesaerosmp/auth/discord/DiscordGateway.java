@@ -181,7 +181,7 @@ public class DiscordGateway {
         p.addProperty("op", 1);
         if (lastSeq >= 0) p.addProperty("d", lastSeq);
         else p.add("d", JsonNull.INSTANCE);
-        ws.sendText(GSON.toJson(p), true);
+        wsSend(GSON.toJson(p));
     }
 
     // ── Identify ──────────────────────────────────────────────────────────────
@@ -191,7 +191,16 @@ public class DiscordGateway {
         presenceText = online + (online == 1 ? " pilot" : " pilots") + " aboard ✈";
         sendPresence();
     }
-    private volatile String presenceText = "0 pilots aboard 2708";
+    private volatile String presenceText = "0 pilots aboard ✈";
+    private final Object sendLock = new Object();
+    /** All gateway sends MUST go through here: java.net WebSocket corrupts interleaved sendText
+     *  calls from different threads (heartbeat scheduler vs listener) -> Discord 4002 decode loop. */
+    private void wsSend(String json) {
+        synchronized (sendLock) {
+            try { ws.sendText(json, true).join(); } catch (Exception ignored) {}
+        }
+    }
+
     private void sendPresence() {
         if (!connected || ws == null || presenceText == null) return;
         try {
@@ -203,7 +212,7 @@ public class DiscordGateway {
             d.add("activities", arr);
             d.addProperty("status", "online"); d.addProperty("afk", false);
             p.add("d", d);
-            ws.sendText(GSON.toJson(p), true);
+            wsSend(GSON.toJson(p));
         } catch (Exception ignored) {}
     }
 
@@ -219,7 +228,7 @@ public class DiscordGateway {
         props.addProperty("device", "coffees_aero_auth");
         d.add("properties", props);
         p.add("d", d);
-        ws.sendText(GSON.toJson(p), true);
+        wsSend(GSON.toJson(p));
     }
 
     private void reconnect() {
