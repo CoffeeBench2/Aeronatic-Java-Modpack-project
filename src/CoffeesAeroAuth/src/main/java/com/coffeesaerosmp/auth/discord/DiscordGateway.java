@@ -191,7 +191,7 @@ public class DiscordGateway {
         presenceText = online + (online == 1 ? " pilot" : " pilots") + " aboard ✈";
         sendPresence();
     }
-    private volatile String presenceText = null;
+    private volatile String presenceText = "0 pilots aboard 2708";
     private void sendPresence() {
         if (!connected || ws == null || presenceText == null) return;
         try {
