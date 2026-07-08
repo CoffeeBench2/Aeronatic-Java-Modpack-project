@@ -1,7 +1,7 @@
 {
-  "version": "1.7.3",
+  "version": "1.7.3.2",
   "url": "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/latest",
   "neoforge": "21.1.234",
   "minecraft": "1.21.1",
-  "notes": "1.7.3: client QoL. Client Sort (middle-click to sort any container) replaces Inventory Profiles Next; FallingTree (break the base log, the tree falls); Corail Tombstone (a grave holds your items on death); emote wheel moved from B to = so it stops blocking backpacks."
+  "notes": "1.7.3.2: FTB Essentials added client-side (fixes raw ftbessentials.* message keys); includes all 1.7.3.x fixes."
 }
