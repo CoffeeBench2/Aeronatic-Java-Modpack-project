@@ -411,6 +411,11 @@ hash = "fbb52a8d5bae146baa6878740e2802443a30182f4552ac065e9107316169133c"
 metafile = true
 
 [[files]]
+file = "mods/ftb-essentials.pw.toml"
+hash = "4703346682bde38bbac79df96e675927423167c7510ae2a37e3265019fd3deb0"
+metafile = true
+
+[[files]]
 file = "mods/ftb-library-neoforge-2101-1-32.pw.toml"
 hash = "dac7dbf50d1221069a5a0f309be56e5a4113fbf81ecc34bff2833ab402181837"
 metafile = true

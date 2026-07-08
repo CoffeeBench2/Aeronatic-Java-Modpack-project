@@ -32,3 +32,8 @@ obsidian-vault/
 reports/
 .idea/
 .claude/
+
+# jars/packs ship via releases+CDN, never git
+overrides/mods/
+overrides/resourcepacks/
+overrides/shaderpacks/
