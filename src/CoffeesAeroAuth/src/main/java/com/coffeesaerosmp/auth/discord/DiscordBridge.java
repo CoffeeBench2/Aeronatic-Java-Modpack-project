@@ -1,5 +1,6 @@
 package com.coffeesaerosmp.auth.discord;
 
+import com.coffeesaerosmp.auth.CoffeesAeroAuth;
 import com.coffeesaerosmp.auth.config.AuthConfig;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
@@ -76,12 +77,23 @@ public class DiscordBridge {
     }
 
     public void onAdvancement(ServerPlayer player, String title) {
-        // Routed to the watchdog channel (admin-only), not public chat — 2026-06-24 feedback, move-only.
-        String url = AuthConfig.DISCORD_WEBHOOK_WATCHDOG.get();
+        // Public feed (display names only — never real names in public) when enabled; else watchdog.
+        boolean pub = AuthConfig.DISCORD_PUBLIC_ACHIEVEMENTS.get();
+        String url = pub ? AuthConfig.DISCORD_WEBHOOK_PUBLIC.get() : AuthConfig.DISCORD_WEBHOOK_WATCHDOG.get();
         if (url.isBlank()) return;
+        String name = player.getGameProfile().getName();
+        if (pub && CoffeesAeroAuth.PROFILE_STORE != null) {
+            var prof = CoffeesAeroAuth.PROFILE_STORE.get(player.getUUID());
+            if (prof != null && prof.displayName != null) name = prof.displayName;
+        }
         queue.enqueue(url,
-            AlertFormatter.publicEmbed("🏆 **" + player.getGameProfile().getName() + "** just earned **[" + title + "]**", 0xFEE75C),
+            AlertFormatter.publicEmbed("🏆 **" + name + "** just earned **[" + title + "]**", 0xFEE75C),
             com.coffeesaerosmp.auth.watchdog.Severity.LOW);
+    }
+
+    /** Live player count -> bot status. */
+    public void updatePlayerCount(int online) {
+        if (gateway != null) gateway.updatePresence(online);
     }
 
     /** Called after each successful auth with the player's total playtime in hours. */

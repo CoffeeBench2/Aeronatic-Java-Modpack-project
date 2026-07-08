@@ -114,6 +114,7 @@ public class DiscordGateway {
             case "READY" -> {
                 connected = true;
                 CoffeesAeroAuth.LOGGER.info("[Discord] Gateway bot ready.");
+                sendPresence();
             }
             case "MESSAGE_CREATE" -> {
                 String chan = d.get("channel_id").getAsString();
@@ -184,6 +185,27 @@ public class DiscordGateway {
     }
 
     // ── Identify ──────────────────────────────────────────────────────────────
+
+    /** Live "N pilots aboard" bot status. Safe to call anytime; sent when connected. */
+    public void updatePresence(int online) {
+        presenceText = online + (online == 1 ? " pilot" : " pilots") + " aboard ✈";
+        sendPresence();
+    }
+    private volatile String presenceText = null;
+    private void sendPresence() {
+        if (!connected || ws == null || presenceText == null) return;
+        try {
+            JsonObject p = new JsonObject(); p.addProperty("op", 3);
+            JsonObject d = new JsonObject();
+            d.add("since", JsonNull.INSTANCE);
+            JsonObject a = new JsonObject(); a.addProperty("name", presenceText); a.addProperty("type", 0);
+            com.google.gson.JsonArray arr = new com.google.gson.JsonArray(); arr.add(a);
+            d.add("activities", arr);
+            d.addProperty("status", "online"); d.addProperty("afk", false);
+            p.add("d", d);
+            ws.sendText(GSON.toJson(p), true);
+        } catch (Exception ignored) {}
+    }
 
     private void identify() {
         JsonObject p = new JsonObject();

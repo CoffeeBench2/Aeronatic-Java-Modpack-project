@@ -73,6 +73,8 @@ public class PlayerAuthEvents {
         if (CoffeesAeroAuth.WATCHDOG != null && profile != null) {
             CoffeesAeroAuth.WATCHDOG.addPremiumName(profile.displayName);
         }
+        if (CoffeesAeroAuth.DISCORD_BRIDGE != null)
+            CoffeesAeroAuth.DISCORD_BRIDGE.updatePlayerCount(player.getServer().getPlayerList().getPlayerCount());
     }
 
     public static void onPlayerLeave(PlayerEvent.PlayerLoggedOutEvent event) {
@@ -90,6 +92,8 @@ public class PlayerAuthEvents {
         }
         if (CoffeesAeroAuth.DISCORD_BRIDGE != null) {
             CoffeesAeroAuth.DISCORD_BRIDGE.onPlayerLeave(player);
+            CoffeesAeroAuth.DISCORD_BRIDGE.updatePlayerCount(
+                Math.max(0, player.getServer().getPlayerList().getPlayerCount() - 1));
         }
     }
 
