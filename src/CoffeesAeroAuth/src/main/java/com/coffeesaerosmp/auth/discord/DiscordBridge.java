@@ -55,17 +55,13 @@ public class DiscordBridge {
         // Routed to the watchdog channel (admin-only), not public chat — 2026-06-24 feedback, move-only.
         String url = AuthConfig.DISCORD_WEBHOOK_WATCHDOG.get();
         if (url.isBlank()) return;
-        queue.enqueue(url,
-            AlertFormatter.publicEmbed("💨 **" + player.getGameProfile().getName() + "** left the server", 0xED4245),
-            com.coffeesaerosmp.auth.watchdog.Severity.LOW);
+        DiscordWebhook.send(url, AlertFormatter.publicEmbed("💨 **" + player.getGameProfile().getName() + "** left the server", 0xED4245));
     }
 
     public void onPlayerDeath(ServerPlayer player, String deathMessage) {
         String url = AuthConfig.DISCORD_WEBHOOK_PUBLIC.get();
         if (url.isBlank()) return;
-        queue.enqueue(url,
-            AlertFormatter.publicEmbed("💀 " + deathMessage, 0x808080),
-            com.coffeesaerosmp.auth.watchdog.Severity.LOW);
+        DiscordWebhook.send(url, AlertFormatter.publicEmbed("💀 " + deathMessage, 0x808080));
     }
 
     public void onPlayerChat(String badge, String displayName, String rawMessage) {
@@ -86,9 +82,7 @@ public class DiscordBridge {
             var prof = CoffeesAeroAuth.PROFILE_STORE.get(player.getUUID());
             if (prof != null && prof.displayName != null) name = prof.displayName;
         }
-        queue.enqueue(url,
-            AlertFormatter.publicEmbed("🏆 **" + name + "** just earned **[" + title + "]**", 0xFEE75C),
-            com.coffeesaerosmp.auth.watchdog.Severity.LOW);
+        DiscordWebhook.send(url, AlertFormatter.publicEmbed("🏆 **" + name + "** just earned **[" + title + "]**", 0xFEE75C));
     }
 
     /** Live player count -> bot status. */
@@ -105,10 +99,8 @@ public class DiscordBridge {
             if (totalHours >= m) {
                 long key = (long)player.getUUID().hashCode() * 31 + m;
                 if (postedMilestones.add(key)) {
-                    queue.enqueue(url,
-                        AlertFormatter.publicEmbed("🎉 **" + player.getGameProfile().getName()
-                            + "** has played for **" + m + " hours** on " + AuthConfig.SERVER_DISPLAY_NAME.get() + "!", 0x5865F2),
-                        com.coffeesaerosmp.auth.watchdog.Severity.LOW);
+                    DiscordWebhook.send(url, AlertFormatter.publicEmbed("🎉 **" + player.getGameProfile().getName()
+                            + "** has played for **" + m + " hours** on " + AuthConfig.SERVER_DISPLAY_NAME.get() + "!", 0x5865F2));
                 }
             }
         }
