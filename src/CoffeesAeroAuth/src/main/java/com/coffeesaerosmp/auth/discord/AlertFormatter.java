@@ -158,6 +158,45 @@ public final class AlertFormatter {
         return embed(PUBLIC_BOT, description, color, "<@" + discordUserId + ">", discordUserId);
     }
 
+    /**
+     * Rich PUBLIC achievement card: player as the author line, frame-flavored emoji/color
+     * (task = gold trophy, goal = green target, challenge = purple gem), the advancement's own
+     * description as italic body. Linked players get pinged via content (embeds never ping).
+     */
+    public static String achievementEmbed(String displayName, String title, String description,
+                                          String frame, String discordUserId) {
+        String f = frame == null ? "TASK" : frame;
+        String emoji; int color; String verb;
+        switch (f) {
+            case "CHALLENGE" -> { emoji = "💎"; color = 0xB57BF0; verb = "completed the challenge"; }
+            case "GOAL"      -> { emoji = "🎯"; color = 0x57F287; verb = "reached the goal"; }
+            default          -> { emoji = "🏆"; color = 0xFEE75C; verb = "made the advancement"; }
+        }
+        JsonObject payload = new JsonObject();
+        payload.addProperty("username", PUBLIC_BOT);
+        if (discordUserId != null && !discordUserId.isBlank()) {
+            payload.addProperty("content", "<@" + discordUserId + ">");
+            JsonObject allowed = new JsonObject();
+            JsonArray users = new JsonArray();
+            users.add(discordUserId);
+            allowed.add("users", users);
+            allowed.add("parse", new JsonArray());
+            payload.add("allowed_mentions", allowed);
+        }
+        JsonObject embed = new JsonObject();
+        JsonObject author = new JsonObject();
+        author.addProperty("name", "✈ " + displayName + " " + verb);
+        embed.add("author", author);
+        embed.addProperty("title", emoji + " " + title);
+        if (description != null && !description.isBlank())
+            embed.addProperty("description", "*" + description + "*");
+        embed.addProperty("color", color);
+        JsonArray embeds = new JsonArray();
+        embeds.add(embed);
+        payload.add("embeds", embeds);
+        return GSON.toJson(payload);
+    }
+
     private static String embed(String botName, String description, int color,
                                 String content, String allowedUserId) {
         JsonObject payload = new JsonObject();

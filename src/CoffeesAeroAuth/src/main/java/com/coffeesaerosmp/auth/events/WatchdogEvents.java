@@ -61,7 +61,9 @@ public class WatchdogEvents {
         if (display.isEmpty() || !display.get().shouldAnnounceChat()) return;
         String title = display.get().getTitle().getString();
         if (CoffeesAeroAuth.DISCORD_BRIDGE != null) {
-            CoffeesAeroAuth.DISCORD_BRIDGE.onAdvancement(player, title);
+            CoffeesAeroAuth.DISCORD_BRIDGE.onAdvancement(player, title,
+                display.get().getDescription().getString(),
+                display.get().getType().name());
         }
         if (CoffeesAeroAuth.OBSIDIAN_EXPORTER != null) {
             CoffeesAeroAuth.OBSIDIAN_EXPORTER.onAdvancement(player, title);

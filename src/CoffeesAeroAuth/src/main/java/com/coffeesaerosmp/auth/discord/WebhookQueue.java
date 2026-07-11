@@ -34,7 +34,12 @@ public class WebhookQueue {
 
     public void enqueue(String url, String json, Severity severity) {
         if (url == null || url.isBlank() || json == null) return;
-        if (severity == Severity.LOW) lowBatch.add(new Entry(url, json, severity));
+        // Batch-wrapping is a WATCHDOG-channel treatment only: batchLow() stamps the AeroGuard
+        // identity + "LOW — Batch" embed, which used to swallow public chat (content-only payloads
+        // have no embed title to extract) and leak watchdog styling into the public channel.
+        boolean watchdogBound = url.equals(
+            com.coffeesaerosmp.auth.config.AuthConfig.DISCORD_WEBHOOK_WATCHDOG.get());
+        if (severity == Severity.LOW && watchdogBound) lowBatch.add(new Entry(url, json, severity));
         else immediateQueue.add(new Entry(url, json, severity));
     }
 

@@ -66,6 +66,7 @@ public class AuthConfig {
     public static final ModConfigSpec.ConfigValue<String>  DISCORD_PUBLIC_CHANNEL_ID;
     public static final ModConfigSpec.ConfigValue<String>  DISCORD_WEBHOOK_WATCHDOG;
     public static final ModConfigSpec.BooleanValue         DISCORD_PUBLIC_ACHIEVEMENTS;
+    public static final ModConfigSpec.BooleanValue         DISCORD_PUBLIC_JOINLEAVE;
     public static final ModConfigSpec.BooleanValue         DISCORD_BOT_PRESENCE;
     public static final ModConfigSpec.ConfigValue<String>  DISCORD_WEBHOOK_PUBLIC;
     public static final ModConfigSpec.ConfigValue<String>  DISCORD_DIGEST_TIME;
@@ -214,6 +215,8 @@ public class AuthConfig {
             .define("webhookWatchdog", "");
         DISCORD_PUBLIC_ACHIEVEMENTS = b.comment("Post achievement embeds to the PUBLIC webhook (display names only). false = watchdog channel.")
             .define("publicAchievements", true);
+        DISCORD_PUBLIC_JOINLEAVE = b.comment("Also post joins/leaves to the PUBLIC webhook (display names only). Watchdog channel keeps its own copies either way.")
+            .define("publicJoinLeave", true);
         DISCORD_BOT_PRESENCE = b.comment("Set bot status to the live player count ('N pilots aboard'). The 1.6.8 4002 gateway loop is fixed in 1.6.10 (single-threaded sender + rate-limited presence); if 4002s ever recur, presence auto-disables for the run and logs the offending frame.")
             .define("botPresence", true);
         DISCORD_WEBHOOK_PUBLIC      = b.comment("Webhook URL for public events (chat bridge, deaths, playtime milestones). Join/leave/achievements moved to the watchdog channel.")

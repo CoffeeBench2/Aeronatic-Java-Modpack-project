@@ -40,22 +40,47 @@ public class DiscordBridge {
     // ── MC → Discord ──────────────────────────────────────────────────────────
 
     public void onPlayerJoin(ServerPlayer player, boolean isFirstEver, String badge) {
-        // Routed to the watchdog channel (admin-only), not public chat — 2026-06-24 feedback, move-only.
+        // Watchdog copy (admins see everything, incl. real-name context via the overlay tooling).
         String url = AuthConfig.DISCORD_WEBHOOK_WATCHDOG.get();
-        if (url.isBlank()) return;
-        String desc = isFirstEver
-            ? "🌟 **" + player.getGameProfile().getName() + "** joined for the first time! Welcome!"
-            : "✈️ **" + player.getGameProfile().getName() + "** joined the server " + badge;
-        queue.enqueue(url, AlertFormatter.watchdogEmbed(desc, 0x57F287), isFirstEver
-            ? com.coffeesaerosmp.auth.watchdog.Severity.MEDIUM
-            : com.coffeesaerosmp.auth.watchdog.Severity.LOW);
+        if (!url.isBlank()) {
+            String desc = isFirstEver
+                ? "🌟 **" + player.getGameProfile().getName() + "** joined for the first time! Welcome!"
+                : "✈️ **" + player.getGameProfile().getName() + "** joined the server " + badge;
+            queue.enqueue(url, AlertFormatter.watchdogEmbed(desc, 0x57F287), isFirstEver
+                ? com.coffeesaerosmp.auth.watchdog.Severity.MEDIUM
+                : com.coffeesaerosmp.auth.watchdog.Severity.LOW);
+        }
+        // Public copy (2026-07-11 request) — display names only, celebratory tone.
+        String pub = AuthConfig.DISCORD_WEBHOOK_PUBLIC.get();
+        if (AuthConfig.DISCORD_PUBLIC_JOINLEAVE.get() && !pub.isBlank()) {
+            String name = displayNameOf(player);
+            DiscordWebhook.send(pub, isFirstEver
+                ? AlertFormatter.publicEmbed("🌟 **" + name + "** just made their first flight on "
+                    + AuthConfig.SERVER_DISPLAY_NAME.get() + " — welcome aboard, pilot! o7", 0xFEE75C)
+                : AlertFormatter.publicEmbed("🛫 **" + name + "** boarded the server", 0x57F287));
+        }
     }
 
     public void onPlayerLeave(ServerPlayer player) {
-        // Routed to the watchdog channel (admin-only), not public chat — 2026-06-24 feedback, move-only.
         String url = AuthConfig.DISCORD_WEBHOOK_WATCHDOG.get();
-        if (url.isBlank()) return;
-        DiscordWebhook.send(url, AlertFormatter.watchdogEmbed("💨 **" + player.getGameProfile().getName() + "** left the server", 0xED4245));
+        if (!url.isBlank()) {
+            DiscordWebhook.send(url, AlertFormatter.watchdogEmbed("💨 **" + player.getGameProfile().getName() + "** left the server", 0xED4245));
+        }
+        String pub = AuthConfig.DISCORD_WEBHOOK_PUBLIC.get();
+        if (AuthConfig.DISCORD_PUBLIC_JOINLEAVE.get() && !pub.isBlank()) {
+            DiscordWebhook.send(pub, AlertFormatter.publicEmbed(
+                "🛬 **" + displayNameOf(player) + "** left the server", 0x99AAB5));
+        }
+    }
+
+    /** Display name for PUBLIC posts — never the real account name. */
+    private static String displayNameOf(ServerPlayer player) {
+        if (CoffeesAeroAuth.PROFILE_STORE != null) {
+            var prof = CoffeesAeroAuth.PROFILE_STORE.get(player.getUUID());
+            if (prof != null && prof.displayName != null && !prof.displayName.isBlank())
+                return prof.displayName;
+        }
+        return player.getGameProfile().getName();   // post-NameMask this is already the display name
     }
 
     public void onPlayerDeath(ServerPlayer player, String deathMessage) {
@@ -72,7 +97,7 @@ public class DiscordBridge {
             com.coffeesaerosmp.auth.watchdog.Severity.LOW);
     }
 
-    public void onAdvancement(ServerPlayer player, String title) {
+    public void onAdvancement(ServerPlayer player, String title, String description, String frame) {
         // Public feed (display names only — never real names in public) when enabled; else watchdog.
         boolean pub = AuthConfig.DISCORD_PUBLIC_ACHIEVEMENTS.get();
         String url = pub ? AuthConfig.DISCORD_WEBHOOK_PUBLIC.get() : AuthConfig.DISCORD_WEBHOOK_WATCHDOG.get();
@@ -86,11 +111,9 @@ public class DiscordBridge {
                 discordId = prof.discordId;
             }
         }
-        String desc = "🏆 **" + name + "** just earned **[" + title + "]**";
-        String json = !pub ? AlertFormatter.watchdogEmbed(desc, 0xFEE75C)
-            : (discordId != null && !discordId.isBlank()
-                ? AlertFormatter.publicEmbedMention(desc, 0xFEE75C, discordId)   // linked players get tagged
-                : AlertFormatter.publicEmbed(desc, 0xFEE75C));
+        String json = pub
+            ? AlertFormatter.achievementEmbed(name, title, description, frame, discordId)
+            : AlertFormatter.watchdogEmbed("🏆 **" + name + "** just earned **[" + title + "]**", 0xFEE75C);
         DiscordWebhook.send(url, json);
     }
 
