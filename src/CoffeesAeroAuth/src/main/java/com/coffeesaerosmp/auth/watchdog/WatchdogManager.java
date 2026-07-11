@@ -532,9 +532,21 @@ public class WatchdogManager {
         String url = AuthConfig.DISCORD_WEBHOOK_WATCHDOG.get();
         if (url.isBlank()) return;
         String anomalies = dailyAnomalies.isEmpty() ? "None" : String.join(", ", dailyAnomalies);
+        String playerBase = "";
+        try {
+            ProfileStore store = CoffeesAeroAuth.PROFILE_STORE;
+            if (store != null) {
+                int premium = 0, offline = 0;
+                for (PlayerProfile p : store.getAll()) {
+                    if (p.getAccountType() == PlayerProfile.AccountType.PREMIUM) premium++;
+                    else offline++;
+                }
+                playerBase = (premium + offline) + " total (" + premium + " premium / " + offline + " offline)";
+            }
+        } catch (Exception ignored) {}
         webhookQueue.enqueue(url, AlertFormatter.dailyDigest(
             dailyLogins.getAndSet(0), dailyFailures.getAndSet(0),
-            dailyFlaggedIps.size(), dailyAdminActs.getAndSet(0), anomalies),
+            dailyFlaggedIps.size(), dailyAdminActs.getAndSet(0), anomalies, playerBase),
             Severity.MEDIUM);
         dailyFlaggedIps.clear();
         dailyAnomalies.clear();

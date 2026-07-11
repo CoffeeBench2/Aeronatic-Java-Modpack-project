@@ -98,6 +98,9 @@ public class ProfileCommands {
                     .executes(ctx -> adminPlayerCard(ctx.getSource(), StringArgumentType.getString(ctx, "name")))
                 )
             )
+            .then(Commands.literal("players")
+                .executes(ctx -> adminPlayersSummary(ctx.getSource()))
+            )
             .then(Commands.literal("clearips")
                 .then(Commands.argument("player", EntityArgument.player())
                     .executes(ctx -> adminClearIps(ctx.getSource(), EntityArgument.getPlayer(ctx, "player")))
@@ -317,6 +320,36 @@ public class ProfileCommands {
 
         String card = sb.toString();
         source.sendSuccess(() -> Component.literal(card), false);
+        return 1;
+    }
+
+    /** {@code authmod players} — player-base totals. Plain text so it reads clean via the
+     *  Discord console bridge. */
+    private static int adminPlayersSummary(CommandSourceStack source) {
+        if (CoffeesAeroAuth.PROFILE_STORE == null) {
+            source.sendFailure(Component.literal("Profile store unavailable."));
+            return 0;
+        }
+        int premium = 0, offline = 0, linked = 0, named = 0;
+        for (PlayerProfile p : CoffeesAeroAuth.PROFILE_STORE.getAll()) {
+            if (p.getAccountType() == PlayerProfile.AccountType.PREMIUM) premium++;
+            else offline++;
+            if (p.discordId != null && !p.discordId.isBlank()) linked++;
+            if (p.nameApproved) named++;
+        }
+        int onlinePrem = 0, onlineOff = 0;
+        for (ServerPlayer sp : source.getServer().getPlayerList().getPlayers()) {
+            PlayerProfile p = CoffeesAeroAuth.PROFILE_STORE.get(sp.getUUID());
+            if (p != null && p.getAccountType() == PlayerProfile.AccountType.PREMIUM) onlinePrem++;
+            else onlineOff++;
+        }
+        int total = premium + offline;
+        String out = "=== Player base: " + total + " accounts ===\n"
+            + "Premium : " + premium + "  |  Offline: " + offline + "\n"
+            + "Online  : " + (onlinePrem + onlineOff)
+            + " (" + onlinePrem + " premium, " + onlineOff + " offline)\n"
+            + "Name-approved: " + named + "  |  Discord-linked: " + linked;
+        source.sendSuccess(() -> Component.literal(out), false);
         return 1;
     }
 

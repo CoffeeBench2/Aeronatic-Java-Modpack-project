@@ -107,7 +107,8 @@ public final class AlertFormatter {
 
     // ── Daily digest ─────────────────────────────────────────────────────────
 
-    public static String dailyDigest(int logins, int failures, int flaggedIps, int adminActions, String anomalies) {
+    public static String dailyDigest(int logins, int failures, int flaggedIps, int adminActions,
+                                     String anomalies, String playerBase) {
         JsonObject payload = new JsonObject();
         payload.addProperty("username", BOT_NAME);
         JsonArray embeds = new JsonArray();
@@ -120,6 +121,7 @@ public final class AlertFormatter {
             {"Failed Logins",     String.valueOf(failures)},
             {"Flagged IPs",       String.valueOf(flaggedIps)},
             {"Admin Actions",     String.valueOf(adminActions)},
+            {"Player Base",       playerBase == null || playerBase.isBlank() ? "—" : playerBase},
             {"Anomalies",         anomalies.isBlank() ? "None" : anomalies}
         }) {
             JsonObject f = new JsonObject();
