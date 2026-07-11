@@ -824,11 +824,6 @@ public class AuthManager {
             send(player, TextUtil.PREFIX + "§7You're already in the main world.");
             return false;
         }
-        // Restore the real inventory (and drop the lobby paper) BEFORE the starter bonus is granted,
-        // so the bonus stacks on top of the restored items. No-op for brand-new players (empty stash).
-        if (CoffeesAeroAuth.LOBBY_STASH != null) {
-            CoffeesAeroAuth.LOBBY_STASH.restore(player);
-        }
         // Destination: a returning player resumes at their last main-world position; a first-timer
         // (no saved return position, or its dimension no longer loads) goes to the world spawn point.
         PlayerProfile profile = store.get(uuid);
@@ -843,6 +838,15 @@ public class AuthManager {
         }
         if (!resumed && CoffeesAeroAuth.ROOM_MANAGER != null) {
             CoffeesAeroAuth.ROOM_MANAGER.teleportToSpawn(player);
+        }
+        // Restore the real inventory AFTER the teleport: anything the restore can't fit is dropped at
+        // the player's feet, and feet-drops in the LOBBY are destroyed by the room purge/rebuild —
+        // that's how GeneralBronze lost his armor (2026-07-10: 41-stack overflow restore ran pre-
+        // teleport, the 5 stacks that didn't fit dropped in his hangar and were wiped). Restoring
+        // here lands any spill in the world beside the player. Still before the starter bonus so the
+        // bonus stacks on top. No-op for brand-new players (empty stash).
+        if (CoffeesAeroAuth.LOBBY_STASH != null) {
+            CoffeesAeroAuth.LOBBY_STASH.restore(player);
         }
         // First time entering the world → one-time starter currency + mark first-join complete.
         if (profile != null) {

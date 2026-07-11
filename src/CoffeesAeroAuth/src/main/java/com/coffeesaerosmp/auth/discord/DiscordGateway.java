@@ -114,7 +114,7 @@ public class DiscordGateway {
             case "READY" -> {
                 connected = true;
                 CoffeesAeroAuth.LOGGER.info("[Discord] Gateway bot ready.");
-                sendPresence();
+                if (com.coffeesaerosmp.auth.config.AuthConfig.DISCORD_BOT_PRESENCE.get()) sendPresence();
             }
             case "MESSAGE_CREATE" -> {
                 String chan = d.get("channel_id").getAsString();
@@ -188,6 +188,7 @@ public class DiscordGateway {
 
     /** Live "N pilots aboard" bot status. Safe to call anytime; sent when connected. */
     public void updatePresence(int online) {
+        if (!com.coffeesaerosmp.auth.config.AuthConfig.DISCORD_BOT_PRESENCE.get()) return;
         presenceText = online + (online == 1 ? " pilot" : " pilots") + " aboard ✈";
         sendPresence();
     }

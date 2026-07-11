@@ -66,6 +66,7 @@ public class AuthConfig {
     public static final ModConfigSpec.ConfigValue<String>  DISCORD_PUBLIC_CHANNEL_ID;
     public static final ModConfigSpec.ConfigValue<String>  DISCORD_WEBHOOK_WATCHDOG;
     public static final ModConfigSpec.BooleanValue         DISCORD_PUBLIC_ACHIEVEMENTS;
+    public static final ModConfigSpec.BooleanValue         DISCORD_BOT_PRESENCE;
     public static final ModConfigSpec.ConfigValue<String>  DISCORD_WEBHOOK_PUBLIC;
     public static final ModConfigSpec.ConfigValue<String>  DISCORD_DIGEST_TIME;
     public static final ModConfigSpec.ConfigValue<String>  DISCORD_TO_MC_ROLE_ID;
@@ -212,6 +213,8 @@ public class AuthConfig {
             .define("webhookWatchdog", "");
         DISCORD_PUBLIC_ACHIEVEMENTS = b.comment("Post achievement embeds to the PUBLIC webhook (display names only). false = watchdog channel.")
             .define("publicAchievements", true);
+        DISCORD_BOT_PRESENCE = b.comment("EXPERIMENTAL: set bot status to live player count. OFF by default (WIP — caused a Discord 4002 gateway loop).")
+            .define("botPresence", false);
         DISCORD_WEBHOOK_PUBLIC      = b.comment("Webhook URL for public events (chat bridge, deaths, playtime milestones). Join/leave/achievements moved to the watchdog channel.")
             .define("webhookPublic", "");
         DISCORD_DIGEST_TIME         = b.comment("Time (HH:mm UTC) to send the daily security digest.")

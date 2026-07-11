@@ -194,16 +194,24 @@ public class LobbyInventoryStash {
      * merged stash is persisted BEFORE the caller clears the inventory — same no-loss ordering as above.
      */
     private void mergeCarriedIntoStash(ServerPlayer player, String existing) throws IOException {
-        List<ItemStack> carried = new ArrayList<>();
+        // Each carried item is wrapped as {Slot, Item} so decodeInto can put armor/offhand back into
+        // their real slots on restore instead of flooding the 36 main slots (worn armor lives at
+        // container slots 36-40 — the old raw-item format re-added it as loose main-inventory items,
+        // and anything past 36 occupied slots spilled on the floor).
+        ListTag carried = new ListTag();
         var inv = player.getInventory();
         for (int i = 0; i < inv.getContainerSize(); i++) {
             ItemStack s = inv.getItem(i);
-            if (!s.isEmpty() && !isLobbyPaper(s)) carried.add(s.copy());
+            if (s.isEmpty() || isLobbyPaper(s)) continue;
+            CompoundTag holder = new CompoundTag();
+            holder.putInt("Slot", i);
+            holder.put("Item", s.copy().save(player.registryAccess()));
+            carried.add(holder);
         }
         if (carried.isEmpty()) return;          // just the paper / empty — nothing to merge
         CompoundTag wrapper = decodeWrapper(existing);
         ListTag overflow = wrapper.getList("Overflow", Tag.TAG_COMPOUND);
-        for (ItemStack s : carried) overflow.add(s.save(player.registryAccess()));
+        overflow.addAll(carried);
         wrapper.put("Overflow", overflow);
         stash.put(player.getUUID(), encodeWrapper(wrapper));
         saveToFile();
@@ -234,15 +242,34 @@ public class LobbyInventoryStash {
     private static void decodeInto(ServerPlayer player, String encoded) throws IOException {
         CompoundTag wrapper = decodeWrapper(encoded);
         ListTag items = wrapper.getList("Items", Tag.TAG_COMPOUND);
-        player.getInventory().clearContent();
-        player.getInventory().load(items);
+        var inv = player.getInventory();
+        inv.clearContent();
+        inv.load(items);
         // Overflow: items merged in from a re-entry while carrying (see mergeCarriedIntoStash).
+        // New entries are {Slot, Item} — prefer the original slot (re-equips armor/offhand) and only
+        // fall back to add/drop. Legacy entries (pre-1.6.9) are the raw item tag.
         ListTag overflow = wrapper.getList("Overflow", Tag.TAG_COMPOUND);
+        int reslotted = 0, added = 0, dropped = 0;
         for (int i = 0; i < overflow.size(); i++) {
-            ItemStack s = ItemStack.parse(player.registryAccess(), overflow.getCompound(i))
-                .orElse(ItemStack.EMPTY);
-            if (!s.isEmpty() && !player.getInventory().add(s)) player.drop(s, false);
+            CompoundTag entry = overflow.getCompound(i);
+            int slot = -1;
+            CompoundTag itemTag = entry;
+            if (entry.contains("Item", Tag.TAG_COMPOUND)) {
+                slot = entry.getInt("Slot");
+                itemTag = entry.getCompound("Item");
+            }
+            ItemStack s = ItemStack.parse(player.registryAccess(), itemTag).orElse(ItemStack.EMPTY);
+            if (s.isEmpty()) continue;
+            if (slot >= 0 && slot < inv.getContainerSize() && inv.getItem(slot).isEmpty()) {
+                inv.setItem(slot, s); reslotted++;
+            } else if (inv.add(s)) {
+                added++;
+            } else {
+                player.drop(s, false); dropped++;
+            }
         }
+        CoffeesAeroAuth.LOGGER.info("[LobbyStash] Restored {} — {} stashed stacks, overflow: {} re-slotted, {} added, {} dropped at feet.",
+            player.getGameProfile().getName(), items.size(), reslotted, added, dropped);
     }
 
     private synchronized void saveToFile() {

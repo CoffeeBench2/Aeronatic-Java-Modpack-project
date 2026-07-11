@@ -22,6 +22,7 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
 
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -44,6 +45,12 @@ public final class RailAutoClaim {
     private static volatile Set<String> cachedIds = Set.of();
     private static final Set<UUID> notified = ConcurrentHashMap.newKeySet();
     private static final Map<UUID, long[]> lastTrackClick = new ConcurrentHashMap<>(); // uuid -> {x,y,z,timeMillis}
+
+    /** Two rail clicks further apart than this are unrelated (a Create drag segment is short) —
+     *  without the gate, clicking at spawn then 2000 blocks away claimed the whole RECTANGLE between
+     *  them: thousands of chunks in one synchronous loop = the 2026-07-10 12:33 watchdog hang-kill. */
+    private static final int MAX_CORRIDOR_BLOCKS = 160;
+    private static final int MAX_CORRIDOR_CHUNKS = 32;
 
     private RailAutoClaim() {}
 
@@ -73,6 +80,7 @@ public final class RailAutoClaim {
         boolean autoGrant = AuthConfig.RAIL_AUTOCLAIM_AUTOGRANT.get();
         int hardCap = AuthConfig.RAIL_AUTOCLAIM_MAX.get();
         boolean claimedAny = false;
+        var source = player.createCommandSourceStack();
 
         for (int dx = -r; dx <= r; dx++) {
             for (int dz = -r; dz <= r; dz++) {
@@ -87,7 +95,7 @@ public final class RailAutoClaim {
                     }
                 }
 
-                ClaimResult res = data.claim(player.createCommandSourceStack(), cdp, false);
+                ClaimResult res = data.claim(source, cdp, false);
                 if (res != null && res.isSuccess()) claimedAny = true;
             }
         }
@@ -123,9 +131,11 @@ public final class RailAutoClaim {
 
             if (prev == null || now - prev[3] > 60_000L) return; // first click or stale
 
-            // Claim the rectangular column of chunks covering the drag corridor.
-            claimCorridor(player, player.level().dimension(),
-                    new BlockPos((int) prev[0], (int) prev[1], (int) prev[2]), clicked);
+            BlockPos from = new BlockPos((int) prev[0], (int) prev[1], (int) prev[2]);
+            if (from.distSqr(clicked) > (double) MAX_CORRIDOR_BLOCKS * MAX_CORRIDOR_BLOCKS) return;
+
+            // Claim the chunks along the drag corridor (line between the two clicks).
+            claimCorridor(player, player.level().dimension(), from, clicked);
         } catch (Throwable t) {
             CoffeesAeroAuth.LOGGER.warn("[RailProtect] corridor-claim failed (non-fatal)", t);
         }
@@ -136,31 +146,37 @@ public final class RailAutoClaim {
         ClaimedChunkManager mgr = FTBChunksAPI.api().getManager();
         ChunkTeamData data = mgr.getOrCreateData(player);
 
-        int minCx = Math.min(from.getX(), to.getX()) >> 4;
-        int maxCx = Math.max(from.getX(), to.getX()) >> 4;
-        int minCz = Math.min(from.getZ(), to.getZ()) >> 4;
-        int maxCz = Math.max(from.getZ(), to.getZ()) >> 4;
+        // Chunks along the LINE between the two clicks (was: the whole bounding rectangle — a
+        // diagonal drag claimed a huge square, and the loop ran unbounded on the server thread).
+        // Sampling every 8 blocks can't skip a chunk on the path; the set caps the total.
+        Set<ChunkDimPos> corridor = new LinkedHashSet<>();
+        double len = Math.sqrt(from.distSqr(to));
+        int steps = Math.max(1, (int) Math.ceil(len / 8.0));
+        for (int i = 0; i <= steps && corridor.size() < MAX_CORRIDOR_CHUNKS; i++) {
+            double t = (double) i / steps;
+            int x = (int) Math.round(from.getX() + (to.getX() - from.getX()) * t);
+            int z = (int) Math.round(from.getZ() + (to.getZ() - from.getZ()) * t);
+            corridor.add(new ChunkDimPos(dim, x >> 4, z >> 4));
+        }
 
         boolean autoGrant = AuthConfig.RAIL_AUTOCLAIM_AUTOGRANT.get();
         int hardCap = AuthConfig.RAIL_AUTOCLAIM_MAX.get();
         boolean claimedAny = false;
+        var source = player.createCommandSourceStack();
 
-        for (int cx = minCx; cx <= maxCx; cx++) {
-            for (int cz = minCz; cz <= maxCz; cz++) {
-                ChunkDimPos cdp = new ChunkDimPos(dim, cx, cz);
-                if (mgr.getChunk(cdp) != null) continue;
+        for (ChunkDimPos cdp : corridor) {
+            if (mgr.getChunk(cdp) != null) continue;
 
-                if (autoGrant) {
-                    int claimed = data.getClaimedChunks().size();
-                    if (claimed >= data.getMaxClaimChunks()) {
-                        if (claimed >= hardCap) continue;
-                        data.setExtraClaimChunks(data.getExtraClaimChunks() + 1);
-                    }
+            if (autoGrant) {
+                int claimed = data.getClaimedChunks().size();
+                if (claimed >= data.getMaxClaimChunks()) {
+                    if (claimed >= hardCap) continue;
+                    data.setExtraClaimChunks(data.getExtraClaimChunks() + 1);
                 }
-
-                ClaimResult res = data.claim(player.createCommandSourceStack(), cdp, false);
-                if (res != null && res.isSuccess()) claimedAny = true;
             }
+
+            ClaimResult res = data.claim(source, cdp, false);
+            if (res != null && res.isSuccess()) claimedAny = true;
         }
 
         if (claimedAny && notified.add(player.getUUID())) {
