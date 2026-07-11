@@ -41,11 +41,15 @@ public class ChatEvents {
         String displayName = profile.displayName != null ? profile.displayName : profile.username;
         String rawText     = event.getRawText();
 
-        Component formatted = Component.literal(badge + nameColor + displayName + " §8» §r" + rawText);
+        // Clan tag (FTB party) in front of the name — display layer only.
+        String clanTag = com.coffeesaerosmp.auth.clan.ClanTags.tagFor(player);
+        String tagPart = clanTag != null ? "§7[§b" + clanTag + "§7] " : "";
+
+        Component formatted = Component.literal(badge + tagPart + nameColor + displayName + " §8» §r" + rawText);
         // Admins get the real account name inline; everyone else sees only the display name.
         String realName = profile.username;
         Component adminVariant = realName != null && !realName.equals(displayName)
-            ? Component.literal(badge + nameColor + displayName + " §8(" + realName + ")§r §8» §r" + rawText)
+            ? Component.literal(badge + tagPart + nameColor + displayName + " §8(" + realName + ")§r §8» §r" + rawText)
             : formatted;
         for (ServerPlayer viewer : player.getServer().getPlayerList().getPlayers()) {
             viewer.sendSystemMessage(viewer.hasPermissions(2) ? adminVariant : formatted);
@@ -57,7 +61,8 @@ public class ChatEvents {
             // Strip formatting codes from badge for Discord
             String cleanBadge = profile.getAccountType() == PlayerProfile.AccountType.PREMIUM
                 ? "[✦ Verified]" : "[◈ Offline]";
-            CoffeesAeroAuth.DISCORD_BRIDGE.onPlayerChat(cleanBadge, displayName, rawText);
+            CoffeesAeroAuth.DISCORD_BRIDGE.onPlayerChat(cleanBadge,
+                (clanTag != null ? "[" + clanTag + "] " : "") + displayName, rawText);
         }
     }
 }

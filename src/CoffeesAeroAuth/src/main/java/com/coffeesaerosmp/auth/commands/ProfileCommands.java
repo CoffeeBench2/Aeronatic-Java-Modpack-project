@@ -66,6 +66,31 @@ public class ProfileCommands {
                 .executes(ctx -> discordStatus(ctx.getSource().getPlayerOrException())))
         );
 
+        // /clan tag <tag> | /clan untag — clan tag for the player's FTB party (officer+ only)
+        dispatcher.register(Commands.literal("clan")
+            .then(Commands.literal("tag")
+                .then(Commands.argument("tag", StringArgumentType.word())
+                    .executes(ctx -> {
+                        ServerPlayer player = ctx.getSource().getPlayerOrException();
+                        if (!requireAuth(player)) return 0;
+                        String err = com.coffeesaerosmp.auth.clan.ClanTags.setTag(
+                            player, StringArgumentType.getString(ctx, "tag"));
+                        player.sendSystemMessage(err != null ? TextUtil.info("§c" + err)
+                            : TextUtil.info("Clan tag set — your party now shows as §7[§b"
+                                + StringArgumentType.getString(ctx, "tag") + "§7]§r in chat, Tab and nametags."));
+                        return err == null ? 1 : 0;
+                    })))
+            .then(Commands.literal("untag")
+                .executes(ctx -> {
+                    ServerPlayer player = ctx.getSource().getPlayerOrException();
+                    if (!requireAuth(player)) return 0;
+                    String err = com.coffeesaerosmp.auth.clan.ClanTags.clearTag(player);
+                    player.sendSystemMessage(err != null ? TextUtil.info("§c" + err)
+                        : TextUtil.info("Clan tag removed."));
+                    return err == null ? 1 : 0;
+                }))
+        );
+
         // /mytrustedips — shows own trusted IPs (partially masked)
         dispatcher.register(Commands.literal("mytrustedips")
             .executes(ctx -> {

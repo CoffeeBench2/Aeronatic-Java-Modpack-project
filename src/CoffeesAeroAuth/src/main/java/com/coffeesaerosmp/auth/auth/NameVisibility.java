@@ -31,9 +31,23 @@ public final class NameVisibility {
         put(player, LOGIN);
     }
 
-    /** Verified/logged in: reveal with the proper badge. */
+    /** Verified/logged in: reveal with the proper badge — plus the clan tag when their FTB party
+     *  has one. Clan tags need a PER-PLAYER team (shared badge teams can't vary their prefix). */
     public static void reveal(ServerPlayer player, boolean premium) {
-        put(player, premium ? VERIFIED : GUEST);
+        String tag = com.coffeesaerosmp.auth.clan.ClanTags.tagFor(player);
+        if (tag == null) {
+            removePersonalTeam(player);
+            put(player, premium ? VERIFIED : GUEST);
+            return;
+        }
+        MinecraftServer server = player.getServer();
+        if (server == null) return;
+        ServerScoreboard sb = server.getScoreboard();
+        PlayerTeam team = sb.getPlayerTeam(personalTeamName(player));
+        if (team == null) team = sb.addPlayerTeam(personalTeamName(player));
+        team.setPlayerPrefix(Component.literal(
+            (premium ? "§6✈ " : "§8◈ ") + "§7[§b" + tag + "§7] "));
+        sb.addPlayerToTeam(player.getScoreboardName(), team);   // moves off any previous team
     }
 
     /** On disconnect: drop the player from all auth teams. */
@@ -47,6 +61,20 @@ public final class NameVisibility {
                 sb.removePlayerFromTeam(player.getScoreboardName(), team);
             }
         }
+        removePersonalTeam(player);
+    }
+
+    /** Deterministic, uuid-based, ≤16 chars — safe for scoreboard team-name limits. */
+    private static String personalTeamName(ServerPlayer player) {
+        return "ap_" + player.getUUID().toString().replace("-", "").substring(0, 13);
+    }
+
+    private static void removePersonalTeam(ServerPlayer player) {
+        MinecraftServer server = player.getServer();
+        if (server == null) return;
+        ServerScoreboard sb = server.getScoreboard();
+        PlayerTeam personal = sb.getPlayerTeam(personalTeamName(player));
+        if (personal != null) sb.removePlayerTeam(personal);
     }
 
     private static void put(ServerPlayer player, String teamName) {

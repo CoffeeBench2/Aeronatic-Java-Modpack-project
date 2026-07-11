@@ -201,6 +201,7 @@ public class CoffeesAeroAuth {
         ROOM_MANAGER.runStartupCleanup(PROFILE_STORE);
         LOBBY_STASH    = new com.coffeesaerosmp.auth.lobby.LobbyInventoryStash(dataDir);
         LOBBY_STASH.initialize();
+        com.coffeesaerosmp.auth.clan.ClanTags.initialize(dataDir);
 
         // ── Obsidian stack ────────────────────────────────────────────────────
         if (AuthConfig.OBSIDIAN_ENABLED.get()) {
