@@ -21,6 +21,7 @@ public class PlayerProfile {
     public int    skinChangesUsed;   // lifetime /skin <name> uses (offline players) — capped at MAX_SKIN_CHANGES.
     public boolean firstJoinComplete; // true after first-join sequence plays
     public boolean startupBonusGiven; // true after the one-time starter currency is granted on first /spawn
+    public String  discordId;         // linked Discord user id (snowflake); null/blank = not linked
 
     // Transient: not serialized, computed on load
     public int     nameChangesUsed;  // lifetime counter — capped at 1; 0 = change still available

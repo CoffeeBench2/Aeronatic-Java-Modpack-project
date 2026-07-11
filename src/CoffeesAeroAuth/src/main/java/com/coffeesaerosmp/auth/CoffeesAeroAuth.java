@@ -182,13 +182,17 @@ public class CoffeesAeroAuth {
             (author, msg) -> { if (ADMIN_CONSOLE != null) ADMIN_CONSOLE.runCommand(author, msg); },
             interactions::handle
         );
+        // Register /uptime + /link as global slash commands on every READY (bulk PUT — idempotent).
+        gateway.setReadyCallback(() -> DISCORD_REST.setGlobalCommands(
+            gateway.getApplicationId(),
+            com.coffeesaerosmp.auth.discord.DiscordInteractions.GLOBAL_COMMANDS_JSON));
         DISCORD_BRIDGE = new DiscordBridge(WEBHOOK_QUEUE, gateway);
         if (AuthConfig.DISCORD_ENABLED.get() && !discordToken.isBlank()) {
             DISCORD_BRIDGE.startGateway();
             ADMIN_CONSOLE.startMirror();
         }
 
-        WATCHDOG = new WatchdogManager(event.getServer(), ipBans, trustedIps, auditLog, watchdogLog, WEBHOOK_QUEUE);
+        WATCHDOG = new WatchdogManager(event.getServer(), ipBans, trustedIps, auditLog, watchdogLog, WEBHOOK_QUEUE, dataDir);
         WATCHDOG.start(PROFILE_STORE);
 
         // ── Private room + name approval ──────────────────────────────────────

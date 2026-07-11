@@ -575,7 +575,7 @@ public class AuthManager {
         }
 
         if (!DisplayNameManager.isValidName(name)) {
-            send(player, TextUtil.PREFIX + "§cDisplay name must be 3-20 characters (letters, numbers, underscores only).");
+            send(player, TextUtil.PREFIX + "§cDisplay name must be 3-16 characters (letters, numbers, underscores only).");
             return false;
         }
 
@@ -694,7 +694,7 @@ public class AuthManager {
             return false;
         }
         if (!DisplayNameManager.isValidName(newName)) {
-            send(player, TextUtil.PREFIX + "§cDisplay name must be 3-20 characters (letters, numbers, underscores only).");
+            send(player, TextUtil.PREFIX + "§cDisplay name must be 3-16 characters (letters, numbers, underscores only).");
             return false;
         }
         // Banned words

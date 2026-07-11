@@ -201,8 +201,8 @@ public class ProfileStore implements CredentialStore {
         " name_approved,first_join,last_seen,total_playtime,bio,skin_url," +
         " name_approval_pending,pending_display_name,name_rejection_count," +
         " name_changes_used,room_slot,room_created_at,first_join_complete,startup_bonus_given," +
-        " first_ip,cape_enabled,return_dim,return_x,return_y,return_z,skin_changes_used)" +
-        " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)" +
+        " first_ip,cape_enabled,return_dim,return_x,return_y,return_z,skin_changes_used,discord_id)" +
+        " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)" +
         " ON DUPLICATE KEY UPDATE" +
         "  username=VALUES(username),display_name=VALUES(display_name)," +
         "  account_type=VALUES(account_type),password_hash=VALUES(password_hash)," +
@@ -219,7 +219,8 @@ public class ProfileStore implements CredentialStore {
         "  cape_enabled=VALUES(cape_enabled)," +
         "  return_dim=VALUES(return_dim),return_x=VALUES(return_x)," +
         "  return_y=VALUES(return_y),return_z=VALUES(return_z)," +
-        "  skin_changes_used=VALUES(skin_changes_used)";
+        "  skin_changes_used=VALUES(skin_changes_used)," +
+        "  discord_id=VALUES(discord_id)";
 
     private void upsertPlayer(Connection c, PlayerProfile p) throws SQLException {
         try (PreparedStatement ps = c.prepareStatement(UPSERT_SQL)) {
@@ -250,6 +251,7 @@ public class ProfileStore implements CredentialStore {
             ps.setDouble(25, p.returnY);
             ps.setDouble(26, p.returnZ);
             ps.setInt(27, p.skinChangesUsed);
+            ps.setString(28, p.discordId);
             ps.executeUpdate();
         }
     }
@@ -283,6 +285,7 @@ public class ProfileStore implements CredentialStore {
         p.returnY              = rs.getDouble("return_y");
         p.returnZ              = rs.getDouble("return_z");
         p.skinChangesUsed      = rs.getInt("skin_changes_used");
+        p.discordId            = rs.getString("discord_id");
         return p;
     }
 

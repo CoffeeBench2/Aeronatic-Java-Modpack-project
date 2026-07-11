@@ -7,6 +7,10 @@ import java.util.UUID;
 
 public class DisplayNameManager {
 
+    /** Hard packet cap: ClientboundPlayerInfoUpdatePacket writes the profile name with writeUtf(16),
+     *  so any GameProfile name longer than 16 chars fails encoding and kicks every packet recipient. */
+    public static final int MAX_LENGTH = 16;
+
     private final ProfileStore store;
 
     public DisplayNameManager(ProfileStore store) {
@@ -74,7 +78,7 @@ public class DisplayNameManager {
      */
     public String trySetDisplayName(PlayerProfile requester, String newName) {
         if (!isValidName(newName)) {
-            return "Display name must be 3-20 characters (letters, numbers, underscores only).";
+            return "Display name must be 3-16 characters (letters, numbers, underscores only).";
         }
 
         UUID owner = store.getDisplayNameOwner(newName);
@@ -96,16 +100,36 @@ public class DisplayNameManager {
     private String findFreeName(String base, UUID uuid) {
         for (int i = 2; i <= 99; i++) {
             String candidate = base + "_" + i;
-            if (candidate.length() > 20) break;
+            if (candidate.length() > MAX_LENGTH) break;
             if (!store.isDisplayNameTaken(candidate)) return candidate;
         }
         // Fallback: append 4-hex UUID fragment
         String suffix = Integer.toHexString(Math.abs(uuid.hashCode()) & 0xFFFF);
-        String candidate = base.substring(0, Math.min(base.length(), 15)) + "_" + suffix;
-        return candidate.substring(0, Math.min(candidate.length(), 20));
+        String candidate = base.substring(0, Math.min(base.length(), MAX_LENGTH - 5)) + "_" + suffix;
+        return candidate.substring(0, Math.min(candidate.length(), MAX_LENGTH));
+    }
+
+    /**
+     * Heals a legacy over-long display name (saved back when validation allowed 20 chars) down to
+     * the 16-char packet cap, re-registering the shortened name in the index. Returns the profile's
+     * (possibly unchanged) display name. Server thread only — writes through the store.
+     */
+    public String ensureFits(PlayerProfile profile) {
+        String name = profile.displayName;
+        if (name == null || name.length() <= MAX_LENGTH) return name;
+        String base = name.substring(0, MAX_LENGTH);
+        UUID owner = store.getDisplayNameOwner(base);
+        String resolved = (owner == null || owner.equals(profile.getUUID()))
+            ? base
+            : findFreeName(base, profile.getUUID());
+        store.releaseDisplayName(name);
+        profile.displayName = resolved;
+        store.registerDisplayName(resolved, profile.getUUID());
+        store.save(profile);
+        return resolved;
     }
 
     public static boolean isValidName(String name) {
-        return name != null && name.matches("[a-zA-Z0-9_]{3,20}");
+        return name != null && name.matches("[a-zA-Z0-9_]{3," + MAX_LENGTH + "}");
     }
 }

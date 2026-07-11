@@ -141,8 +141,34 @@ public final class AlertFormatter {
     // ── Public channel events ─────────────────────────────────────────────────
 
     public static String publicEmbed(String description, int color) {
+        return embed(PUBLIC_BOT, description, color, null, null);
+    }
+
+    /** Same shape as {@link #publicEmbed} but carries the watchdog bot identity — for join/leave/
+     *  achievement events routed to the ADMIN channel (they must not masquerade as the public bot). */
+    public static String watchdogEmbed(String description, int color) {
+        return embed(BOT_NAME, description, color, null, null);
+    }
+
+    /** Public embed whose plain-text {@code content} @mentions a linked Discord user (mentions inside
+     *  embeds never ping — the mention must ride in content, with an explicit allowed_mentions). */
+    public static String publicEmbedMention(String description, int color, String discordUserId) {
+        return embed(PUBLIC_BOT, description, color, "<@" + discordUserId + ">", discordUserId);
+    }
+
+    private static String embed(String botName, String description, int color,
+                                String content, String allowedUserId) {
         JsonObject payload = new JsonObject();
-        payload.addProperty("username", PUBLIC_BOT);
+        payload.addProperty("username", botName);
+        if (content != null) {
+            payload.addProperty("content", content);
+            JsonObject allowed = new JsonObject();
+            JsonArray users = new JsonArray();
+            if (allowedUserId != null) users.add(allowedUserId);
+            allowed.add("users", users);
+            allowed.add("parse", new JsonArray());
+            payload.add("allowed_mentions", allowed);
+        }
         JsonArray embeds = new JsonArray();
         JsonObject embed = new JsonObject();
         embed.addProperty("description", description);

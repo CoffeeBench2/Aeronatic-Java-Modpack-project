@@ -47,23 +47,29 @@ public class WatchdogManager {
     private final Map<String, String> normalizedPremiumNames = new ConcurrentHashMap<>(); // normalized → original
 
     // ── Daily stats ───────────────────────────────────────────────────────────
+    // Persisted to daily_stats.json so the digest survives restarts/crashes — the in-memory-only
+    // counters were wiped several times a day, which is why the digest kept reporting 0 logins.
     private final AtomicInteger dailyLogins      = new AtomicInteger();
     private final AtomicInteger dailyFailures    = new AtomicInteger();
     private final AtomicInteger dailyAdminActs   = new AtomicInteger();
     private final Set<String>   dailyFlaggedIps  = ConcurrentHashMap.newKeySet();
     private final Set<String>   dailyAnomalies   = ConcurrentHashMap.newKeySet();
+    private final java.nio.file.Path statsFile;
 
     private ScheduledExecutorService scheduler;
 
     public WatchdogManager(MinecraftServer server, IpBanManager ipBans,
                             TrustedIpStore trustedIps, AuditLogger auditLog,
-                            AuditLogger watchdogLog, WebhookQueue webhookQueue) {
+                            AuditLogger watchdogLog, WebhookQueue webhookQueue,
+                            java.nio.file.Path dataDir) {
         this.server       = server;
         this.ipBans       = ipBans;
         this.trustedIps   = trustedIps;
         this.auditLog     = auditLog;
         this.watchdogLog  = watchdogLog;
         this.webhookQueue = webhookQueue;
+        this.statsFile    = dataDir == null ? null : dataDir.resolve("daily_stats.json");
+        loadDailyStats();
     }
 
     public void start(ProfileStore profileStore) {
@@ -82,11 +88,14 @@ public class WatchdogManager {
         scheduler.scheduleAtFixedRate(this::checkServerHealth, 10, 10, TimeUnit.SECONDS);
         // Reset pre-auth packet counters every second
         scheduler.scheduleAtFixedRate(preAuthBlocked::clear, 1, 1, TimeUnit.SECONDS);
+        // Persist daily stats every 60s (restart-proof digest; losing ≤60s of counts on a crash is fine)
+        scheduler.scheduleWithFixedDelay(this::persistDailyStats, 60, 60, TimeUnit.SECONDS);
         // Schedule daily digest
         scheduleDigest();
     }
 
     public void stop() {
+        persistDailyStats();
         if (scheduler != null) scheduler.shutdownNow();
     }
 
@@ -476,6 +485,19 @@ public class WatchdogManager {
         rows.add(row);
 
         JsonObject body = new JsonObject();
+        // Action-needed alerts (HIGH+ with moderation buttons) ping the admin role — embeds alone
+        // never notify anyone, so these were routinely missed.
+        String adminRole = AuthConfig.DISCORD_ADMIN_ROLE_ID.get();
+        if (adminRole != null && !adminRole.isBlank()
+                && event.severity().ordinal() >= Severity.HIGH.ordinal()) {
+            body.addProperty("content", "<@&" + adminRole + ">");
+            JsonObject allowed = new JsonObject();
+            allowed.add("parse", new JsonArray());
+            JsonArray roles = new JsonArray();
+            roles.add(adminRole);
+            allowed.add("roles", roles);
+            body.add("allowed_mentions", allowed);
+        }
         body.add("embeds", embeds);
         body.add("components", rows);
         rest.postMessage(channel, body.toString());
@@ -516,6 +538,49 @@ public class WatchdogManager {
             Severity.MEDIUM);
         dailyFlaggedIps.clear();
         dailyAnomalies.clear();
+        persistDailyStats();   // write the reset immediately so a restart can't resurrect sent counts
+    }
+
+    // ── Daily-stats persistence ───────────────────────────────────────────────
+
+    private void persistDailyStats() {
+        if (statsFile == null) return;
+        try {
+            com.google.gson.JsonObject o = new com.google.gson.JsonObject();
+            o.addProperty("date", java.time.LocalDate.now(java.time.ZoneOffset.UTC).toString());
+            o.addProperty("logins",    dailyLogins.get());
+            o.addProperty("failures",  dailyFailures.get());
+            o.addProperty("adminActs", dailyAdminActs.get());
+            com.google.gson.JsonArray ips = new com.google.gson.JsonArray();
+            dailyFlaggedIps.forEach(ips::add);
+            o.add("flaggedIps", ips);
+            com.google.gson.JsonArray an = new com.google.gson.JsonArray();
+            dailyAnomalies.forEach(an::add);
+            o.add("anomalies", an);
+            java.nio.file.Files.writeString(statsFile, o.toString());
+        } catch (Exception e) {
+            CoffeesAeroAuth.LOGGER.debug("[Watchdog] daily-stats persist failed: {}", e.getMessage());
+        }
+    }
+
+    private void loadDailyStats() {
+        if (statsFile == null || !java.nio.file.Files.exists(statsFile)) return;
+        try {
+            var o = com.google.gson.JsonParser.parseString(java.nio.file.Files.readString(statsFile))
+                        .getAsJsonObject();
+            // Only resume counts from the SAME (UTC) day — anything older belongs to an already-sent digest.
+            if (!java.time.LocalDate.now(java.time.ZoneOffset.UTC).toString()
+                    .equals(o.get("date").getAsString())) return;
+            dailyLogins.set(o.get("logins").getAsInt());
+            dailyFailures.set(o.get("failures").getAsInt());
+            dailyAdminActs.set(o.get("adminActs").getAsInt());
+            o.getAsJsonArray("flaggedIps").forEach(e -> dailyFlaggedIps.add(e.getAsString()));
+            o.getAsJsonArray("anomalies").forEach(e -> dailyAnomalies.add(e.getAsString()));
+            CoffeesAeroAuth.LOGGER.info("[Watchdog] Resumed daily stats: {} logins, {} failures.",
+                dailyLogins.get(), dailyFailures.get());
+        } catch (Exception e) {
+            CoffeesAeroAuth.LOGGER.warn("[Watchdog] daily-stats load failed: {}", e.getMessage());
+        }
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

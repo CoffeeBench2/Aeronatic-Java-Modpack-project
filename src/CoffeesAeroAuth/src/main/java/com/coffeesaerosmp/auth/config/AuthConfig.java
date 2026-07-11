@@ -73,6 +73,7 @@ public class AuthConfig {
     public static final ModConfigSpec.ConfigValue<String>  DISCORD_MILESTONE_HOURS;
     public static final ModConfigSpec.ConfigValue<String>  DISCORD_ADMIN_CHANNEL_ID;
     public static final ModConfigSpec.ConfigValue<String>  DISCORD_ADMIN_ROLE_ID;
+    public static final ModConfigSpec.ConfigValue<String>  DISCORD_SMP_LAUNCH_DATE;
 
     // ── Obsidian ──────────────────────────────────────────────────────────────
     public static final ModConfigSpec.BooleanValue OBSIDIAN_ENABLED;
@@ -213,8 +214,8 @@ public class AuthConfig {
             .define("webhookWatchdog", "");
         DISCORD_PUBLIC_ACHIEVEMENTS = b.comment("Post achievement embeds to the PUBLIC webhook (display names only). false = watchdog channel.")
             .define("publicAchievements", true);
-        DISCORD_BOT_PRESENCE = b.comment("EXPERIMENTAL: set bot status to live player count. OFF by default (WIP — caused a Discord 4002 gateway loop).")
-            .define("botPresence", false);
+        DISCORD_BOT_PRESENCE = b.comment("Set bot status to the live player count ('N pilots aboard'). The 1.6.8 4002 gateway loop is fixed in 1.6.10 (single-threaded sender + rate-limited presence); if 4002s ever recur, presence auto-disables for the run and logs the offending frame.")
+            .define("botPresence", true);
         DISCORD_WEBHOOK_PUBLIC      = b.comment("Webhook URL for public events (chat bridge, deaths, playtime milestones). Join/leave/achievements moved to the watchdog channel.")
             .define("webhookPublic", "");
         DISCORD_DIGEST_TIME         = b.comment("Time (HH:mm UTC) to send the daily security digest.")
@@ -225,6 +226,8 @@ public class AuthConfig {
             .define("milestoneHours", "1,5,10,50,100");
         DISCORD_ADMIN_CHANNEL_ID    = b.comment("Channel ID for the admin console bridge (console mirror + commands from Discord).")
             .define("adminConsoleChannelId", "");
+        DISCORD_SMP_LAUNCH_DATE     = b.comment("ISO date (yyyy-MM-dd, UTC) the SMP went live on Apex — /uptime reports time since this date (restart-proof, NOT since-last-boot).")
+            .define("smpLaunchDate", "2026-06-27");
         DISCORD_ADMIN_ROLE_ID       = b.comment("Role ID allowed to use moderation buttons (approve/reject) and run console commands from Discord. Blank = no gating (LOCAL TESTING ONLY).")
             .define("adminRoleId", "");
         b.pop();

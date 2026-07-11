@@ -3,6 +3,7 @@ package com.coffeesaerosmp.auth.auth;
 import com.coffeesaerosmp.auth.CoffeesAeroAuth;
 import com.coffeesaerosmp.auth.db.PlayerProfile;
 import com.coffeesaerosmp.auth.mixin.PlayerGameProfileAccessor;
+import com.coffeesaerosmp.auth.profile.DisplayNameManager;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.network.protocol.game.ClientboundPlayerInfoRemovePacket;
 import net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket;
@@ -49,6 +50,19 @@ public final class NameMask {
         if (display == null) return;
         MinecraftServer server = player.getServer();
         if (server == null) return;
+
+        // ClientboundPlayerInfoUpdatePacket caps the profile name at 16 chars — a longer name fails
+        // encoding on EVERY connection the broadcast reaches (mass kick). Heal legacy 17-20 char
+        // names (validation allowed 20 before 1.6.10) down to the cap before swapping the profile.
+        if (display.length() > DisplayNameManager.MAX_LENGTH) {
+            PlayerProfile p = CoffeesAeroAuth.AUTH_MANAGER.getStore().get(player.getUUID());
+            String healed = CoffeesAeroAuth.AUTH_MANAGER.getDisplayNames().ensureFits(p);
+            CoffeesAeroAuth.LOGGER.warn(
+                "[NameMask] Display name '{}' exceeds the 16-char player-info packet limit — shortened to '{}'.",
+                display, healed);
+            display = healed;
+            if (display == null || display.equals(player.getGameProfile().getName())) return;
+        }
 
         // Team membership is keyed by scoreboard name — drop entries under the REAL name first.
         NameVisibility.clear(player);

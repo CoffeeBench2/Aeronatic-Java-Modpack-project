@@ -240,10 +240,16 @@ public class NameApprovalQueue {
     private void postDiscordPending(String mcName, String proposedName, UUID uuid) {
         if (!AuthConfig.DISCORD_ENABLED.get()) return;
 
+        // Action-needed events must PING the admin role (embeds alone never notify anyone).
+        String adminRole = AuthConfig.DISCORD_ADMIN_ROLE_ID.get();
+        String ping = adminRole == null || adminRole.isBlank() ? ""
+            : "\"content\":\"<@&" + jesc(adminRole) + "> name approval needed\","
+            + "\"allowed_mentions\":{\"parse\":[],\"roles\":[\"" + jesc(adminRole) + "\"]},";
+
         // Preferred: bot message with Approve/Reject BUTTONS in the moderation channel.
         String channelId = AuthConfig.DISCORD_WATCHDOG_CHANNEL_ID.get();
         if (discordRest != null && discordRest.isConfigured() && !channelId.isBlank()) {
-            String json = "{"
+            String json = "{" + ping
                 + "\"embeds\":[{\"title\":\"🔔 Name Approval Required\",\"color\":16776960,\"fields\":["
                 +   "{\"name\":\"Player\",\"value\":\"" + jesc(mcName) + "\",\"inline\":true},"
                 +   "{\"name\":\"Requested Name\",\"value\":\"" + jesc(proposedName) + "\",\"inline\":true},"
@@ -261,14 +267,14 @@ public class NameApprovalQueue {
         String url = AuthConfig.DISCORD_WEBHOOK_WATCHDOG.get();
         if (url.isBlank()) return;
         webhooks.enqueue(url, String.format("""
-            {"embeds": [{"title": "🔔 Name Approval Required", "color": 16776960,
+            {%s"embeds": [{"title": "🔔 Name Approval Required", "color": 16776960,
               "fields": [
                 {"name": "Player",          "value": "%s", "inline": true},
                 {"name": "Requested Name",  "value": "%s", "inline": true},
                 {"name": "UUID",            "value": "%s", "inline": false},
                 {"name": "Approve",         "value": "`/authmod approve %s`", "inline": true},
                 {"name": "Reject",          "value": "`/authmod reject %s <reason>`", "inline": true}
-              ]}]}""", mcName, proposedName, uuid, mcName, mcName), Severity.MEDIUM);
+              ]}]}""", ping, mcName, proposedName, uuid, mcName, mcName), Severity.MEDIUM);
     }
 
     private void postDiscordApproved(String mcName, String proposedName, UUID uuid, boolean auto) {

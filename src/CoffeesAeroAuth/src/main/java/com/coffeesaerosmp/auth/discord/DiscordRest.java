@@ -46,6 +46,21 @@ public class DiscordRest {
     }
 
     /**
+     * Bulk-overwrites the bot's GLOBAL application commands (idempotent upsert — safe to run on
+     * every READY). {@code jsonArray} is the full command array.
+     */
+    public void setGlobalCommands(String applicationId, String jsonArray) {
+        if (botToken.isBlank() || applicationId == null || applicationId.isBlank()) return;
+        send(HttpRequest.newBuilder()
+            .uri(URI.create(API + "/applications/" + applicationId + "/commands"))
+            .header("Authorization", "Bot " + botToken)
+            .header("Content-Type", "application/json")
+            .PUT(HttpRequest.BodyPublishers.ofString(jsonArray))
+            .timeout(Duration.ofSeconds(10))
+            .build(), "setGlobalCommands");
+    }
+
+    /**
      * Responds to an interaction. {@code callbackJson} is a full interaction-response object, e.g.
      * {@code {"type":7,"data":{...}}} (UPDATE_MESSAGE), {@code {"type":9,"data":{...}}} (MODAL).
      */

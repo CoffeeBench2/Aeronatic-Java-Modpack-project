@@ -35,11 +35,19 @@ public class DiscordInteractions {
     /** Called by DiscordGateway on INTERACTION_CREATE with the raw {@code d} payload. */
     public void handle(JsonObject d) {
         try {
-            int type = d.get("type").getAsInt();           // 3 = component, 5 = modal submit
+            int type = d.get("type").getAsInt();           // 2 = slash command, 3 = component, 5 = modal submit
             String id = d.get("id").getAsString();
             String token = d.get("token").getAsString();
             if (!d.has("data") || !d.get("data").isJsonObject()) return;
             JsonObject data = d.getAsJsonObject("data");
+
+            // Slash commands are PUBLIC (everyone may /uptime and /link themselves) — handled
+            // before the admin-role gate below, which only guards moderation buttons/modals.
+            if (type == 2) {
+                handleSlash(d, data, id, token);
+                return;
+            }
+
             String customId = data.has("custom_id") ? data.get("custom_id").getAsString() : "";
 
             String clicker = "an admin";
@@ -75,6 +83,80 @@ public class DiscordInteractions {
         } catch (Exception e) {
             CoffeesAeroAuth.LOGGER.warn("[Discord] interaction handling error: {}", e.getMessage());
         }
+    }
+
+    // ── Slash commands (/uptime, /link) ───────────────────────────────────────
+
+    /** Global command definitions — bulk-PUT on every READY (idempotent). */
+    public static final String GLOBAL_COMMANDS_JSON = "["
+        + "{\"name\":\"uptime\",\"type\":1,\"description\":\"How long has Coffees Aero SMP been running?\"},"
+        + "{\"name\":\"link\",\"type\":1,\"description\":\"Link your Discord to your Minecraft account\","
+        +  "\"options\":[{\"type\":3,\"name\":\"code\",\"required\":true,"
+        +   "\"description\":\"The code from /discord link in-game\"}]}"
+        + "]";
+
+    private void handleSlash(JsonObject d, JsonObject data, String id, String token) {
+        String name = data.has("name") ? data.get("name").getAsString() : "";
+        switch (name) {
+            case "uptime" -> server.execute(() ->
+                rest.respondInteraction(id, token,
+                    "{\"type\":4,\"data\":{\"embeds\":[" + uptimeEmbedJson(server) + "]}}"));
+            case "link" -> {
+                String code = extractOption(data, "code");
+                String userId = interactionUserId(d);
+                server.execute(() -> {
+                    String result = com.coffeesaerosmp.auth.discord.LinkManager.completeLink(code, userId);
+                    rest.respondInteraction(id, token,
+                        "{\"type\":4,\"data\":{\"flags\":64,\"content\":\"" + esc(result) + "\"}}");
+                });
+            }
+        }
+    }
+
+    /**
+     * Uptime since the configured SMP launch date — deliberately NOT since-last-boot (the panel
+     * restarts the server several times a day). Current process session shown as a second line.
+     */
+    public static String uptimeEmbedJson(MinecraftServer server) {
+        String sinceStr = com.coffeesaerosmp.auth.config.AuthConfig.DISCORD_SMP_LAUNCH_DATE.get();
+        long days;
+        String pretty;
+        try {
+            java.time.LocalDate since = java.time.LocalDate.parse(sinceStr.trim());
+            days = java.time.temporal.ChronoUnit.DAYS.between(since, java.time.LocalDate.now(java.time.ZoneOffset.UTC));
+            pretty = since.format(java.time.format.DateTimeFormatter.ofPattern("d MMMM uuuu", java.util.Locale.ENGLISH));
+        } catch (Exception e) {
+            days = -1;
+            pretty = sinceStr;
+        }
+        long sessionMs = java.lang.management.ManagementFactory.getRuntimeMXBean().getUptime();
+        long sh = sessionMs / 3_600_000, sm = (sessionMs % 3_600_000) / 60_000;
+        int online = server.getPlayerList().getPlayerCount();
+        String desc = "🛫 **" + com.coffeesaerosmp.auth.config.AuthConfig.SERVER_DISPLAY_NAME.get()
+            + "** has been flying since **" + pretty + "**"
+            + (days >= 0 ? " — **" + days + " day" + (days == 1 ? "" : "s") + "** and counting!" : "!")
+            + "\nCurrent session: " + sh + "h " + sm + "m • Pilots aboard: " + online;
+        return "{\"description\":\"" + esc(desc) + "\",\"color\":5793266}";
+    }
+
+    private static String extractOption(JsonObject data, String optionName) {
+        try {
+            for (JsonElement o : data.getAsJsonArray("options")) {
+                JsonObject obj = o.getAsJsonObject();
+                if (optionName.equals(obj.get("name").getAsString())) return obj.get("value").getAsString();
+            }
+        } catch (Exception ignored) {}
+        return "";
+    }
+
+    /** Discord user id — {@code member.user.id} in a guild, {@code user.id} in a DM. */
+    private static String interactionUserId(JsonObject d) {
+        try {
+            if (d.has("member") && d.getAsJsonObject("member").has("user"))
+                return d.getAsJsonObject("member").getAsJsonObject("user").get("id").getAsString();
+            if (d.has("user")) return d.getAsJsonObject("user").get("id").getAsString();
+        } catch (Exception ignored) {}
+        return "";
     }
 
     private void doApprove(String mcName, String clicker, String id, String token) {

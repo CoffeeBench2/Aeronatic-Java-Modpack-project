@@ -157,6 +157,18 @@ public class AdminConsoleBridge {
         String cmd = commandLine.startsWith("/") ? commandLine.substring(1) : commandLine;
         if (cmd.isBlank()) return;
 
+        // `authmod player <name>` gets a proper embed CARD in the channel instead of a text dump.
+        java.util.regex.Matcher card = java.util.regex.Pattern
+            .compile("^authmod\\s+player\\s+(\\S+)\\s*$").matcher(cmd);
+        if (card.matches()) {
+            CoffeesAeroAuth.LOGGER.info("[Discord] {} requested player card: {}", author, card.group(1));
+            String embed = com.coffeesaerosmp.auth.commands.ProfileCommands
+                .playerCardEmbedJson(server, card.group(1));
+            if (embed != null) rest.postMessage(channelId, embed);
+            else postCodeBlock("✖ No profile found for '" + card.group(1) + "' (username or display name).");
+            return;
+        }
+
         final List<String> captured = new ArrayList<>();
         CommandSource sink = new CommandSource() {
             @Override public void sendSystemMessage(Component component) { captured.add(component.getString()); }

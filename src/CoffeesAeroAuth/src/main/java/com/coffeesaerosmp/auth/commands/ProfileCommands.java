@@ -56,6 +56,16 @@ public class ProfileCommands {
         // (/skin lives in the CoffeesAeroSkins mod since auth 1.6.0 — policy comes back through
         // SkinsHook's backend: authenticated + offline-only, lifetime change cap.)
 
+        // /discord link|unlink|status — Discord↔MC account linking (1.6.10)
+        dispatcher.register(Commands.literal("discord")
+            .then(Commands.literal("link")
+                .executes(ctx -> discordLink(ctx.getSource().getPlayerOrException())))
+            .then(Commands.literal("unlink")
+                .executes(ctx -> discordUnlink(ctx.getSource().getPlayerOrException())))
+            .then(Commands.literal("status")
+                .executes(ctx -> discordStatus(ctx.getSource().getPlayerOrException())))
+        );
+
         // /mytrustedips — shows own trusted IPs (partially masked)
         dispatcher.register(Commands.literal("mytrustedips")
             .executes(ctx -> {
@@ -156,6 +166,42 @@ public class ProfileCommands {
             source.sendFailure(Component.literal("§cAn error occurred."));
             return 0;
         }
+    }
+
+    // ── Discord linking ───────────────────────────────────────────────────────
+
+    private static int discordLink(ServerPlayer player) {
+        if (!requireAuth(player)) return 0;
+        String code = com.coffeesaerosmp.auth.discord.LinkManager.createCode(
+            player.getUUID(), player.getGameProfile().getName());
+        player.sendSystemMessage(Component.literal(
+            "\n§6§l══════ §eDiscord Link §6§l══════\n" +
+            "§7Your one-time code: §a§l" + code + "\n" +
+            "§7In our Discord server, type §f/link " + code + "\n" +
+            "§8Expires in 5 minutes. Linked pilots get tagged on their achievements!\n" +
+            "§6§l══════════════════════"
+        ));
+        return 1;
+    }
+
+    private static int discordUnlink(ServerPlayer player) {
+        if (!requireAuth(player)) return 0;
+        boolean removed = com.coffeesaerosmp.auth.discord.LinkManager.unlink(player.getUUID());
+        player.sendSystemMessage(TextUtil.info(removed
+            ? "Discord account unlinked."
+            : "No Discord account was linked."));
+        return 1;
+    }
+
+    private static int discordStatus(ServerPlayer player) {
+        if (!requireAuth(player)) return 0;
+        PlayerProfile p = CoffeesAeroAuth.PROFILE_STORE != null
+            ? CoffeesAeroAuth.PROFILE_STORE.get(player.getUUID()) : null;
+        boolean linked = p != null && p.discordId != null && !p.discordId.isBlank();
+        player.sendSystemMessage(TextUtil.info(linked
+            ? "Linked to Discord ✔ — you get tagged on achievements. Use /discord unlink to remove."
+            : "Not linked. Use /discord link to connect your Discord account."));
+        return 1;
     }
 
     private static int setBio(ServerPlayer player, String bio) {
@@ -272,6 +318,84 @@ public class ProfileCommands {
         String card = sb.toString();
         source.sendSuccess(() -> Component.literal(card), false);
         return 1;
+    }
+
+    /**
+     * The {@code authmod player} card as a Discord embed (same data as the text card above) — used
+     * by the admin console bridge so the watchdog channel gets a proper card instead of a text dump.
+     * Returns {@code null} when no profile matches. Server thread only.
+     */
+    public static String playerCardEmbedJson(net.minecraft.server.MinecraftServer server, String name) {
+        PlayerProfile p = CoffeesAeroAuth.PROFILE_STORE != null
+            ? CoffeesAeroAuth.PROFILE_STORE.findByAnyName(name) : null;
+        if (p == null) return null;
+        ServerPlayer online = server.getPlayerList().getPlayer(p.getUUID());
+
+        long secs = p.totalPlaytimeSeconds;
+        if (online != null && p.sessionStartEpoch > 0)
+            secs += (System.currentTimeMillis() - p.sessionStartEpoch) / 1000;
+        String playtime = (secs / 3600) + "h " + ((secs % 3600) / 60) + "m";
+
+        String ips = "(none)";
+        if (CoffeesAeroAuth.WATCHDOG != null) {
+            java.util.List<String> list = CoffeesAeroAuth.WATCHDOG.getTrustedIpStore().getTrustedIps(p.getUUID());
+            if (!list.isEmpty()) ips = String.join(", ", list);
+        }
+        String nameState = p.nameApproved ? "✅ approved"
+            : p.nameApprovalPending ? ("🕐 PENDING — wants '" + p.pendingDisplayName + "'") : "not approved";
+        boolean premium = p.getAccountType() == PlayerProfile.AccountType.PREMIUM;
+
+        com.google.gson.JsonObject embed = new com.google.gson.JsonObject();
+        embed.addProperty("title", (premium ? "✦ " : "◈ ") + p.displayName);
+        embed.addProperty("color", online != null ? 0x57F287 : (premium ? 0xF1C40F : 0x99AAB5));
+        com.google.gson.JsonArray fields = new com.google.gson.JsonArray();
+        java.util.function.BiConsumer<String, String> add = (n, v) -> {
+            com.google.gson.JsonObject f = new com.google.gson.JsonObject();
+            f.addProperty("name", n);
+            f.addProperty("value", v == null || v.isBlank() ? "—" : v);
+            f.addProperty("inline", true);
+            fields.add(f);
+        };
+        add.accept("Account",     p.accountType + (p.passwordHash != null ? " 🔑" : ""));
+        add.accept("Username",    p.username);
+        add.accept("Online",      online != null
+            ? "YES (" + com.coffeesaerosmp.auth.util.NetUtil.getPlayerIP(online) + ")" : "no");
+        add.accept("Playtime",    playtime);
+        add.accept("First join",  p.joinDate > 0 ? DATETIME_FMT.format(Instant.ofEpochMilli(p.joinDate)) : "?");
+        add.accept("First IP",    p.firstIp);
+        add.accept("Name",        nameState + " • " + p.nameRejectionCount + " rejections • "
+                                  + p.nameChangesUsed + " changes used");
+        add.accept("Room / Skin", "slot " + p.roomSlot + " • " + p.skinChangesUsed
+                                  + " skin changes • cape " + (p.capeEnabled ? "on" : "off"));
+        add.accept("Discord",     p.discordId != null && !p.discordId.isBlank()
+                                  ? "linked (<@" + p.discordId + ">)" : "not linked");
+        if (p.returnDim != null)
+            add.accept("Return pos", p.returnDim + " " + Math.round(p.returnX) + ", "
+                + Math.round(p.returnY) + ", " + Math.round(p.returnZ));
+        com.google.gson.JsonObject ipField = new com.google.gson.JsonObject();
+        ipField.addProperty("name", "Trusted IPs");
+        ipField.addProperty("value", ips);
+        ipField.addProperty("inline", false);
+        fields.add(ipField);
+        if (p.bio != null && !p.bio.isBlank()) {
+            com.google.gson.JsonObject bio = new com.google.gson.JsonObject();
+            bio.addProperty("name", "Bio");
+            bio.addProperty("value", p.bio);
+            bio.addProperty("inline", false);
+            fields.add(bio);
+        }
+        embed.add("fields", fields);
+        com.google.gson.JsonObject footer = new com.google.gson.JsonObject();
+        footer.addProperty("text", "UUID " + p.uuidStr);
+        embed.add("footer", footer);
+        embed.addProperty("timestamp", DateTimeFormatter.ISO_INSTANT
+            .withZone(ZoneId.of("UTC")).format(Instant.now()));
+
+        com.google.gson.JsonObject body = new com.google.gson.JsonObject();
+        com.google.gson.JsonArray embeds = new com.google.gson.JsonArray();
+        embeds.add(embed);
+        body.add("embeds", embeds);
+        return body.toString();
     }
 
     private static int showTrustedIps(ServerPlayer player) {

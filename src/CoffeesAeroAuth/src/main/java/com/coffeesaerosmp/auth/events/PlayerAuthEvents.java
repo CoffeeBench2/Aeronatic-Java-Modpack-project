@@ -72,6 +72,10 @@ public class PlayerAuthEvents {
         }
         if (CoffeesAeroAuth.WATCHDOG != null && profile != null) {
             CoffeesAeroAuth.WATCHDOG.addPremiumName(profile.displayName);
+            // Premium logins were never counted — the daily digest only saw the three offline
+            // recordSuccessfulLogin call sites, so "Successful Logins" sat near 0.
+            CoffeesAeroAuth.WATCHDOG.recordSuccessfulLogin(player.getUUID(),
+                NetUtil.getPlayerIP(player), profile.displayName, true);
         }
         if (CoffeesAeroAuth.DISCORD_BRIDGE != null)
             CoffeesAeroAuth.DISCORD_BRIDGE.updatePlayerCount(player.getServer().getPlayerList().getPlayerCount());

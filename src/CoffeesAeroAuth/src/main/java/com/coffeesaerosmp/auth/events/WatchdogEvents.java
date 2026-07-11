@@ -54,9 +54,12 @@ public class WatchdogEvents {
     /** Advancement earned → Discord public channel + Obsidian player file. */
     public static void onAdvancement(AdvancementEvent.AdvancementEarnEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        String title = event.getAdvancement().value().display()
-            .map(d -> d.getTitle().getString())
-            .orElse(event.getAdvancement().id().getPath());
+        // Only real, chat-announced advancements. Technical/recipe advancements (no display, or
+        // announceChat=false) also fire this event — a fresh join re-grants batches of them, which
+        // spammed ~10 "achievements" per join into Discord.
+        var display = event.getAdvancement().value().display();
+        if (display.isEmpty() || !display.get().shouldAnnounceChat()) return;
+        String title = display.get().getTitle().getString();
         if (CoffeesAeroAuth.DISCORD_BRIDGE != null) {
             CoffeesAeroAuth.DISCORD_BRIDGE.onAdvancement(player, title);
         }

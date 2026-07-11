@@ -163,7 +163,8 @@ public class DatabaseManager {
                 "  return_dim            VARCHAR(64)                  NULL," +
                 "  return_x              DOUBLE                       NOT NULL DEFAULT 0," +
                 "  return_y              DOUBLE                       NOT NULL DEFAULT 0," +
-                "  return_z              DOUBLE                       NOT NULL DEFAULT 0" +
+                "  return_z              DOUBLE                       NOT NULL DEFAULT 0," +
+                "  discord_id            VARCHAR(32)                  NULL" +
                 ")");
             // Forward-compat: add columns missing on pre-existing tables (MySQL lacks ADD COLUMN IF NOT EXISTS).
             try { s.executeUpdate("ALTER TABLE players ADD COLUMN startup_bonus_given BOOLEAN NOT NULL DEFAULT FALSE"); }
@@ -182,6 +183,9 @@ public class DatabaseManager {
             try { s.executeUpdate("ALTER TABLE players ADD COLUMN return_y DOUBLE NOT NULL DEFAULT 0"); }
             catch (SQLException dupCol) { /* column already present — fine */ }
             try { s.executeUpdate("ALTER TABLE players ADD COLUMN return_z DOUBLE NOT NULL DEFAULT 0"); }
+            catch (SQLException dupCol) { /* column already present — fine */ }
+            // Discord↔MC account linking (1.6.10).
+            try { s.executeUpdate("ALTER TABLE players ADD COLUMN discord_id VARCHAR(32) NULL"); }
             catch (SQLException dupCol) { /* column already present — fine */ }
             // Widen skin_url on pre-existing tables (was VARCHAR(512) — too small for a skin+cape textures blob).
             try { s.executeUpdate("ALTER TABLE players MODIFY COLUMN skin_url TEXT NULL"); }

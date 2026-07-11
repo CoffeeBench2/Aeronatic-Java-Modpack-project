@@ -46,7 +46,7 @@ public class DiscordBridge {
         String desc = isFirstEver
             ? "🌟 **" + player.getGameProfile().getName() + "** joined for the first time! Welcome!"
             : "✈️ **" + player.getGameProfile().getName() + "** joined the server " + badge;
-        queue.enqueue(url, AlertFormatter.publicEmbed(desc, 0x57F287), isFirstEver
+        queue.enqueue(url, AlertFormatter.watchdogEmbed(desc, 0x57F287), isFirstEver
             ? com.coffeesaerosmp.auth.watchdog.Severity.MEDIUM
             : com.coffeesaerosmp.auth.watchdog.Severity.LOW);
     }
@@ -55,7 +55,7 @@ public class DiscordBridge {
         // Routed to the watchdog channel (admin-only), not public chat — 2026-06-24 feedback, move-only.
         String url = AuthConfig.DISCORD_WEBHOOK_WATCHDOG.get();
         if (url.isBlank()) return;
-        DiscordWebhook.send(url, AlertFormatter.publicEmbed("💨 **" + player.getGameProfile().getName() + "** left the server", 0xED4245));
+        DiscordWebhook.send(url, AlertFormatter.watchdogEmbed("💨 **" + player.getGameProfile().getName() + "** left the server", 0xED4245));
     }
 
     public void onPlayerDeath(ServerPlayer player, String deathMessage) {
@@ -78,11 +78,20 @@ public class DiscordBridge {
         String url = pub ? AuthConfig.DISCORD_WEBHOOK_PUBLIC.get() : AuthConfig.DISCORD_WEBHOOK_WATCHDOG.get();
         if (url.isBlank()) return;
         String name = player.getGameProfile().getName();
-        if (pub && CoffeesAeroAuth.PROFILE_STORE != null) {
+        String discordId = null;
+        if (CoffeesAeroAuth.PROFILE_STORE != null) {
             var prof = CoffeesAeroAuth.PROFILE_STORE.get(player.getUUID());
-            if (prof != null && prof.displayName != null) name = prof.displayName;
+            if (prof != null) {
+                if (pub && prof.displayName != null) name = prof.displayName;
+                discordId = prof.discordId;
+            }
         }
-        DiscordWebhook.send(url, AlertFormatter.publicEmbed("🏆 **" + name + "** just earned **[" + title + "]**", 0xFEE75C));
+        String desc = "🏆 **" + name + "** just earned **[" + title + "]**";
+        String json = !pub ? AlertFormatter.watchdogEmbed(desc, 0xFEE75C)
+            : (discordId != null && !discordId.isBlank()
+                ? AlertFormatter.publicEmbedMention(desc, 0xFEE75C, discordId)   // linked players get tagged
+                : AlertFormatter.publicEmbed(desc, 0xFEE75C));
+        DiscordWebhook.send(url, json);
     }
 
     /** Live player count -> bot status. */
@@ -94,13 +103,21 @@ public class DiscordBridge {
     public void checkMilestones(ServerPlayer player, long totalHours) {
         String url = AuthConfig.DISCORD_WEBHOOK_PUBLIC.get();
         if (url.isBlank()) return;
+        String discordId = null;
+        if (CoffeesAeroAuth.PROFILE_STORE != null) {
+            var prof = CoffeesAeroAuth.PROFILE_STORE.get(player.getUUID());
+            if (prof != null) discordId = prof.discordId;
+        }
         int[] milestones = parseMilestones(AuthConfig.DISCORD_MILESTONE_HOURS.get());
         for (int m : milestones) {
             if (totalHours >= m) {
                 long key = (long)player.getUUID().hashCode() * 31 + m;
                 if (postedMilestones.add(key)) {
-                    DiscordWebhook.send(url, AlertFormatter.publicEmbed("🎉 **" + player.getGameProfile().getName()
-                            + "** has played for **" + m + " hours** on " + AuthConfig.SERVER_DISPLAY_NAME.get() + "!", 0x5865F2));
+                    String desc = "🎉 **" + player.getGameProfile().getName()
+                            + "** has played for **" + m + " hours** on " + AuthConfig.SERVER_DISPLAY_NAME.get() + "!";
+                    DiscordWebhook.send(url, discordId != null && !discordId.isBlank()
+                        ? AlertFormatter.publicEmbedMention(desc, 0x5865F2, discordId)
+                        : AlertFormatter.publicEmbed(desc, 0x5865F2));
                 }
             }
         }
