@@ -52,20 +52,22 @@ public class TrustedIpStore {
             return list;
         });
 
+        // In-memory map above is authoritative for reads; the DB round-trip goes off-thread
+        // (1.6.12 — this ran on the server thread inside every offline login).
         long now = System.currentTimeMillis();
-        if (db.isAvailable()) {
-            try (Connection c = db.getConnection()) {
-                upsertIp(c, uuid, ip, now);
-                pruneOldIps(c, uuid);
-            } catch (SQLException e) {
-                CoffeesAeroAuth.LOGGER.warn("[TrustedIp] DB write failed, queuing", e);
-                db.queueWrite(conn -> { upsertIp(conn, uuid, ip, now); pruneOldIps(conn, uuid); });
-                saveToFile();
+        com.coffeesaerosmp.auth.util.AsyncIo.submit(() -> {
+            if (db.isAvailable()) {
+                try (Connection c = db.getConnection()) {
+                    upsertIp(c, uuid, ip, now);
+                    pruneOldIps(c, uuid);
+                    return;
+                } catch (SQLException e) {
+                    CoffeesAeroAuth.LOGGER.warn("[TrustedIp] DB write failed, queuing", e);
+                }
             }
-        } else {
             db.queueWrite(conn -> { upsertIp(conn, uuid, ip, now); pruneOldIps(conn, uuid); });
             saveToFile();
-        }
+        });
     }
 
     public List<String> getTrustedIps(UUID uuid) {

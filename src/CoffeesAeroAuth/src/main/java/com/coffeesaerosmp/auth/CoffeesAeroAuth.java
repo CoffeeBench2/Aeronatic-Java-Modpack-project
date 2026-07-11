@@ -246,6 +246,8 @@ public class CoffeesAeroAuth {
         if (DISCORD_BRIDGE != null) { DISCORD_BRIDGE.stop(); DISCORD_BRIDGE = null; }
         DISCORD_REST = null;
         if (WEBHOOK_QUEUE != null)  { WEBHOOK_QUEUE.stop();  WEBHOOK_QUEUE = null; }
+        // Drain queued background writes (profiles/audit/trusted-ips) BEFORE the DB pool closes.
+        com.coffeesaerosmp.auth.util.AsyncIo.drain(10);
         if (PROFILE_STORE != null)  { PROFILE_STORE.shutdown(); PROFILE_STORE = null; }
         if (DB_MANAGER != null)     { DB_MANAGER.shutdown();    DB_MANAGER = null; }
         DISPLAY_NAMES = null;

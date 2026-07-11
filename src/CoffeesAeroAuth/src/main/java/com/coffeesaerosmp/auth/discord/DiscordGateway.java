@@ -364,6 +364,7 @@ public class DiscordGateway {
         public CompletionStage<?> onClose(WebSocket ws, int code, String reason) {
             connected = false;
             stopHeartbeat();
+            presenceSent = null;   // presence is per-session — a reconnected session must re-send it
 
             long sessionMs = sessionStartedAt > 0 ? System.currentTimeMillis() - sessionStartedAt : 0;
             if (sessionMs > 120_000) {          // stable session — forgive past sins

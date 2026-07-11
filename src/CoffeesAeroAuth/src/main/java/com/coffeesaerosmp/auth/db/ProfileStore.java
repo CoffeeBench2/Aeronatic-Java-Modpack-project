@@ -103,22 +103,23 @@ public class ProfileStore implements CredentialStore {
     }
 
     public void save(PlayerProfile profile) {
-        cache.put(profile.getUUID(), profile);
+        cache.put(profile.getUUID(), profile);   // reads are cache-first, so callers see this instantly
 
-        if (db.isAvailable()) {
-            try (Connection c = db.getConnection()) {
-                upsertPlayer(c, profile);
-            } catch (SQLException e) {
-                CoffeesAeroAuth.LOGGER.warn("[ProfileStore] DB write failed, queuing for retry", e);
-                final PlayerProfile snapshot = profile;
-                db.queueWrite(conn -> upsertPlayer(conn, snapshot));
-                writeProfileFallback(profile);
+        // The MySQL round-trip runs OFF the server thread (1.6.12) — a remote-DB latency spike used
+        // to stall the tick on every login/leave/name-change. Single writer thread keeps ordering.
+        final PlayerProfile snapshot = profile;
+        com.coffeesaerosmp.auth.util.AsyncIo.submit(() -> {
+            if (db.isAvailable()) {
+                try (Connection c = db.getConnection()) {
+                    upsertPlayer(c, snapshot);
+                    return;
+                } catch (SQLException e) {
+                    CoffeesAeroAuth.LOGGER.warn("[ProfileStore] DB write failed, queuing for retry", e);
+                }
             }
-        } else {
-            final PlayerProfile snapshot = profile;
             db.queueWrite(conn -> upsertPlayer(conn, snapshot));
-            writeProfileFallback(profile);
-        }
+            writeProfileFallback(snapshot);
+        });
     }
 
     /** Returns all profiles. When DB is up: from cache (fully loaded on startup).

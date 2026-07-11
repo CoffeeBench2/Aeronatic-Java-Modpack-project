@@ -31,6 +31,13 @@ public final class TabListManager {
         if (++ticks % 10 != 0) return;
         frame++;
         var players = server.getPlayerList().getPlayers();
+
+        // Push the live count to the bot presence every cycle (coalesced + rate-limited inside the
+        // gateway, so this is nearly free). Event-driven pushes missed offline-auth joins and any
+        // change while the gateway was reconnecting — tick-driven self-heals all drift.
+        if (com.coffeesaerosmp.auth.CoffeesAeroAuth.DISCORD_BRIDGE != null)
+            com.coffeesaerosmp.auth.CoffeesAeroAuth.DISCORD_BRIDGE.updatePlayerCount(players.size());
+
         if (players.isEmpty()) return;
         ClientboundTabListPacket packet = new ClientboundTabListPacket(header(), footer(server));
         for (ServerPlayer p : players) p.connection.send(packet);
