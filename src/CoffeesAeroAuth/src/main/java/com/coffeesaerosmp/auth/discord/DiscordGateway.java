@@ -27,7 +27,11 @@ import java.util.function.BiConsumer;
 public class DiscordGateway {
 
     private static final String  GATEWAY_URL = "wss://gateway.discord.gg/?v=10&encoding=json";
-    private static final Gson    GSON        = new Gson();
+    // serializeNulls is LOAD-BEARING: default Gson strips JsonNull entries, which silently removed
+    // the REQUIRED-but-nullable "since" from op-3 presence (and "d" from pre-seq heartbeats) —
+    // Discord answers a missing required field with close 4002 "Error while decoding payload".
+    // THIS was the 1.6.7/1.6.8 presence 4002 loop all along (proven by the frame log on 07-11).
+    private static final Gson    GSON        = new GsonBuilder().serializeNulls().create();
     // GUILD_MESSAGES (512) | MESSAGE_CONTENT (32768)
     private static final int     INTENTS     = 512 | 32768;
     private static final long    PRESENCE_MIN_INTERVAL_MS = 15_000;
