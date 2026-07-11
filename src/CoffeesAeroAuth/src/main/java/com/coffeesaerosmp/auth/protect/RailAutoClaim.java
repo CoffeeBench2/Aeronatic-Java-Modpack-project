@@ -89,10 +89,17 @@ public final class RailAutoClaim {
 
                 if (autoGrant) {
                     int claimed = data.getClaimedChunks().size();
-                    if (claimed >= data.getMaxClaimChunks()) {
-                        if (claimed >= hardCap) continue;                 // land-grab safety cap
-                        data.setExtraClaimChunks(data.getExtraClaimChunks() + 1);
-                    }
+                    if (claimed >= hardCap) continue;                     // land-grab safety cap
+                    // Rail chunks are shared infrastructure — BUDGET-NEUTRAL (+1 extra per
+                    // auto-claim) so they never consume the team's base FTB allowance. Granting
+                    // only when already at max (old behavior) silently drained the free allowance,
+                    // which AeroClaims converts into ship claims → rail-builders saw
+                    // "Blocks: N / 0" and couldn't claim their airships.
+                    data.setExtraClaimChunks(data.getExtraClaimChunks() + 1);
+                    ClaimResult res = data.claim(source, cdp, false);
+                    if (res != null && res.isSuccess()) claimedAny = true;
+                    else data.setExtraClaimChunks(data.getExtraClaimChunks() - 1); // roll back on failure
+                    continue;
                 }
 
                 ClaimResult res = data.claim(source, cdp, false);
@@ -168,11 +175,14 @@ public final class RailAutoClaim {
             if (mgr.getChunk(cdp) != null) continue;
 
             if (autoGrant) {
+                // Budget-neutral rail claims — see claimAround for the AeroClaims interaction.
                 int claimed = data.getClaimedChunks().size();
-                if (claimed >= data.getMaxClaimChunks()) {
-                    if (claimed >= hardCap) continue;
-                    data.setExtraClaimChunks(data.getExtraClaimChunks() + 1);
-                }
+                if (claimed >= hardCap) continue;
+                data.setExtraClaimChunks(data.getExtraClaimChunks() + 1);
+                ClaimResult res = data.claim(source, cdp, false);
+                if (res != null && res.isSuccess()) claimedAny = true;
+                else data.setExtraClaimChunks(data.getExtraClaimChunks() - 1); // roll back on failure
+                continue;
             }
 
             ClaimResult res = data.claim(source, cdp, false);
