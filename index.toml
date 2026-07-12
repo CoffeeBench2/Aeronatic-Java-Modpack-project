@@ -701,6 +701,11 @@ hash = "c0b066684294c33972d562e0cb08ea17b2d31bcf86cd1d6c63b8e968f0eac7a2"
 metafile = true
 
 [[files]]
+file = "mods/rhino.pw.toml"
+hash = "e55ca32b338a0e0540f4fec5170675d860566255ae0f45692a00cb4ebf2eb535"
+metafile = true
+
+[[files]]
 file = "mods/rightclickharvest-neoforge-4-6-1-1-21-1.pw.toml"
 hash = "dac9e24635d5a192cb31ee6249f134d59f337913856b6cd2574a4b2585c3a427"
 metafile = true
