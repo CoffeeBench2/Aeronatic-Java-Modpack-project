@@ -1,0 +1,24 @@
+{
+  "_comment": "LIVE pack changelog for the main-menu Announcements screen (Core reads this; overrides the jar-bundled fallback). Newest entry first. Edit per release. Keep lines short & player-facing.",
+  "entries": [
+    {
+      "version": "1.8.0",
+      "date": "2026-07",
+      "title": "The Big One — museum, pets, trade & a fresh menu",
+      "added": [
+        "Museum photography — take & frame real photos (Exposure)",
+        "Plushies + tameable hamster pets to keep you company",
+        "Paintings, furniture with display cases & thousands of build blocks",
+        "Buy & sell with airships (Create Aeronautics: Delivery Required)",
+        "In-game chat translator + emojis in chat",
+        "Cozy ambient wildlife, cooler explosions & extra visual polish",
+        "This Announcements screen — see what changed every update"
+      ],
+      "fixed": [
+        "Loading-screen cogwheels are now clearly visible",
+        "Spectator mode can fly through blocks again"
+      ],
+      "removed": []
+    }
+  ]
+}
