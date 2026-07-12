@@ -1,0 +1,6 @@
+{
+  "type": "create:crushing",
+  "ingredients": [{ "item": "minecraft:purpur_block" }],
+  "processing_time": 250,
+  "results": [{ "id": "minecraft:popped_chorus_fruit", "count": 1 }]
+}

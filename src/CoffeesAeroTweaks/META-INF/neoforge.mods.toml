@@ -1,0 +1,12 @@
+modLoader = "lowcodefml"
+loaderVersion = "[4,)"
+license = "All Rights Reserved (c) 2026 MrCoffeeBench"
+
+[[mods]]
+modId       = "coffeesaero_tweaks"
+version     = "1.2.0"
+displayName = "Coffees Aero Tweaks"
+authors     = "MrCoffeeBench"
+credits     = "Coffees Aero SMP"
+logoFile    = "logo.png"
+description = "Server recipe tweaks for Coffees Aero SMP: crush purpur blocks back into popped chorus fruit, mix blaze powder with slime into blaze rods. Whitelists Create shop blocks (stock ticker + table cloths) for right-click in FTB Chunks claims."

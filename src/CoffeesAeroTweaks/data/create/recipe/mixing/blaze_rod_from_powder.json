@@ -1,0 +1,9 @@
+{
+  "type": "create:mixing",
+  "ingredients": [
+    { "item": "minecraft:slime_ball" },
+    { "item": "minecraft:blaze_powder" },
+    { "item": "minecraft:blaze_powder" }
+  ],
+  "results": [{ "id": "minecraft:blaze_rod", "count": 1 }]
+}
