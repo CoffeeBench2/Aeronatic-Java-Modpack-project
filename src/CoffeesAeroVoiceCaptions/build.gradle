@@ -30,8 +30,16 @@ neoForge {
 
 dependencies {
     // Simple Voice Chat API — compileOnly + ModList-guarded; the mod jar is on the server set.
-    // (Prototype step 1: capture mic packets via the SVC plugin API.)
     compileOnly(files("../../server-mods/voicechat-neoforge-1.21.1-2.6.17.jar"))
+
+    // Vosk offline speech-to-text (Apache-2.0). jarJar bundles it into the mod jar; the vosk
+    // artifact carries the win/linux/mac native libs. The MODEL is NOT bundled (~40 MB) — loaded
+    // from config/coffees_voice_captions/model at runtime.
+    jarJar(implementation("com.alphacephei:vosk:0.3.45"))
+    // Vosk's native loader is JNA — but NeoForge ALREADY provides com.sun.jna (neoforge.coremods),
+    // so bundling our own copy makes module resolution fail ("reads more than one module named
+    // com.sun.jna"). Use NeoForge's JNA: compileOnly here, present at runtime from the platform.
+    compileOnly("net.java.dev.jna:jna:5.14.0")
 }
 
 tasks.withType(JavaCompile).configureEach {
