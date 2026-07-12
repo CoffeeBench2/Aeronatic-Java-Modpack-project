@@ -16,6 +16,7 @@
         "This Announcements screen — see what changed every update"
       ],
       "fixed": [
+        "Create machines & lasers now render correctly with shaders on",
         "Loading-screen cogwheels are now clearly visible",
         "Spectator mode can fly through blocks again"
       ],

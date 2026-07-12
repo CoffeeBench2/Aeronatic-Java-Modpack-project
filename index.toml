@@ -516,6 +516,11 @@ hash = "06bef0e212f0a9b7cad14e7752ff072e07bf63151517431ef873aca1cba255f4"
 metafile = true
 
 [[files]]
+file = "mods/iris-flw-compat.pw.toml"
+hash = "ed85b2ed42beb6523223eef6f0ae397ed29f8059b2bf5aa08d8598de04865614"
+metafile = true
+
+[[files]]
 file = "mods/iris-neoforge-1-8-12-mc1-21-1.pw.toml"
 hash = "e92d64ccc87e892911f377969838c620042124903c606e04be21ec52077bb96f"
 metafile = true
@@ -864,7 +869,7 @@ hash = "ff15da34b5f6f825dcc32399ab150c2462393031a41c8ea6938d6dd61b11fb04"
 
 [[files]]
 file = "overrides/config/coffees_aero_announcements.json"
-hash = "53fab271136f6e0dbac7aecc2aa3495709a17537bfa638058c7a5cea1f4117f3"
+hash = "3926138e78bd9d77b83bf9d7cd0d1fee2e81e7aa3a7634ab5aae9adcf91dfd77"
 
 [[files]]
 file = "overrides/config/coffeesaerosmp_core-client.toml"
