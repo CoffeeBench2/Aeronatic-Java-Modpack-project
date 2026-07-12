@@ -80,19 +80,6 @@ public class ProfileCommands {
                                 + StringArgumentType.getString(ctx, "tag") + "§7]§r in chat, Tab and nametags."));
                         return err == null ? 1 : 0;
                     })))
-            .then(Commands.literal("color")
-                .then(Commands.argument("color", StringArgumentType.word())
-                    .suggests((ctx, builder) -> SharedSuggestionProvider.suggest(
-                        com.coffeesaerosmp.auth.clan.ClanTags.COLORS.keySet().stream().sorted(), builder))
-                    .executes(ctx -> {
-                        ServerPlayer player = ctx.getSource().getPlayerOrException();
-                        if (!requireAuth(player)) return 0;
-                        String err = com.coffeesaerosmp.auth.clan.ClanTags.setColor(
-                            player, StringArgumentType.getString(ctx, "color"));
-                        player.sendSystemMessage(err != null ? TextUtil.info("§c" + err)
-                            : TextUtil.info("Clan tag color updated."));
-                        return err == null ? 1 : 0;
-                    })))
             .then(Commands.literal("untag")
                 .executes(ctx -> {
                     ServerPlayer player = ctx.getSource().getPlayerOrException();
