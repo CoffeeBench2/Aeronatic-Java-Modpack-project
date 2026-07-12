@@ -107,14 +107,14 @@ public class DiscordBridge {
         boolean pub = AuthConfig.DISCORD_PUBLIC_ACHIEVEMENTS.get();
         String url = pub ? AuthConfig.DISCORD_WEBHOOK_PUBLIC.get() : AuthConfig.DISCORD_WEBHOOK_WATCHDOG.get();
         if (url.isBlank()) return;
-        String name = player.getGameProfile().getName();
+        // Always the DISPLAY name (2026-07-12 fix) — the old getGameProfile().getName() only equals
+        // the display name AFTER NameMask swaps it (premium/unmasked players leaked the raw username
+        // into achievement posts, and the watchdog path never applied the display name at all).
+        String name = displayNameOf(player);
         String discordId = null;
         if (CoffeesAeroAuth.PROFILE_STORE != null) {
             var prof = CoffeesAeroAuth.PROFILE_STORE.get(player.getUUID());
-            if (prof != null) {
-                if (pub && prof.displayName != null) name = prof.displayName;
-                discordId = prof.discordId;
-            }
+            if (prof != null) discordId = prof.discordId;
         }
         String json = pub
             ? AlertFormatter.achievementEmbed(name, title, description, frame, discordId)
@@ -141,7 +141,7 @@ public class DiscordBridge {
             if (totalHours >= m) {
                 long key = (long)player.getUUID().hashCode() * 31 + m;
                 if (postedMilestones.add(key)) {
-                    String desc = "🎉 **" + player.getGameProfile().getName()
+                    String desc = "🎉 **" + displayNameOf(player)
                             + "** has played for **" + m + " hours** on " + AuthConfig.SERVER_DISPLAY_NAME.get() + "!";
                     DiscordWebhook.send(url, discordId != null && !discordId.isBlank()
                         ? AlertFormatter.publicEmbedMention(desc, 0x5865F2, discordId)
