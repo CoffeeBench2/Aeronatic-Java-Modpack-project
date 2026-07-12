@@ -84,12 +84,17 @@ public class DiscordBridge {
     }
 
     public void onPlayerDeath(ServerPlayer player, String deathMessage) {
+        if (!AuthConfig.DISCORD_PUBLIC_DEATHS.get()) return;
         String url = AuthConfig.DISCORD_WEBHOOK_PUBLIC.get();
         if (url.isBlank()) return;
         DiscordWebhook.send(url, AlertFormatter.publicEmbed("💀 " + deathMessage, 0x808080));
     }
 
     public void onPlayerChat(String badge, String displayName, String rawMessage) {
+        // OFF by default since 2026-07-12 — the public feed stays curated (joins/leaves,
+        // achievements, milestones); in-game chatter doesn't belong in the community server.
+        // Hot-reloadable; Discord→MC (gateway MESSAGE_CREATE) is a separate path and unaffected.
+        if (!AuthConfig.DISCORD_PUBLIC_CHAT.get()) return;
         String url = AuthConfig.DISCORD_WEBHOOK_PUBLIC.get();
         if (url.isBlank()) return;
         queue.enqueue(url,
