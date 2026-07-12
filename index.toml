@@ -556,6 +556,16 @@ hash = "7e5a1ce4a5352d43e57b0536b6fa2f033d8418275782c81f5b916dc604e40ab6"
 metafile = true
 
 [[files]]
+file = "mods/kubejs.pw.toml"
+hash = "99bea71046529d65463fc12acb505ab363c91133ebbcc1d976e49a5d33150702"
+metafile = true
+
+[[files]]
+file = "mods/ldlib.pw.toml"
+hash = "27270ba11a59d4a30cb9da56516c5b2d8216e8b70c7534217dd2637d9813b366"
+metafile = true
+
+[[files]]
 file = "mods/lithostitched-1-7-10-beta4-neoforge-21-1.pw.toml"
 hash = "9afc51f3bc26caee2b087cafa23bd211b2d18b7e638f65830331969d4957c61d"
 metafile = true
@@ -646,11 +656,6 @@ hash = "d7f360ebb9f009d6dc0b368cd8fa399bdff70c0f6ef931687b2a35137f72715d"
 metafile = true
 
 [[files]]
-file = "mods/perception.pw.toml"
-hash = "378f188dd4dd616783418b9169e6016d5eff359a13c6debeb64c82093637e8e9"
-metafile = true
-
-[[files]]
 file = "mods/plushables.pw.toml"
 hash = "e46c50b7e0b9e732f5c0ff598c6f60a7ba8bbc877a38e716626071713bdee216"
 metafile = true
@@ -663,6 +668,11 @@ metafile = true
 [[files]]
 file = "mods/polytone-1-21-3-6-7-neoforge.pw.toml"
 hash = "747022afc0af49586eb9d8dfa3c26ae9cf50da0020429d8e52ec9b63e7b7e074"
+metafile = true
+
+[[files]]
+file = "mods/ponder.pw.toml"
+hash = "5ead8d8bc26cdbe1a17dc055f7f0fe762a08254d0199d6ea8fcc58839ab274f2"
 metafile = true
 
 [[files]]
@@ -873,7 +883,7 @@ hash = "3926138e78bd9d77b83bf9d7cd0d1fee2e81e7aa3a7634ab5aae9adcf91dfd77"
 
 [[files]]
 file = "overrides/config/coffeesaerosmp_core-client.toml"
-hash = "197a39c4810ceb44834d58d063f8c2a3df0c7fdbc460bcf0e746ae3539369149"
+hash = "24a988b5a9aa951536543f0fedd36129fc6aa8cddf708691df658959a9b6da37"
 
 [[files]]
 file = "overrides/config/entity_texture_features.json"
