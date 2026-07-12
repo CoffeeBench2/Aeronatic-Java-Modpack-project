@@ -102,6 +102,22 @@ public class ProfileCommands {
                         : TextUtil.info("Clan tag removed."));
                     return err == null ? 1 : 0;
                 }))
+            // /clan color <color> — party OWNER only; everyone without a chosen color stays blue.
+            .then(Commands.literal("color")
+                .then(Commands.argument("color", StringArgumentType.word())
+                    .suggests((ctx, builder) -> SharedSuggestionProvider.suggest(
+                        com.coffeesaerosmp.auth.clan.ClanTags.COLORS.keySet().stream().sorted(), builder))
+                    .executes(ctx -> {
+                        ServerPlayer player = ctx.getSource().getPlayerOrException();
+                        if (!requireAuth(player)) return 0;
+                        String color = StringArgumentType.getString(ctx, "color");
+                        String err = com.coffeesaerosmp.auth.clan.ClanTags.setColor(player, color);
+                        player.sendSystemMessage(err != null ? TextUtil.info("§c" + err)
+                            : TextUtil.info("Clan tag color set to "
+                                + com.coffeesaerosmp.auth.clan.ClanTags.COLORS.get(color.toLowerCase(java.util.Locale.ROOT))
+                                + color + "§r."));
+                        return err == null ? 1 : 0;
+                    })))
         );
 
         // /mytrustedips — shows own trusted IPs (partially masked)

@@ -44,7 +44,7 @@ public final class ClanTags {
         Map.entry("green", "§a"),       Map.entry("pink", "§d"),
         Map.entry("purple", "§5"),      Map.entry("red", "§c"),
         Map.entry("white", "§f"),       Map.entry("yellow", "§e"));
-    private static final String DEFAULT_COLOR = "§b";   // aqua
+    private static final String DEFAULT_COLOR = "§9";   // blue — every tag renders blue until the party OWNER picks a color
 
     private record Entry(String tag, String colorCode) {}
 
@@ -120,14 +120,23 @@ public final class ClanTags {
         return null;
     }
 
-    /** Sets the tag COLOR for the player's party. Returns a user-facing error, null on success. */
+    /** Sets the tag COLOR for the player's party — party OWNER only (officers may set the tag
+     *  text, but color is the owner's call; untouched tags stay the default blue).
+     *  Returns a user-facing error, null on success. */
     public static String setColor(ServerPlayer player, String colorName) {
         String code = COLORS.get(colorName == null ? "" : colorName.toLowerCase(Locale.ROOT));
         if (code == null)
             return "Unknown color. Pick one of: " + String.join(", ", COLORS.keySet().stream().sorted().toList());
-        Team team = requireOfficerParty(player);
-        if (team == null)
-            return "You need to be in a party (and officer rank) to color its tag.";
+        Team team;
+        try {
+            Optional<Team> t = FTBTeamsAPI.api().getManager().getTeamForPlayer(player);
+            if (t.isEmpty() || !t.get().isPartyTeam()) return "You need to be in a party to color its tag.";
+            if (!t.get().getRankForPlayer(player.getUUID()).isOwner())
+                return "Only the party OWNER can change the tag color.";
+            team = t.get();
+        } catch (Exception e) {
+            return "Teams are not available right now — try again in a moment.";
+        }
         Entry prev = TAGS.get(team.getId());
         if (prev == null) return "Set a tag first: /clan tag <tag>";
         TAGS.put(team.getId(), new Entry(prev.tag(), code));
