@@ -88,6 +88,7 @@ public class CoffeesAeroAuth {
         com.coffeesaerosmp.auth.compat.SkinsHook.install();
 
         // Restrictions: movement, interaction, inventory
+        NeoForge.EVENT_BUS.addListener(com.coffeesaerosmp.auth.protect.DimensionLock::onTravelToDimension);
         NeoForge.EVENT_BUS.addListener(PlayerRestrictEvents::onLivingTick);
         NeoForge.EVENT_BUS.addListener(PlayerRestrictEvents::onRightClickBlock);
         NeoForge.EVENT_BUS.addListener(PlayerRestrictEvents::onRightClickItem);

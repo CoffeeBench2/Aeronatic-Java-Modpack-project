@@ -44,6 +44,7 @@ public class AuthConfig {
     public static final ModConfigSpec.ConfigValue<String>  QUIET_HOURS_END;
 
     // ── Rail protection ─────────────────────────────────────────────────────────
+    public static final ModConfigSpec.BooleanValue LOCK_END_DIMENSION;
     public static final ModConfigSpec.BooleanValue RAIL_AUTOCLAIM_ENABLED;
     public static final ModConfigSpec.IntValue     RAIL_AUTOCLAIM_RADIUS;
     public static final ModConfigSpec.BooleanValue RAIL_AUTOCLAIM_AUTOGRANT;
@@ -200,6 +201,14 @@ public class AuthConfig {
                 "create:track,create:fake_track,create:track_station,create:track_signal,"
                 + "create:track_observer,create:content_observer,create:small_bogey,create:large_bogey,"
                 + "create:metal_girder,create:metal_girder_encased_shaft");
+        b.pop();
+
+        b.comment("World Gates — dimension access control.").push("worldgates");
+        LOCK_END_DIMENSION = b
+            .comment("Block players from entering the End by ANY route (portals, waystones, /tpa, grave",
+                     "recalls...). Ops (permission 2+) bypass. Hot-reloadable: flip to false and save to",
+                     "open the End without a restart.")
+            .define("lockEndDimension", true);
         b.pop();
 
         b.comment("Discord Integration").push("discord");
