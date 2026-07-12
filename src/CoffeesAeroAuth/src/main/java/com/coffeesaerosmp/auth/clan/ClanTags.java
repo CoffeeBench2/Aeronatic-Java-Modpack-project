@@ -35,7 +35,20 @@ public final class ClanTags {
     /** 2–5 chars, alphanumeric — short enough that badge+tag+name stays readable everywhere. */
     private static final String TAG_REGEX = "[A-Za-z0-9]{2,5}";
 
-    private static final Map<UUID, String> TAGS = new ConcurrentHashMap<>();   // FTB team id → tag
+    /** Tag colors players may pick — Minecraft color names → § codes. */
+    public static final Map<String, String> COLORS = Map.ofEntries(
+        Map.entry("aqua", "§b"),        Map.entry("blue", "§9"),
+        Map.entry("dark_aqua", "§3"),   Map.entry("dark_blue", "§1"),
+        Map.entry("dark_green", "§2"),  Map.entry("dark_red", "§4"),
+        Map.entry("gold", "§6"),        Map.entry("gray", "§7"),
+        Map.entry("green", "§a"),       Map.entry("pink", "§d"),
+        Map.entry("purple", "§5"),      Map.entry("red", "§c"),
+        Map.entry("white", "§f"),       Map.entry("yellow", "§e"));
+    private static final String DEFAULT_COLOR = "§b";   // aqua
+
+    private record Entry(String tag, String colorCode) {}
+
+    private static final Map<UUID, Entry> TAGS = new ConcurrentHashMap<>();   // FTB team id → tag+color
     private static volatile Path file;
 
     private ClanTags() {}
@@ -46,15 +59,35 @@ public final class ClanTags {
         if (!Files.exists(file)) return;
         try {
             JsonObject o = JsonParser.parseString(Files.readString(file)).getAsJsonObject();
-            o.entrySet().forEach(e -> TAGS.put(UUID.fromString(e.getKey()), e.getValue().getAsString()));
+            o.entrySet().forEach(e -> {
+                UUID id = UUID.fromString(e.getKey());
+                if (e.getValue().isJsonObject()) {
+                    JsonObject v = e.getValue().getAsJsonObject();
+                    TAGS.put(id, new Entry(v.get("tag").getAsString(),
+                        v.has("color") ? v.get("color").getAsString() : DEFAULT_COLOR));
+                } else {
+                    TAGS.put(id, new Entry(e.getValue().getAsString(), DEFAULT_COLOR)); // pre-color format
+                }
+            });
             CoffeesAeroAuth.LOGGER.info("[Clan] Loaded {} clan tags.", TAGS.size());
         } catch (Exception e) {
             CoffeesAeroAuth.LOGGER.warn("[Clan] clan_tags.json load failed: {}", e.getMessage());
         }
     }
 
-    /** The player's clan tag, or {@code null} (no party / party has no tag). */
+    /** The player's clan tag (plain text, e.g. for Discord), or {@code null}. */
     public static String tagFor(ServerPlayer player) {
+        Entry e = entryFor(player);
+        return e == null ? null : e.tag();
+    }
+
+    /** The § color code for the player's clan tag (default aqua). */
+    public static String colorFor(ServerPlayer player) {
+        Entry e = entryFor(player);
+        return e == null ? DEFAULT_COLOR : e.colorCode();
+    }
+
+    private static Entry entryFor(ServerPlayer player) {
         try {
             Optional<Team> team = FTBTeamsAPI.api().getManager().getTeamForPlayer(player);
             if (team.isEmpty() || !team.get().isPartyTeam()) return null;
@@ -80,7 +113,24 @@ public final class ClanTags {
         Team team = requireOfficerParty(player);
         if (team == null)
             return "You need your own party first (/ftbteams party create <name>), and officer rank to set its tag.";
-        TAGS.put(team.getId(), tag);
+        Entry prev = TAGS.get(team.getId());
+        TAGS.put(team.getId(), new Entry(tag, prev != null ? prev.colorCode() : DEFAULT_COLOR));
+        persist();
+        reapplyOnlineMembers(player.getServer(), team);
+        return null;
+    }
+
+    /** Sets the tag COLOR for the player's party. Returns a user-facing error, null on success. */
+    public static String setColor(ServerPlayer player, String colorName) {
+        String code = COLORS.get(colorName == null ? "" : colorName.toLowerCase(Locale.ROOT));
+        if (code == null)
+            return "Unknown color. Pick one of: " + String.join(", ", COLORS.keySet().stream().sorted().toList());
+        Team team = requireOfficerParty(player);
+        if (team == null)
+            return "You need to be in a party (and officer rank) to color its tag.";
+        Entry prev = TAGS.get(team.getId());
+        if (prev == null) return "Set a tag first: /clan tag <tag>";
+        TAGS.put(team.getId(), new Entry(prev.tag(), code));
         persist();
         reapplyOnlineMembers(player.getServer(), team);
         return null;
@@ -126,7 +176,12 @@ public final class ClanTags {
         Path f = file;
         if (f == null) return;
         JsonObject o = new JsonObject();
-        TAGS.forEach((id, tag) -> o.addProperty(id.toString(), tag));
+        TAGS.forEach((id, e) -> {
+            JsonObject v = new JsonObject();
+            v.addProperty("tag", e.tag());
+            v.addProperty("color", e.colorCode());
+            o.add(id.toString(), v);
+        });
         String json = o.toString();
         AsyncIo.submit(() -> {
             try { Files.writeString(f, json); }

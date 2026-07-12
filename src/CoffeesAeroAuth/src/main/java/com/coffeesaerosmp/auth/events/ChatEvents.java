@@ -43,7 +43,8 @@ public class ChatEvents {
 
         // Clan tag (FTB party) in front of the name — display layer only.
         String clanTag = com.coffeesaerosmp.auth.clan.ClanTags.tagFor(player);
-        String tagPart = clanTag != null ? "§7[§b" + clanTag + "§7] " : "";
+        String tagPart = clanTag != null
+            ? "§7[" + com.coffeesaerosmp.auth.clan.ClanTags.colorFor(player) + clanTag + "§7] " : "";
 
         Component formatted = Component.literal(badge + tagPart + nameColor + displayName + " §8» §r" + rawText);
         // Admins get the real account name inline; everyone else sees only the display name.

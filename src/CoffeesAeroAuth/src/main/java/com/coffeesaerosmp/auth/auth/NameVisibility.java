@@ -46,7 +46,8 @@ public final class NameVisibility {
         PlayerTeam team = sb.getPlayerTeam(personalTeamName(player));
         if (team == null) team = sb.addPlayerTeam(personalTeamName(player));
         team.setPlayerPrefix(Component.literal(
-            (premium ? "§6✈ " : "§8◈ ") + "§7[§b" + tag + "§7] "));
+            (premium ? "§6✈ " : "§8◈ ") + "§7["
+            + com.coffeesaerosmp.auth.clan.ClanTags.colorFor(player) + tag + "§7] "));
         sb.addPlayerToTeam(player.getScoreboardName(), team);   // moves off any previous team
     }
 
