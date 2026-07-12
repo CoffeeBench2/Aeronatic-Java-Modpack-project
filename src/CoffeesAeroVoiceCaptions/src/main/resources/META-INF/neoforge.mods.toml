@@ -1,0 +1,34 @@
+modLoader = "javafml"
+loaderVersion = "[4,)"
+license = "All Rights Reserved (c) 2026 MrCoffeeBench"
+
+[[mods]]
+modId           = "coffeesaerovoicecaptions"
+version         = "${file.jarVersion}"
+displayName     = "Coffees Aero Voice Captions"
+authors         = "MrCoffeeBench"
+credits         = "Coffees Aero SMP"
+description     = '''
+Speech-to-text for proximity voice chat (Simple Voice Chat) — captions above the
+speaker's head for nearby players. Accessibility feature. PROTOTYPE.
+'''
+
+[[dependencies.coffeesaerovoicecaptions]]
+    modId        = "neoforge"
+    type         = "required"
+    versionRange = "[21.1,)"
+    ordering     = "NONE"
+    side         = "BOTH"
+
+[[dependencies.coffeesaerovoicecaptions]]
+    modId        = "minecraft"
+    type         = "required"
+    versionRange = "[1.21.1,1.22)"
+    ordering     = "NONE"
+    side         = "BOTH"
+
+[[dependencies.coffeesaerovoicecaptions]]
+    modId        = "voicechat"
+    type         = "required"
+    ordering     = "AFTER"
+    side         = "BOTH"
