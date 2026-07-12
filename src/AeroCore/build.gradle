@@ -23,14 +23,27 @@ neoForge {
     }
 }
 
+// CurseForge distribution: build with -PnoUpdater to EXCLUDE the in-client updater subsystem
+// from the jar entirely (CF policy forbids mods that fetch files from outside the pack; the CF
+// app is the updater on that channel). UpdaterBridge reflects on these classes and degrades to
+// "connect directly" when they're absent, so the same source produces both jars.
+def noUpdater = project.hasProperty('noUpdater')
+
 jar {
+    if (noUpdater) {
+        archiveClassifier = 'cf'
+        exclude 'com/coffeesaerosmp/core/update/**'
+        exclude 'com/coffeesaerosmp/core/version/**'
+        exclude 'com/coffeesaerosmp/core/screen/UpdateScreen*.class'
+        exclude 'com/coffeesaerosmp/core/screen/UpdatingScreen*.class'
+    }
     manifest {
         attributes([
             'Specification-Title'   : project.mod_id,
             'Specification-Vendor'  : project.mod_authors,
             'Specification-Version' : '1',
             'Implementation-Title'  : project.mod_name,
-            'Implementation-Version': project.version,
+            'Implementation-Version': project.version + (noUpdater ? '-cf' : ''),
             'Implementation-Vendor' : project.mod_authors,
         ])
     }

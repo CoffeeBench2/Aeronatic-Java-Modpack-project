@@ -1,7 +1,6 @@
 package com.coffeesaerosmp.core.mixin;
 
 import com.coffeesaerosmp.core.config.AeroConfig;
-import com.coffeesaerosmp.core.version.VersionCheck;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.screens.DisconnectedScreen;
 import net.minecraft.network.DisconnectionDetails;
@@ -57,8 +56,10 @@ public class DisconnectedScreenMixin {
 
     @Unique
     private Component coffeesAero$outdatedMessage() {
-        String url = VersionCheck.downloadUrl();
-        String ver = VersionCheck.latestVersion();
+        String bridgeUrl = com.coffeesaerosmp.core.UpdaterBridge.downloadUrl();
+        final String url = (bridgeUrl == null || bridgeUrl.isBlank())
+            ? AeroConfig.UPDATE_URL.get() : bridgeUrl;    // CF build has no version check
+        String ver = com.coffeesaerosmp.core.UpdaterBridge.latestVersion();
         String verText = (ver == null || ver.isBlank()) ? "the latest pack" : "Coffees Aero SMP v" + ver;
         return Component.literal("Your modpack is out of date.")
             .withStyle(ChatFormatting.YELLOW)

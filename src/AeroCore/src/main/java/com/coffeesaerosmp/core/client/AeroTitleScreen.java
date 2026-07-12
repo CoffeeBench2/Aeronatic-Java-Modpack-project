@@ -3,8 +3,6 @@ package com.coffeesaerosmp.core.client;
 import com.coffeesaerosmp.core.config.AeroConfig;
 import com.coffeesaerosmp.core.net.ServerLocator;
 import com.coffeesaerosmp.core.screen.AdminSettingsScreen;
-import com.coffeesaerosmp.core.screen.UpdateScreen;
-import com.coffeesaerosmp.core.version.VersionCheck;
 import net.minecraft.SharedConstants;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -42,7 +40,8 @@ public class AeroTitleScreen extends Screen {
     protected void init() {
         EarlyAssets.ensureRegistered(this.minecraft);
         // Poll the pack version once per session so the Join button can block a stale pack.
-        VersionCheck.startAsync();
+        // No-op on the CurseForge build (updater absent) — the CF app handles pack updates.
+        com.coffeesaerosmp.core.UpdaterBridge.startCheck();
 
         boolean isAdmin = Minecraft.getInstance().getUser().getName()
             .equalsIgnoreCase(AeroConfig.ADMIN_USERNAME.get());
@@ -53,11 +52,11 @@ public class AeroTitleScreen extends Screen {
         this.addRenderableWidget(AeroButton.aero(
                 Component.literal("Join Coffees Aero SMP"),
                 b -> {
-                    if (VersionCheck.isOutdated()) {
-                        this.minecraft.setScreen(new UpdateScreen(this));
-                    } else {
-                        connectToServer();
-                    }
+                    net.minecraft.client.gui.screens.Screen update =
+                        com.coffeesaerosmp.core.UpdaterBridge.isPackOutdated()
+                            ? com.coffeesaerosmp.core.UpdaterBridge.openUpdateScreen(this) : null;
+                    if (update != null) this.minecraft.setScreen(update);
+                    else connectToServer();
                 }
         ).bounds(this.width / 2 - 100, joinY, 200, 20).build());
 
