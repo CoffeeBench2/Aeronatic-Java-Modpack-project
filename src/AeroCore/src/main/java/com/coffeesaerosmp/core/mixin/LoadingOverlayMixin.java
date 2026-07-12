@@ -107,8 +107,10 @@ public abstract class LoadingOverlayMixin implements com.coffeesaerosmp.core.cli
 
         for (int slot = 0; slot < count; slot++) {
             float visibility = Mth.clamp(lit - slot, 0.0F, 1.0F);  // 0 = upcoming, 1 = fully lit
-            float slotAlpha = alpha * (0.18F + 0.82F * visibility);
-            float shade = 0.35F + 0.65F * visibility;              // dim silhouette → full color
+            // Visible-silhouette floors (matched to the startup overlay): upcoming cogs were too
+            // transparent/dark to see. Lit cogs still brighten + fill as progress passes them.
+            float slotAlpha = alpha * (0.62F + 0.38F * visibility);
+            float shade = 0.55F + 0.45F * visibility;              // dim silhouette → full color
             float angle = (slot % 2 == 0 ? spin : -spin);          // mesh: alternate directions
             int cx = startX + slot * spacing + cogSize / 2;
 

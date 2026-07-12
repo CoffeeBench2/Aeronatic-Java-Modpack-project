@@ -87,8 +87,11 @@ public abstract class NeoForgeStartupOverlayMixin {
         buf = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
         for (int slot = 0; slot < count; slot++) {
             float visibility = Mth.clamp(lit - slot, 0.0F, 1.0F);
-            float a = fade * (0.18F + 0.82F * visibility);
-            float shade = 0.35F + 0.65F * visibility;
+            // Upcoming cogs used to sit at 0.18 alpha / 0.35 shade — nearly invisible during the
+            // early startup screen (2026-07-12 report: "can't see the cogs, almost transparent").
+            // Floors raised so the whole gear train reads clearly, lit cogs still brighten/fill.
+            float a = fade * (0.62F + 0.38F * visibility);
+            float shade = 0.55F + 0.45F * visibility;
             float angle = (float) Math.toRadians(slot % 2 == 0 ? spin : -spin);
             float cos = Mth.cos(angle), sin = Mth.sin(angle);
             float cx = startX + slot * spacing + size / 2.0F;

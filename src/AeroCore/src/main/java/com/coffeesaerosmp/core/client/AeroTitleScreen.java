@@ -4,6 +4,7 @@ import com.coffeesaerosmp.core.config.AeroConfig;
 import com.coffeesaerosmp.core.net.ServerLocator;
 import com.coffeesaerosmp.core.screen.AdminSettingsScreen;
 import net.minecraft.SharedConstants;
+import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.ConnectScreen;
@@ -31,6 +32,8 @@ public class AeroTitleScreen extends Screen {
     private static final ResourceLocation LOGO =
         ResourceLocation.fromNamespaceAndPath("coffeesaerosmp_core", "textures/gui/title_logo.png");
     private static final int LOGO_W = 1024, LOGO_H = 548;
+
+    private int announceX, announceY;
 
     public AeroTitleScreen() {
         super(Component.literal("Coffees Aero SMP"));
@@ -69,6 +72,15 @@ public class AeroTitleScreen extends Screen {
                 Component.translatable("menu.quit"),
                 b -> this.minecraft.stop()
         ).bounds(this.width / 2 + 2, joinY + 26, 98, 20).build());
+
+        // Announcements (pack changelog). Full-width row under Options/Quit; a NEW badge is drawn
+        // over it in render() until the player opens it once (see AnnouncementState).
+        this.announceX = this.width / 2 - 100;
+        this.announceY = joinY + 52;
+        this.addRenderableWidget(AeroButton.aero(
+                Component.literal("Announcements"),
+                b -> this.minecraft.setScreen(new com.coffeesaerosmp.core.screen.AnnouncementsScreen(this))
+        ).bounds(announceX, announceY, 200, 20).build());
 
         if (isAdmin) {
             this.addRenderableWidget(AeroButton.aero(
@@ -130,6 +142,19 @@ public class AeroTitleScreen extends Screen {
         int w = this.font.width(label);
         graphics.fill(1, 1, 5 + w, 12, 0x90000000);
         graphics.drawString(this.font, label, 3, 3, 0xFFFFFF);
+
+        // "NEW" badge on the Announcements button until the player opens it once (per pack version).
+        if (com.coffeesaerosmp.core.announce.AnnouncementState.hasUnseen()) {
+            String badge = "NEW";
+            int bw = this.font.width(badge) + 6;
+            int bx = announceX + 200 - bw / 2;         // straddle the button's top-right corner
+            int by = announceY - 5;
+            float pulse = 0.55F + 0.45F * (float) Math.sin(Util.getMillis() / 260.0);
+            int alpha = (int) (pulse * 255) << 24;
+            graphics.fill(bx, by, bx + bw, by + 11, alpha | 0x00C0302A);   // pulsing red pill
+            graphics.fill(bx, by, bx + bw, by + 1, 0xFFF0C05A);            // brass top edge
+            graphics.drawString(this.font, badge, bx + 3, by + 2, 0xFFFFFFFF, false);
+        }
 
         // Vanilla-style detail lines, bottom-left (kept from the stock menu: MC + loader + mods).
         String line1 = "Minecraft " + SharedConstants.getCurrentVersion().getName()

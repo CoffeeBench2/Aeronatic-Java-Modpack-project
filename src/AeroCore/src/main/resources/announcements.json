@@ -1,0 +1,21 @@
+{
+  "_comment": "Bundled fallback changelog. The PACK ships the live copy at config/coffees_aero_announcements.json (overrides) and it takes priority. Newest entry first. Keep lines short.",
+  "entries": [
+    {
+      "version": "1.8.0",
+      "date": "2026-07",
+      "title": "The Big Update — museum, pets & a fresh menu",
+      "added": [
+        "Museum camera (Exposure), plushies & tameable hamsters",
+        "Paintings, furniture & thousands of decorative blocks",
+        "In-game chat translator & emojis",
+        "This Announcements screen — see what's new each update"
+      ],
+      "fixed": [
+        "Loading-screen cogwheels are now clearly visible",
+        "Spectator mode can fly through blocks again"
+      ],
+      "removed": []
+    }
+  ]
+}
