@@ -57,11 +57,12 @@ public class VoiceCaptionsPlugin implements VoicechatPlugin {
         if (event.getSenderConnection() == null || event.getSenderConnection().getPlayer() == null) return;
 
         UUID speaker = event.getSenderConnection().getPlayer().getUuid();
+        Object mcPlayer = event.getSenderConnection().getPlayer().getPlayer();   // underlying MC ServerPlayer
         byte[] opus = event.getPacket().getOpusEncodedData();
 
         // Empty payload = end-of-speech marker: flush the recognizer's final result, then reset.
         if (opus == null || opus.length == 0) {
-            finishUtterance(speaker);
+            finishUtterance(speaker, mcPlayer);
             return;
         }
 
@@ -80,7 +81,7 @@ public class VoiceCaptionsPlugin implements VoicechatPlugin {
             }
             byte[] pcm16 = VoskTranscriber.to16kBytes(pcm48);
             if (rec.acceptWaveForm(pcm16, pcm16.length)) {
-                logText(speaker, "final", rec.getResult());     // utterance boundary detected
+                logText(speaker, mcPlayer, "final", rec.getResult());   // utterance boundary detected
                 lastPartial.remove(speaker);
             } else {
                 String partial = extract(rec.getPartialResult(), "partial");
@@ -94,23 +95,45 @@ public class VoiceCaptionsPlugin implements VoicechatPlugin {
         }
     }
 
-    private void finishUtterance(UUID speaker) {
+    private void finishUtterance(UUID speaker, Object mcPlayer) {
         Recognizer rec = recognizers.get(speaker);
         if (rec == null) return;
         try {
-            logText(speaker, "final", rec.getFinalResult());
+            logText(speaker, mcPlayer, "final", rec.getFinalResult());
         } catch (Throwable ignored) {
         } finally {
             lastPartial.remove(speaker);
         }
     }
 
-    private void logText(UUID speaker, String kind, String json) {
+    private void logText(UUID speaker, Object mcPlayer, String kind, String json) {
         String text = extract(json, "text");
-        if (!text.isBlank()) {
-            // Step 3 TODO: broadcast {speaker, text} to nearby clients → caption above head.
-            CoffeesAeroVoiceCaptions.LOGGER.info("[VoiceCaptions] {} ({}): {}", speaker, kind, text);
-        }
+        if (text.isBlank()) return;
+        CoffeesAeroVoiceCaptions.LOGGER.debug("[VoiceCaptions] {} ({}): {}", speaker, kind, text);
+        broadcastCaption(speaker, mcPlayer, text);
+    }
+
+    /** Send the caption to every player near the speaker (within voice-chat distance), on the server thread. */
+    private void broadcastCaption(UUID speaker, Object mcPlayer, String text) {
+        if (!(mcPlayer instanceof net.minecraft.server.level.ServerPlayer sp)) return;
+        net.minecraft.server.MinecraftServer server = sp.getServer();
+        if (server == null) return;
+        double range = api != null ? api.getVoiceChatDistance() : 48.0;
+        final double r2 = (range > 0 ? range : 48.0) * (range > 0 ? range : 48.0);
+        server.execute(() -> {
+            try {
+                var level = sp.level();
+                var pos = sp.position();
+                CaptionPayload payload = new CaptionPayload(speaker, text);
+                for (net.minecraft.server.level.ServerPlayer viewer : server.getPlayerList().getPlayers()) {
+                    if (viewer.level() != level) continue;
+                    if (viewer.position().distanceToSqr(pos) > r2) continue;
+                    net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(viewer, payload);
+                }
+            } catch (Throwable t) {
+                CoffeesAeroVoiceCaptions.LOGGER.debug("[VoiceCaptions] caption broadcast failed: {}", t.toString());
+            }
+        });
     }
 
     private static String extract(String voskJson, String field) {
