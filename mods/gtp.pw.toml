@@ -1,0 +1,13 @@
+name = "Grand Teleport (GTP)"
+filename = "grand-teleport-1.21.1-build252.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/LPdgJJ0B/versions/O9A2OTUG/grand-teleport-1.21.1-build252.jar"
+hash-format = "sha512"
+hash = "e76e6fa7cade214e5af5d1404b277cebfe5469996c7f26efeebbcf9c149289ce03151060cc1a7401961b3cbdd61dcce0e71569bef11381fd79d7ddebda8f7181"
+
+[update]
+[update.modrinth]
+mod-id = "LPdgJJ0B"
+version = "O9A2OTUG"
