@@ -164,8 +164,8 @@ public class AuthConfig {
             .defineInRange("commandVelocityThrottle", 5, 2, 50);
         CMD_VELOCITY_ALERT         = b.comment("Commands/second before alert + cancel.")
             .defineInRange("commandVelocityAlert", 20, 5, 200);
-        MAX_MOVEMENT_SPEED         = b.comment("Max movement magnitude (blocks/tick) before flagging.")
-            .defineInRange("maxMovementSpeed", 2.0, 0.5, 20.0);
+        MAX_MOVEMENT_SPEED         = b.comment("Max movement magnitude (blocks/tick) before flagging. Spectator/creative-fly/elytra/riptide/passengers are exempt since 1.6.19. Keep generous — Aeronautics airships move players FAST (existing configs: raise 2.0 -> 8.0 by hand).")
+            .defineInRange("maxMovementSpeed", 8.0, 0.5, 40.0);
         MAX_UNAUTH_RATIO           = b.comment("Fraction of max slots that can be unauthenticated before blocking joins (0.0–1.0).")
             .defineInRange("maxUnauthRatio", 0.4, 0.1, 1.0);
         ADMIN_CMD_LIMIT            = b.comment("Max /authmod commands allowed in the window before locking.")

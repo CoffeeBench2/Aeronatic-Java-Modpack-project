@@ -290,6 +290,17 @@ public class WatchdogManager {
 
     /** Called from WatchdogEvents every tick for authenticated players. */
     public void checkMovement(ServerPlayer player) {
+        // Legitimate fast movement must NOT be velocity-zeroed (2026-07-12: spectators couldn't
+        // noclip/boost — the check killed their velocity every tick; same for elytra dives,
+        // riptide and ship/mount passengers on an AERONAUTICS server of all places).
+        if (player.isSpectator()
+            || player.getAbilities().flying      // creative flight (speed modifiers exceed the cap)
+            || player.isFallFlying()             // elytra
+            || player.isPassenger()              // boats, horses, ship seats
+            || player.isAutoSpinAttack()) {      // trident riptide
+            movementOffenses.remove(player.getUUID());
+            return;
+        }
         double speed = player.getDeltaMovement().length();
         double maxSpeed = AuthConfig.MAX_MOVEMENT_SPEED.get();
         if (speed > maxSpeed) {
