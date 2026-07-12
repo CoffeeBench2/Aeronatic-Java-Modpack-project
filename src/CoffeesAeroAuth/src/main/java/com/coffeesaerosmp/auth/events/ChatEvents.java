@@ -46,11 +46,18 @@ public class ChatEvents {
         String tagPart = clanTag != null
             ? "§7[" + com.coffeesaerosmp.auth.clan.ClanTags.colorFor(player) + clanTag + "§7] " : "";
 
-        Component formatted = Component.literal(badge + tagPart + nameColor + displayName + " §8» §r" + rawText);
+        // RGB name for enabled players (owner etc.) — render the name as a rainbow Component.
+        Component nameComp = com.coffeesaerosmp.auth.util.RainbowText.isEnabled(profile.username)
+            ? com.coffeesaerosmp.auth.util.RainbowText.gradient(displayName)
+            : Component.literal(nameColor + displayName);
+
+        Component formatted = Component.literal(badge + tagPart).append(nameComp)
+            .append(Component.literal(" §8» §r" + rawText));
         // Admins get the real account name inline; everyone else sees only the display name.
         String realName = profile.username;
         Component adminVariant = realName != null && !realName.equals(displayName)
-            ? Component.literal(badge + tagPart + nameColor + displayName + " §8(" + realName + ")§r §8» §r" + rawText)
+            ? Component.literal(badge + tagPart).append(nameComp)
+                .append(Component.literal(" §8(" + realName + ")§r §8» §r" + rawText))
             : formatted;
         for (ServerPlayer viewer : player.getServer().getPlayerList().getPlayers()) {
             viewer.sendSystemMessage(viewer.hasPermissions(2) ? adminVariant : formatted);

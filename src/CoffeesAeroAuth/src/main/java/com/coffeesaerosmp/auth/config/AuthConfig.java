@@ -25,6 +25,7 @@ public class AuthConfig {
     public static final ModConfigSpec.ConfigValue<String>  RESOURCE_PACK_URL;
     public static final ModConfigSpec.ConfigValue<String>  RESOURCE_PACK_HASH;
     public static final ModConfigSpec.ConfigValue<String>  SERVER_DISPLAY_NAME;
+    public static final ModConfigSpec.ConfigValue<String>  DISPLAY_RGB_NAMES;
 
     // ── Watchdog ──────────────────────────────────────────────────────────────
     public static final ModConfigSpec.IntValue     LOGIN_STORM_FAILURES;
@@ -145,6 +146,10 @@ public class AuthConfig {
         SERVER_DISPLAY_NAME = b
             .comment("Server name shown in welcome messages and title screens.")
             .define("serverDisplayName", "Coffees Aero SMP");
+        DISPLAY_RGB_NAMES = b
+            .comment("Comma-separated usernames whose name renders as an animated RGB rainbow in chat + tab.",
+                     "(A future /authmod namecolor command will manage this with more styles.)")
+            .define("rgbNames", "MrCoffeeBench");
         b.pop();
 
         b.comment("Watchdog — Security Monitoring").push("watchdog");

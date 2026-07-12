@@ -42,6 +42,41 @@ public final class TabListManager {
         ClientboundTabListPacket packet = new ClientboundTabListPacket(header(), footer(server));
         for (ServerPlayer p : players) p.connection.send(packet);
         sendAdminNameOverlay(server, players);
+        // Refresh the RGB-name set from config every ~5s so edits apply live, then paint.
+        if (frame % 10 == 0)
+            com.coffeesaerosmp.auth.util.RainbowText.setEnabledNames(
+                com.coffeesaerosmp.auth.config.AuthConfig.DISPLAY_RGB_NAMES.get());
+        sendRgbNames(server, players);
+    }
+
+    /**
+     * Animated RGB tab-list names: for each online player flagged in {@code rgbNames}, send every
+     * viewer an UPDATE_DISPLAY_NAME entry whose name is a per-letter rainbow {@link Component}. Runs
+     * on the same ~2/s cadence as the header, so the gradient drifts. (Nametags above the head use
+     * the scoreboard team color and can't gradient — they keep the badge.)
+     */
+    private static void sendRgbNames(MinecraftServer server, java.util.List<ServerPlayer> players) {
+        if (com.coffeesaerosmp.auth.CoffeesAeroAuth.AUTH_MANAGER == null) return;
+        var store = com.coffeesaerosmp.auth.CoffeesAeroAuth.AUTH_MANAGER.getStore();
+
+        java.util.List<net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket.Entry> entries =
+            new java.util.ArrayList<>();
+        for (ServerPlayer p : players) {
+            var profile = store.get(p.getUUID());
+            if (profile == null || profile.username == null) continue;
+            if (!com.coffeesaerosmp.auth.util.RainbowText.isEnabled(profile.username)) continue;
+            String display = profile.displayName != null ? profile.displayName : profile.username;
+            Component name = com.coffeesaerosmp.auth.util.RainbowText.gradient(display);
+            entries.add(new net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket.Entry(
+                p.getUUID(), null, true, p.connection.latency(), p.gameMode.getGameModeForPlayer(), name, null));
+        }
+        if (entries.isEmpty()) return;
+
+        var pkt = new net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket(
+            java.util.EnumSet.of(net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket.Action.UPDATE_DISPLAY_NAME),
+            java.util.List.of());
+        ((com.coffeesaerosmp.auth.mixin.PlayerInfoPacketAccessor) (Object) pkt).aeroauth$setEntries(entries);
+        for (ServerPlayer viewer : players) viewer.connection.send(pkt);
     }
 
     /**
