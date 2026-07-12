@@ -1,0 +1,13 @@
+name = "Create Aeronautics: Delivery Required"
+filename = "createdeliveryrequired-1.0.2.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/hSTW3jx7/versions/NOeDEseI/createdeliveryrequired-1.0.2.jar"
+hash-format = "sha512"
+hash = "2a19b78b3f6f12d3e7f60892eefaf853af75e51b68e08f6d3d3067e46ef46e252a975f0e37e55e1834727e17ba1da0f515b397561cbfef8a4c6cfa57bd0c4963"
+
+[update]
+[update.modrinth]
+mod-id = "hSTW3jx7"
+version = "NOeDEseI"

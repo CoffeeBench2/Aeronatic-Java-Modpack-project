@@ -6,6 +6,11 @@ hash = "63e7ae1d4a8fc2f2000317562cdfcbf8d732e3e1057cfff411935d4c302f5f14"
 metafile = true
 
 [[files]]
+file = "mods/adorable-hamster-pets.pw.toml"
+hash = "e638607b90e3883b21c06b019f465a5348dd5eff99bf176b8564a6d22ba16f1c"
+metafile = true
+
+[[files]]
 file = "mods/aero-cam-sync-1-2-0.pw.toml"
 hash = "0ba8271fbed7eca04dd2f2301ab06fd715e57af3ea15c3bbd355fc559f8dad73"
 metafile = true
@@ -33,6 +38,11 @@ metafile = true
 [[files]]
 file = "mods/architectury-13-0-8-neoforge.pw.toml"
 hash = "126cab63309c15d1d24bed91a6770b88ed6a5942625a0bbb38cb2d8af51420a6"
+metafile = true
+
+[[files]]
+file = "mods/athena-ctm.pw.toml"
+hash = "f54cf71372645810ce22b0ba68e706139565437150e4cfd22bde4c14606099c4"
 metafile = true
 
 [[files]]
@@ -93,6 +103,11 @@ metafile = true
 [[files]]
 file = "mods/chatanimation-neoforge-1-21-1-1-1-3.pw.toml"
 hash = "5c7f0d96d789b0c4b6601cba9a1bd655210a9be54da4ff422442da422b2ec7ba"
+metafile = true
+
+[[files]]
+file = "mods/chipped.pw.toml"
+hash = "24c6c3fe917ffbcef04e788dec3e003d0ed03433bc00f9cf4f23fe9b85636aa7"
 metafile = true
 
 [[files]]
@@ -183,6 +198,11 @@ metafile = true
 [[files]]
 file = "mods/create-aeronautics-bundled-1-21-1-1-2-1.pw.toml"
 hash = "a5962f0b72f64335a198565bcb691551977132552dfe37ab4d24c1e4d447bb06"
+metafile = true
+
+[[files]]
+file = "mods/create-aeronautics-delivery-required.pw.toml"
+hash = "3249678012dd5bc27af549464569253986c315dcf8d9a10d1924ca053e61e2c4"
 metafile = true
 
 [[files]]
@@ -351,6 +371,11 @@ hash = "d0cb2a15dab974a9315ccedf0f640f8d4485f40056175f66dd0211376cdc017c"
 metafile = true
 
 [[files]]
+file = "mods/emojiful.pw.toml"
+hash = "6fb320d3ab2a4b3ea9458c60a1fb1d0ceadebe4cceb17291db83699ec4bc7f3d"
+metafile = true
+
+[[files]]
 file = "mods/emotecraft-for-mc1-21-1-2-4-12-neoforge.pw.toml"
 hash = "1feb2d62cd3610bbf6edd25fca30a5a0c80a3b6f14257ef38bab5f0b044d6ccf"
 metafile = true
@@ -378,6 +403,16 @@ metafile = true
 [[files]]
 file = "mods/euphoriapatcher-1-9-3-r5-8-1-neoforge.pw.toml"
 hash = "7a3c3d45ba3acc753fb237c4f18409e3a7f0f3b4a682a11cb30d113b08119191"
+metafile = true
+
+[[files]]
+file = "mods/explosive-enhancement-neoforge.pw.toml"
+hash = "adaf48f66a09d2ee6176b134a065c70733aaaaf19bc75eb32c8c76973a63de59"
+metafile = true
+
+[[files]]
+file = "mods/exposure.pw.toml"
+hash = "28c29922378fa19f4edf1d16fffb48287a87be159a3378647073bbdebd2a2196"
 metafile = true
 
 [[files]]
@@ -443,6 +478,11 @@ metafile = true
 [[files]]
 file = "mods/golem-spawn-animation-1-0-1-neoforge-1-21-1.pw.toml"
 hash = "9f5f41ecfea4f22a88a2244f954ffc3a5d676482fd2e7f61401dbe438765adae"
+metafile = true
+
+[[files]]
+file = "mods/handcrafted.pw.toml"
+hash = "0004feab868f7b873c12db05aae0d0dac6c87b497490b48bb66480e7c8d0f340"
 metafile = true
 
 [[files]]
@@ -521,6 +561,11 @@ hash = "e967fbb6b792418ebc16515ba718c0b4566f620a604370a2466c1aee49d3a1bb"
 metafile = true
 
 [[files]]
+file = "mods/macaws-paintings.pw.toml"
+hash = "643d332b262b72f86f806cc1410b4354803a07b6012c1210f06d2ca231cccd30"
+metafile = true
+
+[[files]]
 file = "mods/modernfix-neoforge-5-27-7-mc1-21-1.pw.toml"
 hash = "85433409ccc40df0dfdbf43386808f9eeca5646b8ff5c30ac39a98a7954f87b2"
 metafile = true
@@ -551,6 +596,11 @@ hash = "ac97c982dcb4b37f04b13a108a598e0cd0891767bce4f70473459f482cd4d5f1"
 metafile = true
 
 [[files]]
+file = "mods/naturalist.pw.toml"
+hash = "bcd24eb0db2625488682ca538416a87a301543e5b68bff6633677a6780422db5"
+metafile = true
+
+[[files]]
 file = "mods/nochatreports-neoforge-1-21-1-v2-9-1.pw.toml"
 hash = "c113bc88311c1776cdcd6ae8ad4969a533b9ffffb40a44e69c13a0ab32438163"
 metafile = true
@@ -576,6 +626,26 @@ hash = "d3ed03a24a442e5c96c2c503f9055867bc049e686dc9c896981768bbbf97d840"
 metafile = true
 
 [[files]]
+file = "mods/patchouli.pw.toml"
+hash = "d7f360ebb9f009d6dc0b368cd8fa399bdff70c0f6ef931687b2a35137f72715d"
+metafile = true
+
+[[files]]
+file = "mods/perception.pw.toml"
+hash = "378f188dd4dd616783418b9169e6016d5eff359a13c6debeb64c82093637e8e9"
+metafile = true
+
+[[files]]
+file = "mods/plushables.pw.toml"
+hash = "e46c50b7e0b9e732f5c0ff598c6f60a7ba8bbc877a38e716626071713bdee216"
+metafile = true
+
+[[files]]
+file = "mods/plushie.pw.toml"
+hash = "0a34492da40afdcd5c1a53b4c5bf6f296532762fe365f5df8d3f26dbcc4f47a9"
+metafile = true
+
+[[files]]
 file = "mods/polytone-1-21-3-6-7-neoforge.pw.toml"
 hash = "747022afc0af49586eb9d8dfa3c26ae9cf50da0020429d8e52ec9b63e7b7e074"
 metafile = true
@@ -598,6 +668,11 @@ metafile = true
 [[files]]
 file = "mods/railwaysuntold-neoforge-1-2-0.pw.toml"
 hash = "6ad66f15c8c4bcca51a4508f08d983cce2c0174928dd899933b70948a51dfab2"
+metafile = true
+
+[[files]]
+file = "mods/resourceful-lib.pw.toml"
+hash = "c0b066684294c33972d562e0cb08ea17b2d31bcf86cd1d6c63b8e968f0eac7a2"
 metafile = true
 
 [[files]]
@@ -683,6 +758,11 @@ metafile = true
 [[files]]
 file = "mods/terralith-1-21-1-v2-6-2-neoforge.pw.toml"
 hash = "f369f7706e70ab9457278a0bd5431e3c61723c147146030e8cac3430285517fe"
+metafile = true
+
+[[files]]
+file = "mods/translator-neoforge.pw.toml"
+hash = "4c602447e5a1f285096c588b94073c38ae76c519d325e5c4dcf99c181243f134"
 metafile = true
 
 [[files]]

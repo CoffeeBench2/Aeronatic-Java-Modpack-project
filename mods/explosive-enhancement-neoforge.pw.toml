@@ -1,0 +1,13 @@
+name = "Explosive Enhancement (NeoForge)"
+filename = "explosiveenhancement-2.0.1.jar"
+side = "client"
+
+[download]
+url = "https://cdn.modrinth.com/data/EsWb3bhF/versions/3vhUYQHK/explosiveenhancement-2.0.1.jar"
+hash-format = "sha512"
+hash = "d2eaec5b57bfa95bcc7d908ab6a1f1d7042343451e843e8bdced9d81154b9d09892f5c84fd6d51cf07bd7246646f38ede7ec68a3ca868defb9063a459cc65a5c"
+
+[update]
+[update.modrinth]
+mod-id = "EsWb3bhF"
+version = "3vhUYQHK"
