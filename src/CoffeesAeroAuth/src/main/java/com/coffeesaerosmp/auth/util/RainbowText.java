@@ -3,6 +3,7 @@ package com.coffeesaerosmp.auth.util;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.TextColor;
+import net.minecraft.resources.ResourceLocation;
 
 import java.awt.Color;
 import java.util.Set;
@@ -25,6 +26,12 @@ public final class RainbowText {
     private static final float SPREAD   = 0.62f;    // hue span across the whole word
     private static final float SAT      = 0.85f;
     private static final float BRI      = 1.0f;
+
+    /** Sentinel font tagging RGB-name glyphs so CoffeesAeroCore's client mixin re-animates them in
+     *  chat (chat messages are immutable, so the STATIC gradient below is the fallback for clients
+     *  without Core; Core clients see it flow). Renders as the default font (Core ships a reference). */
+    private static final ResourceLocation RGB_FONT =
+        ResourceLocation.fromNamespaceAndPath("coffeesaerosmp_core", "rgb");
 
     /** Usernames rendered with the RGB gradient (lower-cased). Seeded from config; mutable for cmds. */
     private static final Set<String> ENABLED = ConcurrentHashMap.newKeySet();
@@ -59,7 +66,7 @@ public final class RainbowText {
             int rgb = Color.HSBtoRGB(hue, SAT, BRI) & 0xFFFFFF;
             final char ch = text.charAt(i);
             out.append(Component.literal(String.valueOf(ch))
-                .withStyle(s -> s.withColor(TextColor.fromRgb(rgb))));
+                .withStyle(s -> s.withColor(TextColor.fromRgb(rgb)).withFont(RGB_FONT)));
         }
         return out;
     }
