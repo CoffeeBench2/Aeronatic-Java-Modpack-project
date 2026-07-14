@@ -17,8 +17,15 @@ public final class NetUtil {
         return addr.toString();
     }
 
-    /** Returns the /24 subnet prefix (e.g. "192.168.1" from "192.168.1.42"). */
+    /** Returns the /24 subnet prefix (e.g. "192.168.1" from "192.168.1.42").
+     *  IPv6: the /64 prefix (first 4 hextets) — a residential customer's whole allocation,
+     *  so subnet bans catch address rotation within it. */
     public static String subnetOf(String ip) {
+        if (ip.indexOf(':') >= 0) {
+            String[] g = ip.split(":");
+            if (g.length > 4) return g[0] + ":" + g[1] + ":" + g[2] + ":" + g[3];
+            return ip;
+        }
         int lastDot = ip.lastIndexOf('.');
         return lastDot > 0 ? ip.substring(0, lastDot) : ip;
     }

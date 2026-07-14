@@ -152,6 +152,27 @@ public class ProfileCommands {
                     .executes(ctx -> adminClearBan(ctx.getSource(), StringArgumentType.getString(ctx, "ip")))
                 )
             )
+            // ── Aggressive ban: name OR IP. A name bans the account + EVERY IP it ever used
+            // (first-join, trusted, live) + each IP's whole subnet (/24 v4, /64 v6). An IP bans
+            // that IP + every account that ever used it + all of THOSE accounts' other IPs.
+            // Live immediately (in-memory + DB), enforced pre-auth at the join gate.
+            .then(Commands.literal("ban")
+                .then(Commands.argument("target", StringArgumentType.word())
+                    .suggests(ONLINE_NAMES)
+                    .executes(ctx -> adminBan(ctx.getSource(),
+                        StringArgumentType.getString(ctx, "target"), "Banned by admin"))
+                    .then(Commands.argument("reason", StringArgumentType.greedyString())
+                        .executes(ctx -> adminBan(ctx.getSource(),
+                            StringArgumentType.getString(ctx, "target"),
+                            StringArgumentType.getString(ctx, "reason")))
+                    )
+                )
+            )
+            .then(Commands.literal("unban")
+                .then(Commands.argument("target", StringArgumentType.word())
+                    .executes(ctx -> adminUnban(ctx.getSource(), StringArgumentType.getString(ctx, "target")))
+                )
+            )
             .then(Commands.literal("obsidianreport")
                 .executes(ctx -> obsidianReport(ctx.getSource()))
             )
@@ -512,6 +533,145 @@ public class ProfileCommands {
             CoffeesAeroAuth.WATCHDOG
         );
         source.sendSuccess(() -> Component.literal("§a[Obsidian] Sync triggered — check your vault in a moment."), true);
+        return 1;
+    }
+
+    // ── /authmod ban & unban ──────────────────────────────────────────────────
+
+    /** Effectively permanent (100 years) — the SMP has no timed admin bans. */
+    private static final long PERMANENT_BAN_MS = 100L * 365 * 24 * 3600 * 1000;
+
+    private static boolean looksLikeIp(String s) {
+        return s.indexOf(':') >= 0 || s.matches("\\d{1,3}(\\.\\d{1,3}){3}");
+    }
+
+    /** All IPs this account is known by: first-join IP, trusted IPs, live session IP. */
+    private static java.util.Set<String> knownIpsOf(CommandSourceStack source, PlayerProfile p) {
+        java.util.Set<String> ips = new java.util.LinkedHashSet<>();
+        if (p.firstIp != null && !p.firstIp.isBlank()) ips.add(p.firstIp);
+        if (CoffeesAeroAuth.WATCHDOG != null)
+            ips.addAll(CoffeesAeroAuth.WATCHDOG.getTrustedIpStore().getTrustedIps(p.getUUID()));
+        ServerPlayer online = source.getServer().getPlayerList().getPlayer(p.getUUID());
+        if (online != null) ips.add(com.coffeesaerosmp.auth.util.NetUtil.getPlayerIP(online));
+        return ips;
+    }
+
+    private static int adminBan(CommandSourceStack source, String target, String reason) {
+        if (CoffeesAeroAuth.WATCHDOG == null || CoffeesAeroAuth.PROFILE_STORE == null) {
+            source.sendFailure(Component.literal("§cWatchdog/profile store not active."));
+            return 0;
+        }
+        var bans = CoffeesAeroAuth.WATCHDOG.getIpBanManager();
+
+        java.util.Set<PlayerProfile> accounts = new java.util.LinkedHashSet<>();
+        java.util.Set<String> ips = new java.util.LinkedHashSet<>();
+
+        if (looksLikeIp(target)) {
+            ips.add(target);
+            // Banned from an IP ⇒ every account that ever used it is banned with it.
+            for (PlayerProfile p : CoffeesAeroAuth.PROFILE_STORE.getAll()) {
+                boolean match = target.equals(p.firstIp)
+                    || CoffeesAeroAuth.WATCHDOG.getTrustedIpStore().getTrustedIps(p.getUUID()).contains(target);
+                if (match) accounts.add(p);
+            }
+        } else {
+            PlayerProfile p = CoffeesAeroAuth.PROFILE_STORE.findByAnyName(target);
+            if (p == null) {
+                source.sendFailure(Component.literal(
+                    "§cNo profile found for '" + target + "' (username, display name, or IP)."));
+                return 0;
+            }
+            accounts.add(p);
+        }
+
+        // Each banned account drags in ALL of its known IPs.
+        for (PlayerProfile p : accounts) ips.addAll(knownIpsOf(source, p));
+
+        // IP layer: exact IP + whole subnet, live in memory + persisted to MySQL.
+        java.util.Set<String> subnets = new java.util.LinkedHashSet<>();
+        for (String ip : ips) {
+            bans.ban(ip, PERMANENT_BAN_MS, reason);
+            String subnet = com.coffeesaerosmp.auth.util.NetUtil.subnetOf(ip);
+            if (!subnet.equals(ip)) subnets.add(subnet);
+        }
+        for (String subnet : subnets) bans.banSubnet(subnet, PERMANENT_BAN_MS, reason);
+
+        // Account layer: vanilla ban list, keyed by UUID — survives username changes.
+        var banList = source.getServer().getPlayerList().getBans();
+        for (PlayerProfile p : accounts) {
+            var gp = new com.mojang.authlib.GameProfile(
+                p.getUUID(), p.username != null ? p.username : p.displayName);
+            if (!banList.isBanned(gp)) {
+                banList.add(new net.minecraft.server.players.UserBanListEntry(
+                    gp, null, source.getTextName(), null, reason));
+            }
+        }
+
+        // Kick anyone caught by the net — banned account or now-banned IP. Never kick ops
+        // (a shared /24 could otherwise lock the admin out of their own server).
+        int kicked = 0;
+        for (ServerPlayer online : java.util.List.copyOf(source.getServer().getPlayerList().getPlayers())) {
+            if (source.getServer().getPlayerList().isOp(online.getGameProfile())) continue;
+            boolean uuidHit = accounts.stream().anyMatch(p -> p.getUUID().equals(online.getUUID()));
+            boolean ipHit = bans.isBanned(com.coffeesaerosmp.auth.util.NetUtil.getPlayerIP(online));
+            if (uuidHit || ipHit) {
+                online.connection.disconnect(Component.literal("§cYou are banned from this server."));
+                kicked++;
+            }
+        }
+
+        String who = accounts.isEmpty() ? "(no known accounts)"
+            : accounts.stream().map(p -> p.displayName).reduce((a, b) -> a + ", " + b).orElse("?");
+        String summary = "Banned " + who + " — " + ips.size() + " IP(s), " + subnets.size()
+            + " subnet(s), " + accounts.size() + " account(s)";
+        final int kickedF = kicked;
+        source.sendSuccess(() -> Component.literal(
+            "§c" + summary + (kickedF > 0 ? " — kicked " + kickedF + " online" : "")
+            + "§7\nIPs: §f" + String.join(", ", ips)
+            + (subnets.isEmpty() ? "" : "§7\nSubnets: §f" + String.join(", ", subnets))
+            + "§7\nReason: §f" + reason + "§7 — undo with §f/authmod unban"), true);
+
+        CoffeesAeroAuth.LOGGER.warn("[AdminBan] {} | reason: {} | by {}", summary, reason, source.getTextName());
+        try {
+            CoffeesAeroAuth.WATCHDOG.recordAdminCommand(source.getPlayerOrException(), "authmod ban " + target);
+        } catch (Exception ignored) {}
+        CoffeesAeroAuth.WATCHDOG.alert(com.coffeesaerosmp.auth.watchdog.WatchdogEvent.of(
+            com.coffeesaerosmp.auth.watchdog.Severity.HIGH, "Admin Ban", "Account + IP + subnet ban applied",
+            "By", source.getTextName(), "Target", target, "Accounts", String.valueOf(accounts.size()),
+            "IPs", String.join(", ", ips), "Reason", reason));
+        return 1;
+    }
+
+    private static int adminUnban(CommandSourceStack source, String target) {
+        if (CoffeesAeroAuth.WATCHDOG == null || CoffeesAeroAuth.PROFILE_STORE == null) {
+            source.sendFailure(Component.literal("§cWatchdog/profile store not active."));
+            return 0;
+        }
+        var bans = CoffeesAeroAuth.WATCHDOG.getIpBanManager();
+
+        if (looksLikeIp(target)) {
+            bans.clearBan(target); // clears the exact IP and its subnet key
+            source.sendSuccess(() -> Component.literal("§aUnbanned IP §f" + target
+                + "§a (and its subnet). Accounts banned by name stay banned — unban them by name."), true);
+            return 1;
+        }
+
+        PlayerProfile p = CoffeesAeroAuth.PROFILE_STORE.findByAnyName(target);
+        if (p == null) {
+            source.sendFailure(Component.literal("§cNo profile found for '" + target + "'."));
+            return 0;
+        }
+        var gp = new com.mojang.authlib.GameProfile(
+            p.getUUID(), p.username != null ? p.username : p.displayName);
+        var banList = source.getServer().getPlayerList().getBans();
+        if (banList.isBanned(gp)) banList.remove(gp);
+
+        java.util.Set<String> ips = knownIpsOf(source, p);
+        for (String ip : ips) bans.clearBan(ip); // exact + subnet each
+
+        source.sendSuccess(() -> Component.literal("§aUnbanned §f" + p.displayName
+            + "§a — account + " + ips.size() + " IP(s) + subnets cleared."), true);
+        CoffeesAeroAuth.LOGGER.warn("[AdminBan] UNBAN {} ({} IPs) by {}", p.displayName, ips.size(), source.getTextName());
         return 1;
     }
 

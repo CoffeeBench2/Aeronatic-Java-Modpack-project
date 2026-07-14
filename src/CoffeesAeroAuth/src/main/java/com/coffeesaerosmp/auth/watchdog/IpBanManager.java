@@ -41,16 +41,25 @@ public class IpBanManager {
     // ── Watchdog bans ─────────────────────────────────────────────────────────
 
     public void ban(String ip, long durationMs) {
+        ban(ip, durationMs, "watchdog");
+    }
+
+    /** Ban with a custom reason (admin bans via /authmod ban). Live immediately — no restart. */
+    public void ban(String ip, long durationMs, String reason) {
         long expiry = System.currentTimeMillis() + durationMs;
         bans.put(ip, expiry);
-        persistBan(ip, "watchdog", expiry);
+        persistBan(ip, reason, expiry);
     }
 
     public void banSubnet(String subnetPrefix, long durationMs) {
+        banSubnet(subnetPrefix, durationMs, "watchdog-subnet");
+    }
+
+    public void banSubnet(String subnetPrefix, long durationMs, String reason) {
         String key = "subnet:" + subnetPrefix;
         long expiry = System.currentTimeMillis() + durationMs;
         bans.put(key, expiry);
-        persistBan(key, "watchdog-subnet", expiry);
+        persistBan(key, reason, expiry);
     }
 
     public boolean isBanned(String ip) {
