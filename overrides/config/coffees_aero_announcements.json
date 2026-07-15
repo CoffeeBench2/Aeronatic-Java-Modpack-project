@@ -2,14 +2,14 @@
   "_comment": "LIVE pack changelog for the main-menu Announcements screen (Core reads this; overrides the jar-bundled fallback). Newest entry first. Edit per release. Keep it short, warm and player-facing — write like a person, no mod names, no filler. Entries whose version does NOT start with a digit render as a TEASER ('On the horizon' instead of 'Added', no v prefix).",
   "entries": [
     {
-      "version": "Coming Soon…",
+      "version": "On the horizon…",
       "date": "",
-      "title": "Whispers from the workshop",
+      "title": "Still in the workshop",
       "added": [
-        "Living volcanoes — rivers of lava, falling ash and scorched new lands to conquer",
-        "Real wind — feel the sky push back when you fly",
-        "Natural disasters that will put your builds (and your nerves) to the test",
-        "…and a few secrets we're keeping rolled up for now"
+        "Speak in proximity voice and watch your words appear above your head",
+        "Chat with anyone — we'll translate across languages for you",
+        "Real ship-to-ship collision damage for proper aerial battles",
+        "…and a few more secrets we're keeping rolled up for now"
       ],
       "fixed": [],
       "removed": []
@@ -17,20 +17,20 @@
     {
       "version": "1.8.0",
       "date": "July 2026",
-      "title": "Pets, Photos & a Fresh Look",
+      "title": "Skies Alight",
       "added": [
-        "Snap real photos with cameras and hang them on your walls",
-        "Adopt hamsters and collect plushies",
-        "Loads of new furniture, paintings and blocks to build with",
-        "Trade goods by airship across the map",
-        "Emojis in chat",
-        "Cinematic teleports and new armor trims",
-        "New wildlife, better explosions and nicer scenery"
+        "The world can burn now — volcanoes, geysers, hot springs and wildfire (build with care!)",
+        "Real wind and storms that shove your airships around the sky",
+        "New Create gear: goggles, jetpacks and gyroscope stabilisers to keep your ship steady",
+        "Framed blocks, hundreds of new block variants and fresh armour trims to make it yours",
+        "A wider world to explore — richer biomes, winding trails and towns & towers to discover",
+        "Deliver goods by airship across the map",
+        "A warm new brass look for your inventory and workbench screens",
+        "Instant, cinematic teleports to zip across the world"
       ],
       "fixed": [
-        "Using shaders? Type /flywheel backend off for glowing Create lasers",
-        "Loading-screen cogs show up properly again",
-        "Spectator mode flies through blocks again"
+        "Smoother, steadier flying and airship physics",
+        "Using shaders? Type /flywheel backend off for glowing Create lasers"
       ],
       "removed": []
     }
