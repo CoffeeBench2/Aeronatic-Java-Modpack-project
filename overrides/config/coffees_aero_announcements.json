@@ -1,24 +1,36 @@
 {
-  "_comment": "LIVE pack changelog for the main-menu Announcements screen (Core reads this; overrides the jar-bundled fallback). Newest entry first. Edit per release. Keep lines short & player-facing.",
+  "_comment": "LIVE pack changelog for the main-menu Announcements screen (Core reads this; overrides the jar-bundled fallback). Newest entry first. Edit per release. Keep it short, warm and player-facing — write like a person, no mod names, no filler. Entries whose version does NOT start with a digit render as a TEASER ('On the horizon' instead of 'Added', no v prefix).",
   "entries": [
     {
-      "version": "1.8.0",
-      "date": "2026-07",
-      "title": "The Big One — museum, pets, trade & a fresh menu",
+      "version": "Coming Soon…",
+      "date": "",
+      "title": "Whispers from the workshop",
       "added": [
-        "Museum photography — take & frame real photos (Exposure)",
-        "Plushies + tameable hamster pets to keep you company",
-        "Paintings, furniture with display cases & thousands of build blocks",
-        "Buy & sell with airships (Create Aeronautics: Delivery Required)",
-        "In-game chat translator + emojis in chat",
-        "GTA-style cinematic teleport transitions & more armor trims",
-        "Cozy ambient wildlife, cooler explosions & extra visual polish",
-        "This Announcements screen — see what changed every update"
+        "Living volcanoes — rivers of lava, falling ash and scorched new lands to conquer",
+        "Real wind — feel the sky push back when you fly",
+        "Natural disasters that will put your builds (and your nerves) to the test",
+        "…and a few secrets we're keeping rolled up for now"
+      ],
+      "fixed": [],
+      "removed": []
+    },
+    {
+      "version": "1.8.0",
+      "date": "July 2026",
+      "title": "Pets, Photos & a Fresh Look",
+      "added": [
+        "Snap real photos with cameras and hang them on your walls",
+        "Adopt hamsters and collect plushies",
+        "Loads of new furniture, paintings and blocks to build with",
+        "Trade goods by airship across the map",
+        "Emojis in chat",
+        "Cinematic teleports and new armor trims",
+        "New wildlife, better explosions and nicer scenery"
       ],
       "fixed": [
-        "Create machines & lasers now render correctly with shaders on",
-        "Loading-screen cogwheels are now clearly visible",
-        "Spectator mode can fly through blocks again"
+        "Using shaders? Type /flywheel backend off for glowing Create lasers",
+        "Loading-screen cogs show up properly again",
+        "Spectator mode flies through blocks again"
       ],
       "removed": []
     }

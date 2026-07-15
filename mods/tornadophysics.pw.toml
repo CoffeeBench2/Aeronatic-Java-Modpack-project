@@ -1,0 +1,12 @@
+name = "Weather Physics (Tornado Physics)"
+filename = "tornadophysics-1.0.2.jar"
+side = "both"
+
+[download]
+hash-format = "sha512"
+hash = "74e65ce2e49083a1aed6f1397baddd0b3083607c5cd93818738f1daa0485e2a94884833e73f8ef009a2ae6fe1727507e520bbf0d362ef45ca869b45997745a37"
+url = "https://cdn.modrinth.com/data/4GHC0z12/versions/SPzSm0iY/tornadophysics-1.0.2.jar"
+
+[update.modrinth]
+mod-id = "4GHC0z12"
+version = "SPzSm0iY"
