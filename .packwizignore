@@ -43,6 +43,8 @@ modrinth.index.json
 nf_versions.json
 cf-manifest.json
 .env.example
+.cf-key
+.env
 temp_output.txt
 modlist.txt
 Aero_SMP_Mod_List.txt

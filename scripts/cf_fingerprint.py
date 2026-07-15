@@ -76,6 +76,50 @@ def cf_match(fingerprints, key):
             out[fp] = (fl["modId"], fl["id"])
     return out
 
+def _merge_into(src_dir, dst_dir):
+    """Move everything from src_dir up into dst_dir, merging directories recursively."""
+    os.makedirs(dst_dir, exist_ok=True)
+    for name in os.listdir(src_dir):
+        s, d = os.path.join(src_dir, name), os.path.join(dst_dir, name)
+        if os.path.isdir(s) and os.path.isdir(d):
+            _merge_into(s, d)
+        else:
+            if os.path.exists(d):
+                if os.path.isdir(d): shutil.rmtree(d, ignore_errors=True)
+                else: os.remove(d)
+            shutil.move(s, d)
+
+
+def sanitize_export(work):
+    """Fix two structural faults in packwiz's CurseForge export before we re-zip:
+
+    1) DOUBLED overrides. The repo keeps its pack files under a literal `overrides/` dir (for the
+       self-contained mrpack), and packwiz wraps that whole tree inside CF's own `overrides/`, so
+       configs export to `overrides/overrides/config/...`. After a CF launcher extracts `overrides/`
+       into the instance, that becomes `.minecraft/overrides/config/` — which the game never reads, so
+       EVERY bundled config (incl. coffeesaerosmp_core packVersion → "v0.0.0", iris.properties, etc.)
+       is silently ignored. Flatten `overrides/overrides/*` up into `overrides/*` so config/ lands at
+       the instance root, matching the working mrpack layout.
+    2) SECRETS. `.cf-key` (the CurseForge API key) and any `.env` must never ride along into a
+       published zip. Strip them wherever they appear.
+    """
+    ov = os.path.join(work, "overrides")
+    nested = os.path.join(ov, "overrides")
+    if os.path.isdir(nested):
+        _merge_into(nested, ov)
+        shutil.rmtree(nested, ignore_errors=True)
+        print("sanitize: flattened overrides/overrides -> overrides (configs now load)")
+
+    stripped = []
+    for root, _, files in os.walk(work):
+        for fn in files:
+            if fn == ".cf-key" or fn == ".env" or fn.endswith(".env"):
+                os.remove(os.path.join(root, fn))
+                stripped.append(fn)
+    if stripped:
+        print("sanitize: stripped secrets from export:", ", ".join(sorted(set(stripped))))
+
+
 def main():
     if not os.path.isfile(KEY_FILE): die(".cf-key not found")
     key = open(KEY_FILE).read().strip()
@@ -90,6 +134,9 @@ def main():
     work = tempfile.mkdtemp(prefix="cf_fp_", dir=RELEASES)
     with zipfile.ZipFile(src) as z:
         z.extractall(work)
+
+    sanitize_export(work)
+
     manifest_path = os.path.join(work, "manifest.json")
     manifest = json.load(open(manifest_path))
     existing = {(f["projectID"], f["fileID"]) for f in manifest["files"]}
