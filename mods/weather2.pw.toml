@@ -1,0 +1,12 @@
+name = "Weather, Storms & Tornadoes (Weather2)"
+filename = "weather2-neoforge-1.21.0-2.8.7.jar"
+side = "both"
+
+[download]
+hash-format = "sha512"
+hash = "c2779059af67dea39c19b7269a80569a5d9e950f12b37281ea45c8c52adfa7643b193c9b1ba499b57fac24b5d86936ed29b42ecb282dea2d10ead255810fe709"
+url = "https://cdn.modrinth.com/data/dv5SFk5T/versions/yjf2exnB/weather2-neoforge-1.21.0-2.8.7.jar"
+
+[update.modrinth]
+mod-id = "dv5SFk5T"
+version = "yjf2exnB"
