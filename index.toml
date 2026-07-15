@@ -1015,6 +1015,10 @@ file = "overrides/config/sereneseasons/seasons.toml"
 hash = "57f4c44e3810e0e0f6b84a7918636da5766f3ede3316520cdfa5608ad812c1b7"
 
 [[files]]
+file = "overrides/config/simple-rpc/simple-rpc.toml"
+hash = "ef42cf63e827a01c9086b4b29a7174987c9425152a3eaf3314d2f602e10a8ccf"
+
+[[files]]
 file = "overrides/config/vista-client.toml"
 hash = "84ba4a985b613d11f4ee39c39ca7b0a5d77c10b567b866d2504df15a88b8dca1"
 
