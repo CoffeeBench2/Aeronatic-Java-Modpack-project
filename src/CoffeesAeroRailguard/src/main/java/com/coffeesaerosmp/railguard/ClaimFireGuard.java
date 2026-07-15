@@ -1,11 +1,9 @@
 package com.coffeesaerosmp.railguard;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.block.BaseFireBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.fml.ModList;
@@ -15,86 +13,118 @@ import java.util.IdentityHashMap;
 import java.util.Set;
 
 /**
- * Makes FTB-claimed chunks fireproof against Burnt (and vanilla fire). FTB claims block only PLAYER
- * edits; fire spread is an unattributed world mechanic, so a claimed house can still burn down — and
- * Burnt makes fire aggressive (fast spread, charring, collapse, fire devils). This closes that gap:
- * inside a claim, fire/flame/smoldering blocks can't appear, and no claimed block can be turned to
- * air while fire is adjacent — so nothing catches, chars, or collapses.
+ * Keeps FTB-claimed chunks playing by <em>vanilla</em> fire rules: inside a claim you can still light
+ * fires and normal Minecraft fire spreads/burns as usual, but Burnt's aggressive extras (its own fire
+ * blocks, charring, smouldering, sooting) can't touch the claim — so farms and builds don't get eaten.
  *
- * <p>Deliberately narrow so legitimate builds keep working: it only touches the open fire block and
- * fire-driven block changes. Campfires, furnaces, blaze burners, torches, and lanterns are DIFFERENT
- * blocks and are untouched. Fire OUTSIDE claims keeps Burnt's full behaviour.</p>
+ * <p><b>How Burnt works</b> (checked against burnt 1.9.x): it does NOT hijack flint&amp;steel or mixin
+ * vanilla fire — lighting a fire places a plain {@code minecraft:fire}. Burnt's procedures then react to
+ * {@code Blocks.FIRE}: they "upgrade" it to Burnt fire blocks ({@code burnt:wood_fire}, {@code soul_fire_N},
+ * {@code *_flames}, {@code stairs_fire}…) and convert adjacent flammables in place via {@code Level.setBlock}
+ * (e.g. {@code wheat → smoldering_crops → burnt_crops}, {@code oak_log → burnt_log}). That single setBlock
+ * chokepoint is what {@link com.coffeesaerosmp.railguard.mixin.ClaimFireMixin} guards.</p>
  *
- * <p>Burnt is an MCreator "procedures" mod (net.pixelbank.burnt.procedures.*) — its fire spread and
- * charring run as scripts that call {@code Level.setBlock} directly, so the setBlock mixin is the one
- * chokepoint that catches all of it. Burnt's fire/smoldering blocks extend plain {@code Block} (not
- * {@code BaseFireBlock}), so they're matched by registry name. All FTB classes live in {@link Impl};
- * the guard no-ops if FTB Chunks isn't loaded.</p>
+ * <p><b>The rule, inside a claim only:</b></p>
+ * <ol>
+ *   <li>Vanilla fire and everything non-Burnt: <b>untouched</b> — lighting works, fire behaves vanilla.</li>
+ *   <li>A Burnt <b>fire/flame</b> block appearing: <b>cancelled</b> — so Burnt's "upgrade" of the vanilla
+ *       fire is refused and the plain {@code minecraft:fire} stays. Net effect: claims show vanilla fire.</li>
+ *   <li>Any other Burnt block <b>replacing an existing (non-air, non-replaceable) block</b>: <b>cancelled</b>
+ *       — that's fire charring/sooting a player's crop/log/wool, i.e. the farm damage.</li>
+ *   <li>A Burnt block placed on air/replaceable: <b>allowed</b> — that's a player building with decorative
+ *       burnt/ember/sooty blocks in their own claim.</li>
+ * </ol>
+ *
+ * <p>Fire OUTSIDE claims keeps Burnt's full behaviour. FTB classes are isolated in {@link Impl} so the mod
+ * loads fine without FTB Chunks.</p>
  */
 public final class ClaimFireGuard {
 
     private ClaimFireGuard() {}
 
-    /** On by default — the whole point is that claims can't burn. Toggle in-memory if it ever misbehaves. */
+    /** On by default — the whole point is that claims play by vanilla fire rules. Toggle in-memory if needed. */
     public static volatile boolean ENABLED = true;
 
     private static boolean ftbPresent = false;
 
-    /** Fire/flame/smoldering blocks, resolved once from the frozen registry (identity set = O(1) lookups). */
-    private static volatile Set<Block> fireBlocks;
+    /** All {@code burnt:} blocks, and the fire/flame subset — resolved once from the frozen registry. */
+    private static volatile Set<Block> burntBlocks;
+    private static volatile Set<Block> burntFire;
 
     public static void install() {
         ftbPresent = ModList.get().isLoaded("ftbchunks");
         CoffeesAeroRailguard.LOGGER.info(ftbPresent
-            ? "[Railguard] FTB Chunks present — claimed chunks are fireproof against Burnt/vanilla fire."
+            ? "[Railguard] FTB Chunks present — claimed chunks play by vanilla fire rules (Burnt extras suppressed inside claims)."
             : "[Railguard] FTB Chunks not present — claim fire guard idle.");
     }
 
-    /** Called from the {@code Level.setBlock} mixin. Returns true → cancel this block change. */
+    /** Called from the {@code Level.setBlock} mixin HEAD. Returns true → cancel this block change. */
     public static boolean shouldBlock(ServerLevel level, BlockPos pos, BlockState newState) {
         if (!ENABLED || !ftbPresent) return false;
         try {
-            boolean placingFire = isFireLike(newState);
-            // Hot-path gate: only a fire/smoldering block appearing, or a block cleared to air (possible
-            // burn-out/collapse), can damage a claim. Everything else returns immediately.
-            if (!placingFire && !newState.isAir()) return false;
+            Block b = newState.getBlock();
+            // Fast reject: only a Burnt block appearing can ever be blocked. This is the hot path — one
+            // identity-set lookup for every vanilla/other setBlock, no claim lookup, no work.
+            if (!burnt().contains(b)) return false;
             if (!Impl.isClaimed(level, pos)) return false;
 
-            if (placingFire) return true;   // no fire/char may appear inside a claim
+            // Burnt's own fire/flame: refuse it so the vanilla minecraft:fire it was upgrading stays put.
+            if (fire().contains(b)) return true;
 
-            // newState is air in a claim: block it only when fire is eating the block (fire adjacent),
-            // so players and machines can still break their own blocks normally.
-            for (Direction d : Direction.values()) {
-                if (isFireLike(level.getBlockState(pos.relative(d)))) return true;
-            }
+            // Otherwise it's a char/soot/smoulder variant. Block it only when it's REPLACING a real block
+            // (fire eating a crop/log/wool). Placing on air/replaceable is a player building — allow it.
+            BlockState old = level.getBlockState(pos);
+            return !old.isAir() && !old.canBeReplaced();
         } catch (Throwable ignored) {
             // Never let the guard break a world edit.
+            return false;
+        }
+    }
+
+    private static Set<Block> burnt() {
+        Set<Block> set = burntBlocks;
+        return set != null ? set : build()[0];
+    }
+
+    private static Set<Block> fire() {
+        Set<Block> set = burntFire;
+        return set != null ? set : build()[1];
+    }
+
+    /** Lazily split the block registry once: all burnt: blocks, and the fire/flame subset among them. */
+    private static synchronized Set<Block>[] build() {
+        if (burntBlocks == null || burntFire == null) {
+            Set<Block> all  = Collections.newSetFromMap(new IdentityHashMap<>());
+            Set<Block> fire = Collections.newSetFromMap(new IdentityHashMap<>());
+            for (Block b : BuiltInRegistries.BLOCK) {
+                ResourceLocation id = BuiltInRegistries.BLOCK.getKey(b);
+                if (!"burnt".equals(id.getNamespace())) continue;
+                all.add(b);
+                if (isBurntFire(id.getPath())) fire.add(b);
+            }
+            burntBlocks = all;
+            burntFire = fire;
+        }
+        @SuppressWarnings("unchecked")
+        Set<Block>[] out = new Set[]{burntBlocks, burntFire};
+        return out;
+    }
+
+    /**
+     * True for Burnt's transient fire/flame blocks (the spreading visuals) — NOT campfires, fire barrels,
+     * ember/sooty building blocks, or the firestarter. Matches {@code *_fire}, {@code *_fire_<n>}
+     * (wood_fire, soul_fire_7, stairs_fire, tall_grass_fire) and anything containing {@code flames}
+     * (grass_flames, tall_flames, devil_flames, soul_flames_ground).
+     */
+    private static boolean isBurntFire(String path) {
+        if (path.contains("flames")) return true;
+        if (path.endsWith("_fire")) return true;
+        int u = path.lastIndexOf("_fire_");
+        if (u >= 0) {                    // e.g. soul_fire_10, stairs_fire_3 — trailing part must be digits
+            String tail = path.substring(u + 6);
+            return !tail.isEmpty() && tail.chars().allMatch(Character::isDigit);
         }
         return false;
-    }
-
-    private static boolean isFireLike(BlockState state) {
-        return fireBlocks().contains(state.getBlock());
-    }
-
-    private static Set<Block> fireBlocks() {
-        Set<Block> set = fireBlocks;
-        if (set != null) return set;
-        synchronized (ClaimFireGuard.class) {
-            if (fireBlocks != null) return fireBlocks;
-            Set<Block> s = Collections.newSetFromMap(new IdentityHashMap<>());
-            for (Block b : BuiltInRegistries.BLOCK) {
-                if (b instanceof BaseFireBlock) { s.add(b); continue; }  // fire, soul_fire
-                ResourceLocation id = BuiltInRegistries.BLOCK.getKey(b);
-                if ("burnt".equals(id.getNamespace())) {
-                    String p = id.getPath();
-                    if (p.contains("fire") || p.contains("flame") || p.contains("smolder") || p.contains("ember"))
-                        s.add(b);   // Burnt spread + charring (smoldering_*) blocks
-                }
-            }
-            fireBlocks = s;
-            return s;
-        }
     }
 
     /** FTB classes are only referenced here, so the mod loads fine without FTB Chunks. */
