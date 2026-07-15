@@ -371,11 +371,6 @@ hash = "33be1a1c230a7a1eb08899af57a8d8b5f3f71c402dbbdab2e95c7c7aaced75ef"
 metafile = true
 
 [[files]]
-file = "mods/ears-fabric-1-21-1-4-7.pw.toml"
-hash = "a7f6d6e6982ec0aa44da57c2977431c509e916c2464363fe6c9d8dada6b53bcb"
-metafile = true
-
-[[files]]
 file = "mods/emi-1-1-24-1-21-1-neoforge.pw.toml"
 hash = "8937fbf368984c277ca487fc0c6eec66826ec0aad91cb4078c3b04a9ef7625a2"
 metafile = true
