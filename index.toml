@@ -331,11 +331,6 @@ hash = "063a958e01eed8d673d42c28db0b980e33b1e855f6b3c548d5013d85491f9add"
 metafile = true
 
 [[files]]
-file = "mods/cristellib.pw.toml"
-hash = "063a958e01eed8d673d42c28db0b980e33b1e855f6b3c548d5013d85491f9add"
-metafile = true
-
-[[files]]
 file = "mods/cwb-neoforge-3-0-0-mc1-21.pw.toml"
 hash = "cfdf964add1e78de8a1d45cb7b9b51b6ec2a962d3f1b7f3e878290f7208630b6"
 metafile = true
