@@ -510,6 +510,11 @@ hash = "63f14bcc9b593f8caeda7f37665937f24bb028a94ad4642f4b5254c9f0015625"
 metafile = true
 
 [[files]]
+file = "mods/glitchcore.pw.toml"
+hash = "013cbf60c21b29702dc889edd573ab7a326dcc38b491c7ad93374abfe52dcefa"
+metafile = true
+
+[[files]]
 file = "mods/golem-spawn-animation-1-0-1-neoforge-1-21-1.pw.toml"
 hash = "9f5f41ecfea4f22a88a2244f954ffc3a5d676482fd2e7f61401dbe438765adae"
 metafile = true
@@ -770,6 +775,11 @@ hash = "fc2a6d93ec7d3b80aea54a696962992c30ad153fed69dd8938d63fbee4fd0afa"
 metafile = true
 
 [[files]]
+file = "mods/serene-seasons.pw.toml"
+hash = "b47fd223bccd808ed0a080b910d789fcc9d02aad13b025fa740b2bc06a70a5ec"
+metafile = true
+
+[[files]]
 file = "mods/simplerpc-4-1-2.pw.toml"
 hash = "29a17dc4ec1cdda74107c37f203a48f3a933cfcccd2fa1e974d668178999d670"
 metafile = true
@@ -984,6 +994,14 @@ hash = "4b0398ba113314d13ab09e8a1ab168e14ce481efefe4fce7db3dc2dfd2baa21b"
 [[files]]
 file = "overrides/config/open_parties_and_claims/main.json"
 hash = "28d2a0756a8132642f80bcb53bca6b527b3af8928750a65325a008048c2bbe7e"
+
+[[files]]
+file = "overrides/config/sereneseasons/fertility.toml"
+hash = "ead7a0aead62bcd6b3c6ed3671538ca0c70cef3ff32f30348b4b9adfc6ceeb75"
+
+[[files]]
+file = "overrides/config/sereneseasons/seasons.toml"
+hash = "57f4c44e3810e0e0f6b84a7918636da5766f3ede3316520cdfa5608ad812c1b7"
 
 [[files]]
 file = "overrides/config/vista-client.toml"
