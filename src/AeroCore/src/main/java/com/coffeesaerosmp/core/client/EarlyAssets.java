@@ -27,7 +27,7 @@ public final class EarlyAssets {
 
     /** Source art dimensions (used for cover-scaling). */
     public static final int BG_W = 1920, BG_H = 1009;
-    public static final int COG_W = 279, COG_H = 280;
+    public static final int COG_W = 112, COG_H = 112;   // Create-style wooden cog (pixel art, x4 nearest)
 
     private static boolean registered;
 

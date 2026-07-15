@@ -11,6 +11,7 @@ public class AeroConfig {
     public static final ModConfigSpec.ConfigValue<String> UPDATE_URL;
     public static final ModConfigSpec.ConfigValue<String> VERSION_CHECK_URL;
     public static final ModConfigSpec.ConfigValue<String> PACK_TOML_URL;
+    public static final ModConfigSpec.ConfigValue<String> NEWS_URL;
 
     static {
         ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
@@ -43,6 +44,13 @@ public class AeroConfig {
                      "packwiz-installer (downloads only changed files) after the game closes. Blank = disable in-game update.")
             .define("packTomlUrl",
                 "https://raw.githubusercontent.com/CoffeeBench2/Aeronatic-Java-Modpack-project/main/pack.toml");
+
+        NEWS_URL = builder
+            .comment("Raw URL of the News/Announcements JSON, fetched live when the title screen opens so news",
+                     "can be changed on GitHub without a pack rebuild or version bump. Falls back to the bundled",
+                     "config/coffees_aero_announcements.json (then the in-jar copy) when offline. Blank = local only.")
+            .define("newsUrl",
+                "https://raw.githubusercontent.com/CoffeeBench2/Aeronatic-Java-Modpack-project/main/overrides/config/coffees_aero_announcements.json");
 
         CLIENT_SPEC = builder.build();
     }

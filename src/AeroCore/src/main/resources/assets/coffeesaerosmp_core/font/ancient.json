@@ -1,0 +1,10 @@
+{
+  "providers": [
+    {
+      "type": "ttf",
+      "file": "coffeesaerosmp_core:ancient.ttf",
+      "size": 12.0,
+      "oversample": 4.0
+    }
+  ]
+}

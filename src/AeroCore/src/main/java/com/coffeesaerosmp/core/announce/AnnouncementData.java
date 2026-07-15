@@ -1,5 +1,6 @@
 package com.coffeesaerosmp.core.announce;
 
+import com.coffeesaerosmp.core.config.AeroConfig;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -9,20 +10,28 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.InputStream;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Loads the pack changelog for the main-menu Announcements screen.
  *
- * <p>BUNDLED, not fetched: the changelog ships WITH the pack (so it arrives exactly when an update
- * does) — no runtime GitHub call, which keeps the CurseForge "no external fetch / no git dependency"
- * rule intact and works offline. Source order: {@code config/coffees_aero_announcements.json} (the
- * pack ships this via overrides — editable per update without a Core rebuild), falling back to a
- * copy bundled in this jar so a fresh install always has something to show.</p>
+ * <p>LIVE from GitHub, with an offline fallback: on the title screen the client fetches the News JSON
+ * from {@link AeroConfig#NEWS_URL} (raw GitHub {@code main}) so the news can be edited on GitHub and
+ * seen by players immediately — no pack rebuild, no version bump, same pack version. The fetch reuses
+ * the updater's cache-busting ({@code ?aerocb=}) because GitHub's raw CDN caches each path ~300s and
+ * ignores {@code no-cache}. If the fetch fails or the player is offline, it falls back to the bundled
+ * {@code config/coffees_aero_announcements.json} (shipped via overrides), then to a copy baked into
+ * this jar — so the scroll never renders empty. The CF build keeps the local files, so CF's
+ * "self-contained" pack still shows news offline; the live fetch is purely additive.</p>
  *
  * <p>Newest entry first. Schema:
  * <pre>{ "entries": [ { "version": "1.8.0", "date": "2026-07-14", "title": "...",
@@ -40,6 +49,8 @@ public final class AnnouncementData {
     private static final String BUNDLED_PATH  = "/announcements.json";   // in Core's jar resources
 
     private static volatile List<Entry> entries;
+    private static volatile boolean githubTried = false;
+    private static volatile Runnable onUpdated;   // screen sets this to re-layout when live news lands
 
     private AnnouncementData() {}
 
@@ -55,13 +66,56 @@ public final class AnnouncementData {
     }
 
     /** Force a re-read (e.g. after a pack update swaps the config file mid-session). */
-    public static void reload() { entries = null; }
+    public static void reload() { entries = null; githubTried = false; }
+
+    /** Called by the screen so it can relayout when the async GitHub news arrives. */
+    public static void setOnUpdated(Runnable r) { onUpdated = r; }
 
     private static synchronized void load() {
         if (entries != null) return;
         String json = readConfig();
         if (json == null) json = readBundled();
         entries = json == null ? List.of() : parse(json);
+    }
+
+    /**
+     * Kick off a one-shot, off-thread fetch of the live news from GitHub. Safe to call repeatedly
+     * (only the first per session hits the network). On success it replaces {@link #entries} with the
+     * live copy and fires {@link #onUpdated}; on any failure it leaves the local fallback in place.
+     */
+    public static void refreshFromGitHub() {
+        if (githubTried) return;
+        githubTried = true;
+        String url = AeroConfig.NEWS_URL.get();
+        if (url == null || url.isBlank()) return;
+        Thread t = new Thread(() -> fetchGitHub(url), "AeroCore-News");
+        t.setDaemon(true);
+        t.start();
+    }
+
+    private static void fetchGitHub(String url) {
+        try {
+            // Cache-bust: raw.githubusercontent caches each path ~300s and ignores no-cache, so an edit
+            // to the news on main wouldn't be seen for ~5 min without this. One request per session.
+            String busted = url + (url.indexOf('?') < 0 ? "?" : "&") + "aerocb=" + System.nanoTime();
+            HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
+            HttpRequest req = HttpRequest.newBuilder(URI.create(busted))
+                .timeout(Duration.ofSeconds(8))
+                .header("Cache-Control", "no-cache").header("Pragma", "no-cache").GET().build();
+            HttpResponse<String> resp = http.send(req, HttpResponse.BodyHandlers.ofString());
+            if (resp.statusCode() != 200) {
+                LOGGER.info("[Announce] live news HTTP {} — using local copy.", resp.statusCode());
+                return;
+            }
+            List<Entry> live = parse(resp.body());
+            if (live.isEmpty()) return;   // don't blank out a good local copy with an empty/broken fetch
+            entries = live;
+            LOGGER.info("[Announce] loaded {} live news entries from GitHub.", live.size());
+            Runnable cb = onUpdated;
+            if (cb != null) cb.run();
+        } catch (Exception e) {
+            LOGGER.info("[Announce] live news fetch failed ({}) — using local copy.", e.getMessage());
+        }
     }
 
     private static String readConfig() {

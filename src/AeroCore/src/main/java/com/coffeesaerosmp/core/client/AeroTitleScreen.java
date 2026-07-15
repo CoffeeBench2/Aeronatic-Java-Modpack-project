@@ -33,6 +33,7 @@ public class AeroTitleScreen extends Screen {
         ResourceLocation.fromNamespaceAndPath("coffeesaerosmp_core", "textures/gui/title_logo.png");
     private static final int LOGO_W = 1024, LOGO_H = 548;
 
+    private static final int ANNOUNCE_W = 74;
     private int announceX, announceY;
 
     public AeroTitleScreen() {
@@ -73,14 +74,14 @@ public class AeroTitleScreen extends Screen {
                 b -> this.minecraft.stop()
         ).bounds(this.width / 2 + 2, joinY + 26, 98, 20).build());
 
-        // Announcements (pack changelog). Full-width row under Options/Quit; a NEW badge is drawn
-        // over it in render() until the player opens it once (see AnnouncementState).
-        this.announceX = this.width / 2 - 100;
-        this.announceY = joinY + 52;
+        // Announcements (pack changelog) — small button in the TOP-RIGHT corner. Opening it plays the
+        // parchment-scroll animation. A NEW badge is drawn beside it in render() until first opened.
+        this.announceX = this.width - ANNOUNCE_W - 5;
+        this.announceY = 5;
         this.addRenderableWidget(AeroButton.aero(
-                Component.literal("Announcements"),
+                Component.literal("News"),
                 b -> this.minecraft.setScreen(new com.coffeesaerosmp.core.screen.AnnouncementsScreen(this))
-        ).bounds(announceX, announceY, 200, 20).build());
+        ).bounds(announceX, announceY, ANNOUNCE_W, 20).build());
 
         if (isAdmin) {
             this.addRenderableWidget(AeroButton.aero(
@@ -147,8 +148,8 @@ public class AeroTitleScreen extends Screen {
         if (com.coffeesaerosmp.core.announce.AnnouncementState.hasUnseen()) {
             String badge = "NEW";
             int bw = this.font.width(badge) + 6;
-            int bx = announceX + 200 - bw / 2;         // straddle the button's top-right corner
-            int by = announceY - 5;
+            int bx = announceX - bw - 3;               // pulsing pill just left of the corner button
+            int by = announceY + 5;
             float pulse = 0.55F + 0.45F * (float) Math.sin(Util.getMillis() / 260.0);
             int alpha = (int) (pulse * 255) << 24;
             graphics.fill(bx, by, bx + bw, by + 11, alpha | 0x00C0302A);   // pulsing red pill

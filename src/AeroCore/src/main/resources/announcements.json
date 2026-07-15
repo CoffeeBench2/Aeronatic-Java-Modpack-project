@@ -1,15 +1,28 @@
 {
-  "_comment": "Bundled fallback changelog. The PACK ships the live copy at config/coffees_aero_announcements.json (overrides) and it takes priority. Newest entry first. Keep lines short.",
+  "_comment": "Bundled fallback changelog. The PACK ships the live copy at config/coffees_aero_announcements.json (overrides) and it takes priority. Newest entry first. Keep lines short. Entries whose version does NOT start with a digit render as a TEASER ('On the horizon', no v prefix).",
   "entries": [
     {
-      "version": "1.8.0",
-      "date": "2026-07",
-      "title": "The Big Update — museum, pets & a fresh menu",
+      "version": "Coming Soon…",
+      "date": "",
+      "title": "Whispers from the workshop",
       "added": [
-        "Museum camera (Exposure), plushies & tameable hamsters",
+        "Living volcanoes — lava, falling ash and scorched new lands",
+        "Real wind — feel the sky push back when you fly",
+        "Natural disasters to test your builds (and your nerves)",
+        "…and a few secrets we're keeping rolled up for now"
+      ],
+      "fixed": [],
+      "removed": []
+    },
+    {
+      "version": "1.8.0",
+      "date": "July 2026",
+      "title": "Pets, Photos & a Fresh Look",
+      "added": [
+        "Museum cameras, plushies & tameable hamsters",
         "Paintings, furniture & thousands of decorative blocks",
         "In-game chat translator & emojis",
-        "This Announcements screen — see what's new each update"
+        "This Announcements scroll — see what's new each update"
       ],
       "fixed": [
         "Loading-screen cogwheels are now clearly visible",
