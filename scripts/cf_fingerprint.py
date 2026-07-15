@@ -17,6 +17,19 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RELEASES = r"D:\MC Project\Releases"
 KEY_FILE = os.path.join(ROOT, ".cf-key")
 
+# Filename -> (CurseForge projectID, fileID) for mods we pull from Modrinth whose bytes
+# DON'T match CF's copy (so fingerprinting can't relocate them) but which ARE on CF with
+# a redistribution-restricted license. CF moderation rejects the pack if these are bundled
+# (e.g. Vista / Supplementaries License, Balm & Sophisticated = All Rights Reserved), so we
+# reference the same version by explicit CF id instead. allowModDistribution=True verified.
+# Add an entry whenever CF flags a bundled ARR/restricted jar; keep versions in sync with the pack.
+MANUAL_REFS = {
+    "vista-neoforge-1.21.1-4.3.1.jar":            (1368607, 8072358),
+    "balm-neoforge-1.21.1-21.0.59.jar":           (531761,  8252588),
+    "sophisticatedbackpacks-1.21.1-3.25.64.1919.jar": (422301, 8272377),
+    "sophisticatedcore-1.21.1-1.4.59.2032.jar":   (618298,  8272330),
+}
+
 def die(m): sys.exit("ERROR: " + m)
 
 # --- CF murmur2 (seed=1) over whitespace-stripped bytes -----------------------
@@ -113,7 +126,22 @@ def main():
                 added += 1
             os.remove(p)
 
-    still_bundled = [os.path.basename(p) for p in targets if fp_of[p] not in matched]
+    # Explicit references for CF-hosted restricted mods whose bytes don't fingerprint-match
+    # (Modrinth build vs CF build). Reference the pinned CF file id and drop the bundled copy.
+    manual = 0
+    for p, fp in list(fp_of.items()):
+        base = os.path.basename(p)
+        if fp not in matched and base in MANUAL_REFS and os.path.exists(p):
+            pid, fid = MANUAL_REFS[base]
+            if (pid, fid) not in existing:
+                manifest["files"].append({"projectID": pid, "fileID": fid, "required": True})
+                existing.add((pid, fid))
+            os.remove(p)
+            manual += 1
+            print("manual CF reference (restricted, un-bundled):", base)
+
+    still_bundled = [os.path.basename(p) for p in targets
+                     if fp_of[p] not in matched and os.path.basename(p) not in MANUAL_REFS]
     json.dump(manifest, open(manifest_path, "w"), indent=2)
 
     # packwiz curseforge export skips overrides/resourcepacks (.packwizignore excludes it), so
@@ -142,7 +170,7 @@ def main():
     shutil.rmtree(work, ignore_errors=True)
 
     print(f"\nDONE: {out}")
-    print(f"manifest references: {len(manifest['files'])}  (+{added} newly matched)")
+    print(f"manifest references: {len(manifest['files'])}  (+{added} matched, +{manual} manual)")
     print(f"still bundled ({len(still_bundled)}): {', '.join(sorted(still_bundled))}")
 
 if __name__ == "__main__":
