@@ -994,6 +994,10 @@ file = "overrides/config/ftbquests/quests/chapters/welcome.snbt"
 hash = "55f69cd48da1a6a99d670129ce57c7371f5855a824537ca1ada91860ad67b45f"
 
 [[files]]
+file = "overrides/config/grand_teleport.properties"
+hash = "9f6c15cb5dcf6b837200787269f88e5d6068f812ecd0dd5840e5f2f55fa32ebc"
+
+[[files]]
 file = "overrides/config/iris.properties"
 hash = "4b0398ba113314d13ab09e8a1ab168e14ce481efefe4fce7db3dc2dfd2baa21b"
 
