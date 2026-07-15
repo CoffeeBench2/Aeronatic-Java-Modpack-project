@@ -32,6 +32,7 @@ public class CoffeesAeroRailguard {
             RailguardCommands.register(event.getDispatcher()));
 
         FtbClaimGuard.install();   // railway chunks can't be FTB-claimed by players
+        ClaimFireGuard.install();  // FTB-claimed chunks are fireproof against Burnt/vanilla fire
 
         if (ModList.get().isLoaded("railwaysuntold")) {
             LOGGER.info("[Railguard] initialized — live-tracking Railways Untold placements.");

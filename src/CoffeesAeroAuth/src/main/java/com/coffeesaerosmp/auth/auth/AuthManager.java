@@ -30,6 +30,7 @@ public class AuthManager {
     private final DisplayNameManager displayNames;
 
     private final Map<UUID, AuthState> authStates           = new ConcurrentHashMap<>();
+    private final Map<UUID, Long>      lastSpawnTp          = new ConcurrentHashMap<>(); // in-world /spawn cooldown
     private final Map<UUID, double[]>  frozenPos            = new ConcurrentHashMap<>();
     private final Map<UUID, Long>      joinTimes            = new ConcurrentHashMap<>();
     private final Map<UUID, Integer>   failedAttempts       = new ConcurrentHashMap<>();
@@ -813,7 +814,9 @@ public class AuthManager {
         com.coffeesaerosmp.auth.events.PlayerAuthEvents.onOfflinePlayerAuthenticated(player);
     }
 
-    /** /spawn — exits the lobby room into the main world. Lobby-dimension only. */
+    /** /spawn — from the lobby: exits the room into the main world (no cooldown, players must
+     *  never get stuck in the lobby). In the main world: teleport to the overworld world spawn,
+     *  once per hour per player (ops exempt). */
     public boolean handleSpawn(ServerPlayer player) {
         UUID uuid = player.getUUID();
         if (!isAuthenticated(uuid)) {
@@ -821,8 +824,7 @@ public class AuthManager {
             return false;
         }
         if (player.level().dimension() != com.coffeesaerosmp.auth.lobby.PrivateRoomManager.LOBBY_DIMENSION) {
-            send(player, TextUtil.PREFIX + "§7You're already in the main world.");
-            return false;
+            return handleWorldSpawnTeleport(player);
         }
         // Destination: a returning player resumes at their last main-world position; a first-timer
         // (no saved return position, or its dimension no longer loads) goes to the world spawn point.
@@ -859,6 +861,32 @@ public class AuthManager {
         }
         String serverName = AuthConfig.SERVER_DISPLAY_NAME.get();
         send(player, TextUtil.PREFIX + "§a✈ Welcome to §6§l" + serverName + "§a!");
+        return true;
+    }
+
+    private static final long SPAWN_TP_COOLDOWN_MS = 60L * 60 * 1000; // in-world /spawn: once per hour
+
+    /** In-world /spawn — overworld world-spawn teleport with a 1h per-player cooldown (in-memory,
+     *  resets on server restart). Ops bypass. CombatGuard's blocklist already cancels /spawn while
+     *  combat-tagged, so no escape-from-PvP check is needed here. */
+    private boolean handleWorldSpawnTeleport(ServerPlayer player) {
+        UUID uuid = player.getUUID();
+        long now = System.currentTimeMillis();
+        if (!player.hasPermissions(2)) {
+            Long last = lastSpawnTp.get(uuid);
+            if (last != null && now - last < SPAWN_TP_COOLDOWN_MS) {
+                long remMin = (SPAWN_TP_COOLDOWN_MS - (now - last) + 59_999) / 60_000;
+                send(player, TextUtil.PREFIX + "§7You can §f/spawn§7 again in §e" + remMin + "m§7.");
+                return false;
+            }
+        }
+        if (CoffeesAeroAuth.ROOM_MANAGER == null) {
+            send(player, TextUtil.PREFIX + "§cSpawn teleport is unavailable right now.");
+            return false;
+        }
+        lastSpawnTp.put(uuid, now);
+        CoffeesAeroAuth.ROOM_MANAGER.teleportToSpawn(player);
+        send(player, TextUtil.PREFIX + "§a✈ Teleported to world spawn. §7(Usable once per hour.)");
         return true;
     }
 

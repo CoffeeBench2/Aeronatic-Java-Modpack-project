@@ -115,6 +115,17 @@ public class ProfileCommands {
             })
         );
 
+        // /sablecollision on|off|status — runtime toggle for Sable collision-damage block breaking
+        // (op 2+). Flips the mod's MIN_BREAK_SPEED via reflection: "off" pushes it so high nothing
+        // breaks; "on" restores the configured value. Session-scoped — the config TOML is the
+        // persistent default on restart. No hard dependency: guarded if the mod isn't installed.
+        dispatcher.register(Commands.literal("sablecollision")
+            .requires(src -> src.hasPermission(2))
+            .then(Commands.literal("on").executes(ctx -> sableCollision(ctx.getSource(), Boolean.TRUE)))
+            .then(Commands.literal("off").executes(ctx -> sableCollision(ctx.getSource(), Boolean.FALSE)))
+            .then(Commands.literal("status").executes(ctx -> sableCollision(ctx.getSource(), null)))
+        );
+
         // /authmod — admin commands (op level 2+)
         dispatcher.register(Commands.literal("authmod")
             .requires(src -> src.hasPermission(2))
@@ -534,6 +545,48 @@ public class ProfileCommands {
         );
         source.sendSuccess(() -> Component.literal("§a[Obsidian] Sync triggered — check your vault in a moment."), true);
         return 1;
+    }
+
+    // ── /sablecollision ───────────────────────────────────────────────────────
+    /** The MIN_BREAK_SPEED the mod was configured with (cached so "on" can restore it). */
+    private static Double sableOnValue = null;
+    private static final double SABLE_OFF_VALUE = 1.0e18; // effectively "blocks never break on collision"
+
+    /** on=TRUE, off=FALSE, status=null. Reflection so auth has no compile/runtime dep on the mod. */
+    private static int sableCollision(CommandSourceStack source, Boolean enable) {
+        final Object value;
+        try {
+            Class<?> cfg = Class.forName("com.sable.collision_damage.Config");
+            value = cfg.getField("MIN_BREAK_SPEED").get(null);           // ModConfigSpec.DoubleValue
+        } catch (Throwable t) {
+            source.sendFailure(Component.literal(
+                "§cSable Collision Damage isn't installed on this server."));
+            return 0;
+        }
+        try {
+            java.lang.reflect.Method get = value.getClass().getMethod("get");
+            java.lang.reflect.Method set = value.getClass().getMethod("set", Object.class);
+            double cur = ((Number) get.invoke(value)).doubleValue();
+            // Cache the configured "on" value the first time we see a non-off value.
+            if (sableOnValue == null && cur < SABLE_OFF_VALUE) sableOnValue = cur;
+            double onVal = sableOnValue != null ? sableOnValue : 35.0;
+
+            if (enable == null) { // status
+                boolean off = cur >= SABLE_OFF_VALUE;
+                source.sendSuccess(() -> Component.literal("§eSable collision damage is "
+                    + (off ? "§cOFF" : "§aON") + "§e (minBreakSpeed=" + (off ? "off" : cur) + ")."), false);
+                return 1;
+            }
+            set.invoke(value, enable ? onVal : SABLE_OFF_VALUE);
+            final double shown = enable ? onVal : SABLE_OFF_VALUE;
+            source.sendSuccess(() -> Component.literal(enable
+                ? "§aSable collision damage ON §7(blocks break on impact ≥ " + shown + " m/s)."
+                : "§7Sable collision damage OFF §8(ships no longer break blocks on collision)."), true);
+            return 1;
+        } catch (Throwable t) {
+            source.sendFailure(Component.literal("§cCouldn't change Sable collision: " + t.getMessage()));
+            return 0;
+        }
     }
 
     // ── /authmod ban & unban ──────────────────────────────────────────────────

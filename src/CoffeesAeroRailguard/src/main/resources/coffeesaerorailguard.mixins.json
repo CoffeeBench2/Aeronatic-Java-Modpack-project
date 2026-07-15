@@ -3,6 +3,7 @@
   "package": "com.coffeesaerosmp.railguard.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
+    "ClaimFireMixin",
     "LevelSetBlockMixin",
     "LevelDestroyBlockMixin",
     "CurvedTrackDestroyPacketMixin",

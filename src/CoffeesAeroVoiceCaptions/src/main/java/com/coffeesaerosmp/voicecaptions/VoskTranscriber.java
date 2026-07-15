@@ -65,12 +65,15 @@ public final class VoskTranscriber {
         return new Recognizer(model, (float) VOSK_SAMPLE_RATE);
     }
 
-    /** Decimate 48 kHz {@code short[]} → 16 kHz little-endian 16-bit PCM bytes for Vosk. */
+    /** Decimate 48 kHz {@code short[]} → 16 kHz little-endian 16-bit PCM bytes for Vosk.
+     *  Averages each group of 3 samples (boxcar low-pass) — raw pick-every-3rd decimation
+     *  aliases 8–24 kHz content into the speech band and measurably hurts recognition. */
     public static byte[] to16kBytes(short[] pcm48) {
         int n = pcm48.length / DECIMATION;
         byte[] out = new byte[n * 2];
         for (int i = 0, o = 0; i < n; i++) {
-            short s = pcm48[i * DECIMATION];   // naive decimation (fine for the prototype)
+            int base = i * DECIMATION;
+            int s = (pcm48[base] + pcm48[base + 1] + pcm48[base + 2]) / DECIMATION;
             out[o++] = (byte) (s & 0xFF);
             out[o++] = (byte) ((s >> 8) & 0xFF);
         }

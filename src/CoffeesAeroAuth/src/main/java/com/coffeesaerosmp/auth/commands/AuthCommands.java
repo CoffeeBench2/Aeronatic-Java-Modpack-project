@@ -70,7 +70,8 @@ public class AuthCommands {
             })
         );
 
-        // /spawn — exit lobby room into main world (lobby dimension only)
+        // /spawn — lobby: exit room into main world (no cooldown). Main world: teleport to the
+        // overworld world spawn, once per hour (ops exempt; CombatGuard blocks it while tagged).
         dispatcher.register(Commands.literal("spawn")
             .executes(ctx -> {
                 ServerPlayer player = ctx.getSource().getPlayerOrException();
