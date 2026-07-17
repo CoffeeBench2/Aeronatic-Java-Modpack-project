@@ -63,7 +63,7 @@ public class AuthConfig {
 
     // ── /rtp (our own — replaces FTB Essentials' sync-chunk-gen one) ──────────
     public static final ModConfigSpec.BooleanValue RTP_ENABLED;
-    public static final ModConfigSpec.IntValue     RTP_COOLDOWN_HOURS;
+    public static final ModConfigSpec.IntValue     RTP_COOLDOWN_MINUTES;
     public static final ModConfigSpec.IntValue     RTP_MIN_DISTANCE;
     public static final ModConfigSpec.IntValue     RTP_MAX_DISTANCE;
     public static final ModConfigSpec.IntValue     RTP_MIN_WAIT_SECONDS;
@@ -305,8 +305,9 @@ public class AuthConfig {
             .push("rtp");
         RTP_ENABLED = b.comment("Enable /rtp.")
             .define("rtpEnabled", true);
-        RTP_COOLDOWN_HOURS = b.comment("Hours between /rtp uses per player (persisted across restarts/relogs). Ops exempt. 0 = no cooldown.")
-            .defineInRange("rtpCooldownHours", 24, 0, 720);
+        RTP_COOLDOWN_MINUTES = b.comment("Minutes between /rtp uses per player (persisted across restarts/relogs). Ops exempt. 0 = no cooldown.",
+                "(Was rtpCooldownHours=24 in 1.6.26-28; user set 15 min on 2026-07-18 — the async ring pregen made rtp cheap enough.)")
+            .defineInRange("rtpCooldownMinutes", 15, 0, 43200);
         RTP_MIN_DISTANCE = b.comment("Minimum distance (blocks) from world spawn for the random target.")
             .defineInRange("rtpMinDistance", 1500, 100, 1_000_000);
         RTP_MAX_DISTANCE = b.comment("Maximum distance (blocks) from world spawn. Keep modest — greater distance = more ungenerated terrain to build. (FTBE's old 25000 was the freeze.)")

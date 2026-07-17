@@ -44,7 +44,7 @@ import java.util.concurrent.ThreadLocalRandom;
  * {@code managedBlock}s the server thread when called from it. The chunk system + c2me generate
  * everything in the background, center-out, while the player waits in place watching an action-bar
  * progress readout; the teleport happens only when EVERY chunk is ready AND the minimum wait has
- * elapsed. Long cooldown (default 24h) persisted to {@code rtp_cooldowns.json} so relogs/restarts
+ * elapsed. Cooldown (default 15 min) persisted to {@code rtp_cooldowns.json} so relogs/restarts
  * don't reset it; ops exempt. Abort paths (timeout, all-water landing after one re-chart, logout)
  * never charge the cooldown.</p>
  */
@@ -60,6 +60,7 @@ public final class RtpCommand {
 
     private static final class Pending {
         final ServerLevel level;
+        final String playerName;                 // for console lines after the player object is gone
         final int x, z;                          // block coords of the target center
         final ChunkPos center;
         final int radius;                        // chunk radius fully generated before teleport
@@ -70,13 +71,16 @@ public final class RtpCommand {
         int ticksSinceRefresh = 0;
         boolean recharted = false;               // one automatic ocean re-roll allowed
 
-        Pending(ServerLevel level, int x, int z, int radius, long startedAtMs) {
-            this.level = level; this.x = x; this.z = z;
+        Pending(ServerLevel level, String playerName, int x, int z, int radius, long startedAtMs) {
+            this.level = level; this.playerName = playerName;
+            this.x = x; this.z = z;
             this.center = new ChunkPos(BlockPos.containing(x, 0, z));
             this.radius = radius;
             this.totalChunks = (radius * 2 + 1) * (radius * 2 + 1);
             this.startedAtMs = startedAtMs;
         }
+
+        long elapsedSec() { return (System.currentTimeMillis() - startedAtMs) / 1000; }
     }
 
     private static final Map<UUID, Pending> pending   = new ConcurrentHashMap<>();
@@ -140,7 +144,7 @@ public final class RtpCommand {
             msg(player, "§cRandom teleport only works in the overworld.");
             return;
         }
-        long cooldownMs = AuthConfig.RTP_COOLDOWN_HOURS.get() * 3_600_000L;
+        long cooldownMs = AuthConfig.RTP_COOLDOWN_MINUTES.get() * 60_000L;
         if (cooldownMs > 0 && !player.hasPermissions(2)) {
             long readyAt = cooldowns.getOrDefault(uuid, 0L) + cooldownMs;
             long left = readyAt - System.currentTimeMillis();
@@ -154,10 +158,14 @@ public final class RtpCommand {
 
     private static void start(ServerPlayer player, ServerLevel level, boolean isRechart) {
         int[] target = pickTarget(level);
-        Pending p = new Pending(level, target[0], target[1],
+        Pending p = new Pending(level, player.getGameProfile().getName(), target[0], target[1],
             AuthConfig.RTP_PREGEN_RADIUS.get(), System.currentTimeMillis());
         p.recharted = isRechart;
         pending.put(player.getUUID(), p);
+        // Console timeline for freeze correlation: every rtp phase logs — this start line is what
+        // lets a "server stalled at HH:MM:SS" be matched to whose pregen was running where.
+        CoffeesAeroAuth.LOGGER.info("[Rtp] {} charting to {} {} ({}x{} chunks{}).",
+            p.playerName, p.x, p.z, p.radius * 2 + 1, p.radius * 2 + 1, isRechart ? ", re-chart" : "");
 
         // PROGRESSIVE pregen (the 1.6.27 lesson): one big radius ticket demanded all ~225 chunks at
         // once — worker threads saturated the shared CPU with Terralith gen AND the main thread ate
@@ -209,6 +217,8 @@ public final class RtpCommand {
             Pending p = entry.getValue();
             if (player == null) {                          // logged out — abandon, no cooldown charged
                 finish(entry.getKey(), p, true);
+                CoffeesAeroAuth.LOGGER.info("[Rtp] {} logged out mid-charting ({}/{} chunks, {}s) — abandoned, no cooldown.",
+                    p.playerName, p.readyChunks, p.totalChunks, p.elapsedSec());
                 continue;
             }
             // Refresh the region ticket well inside its timeout so a long pregen never loses it.
@@ -228,6 +238,8 @@ public final class RtpCommand {
                     try {
                         p.level.getChunkSource().removeRegionTicket(RTP_TICKET, p.center, old + 1, p.center);
                     } catch (Exception ignored) {}
+                    CoffeesAeroAuth.LOGGER.info("[Rtp] {} pregen ring {} done — widening to {} ({}/{} chunks, {}s).",
+                        p.playerName, old, p.ticketRadius, p.readyChunks, p.totalChunks, p.elapsedSec());
                 }
             }
             long elapsedMs = System.currentTimeMillis() - p.startedAtMs;
@@ -236,6 +248,8 @@ public final class RtpCommand {
 
             if (!generated && elapsedMs > AuthConfig.RTP_TIMEOUT_SECONDS.get() * 1000L) {
                 finish(entry.getKey(), p, true);
+                CoffeesAeroAuth.LOGGER.warn("[Rtp] {} TIMED OUT after {}s ({}/{} chunks generated, ring {}) — cooldown refunded.",
+                    p.playerName, p.elapsedSec(), p.readyChunks, p.totalChunks, p.ticketRadius);
                 msg(player, "§cThe world took too long to shape itself — try /rtp again (no cooldown used).");
                 continue;
             }
@@ -286,9 +300,13 @@ public final class RtpCommand {
         BlockPos spot = findDryColumn(p.level, p.x, p.z, p.radius);
         if (spot == null) {
             if (!p.recharted) {
+                CoffeesAeroAuth.LOGGER.info("[Rtp] {} landed on open water at {} {} — re-charting once.",
+                    p.playerName, p.x, p.z);
                 msg(player, "§7Open water below — re-charting…");
                 start(player, p.level, true);
             } else {
+                CoffeesAeroAuth.LOGGER.warn("[Rtp] {} found no dry land twice (last target {} {}) — aborted, cooldown refunded.",
+                    p.playerName, p.x, p.z);
                 msg(player, "§cCouldn't find dry land twice in a row — try /rtp again (no cooldown used).");
             }
             return;
