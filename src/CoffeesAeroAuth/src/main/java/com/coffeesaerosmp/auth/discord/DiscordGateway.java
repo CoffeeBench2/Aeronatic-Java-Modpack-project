@@ -35,6 +35,7 @@ public class DiscordGateway {
     // GUILD_MESSAGES (512) | MESSAGE_CONTENT (32768)
     private static final int     INTENTS     = 512 | 32768;
     private static final long    PRESENCE_MIN_INTERVAL_MS = 15_000;
+    private static final long    PRESENCE_REFRESH_MS      = 300_000;   // re-assert unchanged presence
     private static final int     PRESENCE_4002_SUPPRESS_AFTER = 3;
 
     private final MinecraftServer            server;
@@ -70,6 +71,14 @@ public class DiscordGateway {
     private volatile String presenceSent    = null;
     private volatile long   presenceSentAt  = 0;
     private volatile boolean presenceFlushQueued = false;
+
+    // ── Zombie-connection detection (heartbeat ACK tracking) ──────────────────
+    // Discord's contract: every op-1 heartbeat is answered with op-11. A socket that dies without
+    // a close frame (NAT drop, long server freeze) previously kept connected=true forever — sends
+    // failed silently and the presence player-count froze stale until restart (the "count only
+    // sometimes right" bug). Track ACKs; missing two in a row ⇒ the connection is a zombie.
+    private volatile long lastAckAt           = 0;
+    private volatile long heartbeatIntervalMs = 0;
 
     public DiscordGateway(MinecraftServer server, String botToken,
                           String channelId, String allowedRoleId,
@@ -138,7 +147,7 @@ public class DiscordGateway {
                     startHeartbeat(interval);
                     identify();
                 }
-                case 11 -> {} // Heartbeat ACK
+                case 11 -> lastAckAt = System.currentTimeMillis(); // Heartbeat ACK — connection is alive
                 case 1  -> submitHeartbeat();
                 case 7  -> reconnect();   // Server-requested reconnect
                 case 9  -> { // Invalid session
@@ -222,6 +231,8 @@ public class DiscordGateway {
     private void startHeartbeat(int intervalMs) {
         stopHeartbeat();
         if (sender == null) return;
+        heartbeatIntervalMs = intervalMs;
+        lastAckAt = System.currentTimeMillis();             // fresh session — nothing owed yet
         long jitter = (long)(intervalMs * Math.random());   // initial jitter per Discord docs
         heartbeatTask = sender.scheduleAtFixedRate(this::sendHeartbeatNow, jitter, intervalMs, TimeUnit.MILLISECONDS);
     }
@@ -236,6 +247,17 @@ public class DiscordGateway {
 
     /** Sender thread only. */
     private void sendHeartbeatNow() {
+        // Zombie check FIRST: two heartbeat intervals with no op-11 ACK means the socket is dead
+        // even though it never fired onClose — abort and reconnect (per the Discord gateway spec).
+        long interval = heartbeatIntervalMs;
+        if (connected && interval > 0 && lastAckAt > 0
+                && System.currentTimeMillis() - lastAckAt > interval * 2 + 5_000) {
+            CoffeesAeroAuth.LOGGER.warn(
+                "[Discord] No heartbeat ACK for {}s — zombie connection, forcing reconnect.",
+                (System.currentTimeMillis() - lastAckAt) / 1000);
+            reconnect();
+            return;
+        }
         JsonObject p = new JsonObject();
         p.addProperty("op", 1);
         if (lastSeq >= 0) p.addProperty("d", lastSeq);
@@ -261,7 +283,11 @@ public class DiscordGateway {
     private void flushPresence() {
         if (!connected || ws == null || presenceSuppressed) return;
         String desired = presenceDesired;
-        if (desired == null || desired.equals(presenceSent)) return;
+        if (desired == null) return;
+        // Unchanged presence is still re-asserted every PRESENCE_REFRESH_MS: a lost frame or a
+        // sneaky re-identify can leave Discord showing a stale count that no change would ever fix.
+        if (desired.equals(presenceSent)
+                && System.currentTimeMillis() - presenceSentAt < PRESENCE_REFRESH_MS) return;
         long wait = presenceSentAt + PRESENCE_MIN_INTERVAL_MS - System.currentTimeMillis();
         if (wait > 0) {
             if (!presenceFlushQueued) {

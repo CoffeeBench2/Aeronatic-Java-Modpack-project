@@ -61,6 +61,17 @@ public class AuthConfig {
     // ── /tpa (our own — replaces FTB Essentials' selector-based one) ──────────
     public static final ModConfigSpec.IntValue     TPA_TIMEOUT_SECONDS;
 
+    // ── /rtp (our own — replaces FTB Essentials' sync-chunk-gen one) ──────────
+    public static final ModConfigSpec.BooleanValue RTP_ENABLED;
+    public static final ModConfigSpec.IntValue     RTP_COOLDOWN_HOURS;
+    public static final ModConfigSpec.IntValue     RTP_MIN_DISTANCE;
+    public static final ModConfigSpec.IntValue     RTP_MAX_DISTANCE;
+    public static final ModConfigSpec.IntValue     RTP_MIN_WAIT_SECONDS;
+    public static final ModConfigSpec.IntValue     RTP_TIMEOUT_SECONDS;
+
+    // ── Gate reconnect grace ──────────────────────────────────────────────────
+    public static final ModConfigSpec.IntValue     PREMIUM_RECONNECT_GRACE_MINUTES;
+
     // ── Discord ───────────────────────────────────────────────────────────────
     public static final ModConfigSpec.BooleanValue DISCORD_ENABLED;
     public static final ModConfigSpec.ConfigValue<String>  DISCORD_BOT_TOKEN;
@@ -286,6 +297,32 @@ public class AuthConfig {
         b.comment("Our own /tpa — replaces FTB Essentials' (disabled via ftbessentials.snbt)").push("tpa");
         TPA_TIMEOUT_SECONDS = b.comment("A /tpa request expires if not accepted/denied within this many seconds.")
             .defineInRange("tpaTimeoutSeconds", 60, 10, 600);
+        b.pop();
+
+        b.comment("Our own /rtp — replaces FTB Essentials' (disabled via ftbessentials.snbt), whose",
+                  "synchronous destination chunk-gen froze the server 20-40s per use on this worldgen stack.")
+            .push("rtp");
+        RTP_ENABLED = b.comment("Enable /rtp.")
+            .define("rtpEnabled", true);
+        RTP_COOLDOWN_HOURS = b.comment("Hours between /rtp uses per player (persisted across restarts/relogs). Ops exempt. 0 = no cooldown.")
+            .defineInRange("rtpCooldownHours", 24, 0, 720);
+        RTP_MIN_DISTANCE = b.comment("Minimum distance (blocks) from world spawn for the random target.")
+            .defineInRange("rtpMinDistance", 1500, 100, 1_000_000);
+        RTP_MAX_DISTANCE = b.comment("Maximum distance (blocks) from world spawn. Keep modest — greater distance = more ungenerated terrain to build. (FTBE's old 25000 was the freeze.)")
+            .defineInRange("rtpMaxDistance", 10000, 500, 1_000_000);
+        RTP_MIN_WAIT_SECONDS = b.comment("Minimum seconds the player waits (watching the progress bar) even if chunks finish early.")
+            .defineInRange("rtpMinWaitSeconds", 10, 0, 120);
+        RTP_TIMEOUT_SECONDS = b.comment("Abort (and refund the cooldown) if the destination isn't generated within this many seconds.")
+            .defineInRange("rtpTimeoutSeconds", 90, 20, 600);
+        b.pop();
+
+        b.comment("Transfer-gate reconnect grace").push("gate");
+        PREMIUM_RECONNECT_GRACE_MINUTES = b.comment(
+                "Minutes a gate-verified PREMIUM player may reconnect DIRECTLY (spent/missing cookie) from the",
+                "SAME IP and still resolve premium. Covers launcher auto-reconnects after kicks/freezes, where",
+                "the single-use cookie is already consumed and the player was being demoted to the offline flow.",
+                "0 = disabled (old behaviour: any rejected cookie resolves OFFLINE).")
+            .defineInRange("premiumReconnectGraceMinutes", 10, 0, 1440);
         b.pop();
 
         SERVER_SPEC = b.build();

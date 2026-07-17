@@ -360,6 +360,9 @@ public class AuthManager {
         // Start the reconnect grace window from logout: a return within SESSION_GRACE_MINUTES skips
         // login; after it, the session is expired and the player must /login again (in the lobby).
         sessionTokens.touchOnLogout(uuid);
+        // Premium equivalent: restart the same-IP cookie-replay grace so a kicked/crashed premium
+        // player's direct reconnect (spent cookie) still resolves PREMIUM.
+        PremiumReconnectGrace.touch(player.getGameProfile().getName());
         authStates.remove(uuid);
         frozenPos.remove(uuid);
         joinTimes.remove(uuid);

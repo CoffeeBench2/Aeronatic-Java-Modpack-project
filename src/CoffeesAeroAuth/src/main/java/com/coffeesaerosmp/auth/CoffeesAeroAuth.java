@@ -103,6 +103,10 @@ public class CoffeesAeroAuth {
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.tick.ServerTickEvent.Post e) ->
             com.coffeesaerosmp.auth.tablist.TabListManager.onServerTick(e.getServer()));
 
+        // /rtp async pregen driver (progress action bar, teleport-when-ready, timeouts).
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.tick.ServerTickEvent.Post e) ->
+            com.coffeesaerosmp.auth.commands.RtpCommand.onServerTick(e.getServer()));
+
         // Chat formatting + Discord bridge
         NeoForge.EVENT_BUS.addListener(ChatEvents::onServerChat);
 
@@ -203,6 +207,7 @@ public class CoffeesAeroAuth {
         LOBBY_STASH    = new com.coffeesaerosmp.auth.lobby.LobbyInventoryStash(dataDir);
         LOBBY_STASH.initialize();
         com.coffeesaerosmp.auth.clan.ClanTags.initialize(dataDir);
+        com.coffeesaerosmp.auth.commands.RtpCommand.initialize(dataDir);
 
         // ── Obsidian stack ────────────────────────────────────────────────────
         if (AuthConfig.OBSIDIAN_ENABLED.get()) {
@@ -271,20 +276,43 @@ public class CoffeesAeroAuth {
             return;
         }
         if (payload == null) {                               // direct connect / not via the gate
+            if (resolveViaReconnectGrace(player, name, "no cookie")) return;
             AUTH_MANAGER.resolvePlayerType(player, false);
             return;
         }
         com.coffeesaerosmp.auth.auth.CookieAuth.Verified v = COOKIE_AUTH.verify(payload);
         if (v == null) {
+            // A spent cookie is NORMAL on a direct reconnect (launcher auto-reconnect after a kick):
+            // the nonce is single-use. Same name + same IP inside the grace window still counts as
+            // the gate-verified premium player; everything else stays OFFLINE as before.
+            if (resolveViaReconnectGrace(player, name, "cookie invalid/expired/replay")) return;
             LOGGER.warn("[Gate] Cookie REJECTED for {} (invalid/expired/replay) — treating as OFFLINE.", name);
             AUTH_MANAGER.resolvePlayerType(player, false);
             return;
         }
         LOGGER.info("[Gate] Cookie OK: {} -> {} (verified UUID {}).",
             name, v.premium() ? "PREMIUM" : "OFFLINE", v.uuid());
+        if (v.premium()) {
+            com.coffeesaerosmp.auth.auth.PremiumReconnectGrace.record(
+                name, v.uuid(), com.coffeesaerosmp.auth.util.NetUtil.getPlayerIP(player));
+        }
         AUTH_MANAGER.resolvePlayerType(player, v.premium());
         // Premium: show their REAL Mojang skin (fetched by the gate-verified UUID) on this offline server.
         if (v.premium()) com.coffeesaerosmp.auth.compat.SkinsHook.applyPremium(player, v.uuid());
+    }
+
+    /** Premium reconnect grace: true if the player was resolved PREMIUM from a recent same-IP session. */
+    private static boolean resolveViaReconnectGrace(net.minecraft.server.level.ServerPlayer player,
+                                                    String name, String why) {
+        String ip = com.coffeesaerosmp.auth.util.NetUtil.getPlayerIP(player);
+        java.util.UUID mojangUuid = com.coffeesaerosmp.auth.auth.PremiumReconnectGrace.check(name, ip);
+        if (mojangUuid == null) return false;
+        LOGGER.info("[Gate] Reconnect grace: {} ({}) re-resolved PREMIUM — same IP within the grace window.",
+            name, why);
+        com.coffeesaerosmp.auth.auth.PremiumReconnectGrace.record(name, mojangUuid, ip);   // refresh
+        AUTH_MANAGER.resolvePlayerType(player, true);
+        com.coffeesaerosmp.auth.compat.SkinsHook.applyPremium(player, mojangUuid);
+        return true;
     }
 
     private static void onRegisterCommands(RegisterCommandsEvent event) {
@@ -292,5 +320,6 @@ public class CoffeesAeroAuth {
         ProfileCommands.register(event.getDispatcher());
         com.coffeesaerosmp.auth.pvp.CombatGuard.registerCommands(event.getDispatcher());
         com.coffeesaerosmp.auth.commands.TpaCommands.register(event.getDispatcher());
+        com.coffeesaerosmp.auth.commands.RtpCommand.register(event.getDispatcher());
     }
 }
