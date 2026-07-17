@@ -1,11 +1,11 @@
-﻿"""Build CoffeesAeroSMP-<version>.mrpack â€” self-contained (files:[], everything bundled
+"""Build CoffeesAeroSMP-<version>.mrpack â€” self-contained (files:[], everything bundled
 as overrides/). Mirrors the proven 1.2.0 layout: config, mods, resourcepacks,
 shaderpacks, options.txt. Skips empty/world-scoped datapacks."""
 import zipfile, json, os
 
 ROOT = r"D:\MC Project\untitled"
 OVERRIDES = os.path.join(ROOT, "overrides")
-VERSION = "1.8.0"
+VERSION = "1.8.1"
 OUT = rf"D:\MC Project\Releases\CoffeesAeroSMP-{VERSION}.mrpack"
 
 # Stamp the version into the CoffeesAeroCore client config so the in-game version check

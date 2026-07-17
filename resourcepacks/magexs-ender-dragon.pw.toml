@@ -1,0 +1,13 @@
+name = "Magex's Better Ender Dragon"
+filename = "Magex's Ender Dragon.zip"
+side = "client"
+
+[download]
+url = "https://cdn.modrinth.com/data/ilmrlASz/versions/FGBDuRgX/Magex%27s%20Ender%20Dragon.zip"
+hash-format = "sha512"
+hash = "228caa88f6282b213962c52563a154796391f83086bb5cdf937538892358042b4c9b4e5b13f4434e0c44b2a41414bab28ef98e65480b9e0e4b5ffe1a62ece12b"
+
+[update]
+[update.modrinth]
+mod-id = "ilmrlASz"
+version = "FGBDuRgX"

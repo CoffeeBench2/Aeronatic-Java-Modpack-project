@@ -959,11 +959,11 @@ hash = "ff15da34b5f6f825dcc32399ab150c2462393031a41c8ea6938d6dd61b11fb04"
 
 [[files]]
 file = "overrides/config/coffees_aero_announcements.json"
-hash = "5b16c99af006815cddeb725a87571209358ad07057d36af61013ea0dfd3ad5ab"
+hash = "e2e9963029d911ba1a07dcc34e6acc0ea92e44f172623f75b5e7842e749b0976"
 
 [[files]]
 file = "overrides/config/coffeesaerosmp_core-client.toml"
-hash = "24a988b5a9aa951536543f0fedd36129fc6aa8cddf708691df658959a9b6da37"
+hash = "52d6904b363e5803a9f94a2c8c406c545cd12cad9a8ded63e956c9690d533dd6"
 
 [[files]]
 file = "overrides/config/entity_texture_features.json"
@@ -1035,7 +1035,7 @@ hash = "6e021d45c48931bb84e306a4a9644a6b84d81b46272774e37bab3f0eccbae532"
 
 [[files]]
 file = "overrides/options.txt"
-hash = "fefea9417fbaf07458d832f0c634bdcd0e9612c37dcecc937f9272f5224ec178"
+hash = "8461d3464fad9f395bb895831fb0abcbf4a053582c520189aa6bc092cf4ba55a"
 
 [[files]]
 file = "resourcepacks/amazing-mace-3d.pw.toml"
@@ -1068,18 +1068,8 @@ hash = "738d2d8073ad1921260492e8b0ecee53755c9b9e2d7508bb10c5c9c899d4ab65"
 metafile = true
 
 [[files]]
-file = "resourcepacks/fa-objects-v2-1-1.pw.toml"
-hash = "3e1826a286fe3c8c49c0f4b3fbe556622bc99297f69452578b436dcc48f227b0"
-metafile = true
-
-[[files]]
-file = "resourcepacks/fa-player-v1-1.pw.toml"
-hash = "4bfe7629c703a63a5b1c9227332f032ad85f13d8498794b57e1535240da018cb"
-metafile = true
-
-[[files]]
-file = "resourcepacks/freshanimations-v1-10-4.pw.toml"
-hash = "aa65ac32ae6b6b8f8a7a5b99d488c21f95666c384c5e517a1114e4d0fa4856bd"
+file = "resourcepacks/magexs-ender-dragon.pw.toml"
+hash = "dc207c87df190d6a8c0d9558bc5a7b7a119c652e4d4da1f52079b22064cf9d4e"
 metafile = true
 
 [[files]]
