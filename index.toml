@@ -12,7 +12,7 @@ metafile = true
 
 [[files]]
 file = "mods/aero-cam-sync-1-2-0.pw.toml"
-hash = "0ba8271fbed7eca04dd2f2301ab06fd715e57af3ea15c3bbd355fc559f8dad73"
+hash = "b86b82c1eccc6dbcf3880d2a87ee7277f447f29f5949060dcf3969150af4d130"
 metafile = true
 
 [[files]]
@@ -401,6 +401,16 @@ hash = "1feb2d62cd3610bbf6edd25fca30a5a0c80a3b6f14257ef38bab5f0b044d6ccf"
 metafile = true
 
 [[files]]
+file = "mods/end-villager-outpost.pw.toml"
+hash = "cd9d0be82833dacb7377aa42604cdcf254bfc0ef6cb4007e564161a6bdbe851f"
+metafile = true
+
+[[files]]
+file = "mods/enderman-overhaul.pw.toml"
+hash = "1045ba1bb46eb77e2fea9be04268c2c73c161b94f3bceddbd4c3dbff1c0bf555"
+metafile = true
+
+[[files]]
 file = "mods/ends-delight-2-5-1-neoforge-1-21-1.pw.toml"
 hash = "88de3f7b270da88021ff6c30ed82bb6adc35b4217c1d278b9d5058562d38dc9c"
 metafile = true
@@ -721,6 +731,11 @@ hash = "0a34492da40afdcd5c1a53b4c5bf6f296532762fe365f5df8d3f26dbcc4f47a9"
 metafile = true
 
 [[files]]
+file = "mods/polymorph.pw.toml"
+hash = "152769b5dfbb92a836634e315898b23b6a555c60b6f05ddf38c00085f2b784f6"
+metafile = true
+
+[[files]]
 file = "mods/polytone-1-21-3-6-7-neoforge.pw.toml"
 hash = "747022afc0af49586eb9d8dfa3c26ae9cf50da0020429d8e52ec9b63e7b7e074"
 metafile = true
@@ -748,6 +763,11 @@ metafile = true
 [[files]]
 file = "mods/railwaysuntold-neoforge-1-2-0.pw.toml"
 hash = "6ad66f15c8c4bcca51a4508f08d983cce2c0174928dd899933b70948a51dfab2"
+metafile = true
+
+[[files]]
+file = "mods/resourceful-config.pw.toml"
+hash = "27721caca5a03b743bf25888e1d984142948069dace31453f103f94f7f24d2ce"
 metafile = true
 
 [[files]]
@@ -833,6 +853,11 @@ metafile = true
 [[files]]
 file = "mods/staaaaaaaaaaaack-neoforge-1-21-1-1-8.pw.toml"
 hash = "1709ff10a3376dacd7e19cd54064d8d47a12723a4bd7ecdc019e15b87df1de94"
+metafile = true
+
+[[files]]
+file = "mods/stellarity.pw.toml"
+hash = "d00442fc5ca76e08c5b1dc9eb15ee67ea993b608fae12c7b48529e044b543303"
 metafile = true
 
 [[files]]
@@ -1035,7 +1060,7 @@ hash = "6e021d45c48931bb84e306a4a9644a6b84d81b46272774e37bab3f0eccbae532"
 
 [[files]]
 file = "overrides/options.txt"
-hash = "8461d3464fad9f395bb895831fb0abcbf4a053582c520189aa6bc092cf4ba55a"
+hash = "758b13a01d76e9224973ca969fb477ba4ee78d7d5e69ca4018bf595c7f0ba1c0"
 
 [[files]]
 file = "resourcepacks/amazing-mace-3d.pw.toml"
@@ -1085,6 +1110,11 @@ metafile = true
 [[files]]
 file = "resourcepacks/trabens-3d-arrows-1-1.pw.toml"
 hash = "a5fbfa8f1d8c32bb47aea0e64750e8306a3777427d237f6078a33137f22fec64"
+metafile = true
+
+[[files]]
+file = "resourcepacks/visual-effects-plus.pw.toml"
+hash = "75800d894c2d2600bb590f396a5aac164c6342b033e23a3672da8f46915da856"
 metafile = true
 
 [[files]]
