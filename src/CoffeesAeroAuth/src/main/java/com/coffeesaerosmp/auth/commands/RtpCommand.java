@@ -20,7 +20,6 @@ import net.minecraft.tags.BiomeTags;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.minecraft.world.level.levelgen.Heightmap;
 
 import java.nio.file.Files;
@@ -31,7 +30,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Our own /rtp — replaces FTB Essentials' (disabled via the shipped ftbessentials.snbt), whose
@@ -39,32 +37,44 @@ import java.util.concurrent.atomic.AtomicInteger;
  * (Terralith/Tectonic; 2026-07-17: 756 ticks behind, every player disconnected).
  *
  * <p>Flow: pick a random ring target (biome-sampled to avoid oceans — a generator BiomeSource query,
- * no chunks generated), then request the 5×5 chunk area through {@link ServerChunkCache#getChunkFuture}
- * so c2me generates it OFF the server thread. The player waits in place watching an action-bar
- * progress readout and teleports only when every chunk is ready AND the minimum wait has elapsed.
- * Long cooldown (default 24h) persisted to {@code rtp_cooldowns.json} so relogs/restarts don't
- * reset it; ops exempt. Abort paths (timeout, all-water landing after one re-chart, logout) never
- * charge the cooldown.</p>
+ * no chunks generated), add a region ticket over the whole arrival bubble (default 15×15 chunks —
+ * covering the view distance matters: a 5×5-only pregen still froze the LIVE server 36s when the
+ * surrounding view-distance worldgen burst hit c2me's sync-load stall), and poll readiness with
+ * {@link ServerChunkCache#getChunkNow} — never {@code getChunkFuture}, which secretly
+ * {@code managedBlock}s the server thread when called from it. The chunk system + c2me generate
+ * everything in the background, center-out, while the player waits in place watching an action-bar
+ * progress readout; the teleport happens only when EVERY chunk is ready AND the minimum wait has
+ * elapsed. Long cooldown (default 24h) persisted to {@code rtp_cooldowns.json} so relogs/restarts
+ * don't reset it; ops exempt. Abort paths (timeout, all-water landing after one re-chart, logout)
+ * never charge the cooldown.</p>
  */
 public final class RtpCommand {
 
-    /** Keeps the destination area ticketed while we generate; auto-expires as a safety net. */
+    /** Keeps the destination area ticketed while we generate; timeout is a leak safety net — the
+     *  per-tick driver re-adds it periodically so it never expires while a request is pending. */
     private static final TicketType<ChunkPos> RTP_TICKET =
-        TicketType.create("aero_rtp", Comparator.comparingLong(ChunkPos::toLong), 20 * 150);
+        TicketType.create("aero_rtp", Comparator.comparingLong(ChunkPos::toLong), 20 * 300);
 
-    private static final int CHUNK_RADIUS = 2;   // 5×5 chunks around the target
+    private static final int TICKET_REFRESH_TICKS = 200;   // re-add well inside the ticket timeout
+    private static final int POLL_INTERVAL_TICKS  = 5;
 
     private static final class Pending {
         final ServerLevel level;
         final int x, z;                          // block coords of the target center
-        final long startedAtMs;
+        final ChunkPos center;
+        final int radius;                        // chunk radius fully generated before teleport
         final int totalChunks;
-        final AtomicInteger doneChunks = new AtomicInteger();
+        final long startedAtMs;
+        int readyChunks = 0;                     // refreshed by the poll
+        int ticksSinceRefresh = 0;
         boolean recharted = false;               // one automatic ocean re-roll allowed
 
-        Pending(ServerLevel level, int x, int z, long startedAtMs, int totalChunks) {
+        Pending(ServerLevel level, int x, int z, int radius, long startedAtMs) {
             this.level = level; this.x = x; this.z = z;
-            this.startedAtMs = startedAtMs; this.totalChunks = totalChunks;
+            this.center = new ChunkPos(BlockPos.containing(x, 0, z));
+            this.radius = radius;
+            this.totalChunks = (radius * 2 + 1) * (radius * 2 + 1);
+            this.startedAtMs = startedAtMs;
         }
     }
 
@@ -143,23 +153,17 @@ public final class RtpCommand {
 
     private static void start(ServerPlayer player, ServerLevel level, boolean isRechart) {
         int[] target = pickTarget(level);
-        Pending p = new Pending(level, target[0], target[1], System.currentTimeMillis(),
-            (CHUNK_RADIUS * 2 + 1) * (CHUNK_RADIUS * 2 + 1));
+        Pending p = new Pending(level, target[0], target[1],
+            AuthConfig.RTP_PREGEN_RADIUS.get(), System.currentTimeMillis());
         p.recharted = isRechart;
         pending.put(player.getUUID(), p);
 
-        ChunkPos center = new ChunkPos(BlockPos.containing(p.x, 0, p.z));
-        ServerChunkCache chunks = level.getChunkSource();
-        chunks.addRegionTicket(RTP_TICKET, center, CHUNK_RADIUS + 1, center);
-        MinecraftServer server = level.getServer();
-        for (int cx = center.x - CHUNK_RADIUS; cx <= center.x + CHUNK_RADIUS; cx++) {
-            for (int cz = center.z - CHUNK_RADIUS; cz <= center.z + CHUNK_RADIUS; cz++) {
-                chunks.getChunkFuture(cx, cz, ChunkStatus.FULL, true)
-                    .whenCompleteAsync((r, err) -> p.doneChunks.incrementAndGet(), server);
-            }
-        }
+        // One region ticket over the whole bubble — the chunk system generates it in the background,
+        // closest-first by ticket level. NO chunk accessors here: getChunkFuture/getChunk from the
+        // server thread managedBlock the tick loop (the 1.6.26 mistake); readiness is polled instead.
+        level.getChunkSource().addRegionTicket(RTP_TICKET, p.center, p.radius + 1, p.center);
         if (!isRechart) {
-            msg(player, "§7✈ Charting a course to somewhere new… stay put, this can take a moment.");
+            msg(player, "§7✈ Charting a course to somewhere new… stay put while the world takes shape.");
         }
     }
 
@@ -198,28 +202,38 @@ public final class RtpCommand {
             ServerPlayer player = server.getPlayerList().getPlayer(entry.getKey());
             Pending p = entry.getValue();
             if (player == null) {                          // logged out — abandon, no cooldown charged
-                finish(entry.getKey(), p);
+                finish(entry.getKey(), p, true);
                 continue;
             }
+            // Refresh the region ticket well inside its timeout so a long pregen never loses it.
+            if (++p.ticksSinceRefresh >= TICKET_REFRESH_TICKS) {
+                p.ticksSinceRefresh = 0;
+                p.level.getChunkSource().addRegionTicket(RTP_TICKET, p.center, p.radius + 1, p.center);
+            }
+            if (player.tickCount % POLL_INTERVAL_TICKS == 0 && p.readyChunks < p.totalChunks) {
+                p.readyChunks = countReadyChunks(p);       // getChunkNow — pure map lookups, no blocking
+            }
             long elapsedMs = System.currentTimeMillis() - p.startedAtMs;
-            boolean generated = p.doneChunks.get() >= p.totalChunks;
+            boolean generated = p.readyChunks >= p.totalChunks;
             long minWaitMs = AuthConfig.RTP_MIN_WAIT_SECONDS.get() * 1000L;
 
             if (!generated && elapsedMs > AuthConfig.RTP_TIMEOUT_SECONDS.get() * 1000L) {
-                finish(entry.getKey(), p);
+                finish(entry.getKey(), p, true);
                 msg(player, "§cThe world took too long to shape itself — try /rtp again (no cooldown used).");
                 continue;
             }
             if (generated && elapsedMs >= minWaitMs) {
-                finish(entry.getKey(), p);
+                // Keep the ticket through the arrival (it self-expires): the freshly generated bubble
+                // must not unload/regenerate while the client streams in around the player.
+                finish(entry.getKey(), p, false);
                 land(player, p);
                 continue;
             }
             if (player.tickCount % 20 != 0) continue;      // action-bar updates once a second
             if (!generated) {
-                int pct = Math.min(99, p.doneChunks.get() * 100 / p.totalChunks);
+                int pct = Math.min(99, p.readyChunks * 100 / p.totalChunks);
                 player.displayClientMessage(Component.literal(
-                    "§6✈ §eCharting course… §f" + pct + "%"), true);
+                    "§6✈ §eCharting course… §f" + pct + "% §8(" + p.readyChunks + "/" + p.totalChunks + " chunks)"), true);
             } else {
                 long waitLeft = (minWaitMs - elapsedMs + 999) / 1000;
                 player.displayClientMessage(Component.literal(
@@ -228,17 +242,31 @@ public final class RtpCommand {
         }
     }
 
-    private static void finish(UUID uuid, Pending p) {
+    /** Non-blocking readiness count: {@code getChunkNow} returns only fully-loaded FULL chunks. */
+    private static int countReadyChunks(Pending p) {
+        ServerChunkCache chunks = p.level.getChunkSource();
+        int ready = 0;
+        for (int cx = p.center.x - p.radius; cx <= p.center.x + p.radius; cx++) {
+            for (int cz = p.center.z - p.radius; cz <= p.center.z + p.radius; cz++) {
+                if (chunks.getChunkNow(cx, cz) != null) ready++;
+            }
+        }
+        return ready;
+    }
+
+    /** Ends the pending request. {@code releaseTicket} false = let the arrival keep the area loaded
+     *  until the ticket's own timeout (the player's presence takes over from there). */
+    private static void finish(UUID uuid, Pending p, boolean releaseTicket) {
         pending.remove(uuid);
-        ChunkPos center = new ChunkPos(BlockPos.containing(p.x, 0, p.z));
+        if (!releaseTicket) return;
         try {
-            p.level.getChunkSource().removeRegionTicket(RTP_TICKET, center, CHUNK_RADIUS + 1, center);
+            p.level.getChunkSource().removeRegionTicket(RTP_TICKET, p.center, p.radius + 1, p.center);
         } catch (Exception ignored) {}   // ticket may have hit its timeout already
     }
 
     /** Chunks are generated — find a dry column near the target and teleport. */
     private static void land(ServerPlayer player, Pending p) {
-        BlockPos spot = findDryColumn(p.level, p.x, p.z);
+        BlockPos spot = findDryColumn(p.level, p.x, p.z, p.radius);
         if (spot == null) {
             if (!p.recharted) {
                 msg(player, "§7Open water below — re-charting…");
@@ -261,8 +289,8 @@ public final class RtpCommand {
     }
 
     /** Spiral outward from the target over the pregenerated area looking for a solid, fluid-free top. */
-    private static BlockPos findDryColumn(ServerLevel level, int x, int z) {
-        int reach = CHUNK_RADIUS * 16 + 8;
+    private static BlockPos findDryColumn(ServerLevel level, int x, int z, int chunkRadius) {
+        int reach = chunkRadius * 16 + 8;
         for (int radius = 0; radius <= reach; radius += 4) {
             for (int dx = -radius; dx <= radius; dx += 4) {
                 for (int dz = -radius; dz <= radius; dz += 4) {

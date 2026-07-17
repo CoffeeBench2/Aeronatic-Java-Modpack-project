@@ -68,6 +68,7 @@ public class AuthConfig {
     public static final ModConfigSpec.IntValue     RTP_MAX_DISTANCE;
     public static final ModConfigSpec.IntValue     RTP_MIN_WAIT_SECONDS;
     public static final ModConfigSpec.IntValue     RTP_TIMEOUT_SECONDS;
+    public static final ModConfigSpec.IntValue     RTP_PREGEN_RADIUS;
 
     // ── Gate reconnect grace ──────────────────────────────────────────────────
     public static final ModConfigSpec.IntValue     PREMIUM_RECONNECT_GRACE_MINUTES;
@@ -312,8 +313,15 @@ public class AuthConfig {
             .defineInRange("rtpMaxDistance", 10000, 500, 1_000_000);
         RTP_MIN_WAIT_SECONDS = b.comment("Minimum seconds the player waits (watching the progress bar) even if chunks finish early.")
             .defineInRange("rtpMinWaitSeconds", 10, 0, 120);
-        RTP_TIMEOUT_SECONDS = b.comment("Abort (and refund the cooldown) if the destination isn't generated within this many seconds.")
-            .defineInRange("rtpTimeoutSeconds", 90, 20, 600);
+        RTP_TIMEOUT_SECONDS = b.comment("Abort (and refund the cooldown) if the destination isn't generated within this many seconds.",
+                "Virgin terrain at pregen radius 7 is typically 30-90s on the live stack; leave headroom.")
+            .defineInRange("rtpTimeoutSeconds", 180, 20, 600);
+        RTP_PREGEN_RADIUS = b.comment(
+                "Chunk radius fully generated BEFORE the teleport (7 = 15x15 chunks). Must roughly cover the",
+                "server view distance: arriving inside a small generated island made the surrounding view-distance",
+                "worldgen burst stall the main thread via c2me sync-loads (2026-07-17: 36s freeze AFTER a 5x5-only",
+                "pregen teleport). Bigger = longer /rtp wait but a smooth arrival.")
+            .defineInRange("rtpPregenRadius", 7, 2, 16);
         b.pop();
 
         b.comment("Transfer-gate reconnect grace").push("gate");
