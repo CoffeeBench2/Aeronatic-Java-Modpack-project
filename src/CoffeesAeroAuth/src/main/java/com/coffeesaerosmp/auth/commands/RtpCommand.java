@@ -84,6 +84,8 @@ public final class RtpCommand {
     }
 
     private static final Map<UUID, Pending> pending   = new ConcurrentHashMap<>();
+    /** Players whose target is being picked on a background thread (guards double-/rtp). */
+    private static final Set<UUID>          choosing  = ConcurrentHashMap.newKeySet();
     private static final Map<UUID, Long>    cooldowns = new ConcurrentHashMap<>();
     private static volatile Path cooldownFile;
 
@@ -136,7 +138,7 @@ public final class RtpCommand {
             msg(player, "§cFinish logging in first.");
             return;
         }
-        if (pending.containsKey(uuid)) {
+        if (pending.containsKey(uuid) || choosing.contains(uuid)) {
             msg(player, "§7Your destination is still being charted — hold tight.");
             return;
         }
@@ -157,15 +159,45 @@ public final class RtpCommand {
     }
 
     private static void start(ServerPlayer player, ServerLevel level, boolean isRechart) {
-        int[] target = pickTarget(level);
+        UUID uuid = player.getUUID();
+        String name = player.getGameProfile().getName();
+        choosing.add(uuid);
+        if (!isRechart) {
+            msg(player, "§7✈ Charting a course to somewhere new… stay put while the world takes shape.");
+        }
+        // Target selection runs OFF the server thread (the 1.6.29 lesson, 21:02 live log: 0/225
+        // chunks after 57s — the freeze began AT /rtp start, not during pregen). Each ocean-avoid
+        // biome sample evaluates the full uncached Terralith/Tectonic noise stack; an unlucky
+        // all-ocean roll = dozens of expensive samples = a 56s main-thread stall. The sampler is
+        // thread-safe (worker threads use it throughout worldgen), so the whole search moves to
+        // the background executor and only the ticket/bookkeeping hops back to the server thread.
+        java.util.concurrent.CompletableFuture
+            .supplyAsync(() -> pickTarget(level), net.minecraft.Util.backgroundExecutor())
+            .whenCompleteAsync((target, err) -> {
+                if (!choosing.remove(uuid)) return;              // superseded/cleared
+                ServerPlayer current = level.getServer().getPlayerList().getPlayer(uuid);
+                if (current == null) return;                     // logged out while sampling — nothing charged
+                if (err != null || target == null) {
+                    CoffeesAeroAuth.LOGGER.warn("[Rtp] {} target selection failed: {}", name,
+                        err != null ? err.toString() : "null");
+                    msg(current, "§cCouldn't chart a course — try /rtp again (no cooldown used).");
+                    return;
+                }
+                beginPregen(current, level, target, isRechart);
+            }, level.getServer());
+    }
+
+    /** Server thread. Target chosen — create the pending request and start the ring pregen. */
+    private static void beginPregen(ServerPlayer player, ServerLevel level, int[] target, boolean isRechart) {
         Pending p = new Pending(level, player.getGameProfile().getName(), target[0], target[1],
             AuthConfig.RTP_PREGEN_RADIUS.get(), System.currentTimeMillis());
         p.recharted = isRechart;
         pending.put(player.getUUID(), p);
         // Console timeline for freeze correlation: every rtp phase logs — this start line is what
         // lets a "server stalled at HH:MM:SS" be matched to whose pregen was running where.
-        CoffeesAeroAuth.LOGGER.info("[Rtp] {} charting to {} {} ({}x{} chunks{}).",
-            p.playerName, p.x, p.z, p.radius * 2 + 1, p.radius * 2 + 1, isRechart ? ", re-chart" : "");
+        CoffeesAeroAuth.LOGGER.info("[Rtp] {} charting to {} {} ({}x{} chunks{}, target picked in {}ms).",
+            p.playerName, p.x, p.z, p.radius * 2 + 1, p.radius * 2 + 1,
+            isRechart ? ", re-chart" : "", target.length > 2 ? target[2] : -1);
 
         // PROGRESSIVE pregen (the 1.6.27 lesson): one big radius ticket demanded all ~225 chunks at
         // once — worker threads saturated the shared CPU with Terralith gen AND the main thread ate
@@ -176,17 +208,17 @@ public final class RtpCommand {
         // the server thread managedBlock the tick loop (the 1.6.26 mistake); readiness is polled.
         p.ticketRadius = Math.min(2, p.radius);
         level.getChunkSource().addRegionTicket(RTP_TICKET, p.center, p.ticketRadius + 1, p.center);
-        if (!isRechart) {
-            msg(player, "§7✈ Charting a course to somewhere new… stay put while the world takes shape.");
-        }
     }
 
     /**
-     * Random ring target around world spawn. Biome-sampled straight from the generator's BiomeSource
-     * (climate noise only — generates nothing) to skip ocean/river landings; after 60 wet rolls the
-     * last candidate is used anyway and the landing scan deals with it.
+     * BACKGROUND THREAD. Random ring target around world spawn. Biome-sampled straight from the
+     * generator's BiomeSource (climate noise only — generates nothing, thread-safe) to skip
+     * ocean/river landings. Terralith/Tectonic make each sample expensive, so the search is both
+     * off-thread AND time-budgeted: after 60 wet rolls or 8s, the last candidate is used anyway
+     * and the landing scan's re-chart deals with it. Returns {x, z, elapsedMs}.
      */
     private static int[] pickTarget(ServerLevel level) {
+        long startedAt = System.currentTimeMillis();
         BlockPos spawn = level.getSharedSpawnPos();
         int min = AuthConfig.RTP_MIN_DISTANCE.get();
         int max = Math.max(AuthConfig.RTP_MAX_DISTANCE.get(), min + 1);
@@ -195,6 +227,7 @@ public final class RtpCommand {
         var sampler = level.getChunkSource().randomState().sampler();
         int x = spawn.getX(), z = spawn.getZ();
         for (int attempt = 0; attempt < 60; attempt++) {
+            if (System.currentTimeMillis() - startedAt > 8_000) break;   // budget — take what we have
             double angle = random.nextDouble() * Math.PI * 2;
             double dist  = min + random.nextDouble() * (max - min);
             x = spawn.getX() + (int) (Math.cos(angle) * dist);
@@ -205,7 +238,7 @@ public final class RtpCommand {
                 break;
             }
         }
-        return new int[]{x, z};
+        return new int[]{x, z, (int) (System.currentTimeMillis() - startedAt)};
     }
 
     // ── Per-tick driver (called from the mod's server-tick listener) ──────────
