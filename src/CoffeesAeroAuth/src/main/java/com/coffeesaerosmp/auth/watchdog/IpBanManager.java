@@ -123,6 +123,12 @@ public class IpBanManager {
 
     private void persistBan(String ip, String reason, long expiry) {
         if (!db.isAvailable()) return;
+        // Off the caller (watchdog fires these on the SERVER thread mid-attack): a remote-MySQL
+        // hiccup must never stall a tick. The in-memory ban already took effect above.
+        com.coffeesaerosmp.auth.util.AsyncIo.submit(() -> persistBanBlocking(ip, reason, expiry));
+    }
+
+    private void persistBanBlocking(String ip, String reason, long expiry) {
         try (Connection c = db.getConnection();
              PreparedStatement ps = c.prepareStatement(
                 "INSERT INTO ip_bans (ip_address, reason, banned_at, expires_at) VALUES (?,?,?,?) " +
@@ -139,6 +145,10 @@ public class IpBanManager {
 
     private void deleteBanFromDb(String ip) {
         if (!db.isAvailable()) return;
+        com.coffeesaerosmp.auth.util.AsyncIo.submit(() -> deleteBanBlocking(ip));
+    }
+
+    private void deleteBanBlocking(String ip) {
         try (Connection c = db.getConnection();
              PreparedStatement ps = c.prepareStatement("DELETE FROM ip_bans WHERE ip_address=?")) {
             ps.setString(1, ip);

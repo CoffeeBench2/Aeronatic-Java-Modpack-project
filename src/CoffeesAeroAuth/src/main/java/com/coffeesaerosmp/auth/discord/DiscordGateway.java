@@ -340,7 +340,9 @@ public class DiscordGateway {
         if (sock == null) return;
         lastSentFrame = json;
         try {
-            sock.sendText(json, true).join();
+            // Bounded join: an untimed join on a wedged socket would strand the sender thread —
+            // heartbeats queue behind it and even the zombie detector could never run.
+            sock.sendText(json, true).orTimeout(10, TimeUnit.SECONDS).join();
         } catch (Exception e) {
             CoffeesAeroAuth.LOGGER.debug("[Discord] send failed: {}", e.getMessage());
         }
