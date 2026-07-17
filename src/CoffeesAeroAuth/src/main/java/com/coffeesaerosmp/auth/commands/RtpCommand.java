@@ -65,6 +65,7 @@ public final class RtpCommand {
         final int radius;                        // chunk radius fully generated before teleport
         final int totalChunks;
         final long startedAtMs;
+        int ticketRadius;                        // current progressive ring (grows as rings finish)
         int readyChunks = 0;                     // refreshed by the poll
         int ticksSinceRefresh = 0;
         boolean recharted = false;               // one automatic ocean re-roll allowed
@@ -158,10 +159,15 @@ public final class RtpCommand {
         p.recharted = isRechart;
         pending.put(player.getUUID(), p);
 
-        // One region ticket over the whole bubble — the chunk system generates it in the background,
-        // closest-first by ticket level. NO chunk accessors here: getChunkFuture/getChunk from the
-        // server thread managedBlock the tick loop (the 1.6.26 mistake); readiness is polled instead.
-        level.getChunkSource().addRegionTicket(RTP_TICKET, p.center, p.radius + 1, p.center);
+        // PROGRESSIVE pregen (the 1.6.27 lesson): one big radius ticket demanded all ~225 chunks at
+        // once — worker threads saturated the shared CPU with Terralith gen AND the main thread ate
+        // a burst of full-chunk promotions + mod chunk-load hooks, starving the tick loop ~20s even
+        // with zero blocking calls (voicechat mass-timeouts). Start with a small ring and let the
+        // per-tick driver widen it only when the current ring is fully generated — the same trickle
+        // rate normal exploration produces. NO chunk accessors here: getChunkFuture/getChunk from
+        // the server thread managedBlock the tick loop (the 1.6.26 mistake); readiness is polled.
+        p.ticketRadius = Math.min(2, p.radius);
+        level.getChunkSource().addRegionTicket(RTP_TICKET, p.center, p.ticketRadius + 1, p.center);
         if (!isRechart) {
             msg(player, "§7✈ Charting a course to somewhere new… stay put while the world takes shape.");
         }
@@ -208,10 +214,21 @@ public final class RtpCommand {
             // Refresh the region ticket well inside its timeout so a long pregen never loses it.
             if (++p.ticksSinceRefresh >= TICKET_REFRESH_TICKS) {
                 p.ticksSinceRefresh = 0;
-                p.level.getChunkSource().addRegionTicket(RTP_TICKET, p.center, p.radius + 1, p.center);
+                p.level.getChunkSource().addRegionTicket(RTP_TICKET, p.center, p.ticketRadius + 1, p.center);
             }
             if (player.tickCount % POLL_INTERVAL_TICKS == 0 && p.readyChunks < p.totalChunks) {
                 p.readyChunks = countReadyChunks(p);       // getChunkNow — pure map lookups, no blocking
+                // Current ring fully generated → widen by 2 (overlap the tickets: add the wider one
+                // BEFORE dropping the old so the inner bubble never momentarily loses its ticket).
+                if (p.ticketRadius < p.radius
+                        && p.readyChunks >= (p.ticketRadius * 2 + 1) * (p.ticketRadius * 2 + 1)) {
+                    int old = p.ticketRadius;
+                    p.ticketRadius = Math.min(p.ticketRadius + 2, p.radius);
+                    p.level.getChunkSource().addRegionTicket(RTP_TICKET, p.center, p.ticketRadius + 1, p.center);
+                    try {
+                        p.level.getChunkSource().removeRegionTicket(RTP_TICKET, p.center, old + 1, p.center);
+                    } catch (Exception ignored) {}
+                }
             }
             long elapsedMs = System.currentTimeMillis() - p.startedAtMs;
             boolean generated = p.readyChunks >= p.totalChunks;
@@ -260,7 +277,7 @@ public final class RtpCommand {
         pending.remove(uuid);
         if (!releaseTicket) return;
         try {
-            p.level.getChunkSource().removeRegionTicket(RTP_TICKET, p.center, p.radius + 1, p.center);
+            p.level.getChunkSource().removeRegionTicket(RTP_TICKET, p.center, p.ticketRadius + 1, p.center);
         } catch (Exception ignored) {}   // ticket may have hit its timeout already
     }
 
