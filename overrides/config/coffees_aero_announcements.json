@@ -15,6 +15,21 @@
       "removed": []
     },
     {
+      "version": "1.8.1",
+      "date": "July 2026",
+      "title": "Dragon's Due",
+      "added": [
+        "The Ender Dragon got a glow-up — a fierce new look awaits when the End opens",
+        "Teleport cinematics now play only at waystones — everything else is instant"
+      ],
+      "fixed": [
+        "Smoother performance out in the wilds"
+      ],
+      "removed": [
+        "The animal animation packs — some critters looked broken with them; they'll return polished"
+      ]
+    },
+    {
       "version": "1.8.0",
       "date": "July 2026",
       "title": "Skies Alight",
