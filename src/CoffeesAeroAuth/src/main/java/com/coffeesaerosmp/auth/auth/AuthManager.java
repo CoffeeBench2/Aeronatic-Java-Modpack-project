@@ -451,8 +451,9 @@ public class AuthManager {
             player.setDeltaMovement(0, 0, 0);
         }
 
-        // Reminder every 5 seconds (100 ticks)
-        if (player.tickCount % 100 == 0) {
+        // Reminder every 20 seconds (was every 5s — the wall-of-text half of the 07-18 spam report;
+        // the instruction still repeats often enough that nobody gets stuck, without scrolling chat)
+        if (player.tickCount % 400 == 0) {
             AuthState state = authStates.getOrDefault(uuid, AuthState.PENDING);
             switch (state) {
                 case LOBBY_REGISTER ->
@@ -813,7 +814,7 @@ public class AuthManager {
         send(player, TextUtil.PREFIX + "§a✦ Display name approved: §f" + profile.displayName);
         send(player, TextUtil.PREFIX + "§eLook around your hangar, then type §a/spawn§e to enter the server.");
         send(player, TextUtil.PREFIX + "§7(Resource pack required on first join — accept when prompted.)");
-        sendSkinTip(player, profile);
+        WelcomeMessages.skinTip(player, profile);
         com.coffeesaerosmp.auth.events.PlayerAuthEvents.onOfflinePlayerAuthenticated(player);
     }
 
@@ -854,6 +855,7 @@ public class AuthManager {
             CoffeesAeroAuth.LOBBY_STASH.restore(player);
         }
         // First time entering the world → one-time starter currency + mark first-join complete.
+        boolean firstWorldEntry = profile != null && !profile.startupBonusGiven;
         if (profile != null) {
             if (!profile.startupBonusGiven) {
                 grantStartupBonus(player);
@@ -862,8 +864,9 @@ public class AuthManager {
             profile.firstJoinComplete = true;
             store.save(profile);
         }
-        String serverName = AuthConfig.SERVER_DISPLAY_NAME.get();
-        send(player, TextUtil.PREFIX + "§a✈ Welcome to §6§l" + serverName + "§a!");
+        // Banner only on the FIRST world entry — every later lobby round-trip used to replay it
+        // (part of the every-join welcome spam, reworked 2026-07-18 into WelcomeMessages).
+        if (firstWorldEntry) WelcomeMessages.firstSpawnBanner(player);
         return true;
     }
 
@@ -906,28 +909,16 @@ public class AuthManager {
     private void onAuthenticated(ServerPlayer player, PlayerProfile profile, boolean isNewAccount) {
         frozenPos.remove(player.getUUID());
         profile.sessionStartEpoch = System.currentTimeMillis();
+        boolean firstJoin = !profile.firstJoinComplete;
+        if (firstJoin) profile.firstJoinComplete = true;
         store.save(profile);
 
-        String serverName  = AuthConfig.SERVER_DISPLAY_NAME.get();
-        String displayName = profile.displayName != null ? profile.displayName : profile.username;
-
-        if (profile.getAccountType() == PlayerProfile.AccountType.PREMIUM) {
-            send(player, TextUtil.PREFIX + "§a✦ Verified — welcome, " + displayName + "§a!");
-        } else {
-            send(player, TextUtil.PREFIX + "§aLogged in. Welcome back, §f" + displayName + "§a!");
-        }
-
-        if (!profile.firstJoinComplete) {
-            profile.firstJoinComplete = true;
-            store.save(profile);
-            sendFirstJoinSequence(player, serverName);
-        } else {
-            sendWelcomeTitle(player, displayName, serverName);
-        }
+        // ALL cosmetic greeting surfaces (title, welcome chat, skin tip) live in WelcomeMessages,
+        // throttled to once per welcomeIntervalHours — the every-join replay was the 07-18 spam bug.
+        WelcomeMessages.onAuthComplete(player, profile, firstJoin);
 
         if (profile.getAccountType() == PlayerProfile.AccountType.OFFLINE) {
             com.coffeesaerosmp.auth.events.PlayerAuthEvents.onOfflinePlayerAuthenticated(player);
-            sendSkinTip(player, profile);
         }
 
         // Logged in inside the lobby (expired-session return, or a persisted lobby position) → make
@@ -936,27 +927,6 @@ public class AuthManager {
             if (CoffeesAeroAuth.ROOM_MANAGER != null) CoffeesAeroAuth.ROOM_MANAGER.ensureSafeFooting(player);
             send(player, TextUtil.PREFIX + "§eType §a/spawn§e to enter the server.");
         }
-    }
-
-    private void sendFirstJoinSequence(ServerPlayer player, String serverName) {
-        player.connection.send(new ClientboundSetTitlesAnimationPacket(20, 80, 20));
-        player.connection.send(new ClientboundSetTitleTextPacket(
-            Component.literal("§6§l" + serverName)));
-        player.connection.send(new ClientboundSetSubtitleTextPacket(
-            Component.literal("§eYour adventure begins now ✈")));
-        send(player, "§6§l╔═══════════════════════════╗");
-        send(player, "§6§l║  §e✈ Welcome aboard, pilot!  §6§l║");
-        send(player, "§6§l║  §7The #1 Create: Aeronautics  §6§l║");
-        send(player, "§6§l║  §7experience in Asia.         §6§l║");
-        send(player, "§6§l╚═══════════════════════════╝");
-    }
-
-    private void sendWelcomeTitle(ServerPlayer player, String displayName, String serverName) {
-        player.connection.send(new ClientboundSetTitlesAnimationPacket(10, 50, 20));
-        player.connection.send(new ClientboundSetTitleTextPacket(
-            Component.literal("§6§l" + serverName)));
-        player.connection.send(new ClientboundSetSubtitleTextPacket(
-            Component.literal("§eWelcome back, §f" + displayName + "§e!")));
     }
 
     // ── Accessors ─────────────────────────────────────────────────────────────
@@ -1020,18 +990,6 @@ public class AuthManager {
         } catch (Exception e) {
             return true; // #1 fail CLOSED — can't verify, assume the name is taken (reject it)
         }
-    }
-
-    /** Tells an offline player how many /skin uses they have left (silent once exhausted). */
-    private void sendSkinTip(ServerPlayer player, PlayerProfile profile) {
-        if (profile.getAccountType() != PlayerProfile.AccountType.OFFLINE) return;
-        // Compile-time constant from CoffeesAeroSkins — javac inlines the value (2), so this is
-        // safe even though the skins jar is compileOnly.
-        int max  = com.coffeesaerosmp.skins.server.SkinCommands.MAX_SKIN_CHANGES;
-        int left = max - profile.skinChangesUsed;
-        if (left <= 0) return;
-        send(player, TextUtil.PREFIX + "§b✦ Skins: §7use §a/skin <java_username>§7 to wear any Java account's skin — §e"
-            + left + " of " + max + "§7 change" + (left == 1 ? "" : "s") + " available (choose wisely!).");
     }
 
     /** Resolves a saved dimension id (e.g. "minecraft:overworld") to a loaded level, or null. */

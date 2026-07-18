@@ -26,6 +26,7 @@ public class AuthConfig {
     public static final ModConfigSpec.ConfigValue<String>  RESOURCE_PACK_HASH;
     public static final ModConfigSpec.ConfigValue<String>  SERVER_DISPLAY_NAME;
     public static final ModConfigSpec.ConfigValue<String>  DISPLAY_RGB_NAMES;
+    public static final ModConfigSpec.IntValue             WELCOME_INTERVAL_HOURS;
 
     // ── Watchdog ──────────────────────────────────────────────────────────────
     public static final ModConfigSpec.IntValue     LOGIN_STORM_FAILURES;
@@ -162,6 +163,11 @@ public class AuthConfig {
             .comment("Comma-separated usernames whose name renders as an animated RGB rainbow in chat + tab.",
                      "(A future /authmod namecolor command will manage this with more styles.)")
             .define("rgbNames", "MrCoffeeBench");
+        WELCOME_INTERVAL_HOURS = b
+            .comment("Hours between cosmetic welcome shows per player (title + welcome chat + skin tip).",
+                     "Persisted in welcome_shown.json so relogs/restarts don't replay it. 0 = every join",
+                     "(the old always-spam behaviour). First-join sequences always show regardless.")
+            .defineInRange("welcomeIntervalHours", 10, 0, 720);
         b.pop();
 
         b.comment("Watchdog — Security Monitoring").push("watchdog");

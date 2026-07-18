@@ -208,6 +208,7 @@ public class CoffeesAeroAuth {
         LOBBY_STASH.initialize();
         com.coffeesaerosmp.auth.clan.ClanTags.initialize(dataDir);
         com.coffeesaerosmp.auth.commands.RtpCommand.initialize(dataDir);
+        com.coffeesaerosmp.auth.auth.WelcomeMessages.initialize(dataDir);
 
         // ── Obsidian stack ────────────────────────────────────────────────────
         if (AuthConfig.OBSIDIAN_ENABLED.get()) {
