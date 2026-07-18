@@ -627,31 +627,46 @@ public class AuthManager {
             return false;
         }
 
-        // Mojang API check (blocks up to 3s — acceptable for a once-per-lifetime action)
+        // Mojang API check — OFF-THREAD. This was a sync HTTP GET on the server thread (up to 6s
+        // connect+read); every lobby name attempt froze the whole server for its duration, and
+        // players retry names repeatedly. The flow tail hops back to the server thread with the
+        // verdict and re-validates the local checks (the world may have moved while we waited).
         send(player, TextUtil.PREFIX + "§7Checking name availability...");
-        if (isMojangUsername(name)) {
-            send(player, TextUtil.PREFIX + "§cThat name belongs to an existing Mojang account and cannot be used.");
-            return false;
-        }
+        final net.minecraft.server.MinecraftServer srv = player.getServer();
+        java.util.concurrent.CompletableFuture
+            .supplyAsync(() -> isMojangUsername(name), net.minecraft.Util.ioPool())
+            .thenAcceptAsync(mojangTaken -> {
+                ServerPlayer current = srv.getPlayerList().getPlayer(uuid);
+                if (current == null) return;                 // logged out while checking
+                if (mojangTaken) {
+                    send(current, TextUtil.PREFIX + "§cThat name belongs to an existing Mojang account and cannot be used.");
+                    return;
+                }
+                completeSetName(current, uuid, name);
+            }, srv);
+        return true;   // request accepted — verdict lands momentarily
+    }
 
-        // Reserve name tentatively in index
-        if (existing == null) {
-            store.registerDisplayName(name, uuid);
+    /** Server thread. Mojang check passed — re-validate the racy local checks, reserve, queue. */
+    private void completeSetName(ServerPlayer player, UUID uuid, String name) {
+        UUID owner = store.getDisplayNameOwner(name);
+        if (owner != null && !owner.equals(uuid)) {          // someone claimed it during the check
+            send(player, TextUtil.PREFIX + "§cThat display name was just taken — pick another.");
+            return;
         }
-
-        // Mark pending in profile
+        if (owner == null) {
+            store.registerDisplayName(name, uuid);           // reserve name tentatively in index
+        }
         PlayerProfile profile = store.get(uuid);
         if (profile != null) {
             profile.nameApprovalPending = true;
             profile.pendingDisplayName  = name;
             store.save(profile);
         }
-
         authStates.put(uuid, AuthState.LOBBY_PENDING);
         if (CoffeesAeroAuth.APPROVAL_QUEUE != null) {
             CoffeesAeroAuth.APPROVAL_QUEUE.submit(player, name);
         }
-        return true;
     }
 
     /**
@@ -734,11 +749,31 @@ public class AuthManager {
             send(player, TextUtil.PREFIX + "§cThat name is reserved by a verified player.");
             return false;
         }
-        // Mojang API check
+        // Mojang API check — OFF-THREAD (same server-thread-freeze fix as /setname above).
         send(player, TextUtil.PREFIX + "§7Checking name availability...");
-        if (isMojangUsername(newName)) {
-            send(player, TextUtil.PREFIX + "§cThat name belongs to an existing Mojang account.");
-            return false;
+        final net.minecraft.server.MinecraftServer srv = player.getServer();
+        java.util.concurrent.CompletableFuture
+            .supplyAsync(() -> isMojangUsername(newName), net.minecraft.Util.ioPool())
+            .thenAcceptAsync(mojangTaken -> {
+                ServerPlayer current = srv.getPlayerList().getPlayer(uuid);
+                if (current == null) return;                 // logged out while checking
+                if (mojangTaken) {
+                    send(current, TextUtil.PREFIX + "§cThat name belongs to an existing Mojang account.");
+                    return;
+                }
+                completeChangeName(current, uuid, newName);
+            }, srv);
+        return true;
+    }
+
+    /** Server thread. Mojang check passed — re-validate, consume the one-time change, queue. */
+    private void completeChangeName(ServerPlayer player, UUID uuid, String newName) {
+        PlayerProfile profile = store.get(uuid);
+        if (profile == null) return;
+        UUID owner = store.getDisplayNameOwner(newName);
+        if (owner != null && !owner.equals(uuid)) {          // claimed during the async check
+            send(player, TextUtil.PREFIX + "§cThat display name was just taken — pick another.");
+            return;
         }
         // One-time change is consumed now (the command is disabled hereafter); the new name goes
         // through the admin approval queue. The current display name stays active until approval; the
@@ -757,7 +792,6 @@ public class AuthManager {
         }
         send(player, TextUtil.PREFIX + "§aName change requested: §f" + oldName + " §7→ §a" + newName);
         send(player, TextUtil.PREFIX + "§7Pending admin approval — this was your one-time change.");
-        return true;
     }
 
     public boolean handleChangePassword(ServerPlayer player, String oldPw, String newPw) {
