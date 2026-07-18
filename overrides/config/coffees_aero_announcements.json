@@ -20,12 +20,18 @@
       "title": "Dragon's Due",
       "added": [
         "The Ender Dragon got a glow-up — a fierce new look awaits when the End opens",
-        "Teleport cinematics now play only at waystones — everything else is instant"
+        "Teleport cinematics now play only at waystones — everything else is instant",
+        "Crafting conflicts now ask which item you meant instead of guessing wrong",
+        "Something stirs behind the End's locked door…"
       ],
       "fixed": [
-        "Smoother performance out in the wilds"
+        "A big FPS boost — two new optimizations under the hood",
+        "Fixed a crash some players were hitting mid-flight",
+        "Smoother performance out in the wilds — and /rtp now queues politely",
+        "Player faces now show up in the Tab list"
       ],
       "removed": [
+        "Storms and tornadoes — they were eating your frames (and your chests). Calmer skies for now",
         "The animal animation packs — some critters looked broken with them; they'll return polished"
       ]
     },
