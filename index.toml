@@ -11,7 +11,7 @@ hash = "e638607b90e3883b21c06b019f465a5348dd5eff99bf176b8564a6d22ba16f1c"
 metafile = true
 
 [[files]]
-file = "mods/aero-cam-sync-1-2-0.pw.toml"
+file = "mods/aero-cam-sync.pw.toml"
 hash = "b86b82c1eccc6dbcf3880d2a87ee7277f447f29f5949060dcf3969150af4d130"
 metafile = true
 
@@ -53,6 +53,11 @@ metafile = true
 [[files]]
 file = "mods/autoreconnectrf-neoforge-2-0-1-1-21-1.pw.toml"
 hash = "01f9023b792ebea6b8d8c7dc3fa738efa63735c4afa345160b65a2a2c2d7ea82"
+metafile = true
+
+[[files]]
+file = "mods/badoptimizations.pw.toml"
+hash = "dd56ff2bcc4253d1d70c08333632743fb56cdc4cf5518dc6afc024164633145d"
 metafile = true
 
 [[files]]
@@ -101,8 +106,8 @@ hash = "cdde4150f9977c4efd329f6c04e93893db0a255c52f941f4edb17f2bf096a274"
 metafile = true
 
 [[files]]
-file = "mods/carryon-neoforge-1-21-1-2-2-4-4.pw.toml"
-hash = "99fc7833f0cdd0243f19a164e86d5cab75167f177411dcdd84931d0d19b359bd"
+file = "mods/carryon.pw.toml"
+hash = "4b200d7009a78ce1d782d0b20585fcde46e6791bf23edf22a799a60729e924fd"
 metafile = true
 
 [[files]]
@@ -131,8 +136,8 @@ hash = "1575c645b68ae61e6848cc26ededa351235dd4bb5e58aef19b78c02c79afd447"
 metafile = true
 
 [[files]]
-file = "mods/cloth-config-15-0-140-neoforge.pw.toml"
-hash = "023e9d99524af89d2871e0aad5c3bc2c62151da2b1efbef58de0c1262ba677f5"
+file = "mods/cloth-config.pw.toml"
+hash = "75181b55e0407d1fca1e2f346c6501f919f5109545990ddfb66db9cd1b771f8a"
 metafile = true
 
 [[files]]
@@ -151,8 +156,8 @@ hash = "ef4736d30d626053a587e820aef22092c1da6d001983531ab704eb9207b21fa9"
 metafile = true
 
 [[files]]
-file = "mods/coffeesaeroskins-1-0-1.pw.toml"
-hash = "259da058c2ee0517663be7bf7a672c89a9ecbc942349bf8ae744dc4944c41e43"
+file = "mods/coffeesaeroskins.pw.toml"
+hash = "9198520e9782918f0bf3d726f7497259c8add3ea0ac51203e0a83062826c1e59"
 metafile = true
 
 [[files]]
@@ -651,6 +656,11 @@ hash = "d18f505c05108ced111d6d6ff964958ef63c81b8e9f927559169da8a589e3729"
 metafile = true
 
 [[files]]
+file = "mods/moreculling.pw.toml"
+hash = "4eaef45625336f16e9461e00e9e4f4ed789bcd25b4ca8e011d68564ddb7c8c3a"
+metafile = true
+
+[[files]]
 file = "mods/moredelight-26-05-20a-1-21-neoforge.pw.toml"
 hash = "3de76f396eed13ccd64b6863bd59f8d05baffe88e9ca6d6261021fb9da26809d"
 metafile = true
@@ -876,11 +886,6 @@ hash = "f369f7706e70ab9457278a0bd5431e3c61723c147146030e8cac3430285517fe"
 metafile = true
 
 [[files]]
-file = "mods/tornadophysics.pw.toml"
-hash = "bfa26f354f61fbb383eb52903acaf3609947050d51e4a3ad2365251da1ec3c77"
-metafile = true
-
-[[files]]
 file = "mods/towns-and-towers.pw.toml"
 hash = "f6a3604d21b9b8ee65072d74a83140c8a111bd4def1ec5688bc5b9ecd59748ab"
 metafile = true
@@ -938,11 +943,6 @@ metafile = true
 [[files]]
 file = "mods/waystones-neoforge-1-21-1-21-1-34.pw.toml"
 hash = "4d0aacfdad8cb13749c733b16d579238b7dbc289979cbeb1281bdcf6847f8906"
-metafile = true
-
-[[files]]
-file = "mods/weather2.pw.toml"
-hash = "7bcf5f108cceb9bb3a3cfceeea72840a01b11b22191d893bad8782c6b3420819"
 metafile = true
 
 [[files]]

@@ -1,0 +1,8 @@
+name = "CoffeesAeroSkins"
+filename = "CoffeesAeroSkins-1.1.0.jar"
+side = "both"
+
+[download]
+url = "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/download/v1.8.1/CoffeesAeroSkins-1.1.0-55804525.jar"
+hash-format = "sha256"
+hash = "558045258f12db8f37320feefef94179b49440a176a09efbf069f80bbb09e63b"
