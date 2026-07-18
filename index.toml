@@ -91,11 +91,6 @@ hash = "63275e97653f571a5a2320ad79b6cbcc8ac5d4d64426d34fe5d37fa255354b5c"
 metafile = true
 
 [[files]]
-file = "mods/burnt.pw.toml"
-hash = "7af2c199de8be3b41b883c57d43c3db7b40d49fb0187224eec36e79eb3acc57c"
-metafile = true
-
-[[files]]
 file = "mods/c2me-neoforge-mc1-21-1-0-3-0-alpha-0-93.pw.toml"
 hash = "42ec87d60514109ad980f7530aeca07043de2796d50889a1611184f35c09effb"
 metafile = true
@@ -681,11 +676,6 @@ hash = "ac97c982dcb4b37f04b13a108a598e0cd0891767bce4f70473459f482cd4d5f1"
 metafile = true
 
 [[files]]
-file = "mods/naturalist.pw.toml"
-hash = "bcd24eb0db2625488682ca538416a87a301543e5b68bff6633677a6780422db5"
-metafile = true
-
-[[files]]
 file = "mods/nochatreports-neoforge-1-21-1-v2-9-1.pw.toml"
 hash = "c113bc88311c1776cdcd6ae8ad4969a533b9ffffb40a44e69c13a0ab32438163"
 metafile = true
@@ -984,7 +974,7 @@ hash = "ff15da34b5f6f825dcc32399ab150c2462393031a41c8ea6938d6dd61b11fb04"
 
 [[files]]
 file = "overrides/config/coffees_aero_announcements.json"
-hash = "56685a11a348dc0cda62f50a8d986cb0a52c00d89f7c79dee1c852e6057b884f"
+hash = "2e60cb11fc0f91b4d1b119d5d0839c604639c72d92183947bc3b1fcf1b0d0ac6"
 
 [[files]]
 file = "overrides/config/coffeesaerosmp_core-client.toml"
