@@ -746,6 +746,11 @@ hash = "5ead8d8bc26cdbe1a17dc055f7f0fe762a08254d0199d6ea8fcc58839ab274f2"
 metafile = true
 
 [[files]]
+file = "mods/protomanlys-weather.pw.toml"
+hash = "5074c1853c6fc522e39014be88c3badaf4e2ad975030f70118bcf8adefd71eb2"
+metafile = true
+
+[[files]]
 file = "mods/punchy-2-5-7-neoforge-1-21-1.pw.toml"
 hash = "fc53b2bcea63d9a9441530dbe8d2450fd78db9dd72132fece88fbbf11a7269c1"
 metafile = true
