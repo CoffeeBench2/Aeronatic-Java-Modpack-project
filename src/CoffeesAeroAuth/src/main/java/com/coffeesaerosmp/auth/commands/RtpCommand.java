@@ -199,15 +199,43 @@ public final class RtpCommand {
             p.playerName, p.x, p.z, p.radius * 2 + 1, p.radius * 2 + 1,
             isRechart ? ", re-chart" : "", target.length > 2 ? target[2] : -1);
 
-        // PROGRESSIVE pregen (the 1.6.27 lesson): one big radius ticket demanded all ~225 chunks at
-        // once — worker threads saturated the shared CPU with Terralith gen AND the main thread ate
-        // a burst of full-chunk promotions + mod chunk-load hooks, starving the tick loop ~20s even
-        // with zero blocking calls (voicechat mass-timeouts). Start with a small ring and let the
-        // per-tick driver widen it only when the current ring is fully generated — the same trickle
-        // rate normal exploration produces. NO chunk accessors here: getChunkFuture/getChunk from
-        // the server thread managedBlock the tick loop (the 1.6.26 mistake); readiness is polled.
+        // PROGRESSIVE pregen (the 1.6.27 lesson): small ring first, widened only when the current
+        // ring is fully generated — the same trickle rate normal exploration produces. NO chunk
+        // accessors here: getChunkFuture/getChunk from the server thread managedBlock the tick loop
+        // (the 1.6.26 mistake); readiness is polled with getChunkNow.
         p.ticketRadius = Math.min(2, p.radius);
-        level.getChunkSource().addRegionTicket(RTP_TICKET, p.center, p.ticketRadius + 1, p.center);
+        addRingTickets(p, -1, p.ticketRadius);
+    }
+
+    /**
+     * PER-CHUNK distance-0 tickets = ticket level 33 = FULL-but-NON-TICKING (the 1.6.31 lesson):
+     * a region ticket over the bubble gave inner chunks aggressive levels, so by ring 6-7 ~169
+     * freshly generated chunks — including any brand-new village full of villagers/POIs — were
+     * ENTITY-TICKING on the main thread with no player anywhere near them. Level-33 chunks still
+     * generate fully; they just don't tick. Adds tickets for chunks with Chebyshev distance in
+     * (fromExclusive, toInclusive] around the target.
+     */
+    private static void addRingTickets(Pending p, int fromExclusive, int toInclusive) {
+        ServerChunkCache chunks = p.level.getChunkSource();
+        for (int cx = p.center.x - toInclusive; cx <= p.center.x + toInclusive; cx++) {
+            for (int cz = p.center.z - toInclusive; cz <= p.center.z + toInclusive; cz++) {
+                int dist = Math.max(Math.abs(cx - p.center.x), Math.abs(cz - p.center.z));
+                if (dist > fromExclusive && dist <= toInclusive) {
+                    chunks.addRegionTicket(RTP_TICKET, new ChunkPos(cx, cz), 0, p.center);
+                }
+            }
+        }
+    }
+
+    private static void removeAllTickets(Pending p) {
+        ServerChunkCache chunks = p.level.getChunkSource();
+        for (int cx = p.center.x - p.ticketRadius; cx <= p.center.x + p.ticketRadius; cx++) {
+            for (int cz = p.center.z - p.ticketRadius; cz <= p.center.z + p.ticketRadius; cz++) {
+                try {
+                    chunks.removeRegionTicket(RTP_TICKET, new ChunkPos(cx, cz), 0, p.center);
+                } catch (Exception ignored) {}   // some may have hit the ticket timeout already
+            }
+        }
     }
 
     /**
@@ -243,8 +271,20 @@ public final class RtpCommand {
 
     // ── Per-tick driver (called from the mod's server-tick listener) ──────────
 
+    /** Tick-gap stall detector: last onServerTick wall time while any rtp is pending. */
+    private static long lastTickAtMs = 0;
+
     public static void onServerTick(MinecraftServer server) {
-        if (pending.isEmpty()) return;
+        if (pending.isEmpty()) { lastTickAtMs = 0; return; }
+        // Self-instrumentation (the 03:41 ambiguity killer): if the SERVER thread ever stalls >2s
+        // while a pregen is pending, say so with the exact gap — no more inferring freezes from
+        // voicechat timeouts.
+        long now = System.currentTimeMillis();
+        if (lastTickAtMs > 0 && now - lastTickAtMs > 2_000) {
+            CoffeesAeroAuth.LOGGER.warn("[Rtp] SERVER THREAD STALLED {}ms while a pregen was pending.",
+                now - lastTickAtMs);
+        }
+        lastTickAtMs = now;
         for (var entry : pending.entrySet()) {
             ServerPlayer player = server.getPlayerList().getPlayer(entry.getKey());
             Pending p = entry.getValue();
@@ -254,23 +294,23 @@ public final class RtpCommand {
                     p.playerName, p.readyChunks, p.totalChunks, p.elapsedSec());
                 continue;
             }
-            // Refresh the region ticket well inside its timeout so a long pregen never loses it.
+            // Re-add tickets well inside their timeout so a long pregen never loses them, and log a
+            // progress heartbeat so a silent console is itself diagnostic.
             if (++p.ticksSinceRefresh >= TICKET_REFRESH_TICKS) {
                 p.ticksSinceRefresh = 0;
-                p.level.getChunkSource().addRegionTicket(RTP_TICKET, p.center, p.ticketRadius + 1, p.center);
+                addRingTickets(p, -1, p.ticketRadius);
+                CoffeesAeroAuth.LOGGER.info("[Rtp] {} still generating… {}/{} chunks (ring {}, {}s).",
+                    p.playerName, p.readyChunks, p.totalChunks, p.ticketRadius, p.elapsedSec());
             }
             if (player.tickCount % POLL_INTERVAL_TICKS == 0 && p.readyChunks < p.totalChunks) {
                 p.readyChunks = countReadyChunks(p);       // getChunkNow — pure map lookups, no blocking
-                // Current ring fully generated → widen by 2 (overlap the tickets: add the wider one
-                // BEFORE dropping the old so the inner bubble never momentarily loses its ticket).
+                // Current ring fully generated → widen by 2 (new ring tickets are ADDED; existing
+                // inner tickets are untouched, so the bubble never momentarily loses coverage).
                 if (p.ticketRadius < p.radius
                         && p.readyChunks >= (p.ticketRadius * 2 + 1) * (p.ticketRadius * 2 + 1)) {
                     int old = p.ticketRadius;
                     p.ticketRadius = Math.min(p.ticketRadius + 2, p.radius);
-                    p.level.getChunkSource().addRegionTicket(RTP_TICKET, p.center, p.ticketRadius + 1, p.center);
-                    try {
-                        p.level.getChunkSource().removeRegionTicket(RTP_TICKET, p.center, old + 1, p.center);
-                    } catch (Exception ignored) {}
+                    addRingTickets(p, old, p.ticketRadius);
                     CoffeesAeroAuth.LOGGER.info("[Rtp] {} pregen ring {} done — widening to {} ({}/{} chunks, {}s).",
                         p.playerName, old, p.ticketRadius, p.readyChunks, p.totalChunks, p.elapsedSec());
                 }
@@ -322,10 +362,8 @@ public final class RtpCommand {
      *  until the ticket's own timeout (the player's presence takes over from there). */
     private static void finish(UUID uuid, Pending p, boolean releaseTicket) {
         pending.remove(uuid);
-        if (!releaseTicket) return;
-        try {
-            p.level.getChunkSource().removeRegionTicket(RTP_TICKET, p.center, p.ticketRadius + 1, p.center);
-        } catch (Exception ignored) {}   // ticket may have hit its timeout already
+        if (!releaseTicket) return;      // arrival keeps its tickets until their timeout
+        removeAllTickets(p);
     }
 
     /** Chunks are generated — find a dry column near the target and teleport. */
