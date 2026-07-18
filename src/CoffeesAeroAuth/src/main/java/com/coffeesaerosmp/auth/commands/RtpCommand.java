@@ -167,7 +167,70 @@ public final class RtpCommand {
                 return;
             }
         }
+        // GLOBAL QUEUE: at ~3.4s/chunk (measured live 07-18 without c2me) a virgin pregen is a
+        // multi-minute worldgen job — ONE runs at a time server-wide; everyone else waits in FIFO
+        // order, standing still (the movement rule applies while queued too).
+        if (isBusy() || !queue.isEmpty()) {
+            for (Queued q : queue) {
+                if (q.uuid.equals(uuid)) {
+                    msg(player, "§7You're already §f#" + queuePosition(uuid) + "§7 in the teleport queue — stand still.");
+                    return;
+                }
+            }
+            queue.addLast(new Queued(uuid, player.getX(), player.getY(), player.getZ()));
+            msg(player, "§7✈ Another pilot's course is being charted — you're §f#" + queue.size()
+                + "§7 in the queue. §fStand perfectly still§7; you'll launch automatically.");
+            return;
+        }
         start(player, level, false);
+    }
+
+    // ── Global queue (server thread only) ─────────────────────────────────────
+
+    private record Queued(UUID uuid, double ax, double ay, double az) {}
+
+    private static final java.util.ArrayDeque<Queued> queue = new java.util.ArrayDeque<>();
+
+    private static boolean isBusy() { return !pending.isEmpty() || !choosing.isEmpty(); }
+
+    private static int queuePosition(UUID uuid) {
+        int i = 1;
+        for (Queued q : queue) { if (q.uuid.equals(uuid)) return i; i++; }
+        return -1;
+    }
+
+    /** Once a second: drop queued players who moved/logged out, action-bar the rest their position. */
+    private static void sweepAndDisplayQueue(MinecraftServer server) {
+        int pos = 0;
+        for (var it = queue.iterator(); it.hasNext(); ) {
+            Queued q = it.next();
+            ServerPlayer player = server.getPlayerList().getPlayer(q.uuid);
+            if (player == null) { it.remove(); continue; }
+            if (player.distanceToSqr(q.ax, q.ay, q.az) > MOVE_TOLERANCE_SQ) {
+                it.remove();
+                msg(player, "§cYou moved while queued — teleport cancelled §7(no cooldown used)§c.");
+                continue;
+            }
+            pos++;
+            player.displayClientMessage(Component.literal(
+                "§6✈ §eTeleport queue §7— position §f#" + pos + " §8(stand still)"), true);
+        }
+    }
+
+    /** Server thread, called when the active request finishes: launch the next valid queued player. */
+    private static void pumpQueue(MinecraftServer server) {
+        while (!isBusy() && !queue.isEmpty()) {
+            Queued q = queue.pollFirst();
+            ServerPlayer player = server.getPlayerList().getPlayer(q.uuid);
+            if (player == null) continue;                          // logged out while queued
+            if (!(player.level() instanceof ServerLevel level) || level.dimension() != Level.OVERWORLD
+                    || player.distanceToSqr(q.ax, q.ay, q.az) > MOVE_TOLERANCE_SQ) {
+                msg(player, "§cYou moved while queued — teleport cancelled §7(no cooldown used)§c.");
+                continue;
+            }
+            msg(player, "§a✈ Your turn — charting your course now.");
+            start(player, level, false);
+        }
     }
 
     private static void start(ServerPlayer player, ServerLevel level, boolean isRechart) {
@@ -296,6 +359,12 @@ public final class RtpCommand {
     private static long lastTickAtMs = 0;
 
     public static void onServerTick(MinecraftServer server) {
+        // Queue upkeep runs even with no active pregen: launch the next pilot the tick after the
+        // previous request ends, sweep out queued players who moved/left, show waiting positions.
+        if (!queue.isEmpty()) {
+            if (server.getTickCount() % 20 == 0) sweepAndDisplayQueue(server);
+            pumpQueue(server);
+        }
         if (pending.isEmpty()) { lastTickAtMs = 0; return; }
         // Self-instrumentation (the 03:41 ambiguity killer): if the SERVER thread ever stalls >2s
         // while a pregen is pending, say so with the exact gap — no more inferring freezes from

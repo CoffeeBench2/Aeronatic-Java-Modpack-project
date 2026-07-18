@@ -321,8 +321,9 @@ public class AuthConfig {
         RTP_MIN_WAIT_SECONDS = b.comment("Minimum seconds the player waits (watching the progress bar) even if chunks finish early.")
             .defineInRange("rtpMinWaitSeconds", 10, 0, 120);
         RTP_TIMEOUT_SECONDS = b.comment("Abort (and refund the cooldown) if the destination isn't generated within this many seconds.",
-                "Virgin terrain at pregen radius 7 is typically 30-90s on the live stack; leave headroom.")
-            .defineInRange("rtpTimeoutSeconds", 180, 20, 600);
+                "MEASURED live 2026-07-18 (no c2me): ~3.4s per virgin chunk -> 225 chunks can need 10+ minutes.",
+                "EDIT THE LIVE TOML: a pre-existing file keeps its old value (90 was far too short).")
+            .defineInRange("rtpTimeoutSeconds", 600, 20, 1200);
         RTP_PREGEN_RADIUS = b.comment(
                 "Chunk radius fully generated BEFORE the teleport (7 = 15x15 chunks). Must roughly cover the",
                 "server view distance: arriving inside a small generated island made the surrounding view-distance",

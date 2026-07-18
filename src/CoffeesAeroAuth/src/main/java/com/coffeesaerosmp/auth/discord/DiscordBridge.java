@@ -21,12 +21,42 @@ public class DiscordBridge {
     private final WebhookQueue  queue;
     private final DiscordGateway gateway;
 
-    // Track (uuid.hashCode * milestone) to avoid duplicate milestone posts
-    private final Set<Long> postedMilestones = ConcurrentHashMap.newKeySet();
+    // Highest milestone (hours) already ANNOUNCED per player — PERSISTED. The old in-memory set
+    // wiped on every restart, so each join replayed the player's whole milestone history to the
+    // public channel (the 1h/5h/10h/50h walls of 2026-07-18).
+    private final java.util.Map<java.util.UUID, Integer> announcedUpTo = new ConcurrentHashMap<>();
+    private volatile java.nio.file.Path milestoneFile;
 
     public DiscordBridge(WebhookQueue queue, DiscordGateway gateway) {
         this.queue   = queue;
         this.gateway = gateway;
+    }
+
+    /** Load the persisted per-player announced-milestone highs (call once at server start). */
+    public void initMilestones(java.nio.file.Path dataDir) {
+        milestoneFile = dataDir.resolve("milestones_announced.json");
+        announcedUpTo.clear();
+        if (!java.nio.file.Files.exists(milestoneFile)) return;
+        try {
+            var o = com.google.gson.JsonParser.parseString(
+                java.nio.file.Files.readString(milestoneFile)).getAsJsonObject();
+            o.entrySet().forEach(e ->
+                announcedUpTo.put(java.util.UUID.fromString(e.getKey()), e.getValue().getAsInt()));
+        } catch (Exception e) {
+            CoffeesAeroAuth.LOGGER.warn("[Discord] milestones_announced.json load failed: {}", e.getMessage());
+        }
+    }
+
+    private void saveMilestones() {
+        java.nio.file.Path f = milestoneFile;
+        if (f == null) return;
+        var o = new com.google.gson.JsonObject();
+        announcedUpTo.forEach((id, v) -> o.addProperty(id.toString(), v));
+        String json = o.toString();
+        com.coffeesaerosmp.auth.util.AsyncIo.submit(() -> {
+            try { java.nio.file.Files.writeString(f, json); }
+            catch (Exception e) { CoffeesAeroAuth.LOGGER.warn("[Discord] milestone save failed: {}", e.getMessage()); }
+        });
     }
 
     public void startGateway() {
@@ -137,17 +167,32 @@ public class DiscordBridge {
             if (prof != null) discordId = prof.discordId;
         }
         int[] milestones = parseMilestones(AuthConfig.DISCORD_MILESTONE_HOURS.get());
+        java.util.UUID uuid = player.getUUID();
+        Integer prevBoxed = announcedUpTo.get(uuid);
+        if (prevBoxed == null) {
+            // First time this player is seen since persistence exists: GRANDFATHER every already-
+            // crossed milestone silently — otherwise the first join after the fix replays the wall
+            // one last time. Genuinely-new players store 0 and announce normally from here on.
+            int highestCrossed = 0;
+            for (int m : milestones) if (totalHours >= m) highestCrossed = Math.max(highestCrossed, m);
+            announcedUpTo.put(uuid, highestCrossed);
+            saveMilestones();
+            return;
+        }
+        int prev = prevBoxed, newHigh = prev;
         for (int m : milestones) {
-            if (totalHours >= m) {
-                long key = (long)player.getUUID().hashCode() * 31 + m;
-                if (postedMilestones.add(key)) {
-                    String desc = "🎉 **" + displayNameOf(player)
-                            + "** has played for **" + m + " hours** on " + AuthConfig.SERVER_DISPLAY_NAME.get() + "!";
-                    DiscordWebhook.send(url, discordId != null && !discordId.isBlank()
-                        ? AlertFormatter.publicEmbedMention(desc, 0x5865F2, discordId)
-                        : AlertFormatter.publicEmbed(desc, 0x5865F2));
-                }
+            if (totalHours >= m && m > prev) {
+                String desc = "🎉 **" + displayNameOf(player)
+                        + "** has played for **" + m + " hours** on " + AuthConfig.SERVER_DISPLAY_NAME.get() + "!";
+                DiscordWebhook.send(url, discordId != null && !discordId.isBlank()
+                    ? AlertFormatter.publicEmbedMention(desc, 0x5865F2, discordId)
+                    : AlertFormatter.publicEmbed(desc, 0x5865F2));
+                newHigh = Math.max(newHigh, m);
             }
+        }
+        if (newHigh != prev) {
+            announcedUpTo.put(uuid, newHigh);
+            saveMilestones();
         }
     }
 

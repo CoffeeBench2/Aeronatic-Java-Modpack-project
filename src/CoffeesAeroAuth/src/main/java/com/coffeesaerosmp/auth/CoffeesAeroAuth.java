@@ -192,6 +192,7 @@ public class CoffeesAeroAuth {
             gateway.getApplicationId(),
             com.coffeesaerosmp.auth.discord.DiscordInteractions.GLOBAL_COMMANDS_JSON));
         DISCORD_BRIDGE = new DiscordBridge(WEBHOOK_QUEUE, gateway);
+        DISCORD_BRIDGE.initMilestones(dataDir);
         if (AuthConfig.DISCORD_ENABLED.get() && !discordToken.isBlank()) {
             DISCORD_BRIDGE.startGateway();
             ADMIN_CONSOLE.startMirror();
