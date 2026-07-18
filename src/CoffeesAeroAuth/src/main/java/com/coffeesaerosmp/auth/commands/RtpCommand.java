@@ -58,6 +58,11 @@ public final class RtpCommand {
     private static final int TICKET_REFRESH_TICKS = 200;   // re-add well inside the ticket timeout
     private static final int POLL_INTERVAL_TICKS  = 5;
 
+    /** Squared movement tolerance (~1 block): head-turns/sneak-twitches never false-cancel,
+     *  any real step or jump breaks the charting. Exact-position equality would insta-cancel on
+     *  slab/soul-sand micro-drift, hence the radius. */
+    private static final double MOVE_TOLERANCE_SQ = 1.0;
+
     private static final class Pending {
         final ServerLevel level;
         final String playerName;                 // for console lines after the player object is gone
@@ -66,21 +71,28 @@ public final class RtpCommand {
         final int radius;                        // chunk radius fully generated before teleport
         final int totalChunks;
         final long startedAtMs;
+        final double anchorX, anchorY, anchorZ;  // where the player must STAY until the teleport
         int ticketRadius;                        // current progressive ring (grows as rings finish)
         int readyChunks = 0;                     // refreshed by the poll
         int ticksSinceRefresh = 0;
         boolean recharted = false;               // one automatic ocean re-roll allowed
 
-        Pending(ServerLevel level, String playerName, int x, int z, int radius, long startedAtMs) {
-            this.level = level; this.playerName = playerName;
+        Pending(ServerLevel level, ServerPlayer player, int x, int z, int radius, long startedAtMs) {
+            this.level = level; this.playerName = player.getGameProfile().getName();
             this.x = x; this.z = z;
             this.center = new ChunkPos(BlockPos.containing(x, 0, z));
             this.radius = radius;
             this.totalChunks = (radius * 2 + 1) * (radius * 2 + 1);
             this.startedAtMs = startedAtMs;
+            this.anchorX = player.getX(); this.anchorY = player.getY(); this.anchorZ = player.getZ();
         }
 
         long elapsedSec() { return (System.currentTimeMillis() - startedAtMs) / 1000; }
+
+        boolean movedAway(ServerPlayer player) {
+            return player.level() != level
+                || player.distanceToSqr(anchorX, anchorY, anchorZ) > MOVE_TOLERANCE_SQ;
+        }
     }
 
     private static final Map<UUID, Pending> pending   = new ConcurrentHashMap<>();
@@ -161,9 +173,13 @@ public final class RtpCommand {
     private static void start(ServerPlayer player, ServerLevel level, boolean isRechart) {
         UUID uuid = player.getUUID();
         String name = player.getGameProfile().getName();
+        // Movement rule: the player must stand STILL from the moment they type /rtp until the
+        // teleport fires. Anchor here (command time) for the async target-selection window; the
+        // Pending re-anchors for the pregen wait. Moving cancels — never charges the cooldown.
+        double ax = player.getX(), ay = player.getY(), az = player.getZ();
         choosing.add(uuid);
         if (!isRechart) {
-            msg(player, "§7✈ Charting a course to somewhere new… stay put while the world takes shape.");
+            msg(player, "§7✈ Charting a course to somewhere new… §fstand perfectly still§7 — moving cancels the teleport.");
         }
         // Target selection runs OFF the server thread (the 1.6.29 lesson, 21:02 live log: 0/225
         // chunks after 57s — the freeze began AT /rtp start, not during pregen). Each ocean-avoid
@@ -183,13 +199,18 @@ public final class RtpCommand {
                     msg(current, "§cCouldn't chart a course — try /rtp again (no cooldown used).");
                     return;
                 }
+                if (current.level() != level || current.distanceToSqr(ax, ay, az) > MOVE_TOLERANCE_SQ) {
+                    CoffeesAeroAuth.LOGGER.info("[Rtp] {} moved during target selection — cancelled, no cooldown.", name);
+                    msg(current, "§cYou moved — teleport cancelled §7(no cooldown used)§c.");
+                    return;
+                }
                 beginPregen(current, level, target, isRechart);
             }, level.getServer());
     }
 
     /** Server thread. Target chosen — create the pending request and start the ring pregen. */
     private static void beginPregen(ServerPlayer player, ServerLevel level, int[] target, boolean isRechart) {
-        Pending p = new Pending(level, player.getGameProfile().getName(), target[0], target[1],
+        Pending p = new Pending(level, player, target[0], target[1],
             AuthConfig.RTP_PREGEN_RADIUS.get(), System.currentTimeMillis());
         p.recharted = isRechart;
         pending.put(player.getUUID(), p);
