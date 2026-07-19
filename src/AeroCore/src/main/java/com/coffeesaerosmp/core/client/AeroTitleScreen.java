@@ -165,6 +165,36 @@ public class AeroTitleScreen extends Screen {
         graphics.drawString(this.font, line2, 2, this.height - 10, 0xFFFFFF);
     }
 
+    /**
+     * Analog Audio's Lavaplayer install prompt hooks ScreenEvent.Init.Post on the VANILLA
+     * TitleScreen — which this screen replaces, so on installs without the pre-baked player
+     * (the CurseForge zip strips {@code .analogaudio/}: CF blacklists the shaded lavaplayer
+     * YouTube classes) the prompt never fired and radio audio was silently dead. Re-fire the
+     * mod's OWN welcome screen from here instead. Reflection-only (no compile dep), mirrors the
+     * mod's exact gate (config {@code lavaplayerWelcomeScreen} && {@code isMissing()}), so a
+     * player's "Don't install" choice and the bundled-player installs both stay prompt-free.
+     */
+    private static boolean lavaplayerPromptChecked = false;
+
+    @Override
+    public void tick() {
+        super.tick();
+        if (lavaplayerPromptChecked) return;
+        lavaplayerPromptChecked = true;
+        if (!ModList.get().isLoaded("analogaudio")) return;
+        try {
+            Class<?> cfg = Class.forName("com.palm1.analogaudio.config.ModConfig$Client");
+            if (!cfg.getField("lavaplayerWelcomeScreen").getBoolean(null)) return;
+            Class<?> loader = Class.forName("com.palm1.analogaudio.client.audio.lavaplayer.LavaplayerLoader");
+            if (!(Boolean) loader.getMethod("isMissing").invoke(null)) return;
+            Class<?> welcome = Class.forName("com.palm1.analogaudio.client.gui.LavaplayerWelcomeScreen");
+            this.minecraft.setScreen((Screen) welcome.getConstructor(Screen.class).newInstance(this));
+        } catch (Throwable t) {
+            org.slf4j.LoggerFactory.getLogger("CoffeesAeroCore-Menu")
+                .warn("Analog Audio Lavaplayer prompt hook failed (non-fatal): {}", t.toString());
+        }
+    }
+
     /** Secret access combo: Ctrl + Alt + M opens the vanilla Multiplayer screen from any account. */
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
