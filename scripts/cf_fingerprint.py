@@ -91,7 +91,7 @@ def _merge_into(src_dir, dst_dir):
 
 
 def sanitize_export(work):
-    """Fix two structural faults in packwiz's CurseForge export before we re-zip:
+    """Fix three structural faults in packwiz's CurseForge export before we re-zip:
 
     1) DOUBLED overrides. The repo keeps its pack files under a literal `overrides/` dir (for the
        self-contained mrpack), and packwiz wraps that whole tree inside CF's own `overrides/`, so
@@ -102,6 +102,13 @@ def sanitize_export(work):
        the instance root, matching the working mrpack layout.
     2) SECRETS. `.cf-key` (the CurseForge API key) and any `.env` must never ride along into a
        published zip. Strip them wherever they appear.
+    3) CF-BLACKLISTED lavaplayer. `overrides/.analogaudio/internal/analogplayer-*.jar` is Analog
+       Audio's runtime audio player, pre-baked into the pack so limited-data players skip the
+       first-run download. It shades lavaplayer INCLUDING the YouTube source — CF's automated scan
+       blacklists `com/sedmelluq/.../source/youtube/*` classes and REJECTED the 1.8.1 zip for it
+       (2026-07-20; the 1.8.0 zip predated that scan). Strip the whole `.analogaudio` dir from CF
+       exports: the mod self-downloads the player on first launch (LavaplayerLoader + progress
+       screen), so CF players just get a one-time download. mrpack/GitHub keeps the pre-baked copy.
     """
     ov = os.path.join(work, "overrides")
     nested = os.path.join(ov, "overrides")
@@ -118,6 +125,12 @@ def sanitize_export(work):
                 stripped.append(fn)
     if stripped:
         print("sanitize: stripped secrets from export:", ", ".join(sorted(set(stripped))))
+
+    aa = os.path.join(ov, ".analogaudio")
+    if os.path.isdir(aa):
+        shutil.rmtree(aa, ignore_errors=True)
+        print("sanitize: stripped overrides/.analogaudio (CF-blacklisted lavaplayer/youtube; "
+              "mod self-downloads its player on first run)")
 
 
 def main():
