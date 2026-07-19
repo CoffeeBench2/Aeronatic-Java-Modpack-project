@@ -1005,6 +1005,10 @@ file = "overrides/config/ftbquests/quests/chapters/exploration.snbt"
 hash = "d1d98007d30330a574b2d635fc4b0d4ed7387503027912b75e084f94cc2d4f14"
 
 [[files]]
+file = "overrides/config/ftbquests/quests/chapters/skyworthy.snbt"
+hash = "36c4a8ca1bad167f934d57b63a2c0396f590c9b70f0fc2f2b5b09b7fb2c4b4dc"
+
+[[files]]
 file = "overrides/config/ftbquests/quests/chapters/welcome.snbt"
 hash = "55f69cd48da1a6a99d670129ce57c7371f5855a824537ca1ada91860ad67b45f"
 

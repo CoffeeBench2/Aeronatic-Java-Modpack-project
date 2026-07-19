@@ -1,0 +1,151 @@
+{
+	id: "1400000000000001"
+	group: ""
+	order_index: 3
+	filename: "skyworthy"
+	title: "Skyworthy"
+	icon: {
+		id: "aeroclaims:claim_block"
+		Count: 1
+	}
+	default_quest_shape: ""
+	default_hide_dependency_lines: false
+	quests: [
+		{
+			x: 0.0d
+			y: 0.0d
+			shape: "circle"
+			id: "1400000000000002"
+			title: "Shipwright's Wheel"
+			subtitle: "Every captain starts with a wheel and a dream"
+			description: [
+				"So you want to sail the skies? It starts here.",
+				"",
+				"Craft a Steering Wheel — the heart of any vessel.",
+				"Mount it on your build so your ship can be steered once she flies."
+			]
+			tasks: [{
+				id: "1400000000000003"
+				type: "item"
+				item: {
+					id: "simulated:steering_wheel"
+					Count: 1
+				}
+			}]
+			rewards: [{
+				id: "1400000000000004"
+				type: "item"
+				item: {
+					id: "create:andesite_alloy"
+					Count: 16
+				}
+			}]
+		}
+		{
+			x: 2.0d
+			y: 0.0d
+			shape: "hexagon"
+			size: 1.5d
+			id: "1400000000000010"
+			dependencies: ["1400000000000002"]
+			title: "Maiden Voyage"
+			subtitle: "She flies!"
+			description: [
+				"The Physics Assembler is what turns your build into a real, flying ship.",
+				"",
+				"Craft one — and take this &6Claim Block&r with our compliments.",
+				"",
+				"&ePlace the Claim Block aboard and register your ship as soon as she's assembled.&r",
+				"Unregistered ships strain the harbor master's ledgers (and the server!).",
+				"A claimed ship is a protected ship — and a lag-free harbor for everyone."
+			]
+			tasks: [{
+				id: "1400000000000011"
+				type: "item"
+				item: {
+					id: "simulated:physics_assembler"
+					Count: 1
+				}
+			}]
+			rewards: [{
+				id: "1400000000000012"
+				type: "item"
+				item: {
+					id: "aeroclaims:claim_block"
+					Count: 1
+				}
+			}]
+		}
+		{
+			x: 4.0d
+			y: 0.0d
+			shape: "circle"
+			id: "1400000000000020"
+			dependencies: ["1400000000000010"]
+			title: "On the Registry"
+			subtitle: "Registered and recognized"
+			description: [
+				"Place your Claim Block aboard your assembled ship and open it to register her.",
+				"",
+				"Then take a good look at your handiwork — the skies know your name now, captain.",
+				"",
+				"Rename your vessel with the Name Tag below. \"ship\" is no name for a lady of the clouds."
+			]
+			tasks: [{
+				id: "1400000000000021"
+				type: "observation"
+				timer: 0L
+				observe_type: 0
+				to_observe: "aeroclaims:claim_block"
+			}]
+			rewards: [
+				{
+					id: "1400000000000022"
+					type: "item"
+					item: {
+						id: "minecraft:name_tag"
+						Count: 1
+					}
+				}
+				{
+					id: "1400000000000023"
+					type: "xp_levels"
+					xp_levels: 5
+				}
+			]
+		}
+		{
+			x: 6.0d
+			y: 0.0d
+			shape: "circle"
+			id: "1400000000000030"
+			dependencies: ["1400000000000020"]
+			title: "Fleet Admiral"
+			subtitle: "One ship is a hobby. A fleet is a legacy"
+			description: [
+				"Building another ship? Trade in a Physics Assembler and the registry",
+				"will issue you a fresh Claim Block for her.",
+				"",
+				"&7(Repeatable — one Claim Block per ship, so every vessel flies registered.)&r"
+			]
+			repeatable: true
+			tasks: [{
+				id: "1400000000000031"
+				type: "item"
+				item: {
+					id: "simulated:physics_assembler"
+					Count: 1
+				}
+				consume_items: true
+			}]
+			rewards: [{
+				id: "1400000000000032"
+				type: "item"
+				item: {
+					id: "aeroclaims:claim_block"
+					Count: 1
+				}
+			}]
+		}
+	]
+}
