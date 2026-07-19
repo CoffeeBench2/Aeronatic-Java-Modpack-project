@@ -69,6 +69,12 @@ def rewrite_zip(src_zip, out_zip):
             if os.path.basename(low) == "version.json":
                 dropped_version_json = True
                 continue
+            # Strip Analog-Audio's pre-seeded lavaplayer runtime cache: analogplayer-*.jar shades
+            # lavaplayer's YouTube source, which is on CF's class BLACKLIST (rejected 2026-07-20,
+            # YoutubeAccessTokenTracker). The mod re-downloads its player runtime on first launch,
+            # so CF installs lose only the pre-seed, not the feature.
+            if low.startswith("overrides/.analogaudio/"):
+                continue
             zout.writestr(item, zin.read(name))
         # Add the -cf Core (no updater) into overrides/mods.
         zout.writestr("overrides/mods/" + cf_core_name, cf_core_bytes)
