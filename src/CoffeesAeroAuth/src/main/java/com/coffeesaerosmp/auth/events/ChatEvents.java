@@ -46,10 +46,12 @@ public class ChatEvents {
         String tagPart = clanTag != null
             ? "§7[" + com.coffeesaerosmp.auth.clan.ClanTags.colorFor(player) + clanTag + "§7] " : "";
 
-        // RGB name for enabled players (owner etc.) — render the name as a rainbow Component.
-        Component nameComp = com.coffeesaerosmp.auth.util.RainbowText.isEnabled(profile.username)
-            ? com.coffeesaerosmp.auth.util.RainbowText.gradient(displayName)
-            : Component.literal(nameColor + displayName);
+        // Styled name (/namecolor: colors, hex, formats, §k scramble, rainbow) — falls back to the
+        // plain premium/offline coloring when the player has no style. Legacy rgbNames still work
+        // (NameStyles handles the fallback internally).
+        Component styled = com.coffeesaerosmp.auth.util.NameStyles.nameComponent(
+            player.getUUID(), profile.username, displayName);
+        Component nameComp = styled != null ? styled : Component.literal(nameColor + displayName);
 
         Component formatted = Component.literal(badge + tagPart).append(nameComp)
             .append(Component.literal(" §8» §r" + rawText));

@@ -210,6 +210,7 @@ public class CoffeesAeroAuth {
         com.coffeesaerosmp.auth.clan.ClanTags.initialize(dataDir);
         com.coffeesaerosmp.auth.commands.RtpCommand.initialize(dataDir);
         com.coffeesaerosmp.auth.auth.WelcomeMessages.initialize(dataDir);
+        com.coffeesaerosmp.auth.util.NameStyles.initialize(dataDir);
 
         // ── Obsidian stack ────────────────────────────────────────────────────
         if (AuthConfig.OBSIDIAN_ENABLED.get()) {
@@ -323,5 +324,6 @@ public class CoffeesAeroAuth {
         com.coffeesaerosmp.auth.pvp.CombatGuard.registerCommands(event.getDispatcher());
         com.coffeesaerosmp.auth.commands.TpaCommands.register(event.getDispatcher());
         com.coffeesaerosmp.auth.commands.RtpCommand.register(event.getDispatcher());
+        com.coffeesaerosmp.auth.commands.NameColorCommands.register(event.getDispatcher());
     }
 }
