@@ -24,6 +24,18 @@ public class PlayerRestrictEvents {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         if (CoffeesAeroAuth.AUTH_MANAGER == null) return;
         CoffeesAeroAuth.AUTH_MANAGER.onTick(player);
+
+        // Lobby container lockdown: the inventory stash only clears the VANILLA inventory
+        // (main+armor+offhand), so an equipped Sophisticated Backpack — which lives in an
+        // Accessories slot, not a vanilla slot — rides into the lobby and its contents stay
+        // reachable. Slam shut any menu that isn't the player's own (empty) inventory: backpacks,
+        // the accessories screen, chests, anything opened via openMenu. Done on the tick (not in
+        // the open event) to avoid mid-openMenu reentrancy; the menu lives at most one tick.
+        // NO items are moved — zero data-loss risk (unlike serializing/clearing the accessories
+        // capability, which could eat a backpack on a bad restore). Ops (perm 4) are exempt.
+        if (player.containerMenu != player.inventoryMenu && lobbyLocked(player)) {
+            player.closeContainer();
+        }
     }
 
     public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
