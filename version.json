@@ -1,7 +1,7 @@
 {
-  "version": "1.8.1",
+  "version": "1.8.1.1",
   "url": "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/latest",
   "neoforge": "21.1.234",
   "minecraft": "1.21.1",
-  "notes": "1.8.1 Dragon's Due: weather purge (weather2/tornado out) for the lag, End content (Stellarity + Enderman Overhaul + End Villager Outpost), client FPS opti, /namecolor, register-your-ship quests, dragon retexture. Core 1.3.14 + Skins 1.1.0."
+  "notes": "1.8.1.1 hotfix: removed MoreCulling (crashed on join with our Sodium 0.6.13). Relaunch to apply. Includes all of 1.8.1 Dragon's Due."
 }
