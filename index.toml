@@ -968,7 +968,7 @@ hash = "2e60cb11fc0f91b4d1b119d5d0839c604639c72d92183947bc3b1fcf1b0d0ac6"
 
 [[files]]
 file = "overrides/config/coffeesaerosmp_core-client.toml"
-hash = "52d6904b363e5803a9f94a2c8c406c545cd12cad9a8ded63e956c9690d533dd6"
+hash = "606f78d2090fffcea5bd02ce7621b51632862fa7682b3a095193404a63fd01ea"
 
 [[files]]
 file = "overrides/config/entity_texture_features.json"
