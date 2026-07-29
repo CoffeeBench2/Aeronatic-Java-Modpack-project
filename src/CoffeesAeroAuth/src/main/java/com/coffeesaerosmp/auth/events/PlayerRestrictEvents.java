@@ -66,6 +66,20 @@ public class PlayerRestrictEvents {
     }
 
     public static void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
+        // Spawn greeter: right-clicking a "aero_spawn_greeter"-tagged entity (a dressed armor stand
+        // placed by an admin) runs /spawn — works even inside the locked lobby, for everyone.
+        if (event.getTarget().getTags().contains("aero_spawn_greeter")) {
+            event.setCanceled(true);
+            if (event.getEntity() instanceof ServerPlayer sp && CoffeesAeroAuth.AUTH_MANAGER != null) {
+                CoffeesAeroAuth.AUTH_MANAGER.handleSpawn(sp);
+            }
+            return;
+        }
+        // Let players interact with Easy NPC entities in the lobby (dialogs / spawn actions). Easy NPC
+        // has its own owner/op edit-protection, so this exposes only dialogs, never editing.
+        net.minecraft.resources.ResourceLocation npcKey =
+            net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(event.getTarget().getType());
+        if (npcKey != null && "easy_npc".equals(npcKey.getNamespace())) return;
         // Lobby decor (item frames, armor stands, etc.) is untouchable for everyone but ops.
         if (shouldBlock(event.getEntity()) || lobbyLocked(event.getEntity())) event.setCanceled(true);
     }
@@ -106,6 +120,66 @@ public class PlayerRestrictEvents {
             event.setCanceled(true);
             sp.getInventory().add(event.getEntity().getItem());
         }
+    }
+
+    /** No damage of any kind in the lobby (fall/PvP/drown/mob). Covers the fall-catch window and the
+     *  "can't hit each other" rule for melee AND projectiles. Ops included — the lobby is a safe zone. */
+    public static void onIncomingDamage(net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent event) {
+        if (event.getEntity() instanceof ServerPlayer sp
+                && sp.level().dimension() == PrivateRoomManager.LOBBY_DIMENSION) {
+            event.setCanceled(true);
+        }
+    }
+
+    /** No item pickup in the lobby (belt-and-braces; there should be no ground items anyway). */
+    public static void onItemPickup(net.neoforged.neoforge.event.entity.player.ItemEntityPickupEvent.Pre event) {
+        if (event.getPlayer() instanceof ServerPlayer sp
+                && sp.level().dimension() == PrivateRoomManager.LOBBY_DIMENSION) {
+            event.setCanPickup(net.neoforged.neoforge.common.util.TriState.FALSE);
+        }
+    }
+
+    /** Ban ALL mobs from the lobby dimension — natural spawns, modded critters (crows/hamsters), even
+     *  ones saved in the pasted map. Only {@link net.minecraft.world.entity.Mob}s are removed, so
+     *  players, armor-stand greeters, item frames, paintings and dropped items are untouched. */
+    public static void onEntityJoin(net.neoforged.neoforge.event.entity.EntityJoinLevelEvent event) {
+        if (event.getLevel().isClientSide()
+                || event.getLevel().dimension() != PrivateRoomManager.LOBBY_DIMENSION
+                || !(event.getEntity() instanceof net.minecraft.world.entity.Mob)) {
+            return;
+        }
+        // Easy NPC entities (namespace "easy_npc") ARE the lobby greeters/NPCs — never remove them.
+        net.minecraft.resources.ResourceLocation key =
+            net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(event.getEntity().getType());
+        if (key != null && "easy_npc".equals(key.getNamespace())) return;
+        event.setCanceled(true);
+    }
+
+    // ── Die-in-lobby safety net (lobby damage is off, but /kill or a void fall could still kill) ──
+    private static final java.util.Set<java.util.UUID> diedInLobby = java.util.concurrent.ConcurrentHashMap.newKeySet();
+
+    /** Remember a lobby death so we can send them back to the lobby (not their overworld bed). */
+    public static void onLobbyDeath(net.neoforged.neoforge.event.entity.living.LivingDeathEvent event) {
+        if (event.getEntity() instanceof ServerPlayer sp
+                && sp.level().dimension() == PrivateRoomManager.LOBBY_DIMENSION) {
+            diedInLobby.add(sp.getUUID());
+        }
+    }
+
+    /** On respawn after a lobby death: back to the lobby spawn, with the spawn paper (real inventory
+     *  stays safely stashed in the DB — it was never in their hands in the lobby). */
+    public static void onLobbyRespawn(net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerRespawnEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer sp)) return;
+        if (!diedInLobby.remove(sp.getUUID())) return;
+        net.minecraft.server.level.ServerLevel lobby = sp.getServer() != null
+            ? sp.getServer().getLevel(PrivateRoomManager.LOBBY_DIMENSION) : null;
+        double[] pad = PrivateRoomManager.spawnPad();
+        if (lobby != null) sp.teleportTo(lobby, pad[0], pad[1], pad[2], java.util.Set.of(), 180.0f, 0.0f);
+        boolean hasPaper = false;
+        for (net.minecraft.world.item.ItemStack s : sp.getInventory().items) {
+            if (com.coffeesaerosmp.auth.lobby.LobbyInventoryStash.isLobbyPaper(s)) { hasPaper = true; break; }
+        }
+        if (!hasPaper) sp.getInventory().add(com.coffeesaerosmp.auth.lobby.LobbyInventoryStash.makeLobbyPaper());
     }
 
     private static boolean lobbyLocked(net.minecraft.world.entity.player.Player player) {

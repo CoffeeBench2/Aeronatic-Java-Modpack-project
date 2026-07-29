@@ -31,6 +31,8 @@ public class AuthManager {
 
     private final Map<UUID, AuthState> authStates           = new ConcurrentHashMap<>();
     private final Map<UUID, Long>      lastSpawnTp          = new ConcurrentHashMap<>(); // in-world /spawn cooldown
+    private final Map<UUID, Long>      lastHomeTp           = new ConcurrentHashMap<>(); // /home cooldown
+    private final Map<UUID, float[]>   lobbyVitals          = new ConcurrentHashMap<>(); // {food,saturation,health} stashed on lobby entry, restored on /spawn
     private final Map<UUID, double[]>  frozenPos            = new ConcurrentHashMap<>();
     private final Map<UUID, Long>      joinTimes            = new ConcurrentHashMap<>();
     private final Map<UUID, Integer>   failedAttempts       = new ConcurrentHashMap<>();
@@ -170,9 +172,38 @@ public class AuthManager {
             profile.sessionStartEpoch = System.currentTimeMillis();
             store.save(profile);
             sendLobbyOrientation(player, profile);
+        } else if (shouldRouteThroughLobby(profile)) {
+            // Away long enough that they go through the lobby like everyone else (2026-07-27:
+            // previously premium ALWAYS skipped it). onAuthenticated() sees the lobby dimension,
+            // guarantees safe footing and prompts /spawn — and /spawn is the single exit path, so
+            // the lobby stash restore and saved-position resume both still run exactly once.
+            routeToLobbyRoom(uuid, profile);
+            onAuthenticated(player, profile, false);
         } else {
-            onAuthenticated(player, profile, false);   // returning premium → straight into the world
+            onAuthenticated(player, profile, false);   // back within the window → straight into the world
         }
+    }
+
+    /**
+     * Lobby-routing rule (user decision 2026-07-27): a returning player passes through the shared
+     * lobby unless they were away for less than {@code lobbyBypassMinutes}.
+     *
+     * <p>Deliberately separate from {@code sessionGraceMinutes}, which is the SECURITY dial deciding
+     * whether an offline player must re-type {@code /login}. Keeping them apart means the lobby
+     * window can be generous (2 h) without widening the window in which someone sharing an IP could
+     * resume a cracked account without the password.</p>
+     *
+     * <p>Uses {@code profile.lastSeen}, stamped on logout. A profile with no {@code lastSeen} (never
+     * recorded, e.g. pre-existing players before this change) routes through the lobby — the safe
+     * default. {@code lobbyBypassMinutes = 0} means always route through the lobby.</p>
+     */
+    private boolean shouldRouteThroughLobby(PlayerProfile profile) {
+        int bypassMinutes = AuthConfig.LOBBY_BYPASS_MINUTES.get();
+        if (bypassMinutes <= 0) return true;               // 0 = lobby every single join
+        if (profile == null || profile.lastSeen <= 0) return true;   // unknown → be safe
+        long awayMs = System.currentTimeMillis() - profile.lastSeen;
+        if (awayMs < 0) return false;                      // clock skew — don't punish the player
+        return awayMs >= bypassMinutes * 60_000L;
     }
 
     private void enterOfflineFlow(ServerPlayer player, PlayerProfile profile, String mcName) {
@@ -355,6 +386,11 @@ public class AuthManager {
                 profile.returnY   = player.getY();
                 profile.returnZ   = player.getZ();
             }
+            // Stamp the logout time. This column existed in the schema and on PlayerProfile but was
+            // never actually written (so /profile showed a stale "last seen"). It is now also the
+            // clock for the lobby-bypass rule below — premium players have no session token, so
+            // SessionTokenManager cannot answer "how long were they away?" for them.
+            profile.lastSeen = System.currentTimeMillis();
             store.save(profile);
         }
         // Start the reconnect grace window from logout: a return within SESSION_GRACE_MINUTES skips
@@ -370,6 +406,8 @@ public class AuthManager {
         pendingLobbyTeleport.remove(uuid);
         awaitingType.remove(uuid);
         nameHidden.remove(uuid);
+        if (CoffeesAeroAuth.ROOM_MANAGER != null) CoffeesAeroAuth.ROOM_MANAGER.releaseFrozenSpot(uuid);
+        com.coffeesaerosmp.auth.protect.AdminBypass.clear(uuid);
         NameVisibility.clear(player);
     }
 
@@ -378,6 +416,14 @@ public class AuthManager {
     public void onTick(ServerPlayer player) {
         UUID uuid = player.getUUID();
 
+        // Full hunger in the lobby every tick — no starving (the "out of breath" oxygen bar can still
+        // drop, but damage is off so it never hurts). The player's REAL overworld food/health are
+        // stashed on lobby entry and restored on /spawn, so the lobby never affects overworld vitals.
+        if (player.level().dimension() == com.coffeesaerosmp.auth.lobby.PrivateRoomManager.LOBBY_DIMENSION) {
+            player.getFoodData().setFoodLevel(20);
+            player.getFoodData().setSaturation(5.0f);
+        }
+
         // No background music in the auth lobby: stop the MUSIC category client-side, re-sent
         // periodically because the client's music tracker keeps scheduling the next track.
         if (player.level().dimension() == com.coffeesaerosmp.auth.lobby.PrivateRoomManager.LOBBY_DIMENSION
@@ -385,6 +431,15 @@ public class AuthManager {
             try {
                 player.connection.send(new net.minecraft.network.protocol.game.ClientboundStopSoundPacket(
                     null, net.minecraft.sounds.SoundSource.MUSIC));
+                // Clean vanilla lobby: force the client to render CLEAR weather (no rain/thunder),
+                // regardless of the shared server weather. Per-player, client-render only — never
+                // touches the overworld's actual weather.
+                player.connection.send(new net.minecraft.network.protocol.game.ClientboundGameEventPacket(
+                    net.minecraft.network.protocol.game.ClientboundGameEventPacket.STOP_RAINING, 0.0f));
+                player.connection.send(new net.minecraft.network.protocol.game.ClientboundGameEventPacket(
+                    net.minecraft.network.protocol.game.ClientboundGameEventPacket.RAIN_LEVEL_CHANGE, 0.0f));
+                player.connection.send(new net.minecraft.network.protocol.game.ClientboundGameEventPacket(
+                    net.minecraft.network.protocol.game.ClientboundGameEventPacket.THUNDER_LEVEL_CHANGE, 0.0f));
             } catch (Exception ignored) {}
         }
 
@@ -394,13 +449,18 @@ public class AuthManager {
             PlayerProfile profile = store.get(uuid);
             if (profile != null && profile.roomSlot >= 0 && CoffeesAeroAuth.ROOM_MANAGER != null) {
                 CoffeesAeroAuth.ROOM_MANAGER.teleportToRoom(player, profile.roomSlot);
-                if (!isAuthenticated(uuid)) {   // offline lobby/login players stay frozen; premium roam free
-                    double[] pos = CoffeesAeroAuth.ROOM_MANAGER.getRoomSpawnPos(profile.roomSlot);
+                if (!isAuthenticated(uuid)) {   // offline lobby/login players stay frozen on their ring pad
+                    double[] pos = CoffeesAeroAuth.ROOM_MANAGER.getFrozenSpotFor(uuid);
                     frozenPos.put(uuid, pos);
+                    player.teleportTo(pos[0], pos[1], pos[2]);
                 }
                 // Empty their real inventory (persisted) and hand them the "Teleport to Spawn" paper.
                 // Idempotent across reconnects; restored on /spawn (handleSpawn) or via the paper.
                 if (CoffeesAeroAuth.LOBBY_STASH != null) CoffeesAeroAuth.LOBBY_STASH.stashAndClear(player);
+                // Stash the real overworld food/health once, so the lobby's full-hunger + regen never
+                // leak into the overworld (restored on /spawn).
+                lobbyVitals.computeIfAbsent(uuid, k -> new float[]{
+                    player.getFoodData().getFoodLevel(), player.getFoodData().getSaturationLevel(), player.getHealth()});
             }
             return;
         }
@@ -411,6 +471,18 @@ public class AuthManager {
                 NameMask.apply(player);   // masked BEFORE reveal so the badge team keys on the display name
                 NameVisibility.reveal(player, prof != null
                     && prof.getAccountType() == PlayerProfile.AccountType.PREMIUM);
+            }
+            // Floating-island fall-catch: an authed player still in the lobby who drops off the island
+            // is returned to the spawn pad (damage is off in the lobby, so this is cosmetic-safe).
+            if (player.level().dimension() == com.coffeesaerosmp.auth.lobby.PrivateRoomManager.LOBBY_DIMENSION) {
+                int floor = AuthConfig.LOBBY_FLOOR_Y.get();
+                int drop  = AuthConfig.LOBBY_FALL_CATCH_DROP.get();
+                if (player.getY() < floor - drop && CoffeesAeroAuth.ROOM_MANAGER != null) {
+                    double[] pad = com.coffeesaerosmp.auth.lobby.PrivateRoomManager.spawnPad();
+                    player.teleportTo(pad[0], pad[1], pad[2]);
+                    player.setDeltaMovement(0, 0, 0);
+                    player.fallDistance = 0;
+                }
             }
             return;
         }
@@ -888,6 +960,14 @@ public class AuthManager {
         if (CoffeesAeroAuth.LOBBY_STASH != null) {
             CoffeesAeroAuth.LOBBY_STASH.restore(player);
         }
+        // Restore the real overworld food/health that were stashed on lobby entry (the lobby's full
+        // hunger + any regen are discarded — overworld vitals are exactly as they were).
+        float[] vit = lobbyVitals.remove(uuid);
+        if (vit != null) {
+            player.getFoodData().setFoodLevel((int) vit[0]);
+            player.getFoodData().setSaturation(vit[1]);
+            player.setHealth(Math.min(vit[2], player.getMaxHealth()));
+        }
         // First time entering the world → one-time starter currency + mark first-join complete.
         boolean firstWorldEntry = profile != null && !profile.startupBonusGiven;
         if (profile != null) {
@@ -904,18 +984,18 @@ public class AuthManager {
         return true;
     }
 
-    private static final long SPAWN_TP_COOLDOWN_MS = 60L * 60 * 1000; // in-world /spawn: once per hour
-
-    /** In-world /spawn — overworld world-spawn teleport with a 1h per-player cooldown (in-memory,
-     *  resets on server restart). Ops bypass. CombatGuard's blocklist already cancels /spawn while
-     *  combat-tagged, so no escape-from-PvP check is needed here. */
+    /** In-world /spawn — overworld world-spawn teleport with a configurable per-player cooldown
+     *  ({@code spawnTeleportCooldownMinutes}, default 180 min; in-memory, resets on server restart).
+     *  Ops bypass. CombatGuard's blocklist already cancels /spawn while combat-tagged, so no
+     *  escape-from-PvP check is needed here. */
     private boolean handleWorldSpawnTeleport(ServerPlayer player) {
         UUID uuid = player.getUUID();
         long now = System.currentTimeMillis();
-        if (!player.hasPermissions(2)) {
+        long cooldownMs = com.coffeesaerosmp.auth.config.AuthConfig.SPAWN_TP_COOLDOWN_MINUTES.get() * 60_000L;
+        if (cooldownMs > 0 && !player.hasPermissions(2)) {
             Long last = lastSpawnTp.get(uuid);
-            if (last != null && now - last < SPAWN_TP_COOLDOWN_MS) {
-                long remMin = (SPAWN_TP_COOLDOWN_MS - (now - last) + 59_999) / 60_000;
+            if (last != null && now - last < cooldownMs) {
+                long remMin = (cooldownMs - (now - last) + 59_999) / 60_000;
                 send(player, TextUtil.PREFIX + "§7You can §f/spawn§7 again in §e" + remMin + "m§7.");
                 return false;
             }
@@ -927,6 +1007,56 @@ public class AuthManager {
         lastSpawnTp.put(uuid, now);
         CoffeesAeroAuth.ROOM_MANAGER.teleportToSpawn(player);
         send(player, TextUtil.PREFIX + "§a✈ Teleported to world spawn. §7(Usable once per hour.)");
+        return true;
+    }
+
+    /** /home — teleport to the player's bed / respawn point, using vanilla's safe-spot finder so they
+     *  land beside the bed rather than inside it. Cooldown {@code homeTeleportCooldownMinutes} (ops
+     *  exempt); CombatGuard already blocks /home while combat-tagged. No-op with a message if no bed. */
+    public boolean handleHome(ServerPlayer player) {
+        UUID uuid = player.getUUID();
+        if (!isAuthenticated(uuid)) {
+            send(player, TextUtil.PREFIX + "§cLog in before using /home.");
+            return false;
+        }
+        net.minecraft.core.BlockPos bed = player.getRespawnPosition();
+        if (bed == null) {
+            send(player, TextUtil.PREFIX + "§cNo home set — sleep in a bed (or set a respawn anchor) first.");
+            return false;
+        }
+        long now = System.currentTimeMillis();
+        long cooldownMs = AuthConfig.HOME_TP_COOLDOWN_MINUTES.get() * 60_000L;
+        if (cooldownMs > 0 && !player.hasPermissions(2)) {
+            Long last = lastHomeTp.get(uuid);
+            if (last != null && now - last < cooldownMs) {
+                long remMin = (cooldownMs - (now - last) + 59_999) / 60_000;
+                send(player, TextUtil.PREFIX + "§7You can §f/home§7 again in §e" + remMin + "m§7.");
+                return false;
+            }
+        }
+        net.minecraft.server.level.ServerLevel level =
+            player.getServer() != null ? player.getServer().getLevel(player.getRespawnDimension()) : null;
+        if (level == null) {
+            send(player, TextUtil.PREFIX + "§cYour home dimension isn't available.");
+            return false;
+        }
+        boolean fromLobby = player.level().dimension()
+            == com.coffeesaerosmp.auth.lobby.PrivateRoomManager.LOBBY_DIMENSION;
+        player.teleportTo(level, bed.getX() + 0.5, bed.getY() + 1.0, bed.getZ() + 0.5,
+            Set.of(), player.getRespawnAngle(), 0.0f);
+        // Leaving the lobby via /home → same cleanup as /spawn: restore the real inventory (which
+        // removes the lobby "spawn" paper so it never reaches the overworld) and restore stashed vitals.
+        if (fromLobby) {
+            if (CoffeesAeroAuth.LOBBY_STASH != null) CoffeesAeroAuth.LOBBY_STASH.restore(player);
+            float[] vit = lobbyVitals.remove(uuid);
+            if (vit != null) {
+                player.getFoodData().setFoodLevel((int) vit[0]);
+                player.getFoodData().setSaturation(vit[1]);
+                player.setHealth(Math.min(vit[2], player.getMaxHealth()));
+            }
+        }
+        lastHomeTp.put(uuid, now);
+        send(player, TextUtil.PREFIX + "§a✦ Teleported home.");
         return true;
     }
 

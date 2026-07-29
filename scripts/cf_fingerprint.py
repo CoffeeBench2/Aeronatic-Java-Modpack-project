@@ -28,6 +28,10 @@ MANUAL_REFS = {
     "balm-neoforge-1.21.1-21.0.59.jar":           (531761,  8252588),
     "sophisticatedbackpacks-1.21.1-3.25.64.1919.jar": (422301, 8272377),
     "sophisticatedcore-1.21.1-1.4.59.2032.jar":   (618298,  8272330),
+    # Our own mods — now approved CF projects, so CF requires them REFERENCED not bundled
+    # (modpack rejection 2026-07). Core = the -cf (no-updater) build build_cf injects.
+    "CoffeesAeroCore-1.3.15-cf.jar":               (1601629, 8497040),
+    "CoffeesAeroSkins-1.1.0.jar":                  (1601639, 8486591),
 }
 
 def die(m): sys.exit("ERROR: " + m)
@@ -109,6 +113,14 @@ def sanitize_export(work):
        (2026-07-20; the 1.8.0 zip predated that scan). Strip the whole `.analogaudio` dir from CF
        exports: the mod self-downloads the player on first launch (LavaplayerLoader + progress
        screen), so CF players just get a one-time download. mrpack/GitHub keeps the pre-baked copy.
+    4) CF-BANNED Analog Audio MOD JAR. Beyond the pre-baked player (fault 3), a CF HUMAN moderator
+       rejected the 1.8.1.1 file (2026-07-22) flagging the mod itself: "Please remove 'Analog Audio'
+       ... it transfers user-selected files through the server. This is unsafe and a security risk."
+       Analog Audio (PMOL, palm1) is NOT a CurseForge project, so it can't be manifest-referenced —
+       CF will not carry it in ANY form. Strip `overrides/mods/Analog-Audio-*.jar` and its config
+       from CF exports. The mod stays fully intact on Modrinth/GitHub/in-client-updater (self-hosted,
+       allowed there). Known CF-only side effect: a CF-direct install lacks the mod's required
+       channel and is refused by Apex until the player adds the jar (CF Core has no self-heal updater).
     """
     ov = os.path.join(work, "overrides")
     nested = os.path.join(ov, "overrides")
@@ -131,6 +143,20 @@ def sanitize_export(work):
         shutil.rmtree(aa, ignore_errors=True)
         print("sanitize: stripped overrides/.analogaudio (CF-blacklisted lavaplayer/youtube; "
               "mod self-downloads its player on first run)")
+
+    # Fault 4: strip the Analog Audio MOD JAR + config (CF human-rejected 2026-07-22; not on CF so
+    # not referenceable). mrpack/GitHub keep it.
+    mods_dir = os.path.join(ov, "mods")
+    if os.path.isdir(mods_dir):
+        for fn in os.listdir(mods_dir):
+            low = fn.lower()
+            if low.startswith("analog-audio") and low.endswith(".jar"):
+                os.remove(os.path.join(mods_dir, fn))
+                print(f"sanitize: stripped overrides/mods/{fn} (CF-banned mod; kept on Modrinth/GitHub)")
+    aa_cfg = os.path.join(ov, "config", "analogaudio")
+    if os.path.isdir(aa_cfg):
+        shutil.rmtree(aa_cfg, ignore_errors=True)
+        print("sanitize: stripped overrides/config/analogaudio (orphan config, mod removed from CF)")
 
 
 def main():
@@ -173,6 +199,36 @@ def main():
     matched = {}
     for i in range(0, len(fps), 100):
         matched.update(cf_match(fps[i:i+100], key))
+
+    # A fingerprint match is NOT enough — CF's hash index also returns files that exist but
+    # cannot be downloaded (project unlisted/private, or the file still under review with
+    # isAvailable=False). Referencing one of those makes CF auto-REJECT the upload with
+    # "Invalid manifest.json file: References invalid fileIDs" — which is exactly what
+    # happened to 1.8.2 on 2026-07-29 (create_parachute-1.0.4a.jar, project-1620507,
+    # fileStatus=3 isAvailable=False). Verify every match and drop the unusable ones so
+    # their jars stay BUNDLED instead.
+    if matched:
+        _ids = [fid for (_pid, fid) in matched.values()]
+        _ok = set()
+        for _i in range(0, len(_ids), 50):
+            _body = json.dumps({"fileIds": _ids[_i:_i+50]}).encode()
+            _req = urllib.request.Request(
+                "https://api.curseforge.com/v1/mods/files", data=_body,
+                headers={"x-api-key": key, "Accept": "application/json",
+                         "Content-Type": "application/json"})
+            try:
+                for _d in json.load(urllib.request.urlopen(_req, timeout=60))["data"]:
+                    if _d.get("isAvailable", True):
+                        _ok.add(_d["id"])
+            except Exception as _e:
+                print("  reference validation batch failed:", str(_e)[:70])
+                _ok.update(_ids[_i:_i+50])   # fail open — don't silently unbundle everything
+        _drop = {fp for fp, (_p, fid) in matched.items() if fid not in _ok}
+        for fp in _drop:
+            del matched[fp]
+        if _drop:
+            print(f"dropped {len(_drop)} unusable CF match(es) (not publicly downloadable) "
+                  f"— those stay bundled")
     print(f"CF hosts {len(matched)} of {len(fps)} — those become references.")
 
     # Move matches to manifest references; delete their bundled copies.

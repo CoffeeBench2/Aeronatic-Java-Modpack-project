@@ -1,0 +1,165 @@
+package com.coffeesaerosmp.auth.daily;
+
+import com.coffeesaerosmp.auth.CoffeesAeroAuth;
+import com.coffeesaerosmp.auth.config.AuthConfig;
+import com.coffeesaerosmp.auth.util.AsyncIo;
+import com.coffeesaerosmp.auth.util.TextUtil;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+
+import java.lang.reflect.Type;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+/**
+ * The {@code /daily} streak reward. Once per {@code dailyRewardIntervalHours}, a player claims a
+ * reward that escalates over a 7-day streak (day 7 = weekly jackpot), then loops. Waiting longer
+ * than 2x the interval breaks the streak back to day 1.
+ *
+ * <p>Rewards are <b>items + XP only — never currency</b>, so this system has zero economy impact by
+ * design (money inflow lives in the Bank, not here). Per-player state (last-claim time + streak)
+ * persists to {@code daily_rewards.json}; saves run off the server thread via {@link AsyncIo}, so the
+ * command never blocks a tick.</p>
+ */
+public final class DailyRewardManager {
+
+    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+    private static final Type MAP_TYPE = new TypeToken<Map<String, Entry>>(){}.getType();
+
+    /** One reward tier: XP levels + items to give (each entry is [itemId, count]). */
+    private record Tier(String name, int xpLevels, String[][] items) {}
+
+    // 7-day escalating table. Items + XP only, SMP-safe (no OP gear, no coins). Day 7 = jackpot.
+    private static final Tier[] TIERS = {
+        new Tier("Day 1",             1,  new String[][]{{"minecraft:bread", "16"}}),
+        new Tier("Day 2",             2,  new String[][]{{"minecraft:iron_ingot", "8"}, {"minecraft:cooked_beef", "8"}}),
+        new Tier("Day 3",             3,  new String[][]{{"minecraft:gold_ingot", "6"}}),
+        new Tier("Day 4",             3,  new String[][]{{"minecraft:diamond", "2"}}),
+        new Tier("Day 5",             4,  new String[][]{{"create:andesite_alloy", "16"}}),
+        new Tier("Day 6",             5,  new String[][]{{"minecraft:emerald", "4"}, {"minecraft:experience_bottle", "8"}}),
+        new Tier("Day 7 ★ JACKPOT", 10, new String[][]{{"minecraft:diamond_block", "1"}, {"minecraft:netherite_scrap", "1"}}),
+    };
+
+    /** Per-player persisted state. */
+    private static final class Entry {
+        long lastClaimMs;
+        int  streak;
+    }
+
+    private final Path file;
+    private final Map<String, Entry> state = new ConcurrentHashMap<>();
+
+    public DailyRewardManager(Path dataDir) {
+        this.file = dataDir == null ? null : dataDir.resolve("daily_rewards.json");
+        load();
+    }
+
+    /** Handle a {@code /daily} claim. Returns true if a reward was granted this call. */
+    public boolean claim(ServerPlayer player) {
+        if (!AuthConfig.DAILY_REWARD_ENABLED.get()) {
+            msg(player, "§cThe daily reward is currently disabled.");
+            return false;
+        }
+        if (CoffeesAeroAuth.AUTH_MANAGER == null
+                || !CoffeesAeroAuth.AUTH_MANAGER.isAuthenticated(player.getUUID())) {
+            msg(player, "§cYou must be logged in to claim a daily reward.");
+            return false;
+        }
+
+        long now        = System.currentTimeMillis();
+        long intervalMs = AuthConfig.DAILY_REWARD_INTERVAL_HOURS.get() * 3_600_000L;
+        long resetMs    = intervalMs * 2;
+        String key = player.getUUID().toString();
+        Entry e = state.computeIfAbsent(key, k -> new Entry());
+
+        if (e.lastClaimMs > 0) {
+            long since = now - e.lastClaimMs;
+            if (since < intervalMs) {
+                long remMin = (intervalMs - since + 59_999) / 60_000;
+                long h = remMin / 60, m = remMin % 60;
+                msg(player, "§7You've already claimed. Come back in §e"
+                    + (h > 0 ? h + "h " : "") + m + "m§7.");
+                return false;
+            }
+            e.streak = (since <= resetMs) ? e.streak + 1 : 1;   // continue the streak vs. break it
+        } else {
+            e.streak = 1;
+        }
+
+        int dayIndex = (e.streak - 1) % TIERS.length;           // 0..6
+        Tier tier = TIERS[dayIndex];
+        grant(player, tier);
+        e.lastClaimMs = now;
+        save();
+
+        int cycleDay = dayIndex + 1;
+        msg(player, TextUtil.PREFIX + "§a✦ Daily reward claimed! §f" + tier.name()
+            + " §7(streak §e" + e.streak + "§7 · day §e" + cycleDay + "§7/7)");
+
+        if (cycleDay == TIERS.length) {                          // weekly jackpot — small server shout
+            MinecraftServer server = player.getServer();
+            if (server != null) {
+                String who = player.getDisplayName().getString();
+                server.getPlayerList().broadcastSystemMessage(Component.literal(
+                    TextUtil.PREFIX + "§6✦ §e" + who + " §6hit a 7-day streak and claimed the weekly jackpot!"),
+                    false);
+            }
+        }
+        return true;
+    }
+
+    private void grant(ServerPlayer player, Tier tier) {
+        if (tier.xpLevels() > 0) player.giveExperienceLevels(tier.xpLevels());
+        for (String[] entry : tier.items()) {
+            Item item = BuiltInRegistries.ITEM.get(ResourceLocation.parse(entry[0]));
+            if (item == null || item == Items.AIR) continue;    // mod/item absent — skip that line silently
+            int count;
+            try { count = Integer.parseInt(entry[1]); } catch (NumberFormatException ex) { continue; }
+            int max = new ItemStack(item).getMaxStackSize();
+            while (count > 0) {
+                int n = Math.min(count, max);
+                ItemStack stack = new ItemStack(item, n);
+                if (!player.getInventory().add(stack)) player.drop(stack, false);
+                count -= n;
+            }
+        }
+    }
+
+    private void msg(ServerPlayer p, String s) {
+        p.sendSystemMessage(Component.literal(s));
+    }
+
+    private void load() {
+        if (file == null || !Files.exists(file)) return;
+        try {
+            Map<String, Entry> m = GSON.fromJson(Files.readString(file), MAP_TYPE);
+            if (m != null) state.putAll(m);
+        } catch (Exception ex) {
+            CoffeesAeroAuth.LOGGER.warn("[Daily] load failed: {}", ex.getMessage());
+        }
+    }
+
+    private void save() {
+        if (file == null) return;
+        Map<String, Entry> snapshot = new HashMap<>(state);
+        AsyncIo.submit(() -> {
+            try {
+                Files.writeString(file, GSON.toJson(snapshot, MAP_TYPE));
+            } catch (Exception ex) {
+                CoffeesAeroAuth.LOGGER.debug("[Daily] save failed: {}", ex.getMessage());
+            }
+        });
+    }
+}

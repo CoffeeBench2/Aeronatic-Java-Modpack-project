@@ -61,13 +61,18 @@ public class ChatEvents {
             ? Component.literal(badge + tagPart).append(nameComp)
                 .append(Component.literal(" §8(" + realName + ")§r §8» §r" + rawText))
             : formatted;
+        boolean senderInLobby =
+            player.level().dimension() == com.coffeesaerosmp.auth.lobby.PrivateRoomManager.LOBBY_DIMENSION;
         for (ServerPlayer viewer : player.getServer().getPlayerList().getPlayers()) {
+            boolean viewerInLobby =
+                viewer.level().dimension() == com.coffeesaerosmp.auth.lobby.PrivateRoomManager.LOBBY_DIMENSION;
+            if (viewerInLobby != senderInLobby) continue;   // lobby and world are separate chat channels
             viewer.sendSystemMessage(viewer.hasPermissions(2) ? adminVariant : formatted);
         }
         player.getServer().sendSystemMessage(adminVariant);   // console log keeps both names
 
-        // Bridge to Discord public channel (no IPs ever go here)
-        if (CoffeesAeroAuth.DISCORD_BRIDGE != null) {
+        // Bridge to Discord public channel — WORLD chat only (lobby chatter stays in the lobby).
+        if (!senderInLobby && CoffeesAeroAuth.DISCORD_BRIDGE != null) {
             // Strip formatting codes from badge for Discord
             String cleanBadge = profile.getAccountType() == PlayerProfile.AccountType.PREMIUM
                 ? "[✦ Verified]" : "[◈ Offline]";

@@ -60,6 +60,38 @@ public class WatchdogEvents {
         var display = event.getAdvancement().value().display();
         if (display.isEmpty() || !display.get().shouldAnnounceChat()) return;
         String title = display.get().getTitle().getString();
+
+        // In-game announcement with the DISPLAY name. Vanilla's announceAdvancements broadcast (which
+        // uses the account username) is disabled at startup when maskAdvancementNames is on, so this
+        // replaces it. The earner's own toast popup is unaffected. Name comes straight from the profile
+        // (same source Discord uses), so it never depends on getName()/getDisplayName() masking timing.
+        if (com.coffeesaerosmp.auth.config.AuthConfig.MASK_ADVANCEMENT_NAMES.get() && player.getServer() != null) {
+            var d = display.get();
+            PlayerProfile prof = CoffeesAeroAuth.AUTH_MANAGER != null
+                ? CoffeesAeroAuth.AUTH_MANAGER.getStore().get(player.getUUID()) : null;
+            String name = prof != null && prof.displayName != null && !prof.displayName.isBlank()
+                ? prof.displayName : player.getGameProfile().getName();
+            // Rebuild the advancement name the way VANILLA does: wrapped in square brackets, tinted
+            // by the frame type, and carrying a SHOW_TEXT hover of "<title>\n<description>".
+            // Before 2026-07-27 this was only `getTitle().copy().withStyle(colour)` — plain coloured
+            // text with no brackets and no hover, so players couldn't read what an advancement was
+            // for. Vanilla's own broadcast is disabled (it prints the account username instead of the
+            // display name), so whatever we build here is the ONLY chat announcement players see.
+            net.minecraft.network.chat.Component hoverText = net.minecraft.network.chat.Component.empty()
+                .append(d.getTitle())
+                .append(net.minecraft.network.chat.CommonComponents.NEW_LINE)
+                .append(d.getDescription());
+            net.minecraft.network.chat.Component titleComp =
+                net.minecraft.network.chat.ComponentUtils.wrapInSquareBrackets(d.getTitle().copy())
+                    .withStyle(d.getType().getChatColor())
+                    .withStyle(s -> s.withHoverEvent(new net.minecraft.network.chat.HoverEvent(
+                        net.minecraft.network.chat.HoverEvent.Action.SHOW_TEXT, hoverText)));
+            net.minecraft.network.chat.Component announce = net.minecraft.network.chat.Component.translatable(
+                "chat.type.advancement." + d.getType().getSerializedName(),
+                net.minecraft.network.chat.Component.literal(name), titleComp);
+            player.getServer().getPlayerList().broadcastSystemMessage(announce, false);
+        }
+
         if (CoffeesAeroAuth.DISCORD_BRIDGE != null) {
             CoffeesAeroAuth.DISCORD_BRIDGE.onAdvancement(player, title,
                 display.get().getDescription().getString(),

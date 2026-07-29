@@ -17,6 +17,7 @@ public class AuthCommands {
             .then(Commands.argument("password", StringArgumentType.word())
                 .executes(ctx -> {
                     ServerPlayer player = ctx.getSource().getPlayerOrException();
+                    if (!requireLobby(player, "login")) return 0;
                     CoffeesAeroAuth.AUTH_MANAGER.handleLogin(
                         player, StringArgumentType.getString(ctx, "password"));
                     return 1;
@@ -30,6 +31,7 @@ public class AuthCommands {
                 .then(Commands.argument("confirmPassword", StringArgumentType.word())
                     .executes(ctx -> {
                         ServerPlayer player = ctx.getSource().getPlayerOrException();
+                        if (!requireLobby(player, "register")) return 0;
                         CoffeesAeroAuth.AUTH_MANAGER.handleRegister(
                             player,
                             StringArgumentType.getString(ctx, "password"),
@@ -71,12 +73,34 @@ public class AuthCommands {
         );
 
         // /spawn — lobby: exit room into main world (no cooldown). Main world: teleport to the
-        // overworld world spawn, once per hour (ops exempt; CombatGuard blocks it while tagged).
+        // overworld world spawn on a configurable cooldown (spawnTeleportCooldownMinutes, default
+        // 3h; ops exempt; CombatGuard blocks it while combat-tagged).
         dispatcher.register(Commands.literal("spawn")
             .executes(ctx -> {
                 ServerPlayer player = ctx.getSource().getPlayerOrException();
                 CoffeesAeroAuth.AUTH_MANAGER.handleSpawn(player);
                 return 1;
+            })
+        );
+
+        // /home — teleport to your bed / respawn point (blocked while combat-tagged; cooldown via config)
+        dispatcher.register(Commands.literal("home")
+            .executes(ctx -> {
+                ServerPlayer player = ctx.getSource().getPlayerOrException();
+                CoffeesAeroAuth.AUTH_MANAGER.handleHome(player);
+                return 1;
+            })
+        );
+
+        // /daily — claim the once-per-interval streak reward (items + XP; no currency)
+        dispatcher.register(Commands.literal("daily")
+            .executes(ctx -> {
+                ServerPlayer player = ctx.getSource().getPlayerOrException();
+                if (CoffeesAeroAuth.DAILY_REWARDS == null) {
+                    player.sendSystemMessage(Component.literal("§cDaily rewards are not ready yet."));
+                    return 0;
+                }
+                return CoffeesAeroAuth.DAILY_REWARDS.claim(player) ? 1 : 0;
             })
         );
 
@@ -104,6 +128,51 @@ public class AuthCommands {
                     return ok ? 1 : 0;
                 })
             )
+            .then(Commands.literal("greeter")
+                .then(Commands.argument("text", StringArgumentType.greedyString())
+                    .executes(ctx -> {
+                        ServerPlayer player = ctx.getSource().getPlayerOrException();
+                        String text = StringArgumentType.getString(ctx, "text").replace('&', '§');
+                        net.minecraft.world.phys.AABB box = player.getBoundingBox().inflate(4.0);
+                        java.util.List<net.minecraft.world.entity.decoration.ArmorStand> stands =
+                            player.serverLevel().getEntitiesOfClass(
+                                net.minecraft.world.entity.decoration.ArmorStand.class, box);
+                        net.minecraft.world.entity.decoration.ArmorStand target = stands.stream()
+                            .min(java.util.Comparator.comparingDouble(s -> s.distanceToSqr(player))).orElse(null);
+                        if (target == null) {
+                            player.sendSystemMessage(Component.literal(
+                                "§c[Lobby] No armor stand within 4 blocks. Place your 'character' (an armor stand, dress it with a player head + armor) first, then run this next to it."));
+                            return 0;
+                        }
+                        target.addTag("aero_spawn_greeter");
+                        target.setCustomName(Component.literal(text));
+                        target.setCustomNameVisible(true);
+                        target.setInvulnerable(true);
+                        target.setNoGravity(true);
+                        player.sendSystemMessage(Component.literal(
+                            "§a[Lobby] Greeter set — players right-click it to §e/spawn§a. Floating text: §f" + text));
+                        return 1;
+                    })
+                )
+            )
+        );
+
+        // /aerobypass — admin only: toggle protection bypass so you can open/break/place on any
+        // claimed ship or protected block without owning it (aeroclaims has no bypass of its own).
+        // Since 2026-07-27 this ALSO covers aeroclaims' packet-level protection (assemble, glue,
+        // toolbox, clipboard, wrench, throttle, kinetic placer, block-breaking) via
+        // mixin/AeroClaimsProtectionBypassMixin — those go through CreateProtectionHelper rather
+        // than NeoForge events, so the event handlers in AdminBypass never saw them.
+        dispatcher.register(Commands.literal("aerobypass")
+            .requires(src -> src.hasPermission(2))
+            .executes(ctx -> {
+                ServerPlayer player = ctx.getSource().getPlayerOrException();
+                boolean on = com.coffeesaerosmp.auth.protect.AdminBypass.toggle(player.getUUID());
+                player.sendSystemMessage(Component.literal(on
+                    ? "§a[Bypass] ON §7— you can now open/break/place, and assemble, glue, wrench or throttle any claimed ship. §e/aerobypass§7 to turn off."
+                    : "§e[Bypass] OFF §7— claim protection applies to you again."));
+                return 1;
+            })
         );
 
         // /changename <newName> — one-time post-approval display name change (authenticated only)
@@ -123,11 +192,50 @@ public class AuthCommands {
             .then(Commands.argument("displayName", StringArgumentType.word())
                 .executes(ctx -> {
                     ServerPlayer player = ctx.getSource().getPlayerOrException();
+                    if (!requireLobby(player, "setname")) return 0;
                     CoffeesAeroAuth.AUTH_MANAGER.handleSetName(
                         player, StringArgumentType.getString(ctx, "displayName"));
                     return 1;
                 })
             )
         );
+    }
+
+    /**
+     * <b>INVARIANT (2026-07-27): authentication happens IN THE LOBBY, NEVER OUTSIDE IT.</b>
+     *
+     * <p>Before this guard existed, {@code /login}, {@code /register} and {@code /setname} had no
+     * dimension check at all — the invariant held only by <i>routing convention</i>, i.e. because
+     * {@code AuthManager} happened to send unauthenticated players to the lobby before they could
+     * type anything. ({@code /setname} was even commented "lobby only" while being enforced
+     * nowhere.) Convention is not enforcement: any future code path, admin teleport, config change
+     * or bug that leaves an unauthenticated player standing in the world would have let them
+     * authenticate from there — which is precisely the breach worth preventing, because it means
+     * they reached the world <i>without</i> passing through auth.</p>
+     *
+     * <p>This is defence in depth. It does not replace the routing in {@code AuthManager}; it makes
+     * the routing's guarantee impossible to violate by accident. A rejection here is a real bug
+     * signal, so it is logged at WARN with the player's dimension.</p>
+     *
+     * <p><b>Deliberately NOT guarded: {@code /changepassword}.</b> That requires the player to be
+     * already authenticated and to supply their existing password, so it cannot be used to gain
+     * access — it only rotates a credential for someone who already has it. Forcing a player to
+     * travel back to the lobby to change their password would be a usability regression with no
+     * security benefit. If that judgement is ever revisited, this is the place to change it.</p>
+     *
+     * @return {@code true} if the player is in the auth lobby and the command may proceed
+     */
+    private static boolean requireLobby(ServerPlayer player, String action) {
+        if (player.level().dimension()
+                == com.coffeesaerosmp.auth.lobby.PrivateRoomManager.LOBBY_DIMENSION) {
+            return true;
+        }
+        player.sendSystemMessage(Component.literal(
+            "§8[§bAero§8] §cAuthentication can only be done in the lobby."));
+        CoffeesAeroAuth.LOGGER.warn(
+            "[Auth] BLOCKED /{} from {} outside the lobby (dimension {}) — an unauthenticated "
+            + "player should never have been able to reach that dimension. Investigate the routing.",
+            action, player.getGameProfile().getName(), player.level().dimension().location());
+        return false;
     }
 }

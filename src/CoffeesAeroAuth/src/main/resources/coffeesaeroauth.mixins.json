@@ -10,7 +10,8 @@
     "server": [
         "ServerPacketListenerMixin",
         "ServerCommonCookieMixin",
-        "PlayerInfoPacketAccessor"
+        "PlayerInfoPacketAccessor",
+        "AeroClaimsProtectionBypassMixin"
     ],
     "client": [],
     "injectors": {

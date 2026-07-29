@@ -233,7 +233,13 @@ public class ProfileStore implements CredentialStore {
             ps.setString(6,  p.passwordSalt);
             ps.setBoolean(7, p.nameApproved);
             ps.setLong(8,    p.joinDate);
-            ps.setLong(9,    System.currentTimeMillis());
+            // last_seen: write the FIELD, not "now". Every save used to stamp currentTimeMillis(),
+            // which was harmless while nothing read the column — but lastSeen is now the clock for
+            // the lobby-bypass rule, and a save that happens while the player is OFFLINE (an admin
+            // approving a name, a Discord link, a watchdog write) would have reset their "last seen"
+            // to now and let them skip the lobby on their next join. AuthManager stamps the field on
+            // logout; 0 only for a profile that has never logged out, where "now" is correct.
+            ps.setLong(9,    p.lastSeen > 0 ? p.lastSeen : System.currentTimeMillis());
             ps.setLong(10,   p.totalPlaytimeSeconds);
             ps.setString(11, p.bio != null ? p.bio : "");
             ps.setString(12, p.skinUrl);
@@ -269,6 +275,7 @@ public class ProfileStore implements CredentialStore {
         p.nameApproved         = rs.getBoolean("name_approved");
         p.joinDate             = rs.getLong("first_join");
         p.firstIp              = rs.getString("first_ip");
+        p.lastSeen             = rs.getLong("last_seen");
         p.totalPlaytimeSeconds = rs.getLong("total_playtime");
         p.bio                  = rs.getString("bio");
         p.skinUrl              = rs.getString("skin_url");

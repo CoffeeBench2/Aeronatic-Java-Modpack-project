@@ -8,6 +8,7 @@ public class AuthConfig {
 
     public static final ModConfigSpec.IntValue     AUTH_TIMEOUT_SECONDS;
     public static final ModConfigSpec.IntValue     SESSION_GRACE_MINUTES;
+    public static final ModConfigSpec.IntValue     LOBBY_BYPASS_MINUTES;
     public static final ModConfigSpec.IntValue     STARTUP_BONUS_SPURS;
     public static final ModConfigSpec.BooleanValue KICK_ON_NAME_CONFLICT;
     public static final ModConfigSpec.IntValue     MAX_FAILED_ATTEMPTS;
@@ -22,11 +23,25 @@ public class AuthConfig {
     public static final ModConfigSpec.IntValue     AUTO_APPROVE_MINUTES;
     public static final ModConfigSpec.ConfigValue<String>  BANNED_WORDS;
 
+    // ── Shared public lobby (floating island near origin) ─────────────────────
+    public static final ModConfigSpec.DoubleValue  LOBBY_SPAWN_X;
+    public static final ModConfigSpec.DoubleValue  LOBBY_SPAWN_Y;
+    public static final ModConfigSpec.DoubleValue  LOBBY_SPAWN_Z;
+    public static final ModConfigSpec.IntValue      LOBBY_FLOOR_Y;
+    public static final ModConfigSpec.IntValue      LOBBY_FALL_CATCH_DROP;
+    public static final ModConfigSpec.IntValue      LOBBY_FORCELOAD_RADIUS_CHUNKS;
+    public static final ModConfigSpec.BooleanValue  LOBBY_PREPLACED_BUILD;
+    public static final ModConfigSpec.IntValue      OVERWORLD_SPAWN_X;
+    public static final ModConfigSpec.IntValue      OVERWORLD_SPAWN_Y;
+    public static final ModConfigSpec.IntValue      OVERWORLD_SPAWN_Z;
+    public static final ModConfigSpec.IntValue      SPAWN_FORCELOAD_RADIUS_CHUNKS;
+
     public static final ModConfigSpec.ConfigValue<String>  RESOURCE_PACK_URL;
     public static final ModConfigSpec.ConfigValue<String>  RESOURCE_PACK_HASH;
     public static final ModConfigSpec.ConfigValue<String>  SERVER_DISPLAY_NAME;
     public static final ModConfigSpec.ConfigValue<String>  DISPLAY_RGB_NAMES;
     public static final ModConfigSpec.IntValue             WELCOME_INTERVAL_HOURS;
+    public static final ModConfigSpec.BooleanValue         MASK_ADVANCEMENT_NAMES;
 
     // ── Watchdog ──────────────────────────────────────────────────────────────
     public static final ModConfigSpec.IntValue     LOGIN_STORM_FAILURES;
@@ -61,6 +76,14 @@ public class AuthConfig {
 
     // ── /tpa (our own — replaces FTB Essentials' selector-based one) ──────────
     public static final ModConfigSpec.IntValue     TPA_TIMEOUT_SECONDS;
+
+    // ── /spawn (in-world world-spawn teleport) ────────────────────────────────
+    public static final ModConfigSpec.IntValue     SPAWN_TP_COOLDOWN_MINUTES;
+    public static final ModConfigSpec.IntValue     HOME_TP_COOLDOWN_MINUTES;
+
+    // ── /daily streak reward ──────────────────────────────────────────────────
+    public static final ModConfigSpec.BooleanValue DAILY_REWARD_ENABLED;
+    public static final ModConfigSpec.IntValue     DAILY_REWARD_INTERVAL_HOURS;
 
     // ── /rtp (our own — replaces FTB Essentials' sync-chunk-gen one) ──────────
     public static final ModConfigSpec.BooleanValue RTP_ENABLED;
@@ -112,8 +135,19 @@ public class AuthConfig {
             .defineInRange("authTimeoutSeconds", 60, 0, 600);
         SESSION_GRACE_MINUTES = b
             .comment("Minutes after logout an offline player can reconnect (same IP) without re-logging in.",
-                     "Return after this window requires /login again. Default 20.")
+                     "Return after this window requires /login again. Default 20.",
+                     "SECURITY dial — keep this SHORT. It is deliberately separate from",
+                     "lobbyBypassMinutes below, which only decides lobby routing.")
             .defineInRange("sessionGraceMinutes", 20, 0, 1440);
+        LOBBY_BYPASS_MINUTES = b
+            .comment("Minutes a returning player may skip the lobby and resume where they logged off.",
+                     "Away for LESS than this -> dropped straight back at their logout position.",
+                     "Away for this long or MORE -> routed through the shared lobby, and they leave",
+                     "via /spawn (which restores the lobby stash and resumes their saved position).",
+                     "Applies to PREMIUM players; offline players are additionally gated by",
+                     "sessionGraceMinutes because they must re-type /login in the lobby.",
+                     "0 = always route through the lobby, every join. Default 120 (2 hours).")
+            .defineInRange("lobbyBypassMinutes", 120, 0, 10080);
         STARTUP_BONUS_SPURS = b
             .comment("Starter Numismatics currency (spurs) granted once on a player's first /spawn. 0 = disabled.")
             .defineInRange("startupBonusSpurs", 200, 0, 100000);
@@ -306,6 +340,22 @@ public class AuthConfig {
             .defineInRange("tpaTimeoutSeconds", 60, 10, 600);
         b.pop();
 
+        b.push("spawn");
+        SPAWN_TP_COOLDOWN_MINUTES = b.comment(
+                "Minutes between in-world /spawn teleports per player. Ops are exempt, and CombatGuard",
+                "already blocks /spawn while combat-tagged. In-memory (resets on server restart). 0 = no cooldown.")
+            .defineInRange("spawnTeleportCooldownMinutes", 180, 0, 1440);
+        b.pop();
+
+        b.push("dailyReward");
+        DAILY_REWARD_ENABLED = b.comment("Enable the /daily streak reward (items + XP; no currency, so it never touches the economy).")
+            .define("dailyRewardEnabled", true);
+        DAILY_REWARD_INTERVAL_HOURS = b.comment(
+                "Hours a player must wait between /daily claims. The streak breaks if they wait longer",
+                "than 2x this value. Default 20 lets someone claim at roughly the same time each day.")
+            .defineInRange("dailyRewardIntervalHours", 20, 1, 168);
+        b.pop();
+
         b.comment("Our own /rtp — replaces FTB Essentials' (disabled via ftbessentials.snbt), whose",
                   "synchronous destination chunk-gen froze the server 20-40s per use on this worldgen stack.")
             .push("rtp");
@@ -339,6 +389,59 @@ public class AuthConfig {
                 "the single-use cookie is already consumed and the player was being demoted to the offline flow.",
                 "0 = disabled (old behaviour: any rejected cookie resolves OFFLINE).")
             .defineInRange("premiumReconnectGraceMinutes", 10, 0, 1440);
+        b.pop();
+
+        b.comment("Shared public login lobby (single forceloaded floating island near origin).")
+         .push("sharedLobby");
+        LOBBY_SPAWN_X = b
+            .comment("Lobby spawn pad X (players teleport here; frozen players ring around it).")
+            .defineInRange("lobbySpawnX", 7.5, -30000000.0, 30000000.0);
+        LOBBY_SPAWN_Y = b
+            .comment("Lobby spawn pad Y.")
+            .defineInRange("lobbySpawnY", 101.0, -64.0, 320.0);
+        LOBBY_SPAWN_Z = b
+            .comment("Lobby spawn pad Z.")
+            .defineInRange("lobbySpawnZ", 5.5, -30000000.0, 30000000.0);
+        LOBBY_FLOOR_Y = b
+            .comment("Reference island floor Y for the fall-catch.")
+            .defineInRange("lobbyFloorY", 100, -64, 320);
+        LOBBY_FALL_CATCH_DROP = b
+            .comment("Blocks below the floor before a player who fell off the island is returned to spawn.")
+            .defineInRange("lobbyFallCatchDrop", 15, 3, 200);
+        LOBBY_FORCELOAD_RADIUS_CHUNKS = b
+            .comment("Chunks (square radius) around the lobby anchor to permanently force-load. Cover the whole build.")
+            .defineInRange("lobbyForceloadRadiusChunks", 8, 1, 32);
+        LOBBY_PREPLACED_BUILD = b
+            .comment("The lobby build is pre-placed in the auth_lobby dimension (e.g. a map dropped into its",
+                     "region folder) rather than a bundled template. When true, the mod places NO template or",
+                     "platform and never touches the map — it only force-loads the region and spawns players in.")
+            .define("lobbyPreplacedBuild", true);
+        OVERWORLD_SPAWN_X = b
+            .comment("Overworld spawn X — where /spawn and the lobby exit paper send players.")
+            .defineInRange("overworldSpawnX", 0, -30000000, 30000000);
+        OVERWORLD_SPAWN_Y = b
+            .comment("Overworld spawn Y.")
+            .defineInRange("overworldSpawnY", 112, -64, 320);
+        OVERWORLD_SPAWN_Z = b
+            .comment("Overworld spawn Z.")
+            .defineInRange("overworldSpawnZ", -1, -30000000, 30000000);
+        SPAWN_FORCELOAD_RADIUS_CHUNKS = b
+            .comment("Chunks (square radius) around the overworld spawn to permanently force-load so joins/spawns are instant.")
+            .defineInRange("spawnForceloadRadiusChunks", 7, 0, 16);
+        b.pop();
+
+        b.push("home");
+        HOME_TP_COOLDOWN_MINUTES = b
+            .comment("Cooldown in minutes for /home (teleport to your bed/respawn point). 0 = no cooldown. Ops exempt.")
+            .defineInRange("homeTeleportCooldownMinutes", 5, 0, 1440);
+        b.pop();
+
+        b.push("advancements");
+        MASK_ADVANCEMENT_NAMES = b
+            .comment("Announce advancements with the player's display name instead of their account username.",
+                     "When true, vanilla's announceAdvancements chat broadcast is disabled at startup and replaced",
+                     "by a display-name version. The earner's own toast popup is unaffected.")
+            .define("maskAdvancementNames", true);
         b.pop();
 
         SERVER_SPEC = b.build();

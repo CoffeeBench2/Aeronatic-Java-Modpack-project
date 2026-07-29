@@ -1,0 +1,13 @@
+name = "Storage Delight (Forge & Neoforge)"
+filename = "storagedelight-26.07.01a-1.21-neoforge.jar"
+side = "both"
+
+[download]
+hash-format = "sha1"
+hash = "47695bde566353ecb092bfe8401db6d666aeb141"
+mode = "metadata:curseforge"
+
+[update]
+[update.curseforge]
+file-id = 8390991
+project-id = 979761

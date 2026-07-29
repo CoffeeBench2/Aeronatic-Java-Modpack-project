@@ -5,7 +5,7 @@ import zipfile, json, os
 
 ROOT = r"D:\MC Project\untitled"
 OVERRIDES = os.path.join(ROOT, "overrides")
-VERSION = "1.8.1.1"
+VERSION = "1.8.2"
 OUT = rf"D:\MC Project\Releases\CoffeesAeroSMP-{VERSION}.mrpack"
 
 # Stamp the version into the CoffeesAeroCore client config so the in-game version check
@@ -34,7 +34,7 @@ manifest = {
     "name": "Coffees Aero SMP",
     "summary": "Create: Aeronautics SMP modpack by MrCoffeeBench",
     "files": [],
-    "dependencies": {"minecraft": "1.21.1", "neoforge": "21.1.234"},
+    "dependencies": {"minecraft": "1.21.1", "neoforge": "21.1.244"},
 }
 
 def _add(zf, full, rel):

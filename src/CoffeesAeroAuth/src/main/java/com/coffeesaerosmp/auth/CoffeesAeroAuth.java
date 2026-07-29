@@ -61,6 +61,7 @@ public class CoffeesAeroAuth {
     public static volatile PrivateRoomManager ROOM_MANAGER;
     public static volatile NameApprovalQueue  APPROVAL_QUEUE;
     public static volatile com.coffeesaerosmp.auth.lobby.LobbyInventoryStash LOBBY_STASH;
+    public static volatile com.coffeesaerosmp.auth.daily.DailyRewardManager DAILY_REWARDS;
 
     /** Cookie key the gate sets on the client and we read here (matches AeroGate's aerosmp:auth). */
     public static final net.minecraft.resources.ResourceLocation AUTH_COOKIE_KEY =
@@ -98,6 +99,26 @@ public class CoffeesAeroAuth {
         NeoForge.EVENT_BUS.addListener(PlayerRestrictEvents::onBlockBreak);
         NeoForge.EVENT_BUS.addListener(PlayerRestrictEvents::onBlockPlace);
         NeoForge.EVENT_BUS.addListener(PlayerRestrictEvents::onItemToss);
+        NeoForge.EVENT_BUS.addListener(PlayerRestrictEvents::onIncomingDamage);
+        NeoForge.EVENT_BUS.addListener(PlayerRestrictEvents::onItemPickup);
+        NeoForge.EVENT_BUS.addListener(PlayerRestrictEvents::onEntityJoin);
+        NeoForge.EVENT_BUS.addListener(PlayerRestrictEvents::onLobbyDeath);
+        NeoForge.EVENT_BUS.addListener(PlayerRestrictEvents::onLobbyRespawn);
+
+        // Admin protection bypass (/aerobypass) — LOWEST priority + receive already-cancelled events so
+        // these run AFTER aeroclaims' setCanceled(true) and reverse it for bypassing ops.
+        NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.LOWEST, true,
+            net.neoforged.neoforge.event.entity.player.PlayerInteractEvent.RightClickBlock.class,
+            com.coffeesaerosmp.auth.protect.AdminBypass::onRightClickBlock);
+        NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.LOWEST, true,
+            net.neoforged.neoforge.event.entity.player.PlayerInteractEvent.RightClickItem.class,
+            com.coffeesaerosmp.auth.protect.AdminBypass::onRightClickItem);
+        NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.LOWEST, true,
+            net.neoforged.neoforge.event.level.BlockEvent.BreakEvent.class,
+            com.coffeesaerosmp.auth.protect.AdminBypass::onBlockBreak);
+        NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.LOWEST, true,
+            net.neoforged.neoforge.event.level.BlockEvent.EntityPlaceEvent.class,
+            com.coffeesaerosmp.auth.protect.AdminBypass::onBlockPlace);
 
         // Animated tab-list header/footer (airship + live pilot count + rotating tips).
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.tick.ServerTickEvent.Post e) ->
@@ -205,8 +226,17 @@ public class CoffeesAeroAuth {
         ROOM_MANAGER   = new PrivateRoomManager(event.getServer());
         APPROVAL_QUEUE = new NameApprovalQueue(PROFILE_STORE, WEBHOOK_QUEUE, DISCORD_REST, event.getServer(), ROOM_MANAGER);
         ROOM_MANAGER.runStartupCleanup(PROFILE_STORE);
+
+        // Disable vanilla's advancement chat broadcast (it uses the account username); our
+        // WatchdogEvents.onAdvancement re-emits it with the display name instead.
+        if (com.coffeesaerosmp.auth.config.AuthConfig.MASK_ADVANCEMENT_NAMES.get()) {
+            event.getServer().getGameRules()
+                .getRule(net.minecraft.world.level.GameRules.RULE_ANNOUNCE_ADVANCEMENTS)
+                .set(false, event.getServer());
+        }
         LOBBY_STASH    = new com.coffeesaerosmp.auth.lobby.LobbyInventoryStash(dataDir);
         LOBBY_STASH.initialize();
+        DAILY_REWARDS  = new com.coffeesaerosmp.auth.daily.DailyRewardManager(dataDir);
         com.coffeesaerosmp.auth.clan.ClanTags.initialize(dataDir);
         com.coffeesaerosmp.auth.commands.RtpCommand.initialize(dataDir);
         com.coffeesaerosmp.auth.auth.WelcomeMessages.initialize(dataDir);

@@ -1,10 +1,9 @@
 package com.coffeesaerosmp.auth.lobby;
 
 import com.coffeesaerosmp.auth.CoffeesAeroAuth;
-import com.coffeesaerosmp.auth.db.PlayerProfile;
+import com.coffeesaerosmp.auth.config.AuthConfig;
 import com.coffeesaerosmp.auth.db.ProfileStore;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtAccounter;
@@ -14,18 +13,25 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.RelativeMovement;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 
 import java.io.InputStream;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Manages the SINGLE shared public login lobby. All login-flow players share one room near origin in
+ * the {@code coffees_aero_auth:auth_lobby} void dimension; the region is permanently force-loaded at
+ * startup so it never goes cold. This replaced the old per-player rooms scattered from X=1,000,000 to
+ * 3,000,000 — each login into a cold far region was synchronously loading chunks (amplified by Sable),
+ * which stalled the server 9–75 s per join. The real (Middle Ages) build is pasted into the dimension
+ * once and persisted by the force-load; a small platform is placed here as anti-void fallback.
+ */
 public class PrivateRoomManager {
 
     public static final ResourceKey<Level> LOBBY_DIMENSION = ResourceKey.create(
@@ -33,32 +39,26 @@ public class PrivateRoomManager {
         ResourceLocation.fromNamespaceAndPath("coffees_aero_auth", "auth_lobby")
     );
 
-    // Room grid constants
-    private static final int ROOM_BASE_X  = 1_000_000;
-    private static final int ROOM_SPACING = 200;
-    private static final int PREVIEW_SLOT  = 9999;   // reserved admin /lobby preview room
+    // Single shared lobby anchor near origin (forceloaded 24/7).
+    private static final int    ANCHOR_X = 0;
+    private static final int    ANCHOR_Z = 0;
+    private static final int    FLOOR_Y  = 100;
+    private static final int    ROOM_W   = 15;   // used only by the small-template /lobby save box
+    private static final int    ROOM_D   = 10;
+    private static final int    ROOM_H   = 10;
     private static final ResourceLocation LOBBY_TEMPLATE =
         ResourceLocation.fromNamespaceAndPath("coffees_aero_auth", "lobby_room");
-    private static final int FLOOR_Y      = 100;
-    private static final int ROOM_W       = 15;
-    private static final int ROOM_D       = 10;
-    private static final int ROOM_H       = 10;
-
-    // Spawn offset from room base corner (player lands here on teleport)
-    private static final double SPAWN_OX = 7.5;
-    private static final double SPAWN_OY = 1.0;
-    private static final double SPAWN_OZ = 5.5;
-
-    // Bundled lobby design shipped inside the mod jar (a vanilla structure-template NBT, exported via
-    // /lobby save then committed to resources). Loaded once and placed automatically on every room
-    // build — no admin /lobby save needed, and immune to the unreliable world-folder save/load round
-    // trip that left the on-disk template empty before.
     private static final String BUNDLED_TEMPLATE_RESOURCE = "/coffees_aero_auth/lobby_room.nbt";
 
-    private final Set<Integer> builtRooms = ConcurrentHashMap.newKeySet();
-    private final Set<Integer> usedSlots  = ConcurrentHashMap.newKeySet();
-    private final MinecraftServer server;
+    // Standing ring: frozen login-flow players get distinct pads so they don't stack.
+    private static final int    RING_SIZE   = 12;
+    private static final double RING_RADIUS = 3.0;
 
+    private volatile boolean sharedBuilt = false;                  // shared room placed this run
+    private final Set<Integer>       claimedRingSpots = ConcurrentHashMap.newKeySet();
+    private final Map<UUID, Integer> ringSpotByUuid   = new ConcurrentHashMap<>();
+
+    private final MinecraftServer server;
     private StructureTemplate bundledTemplate;   // cached after first successful load
     private boolean bundledTemplateMissing;      // true once load has failed, to stop retrying
 
@@ -66,49 +66,68 @@ public class PrivateRoomManager {
         this.server = server;
     }
 
-    // ── Slot management ───────────────────────────────────────────────────────
+    // ── Spawn pad + standing ring ─────────────────────────────────────────────
 
-    public int assignSlot(UUID uuid) {
-        int base = (uuid.hashCode() & 0x7FFF_FFFF) % 10_000;
-        int slot = base;
-        while (!usedSlots.add(slot)) {
-            slot = (slot + 1) % 10_000;
-        }
-        return slot;
+    /** The configured lobby spawn pad (double coords). */
+    public static double[] spawnPad() {
+        return new double[]{
+            AuthConfig.LOBBY_SPAWN_X.get(),
+            AuthConfig.LOBBY_SPAWN_Y.get(),
+            AuthConfig.LOBBY_SPAWN_Z.get()
+        };
     }
 
-    public void releaseSlot(int slot) {
-        usedSlots.remove(slot);
-        builtRooms.remove(slot);
+    /** A distinct standing pad on the ring for index i. */
+    private static double[] ringSpot(int i) {
+        double[] c = spawnPad();
+        double ang = (2 * Math.PI * i) / RING_SIZE;
+        return new double[]{ c[0] + RING_RADIUS * Math.cos(ang), c[1], c[2] + RING_RADIUS * Math.sin(ang) };
+    }
+
+    /** Transient standing spot for a frozen player; assigned once per join, released on leave. */
+    public double[] getFrozenSpotFor(UUID uuid) {
+        Integer i = ringSpotByUuid.get(uuid);
+        if (i == null) {
+            int pick = 0;
+            while (pick < RING_SIZE && !claimedRingSpots.add(pick)) pick++;
+            if (pick >= RING_SIZE) pick = Math.floorMod(uuid.hashCode(), RING_SIZE); // overflow: allow stacking
+            i = pick;
+            ringSpotByUuid.put(uuid, i);
+        }
+        return ringSpot(i);
+    }
+
+    /** Release a player's ring spot on logout. */
+    public void releaseFrozenSpot(UUID uuid) {
+        Integer i = ringSpotByUuid.remove(uuid);
+        if (i != null) claimedRingSpots.remove(i);
+    }
+
+    // ── Slot management (roomSlot is now dead data; kept for call-site compatibility) ──
+
+    /** Returns a stable pseudo-slot for legacy {@code profile.roomSlot} persistence. Unused for layout. */
+    public int assignSlot(UUID uuid) {
+        return Math.floorMod(uuid.hashCode() & 0x7FFF_FFFF, 10_000);
     }
 
     // ── Teleportation ─────────────────────────────────────────────────────────
 
-    /** Teleports player to their private room, building it first if needed. */
+    /** Teleports a player into the single shared lobby (slot ignored — the lobby is shared). */
     public void teleportToRoom(ServerPlayer player, int slot) {
         ServerLevel lobby = server.getLevel(LOBBY_DIMENSION);
         if (lobby == null) {
             player.sendSystemMessage(net.minecraft.network.chat.Component.literal(
-                "§c[Auth] Lobby dimension failed to load — contact an admin. UUID: "
-                + player.getUUID()));
+                "§c[Auth] Lobby dimension failed to load — contact an admin. UUID: " + player.getUUID()));
             CoffeesAeroAuth.LOGGER.error("Auth lobby dimension not loaded for player {}!", player.getGameProfile().getName());
             return;
         }
-        if (!builtRooms.contains(slot)) {
-            buildRoom(lobby, slot);
-            builtRooms.add(slot);
-        }
-        int baseX = ROOM_BASE_X + slot * ROOM_SPACING;
-        // Bulletproof anti-void: guarantee solid footing at the spawn point on EVERY teleport, even
-        // if the cached room's blocks never persisted, were edited away, or a bad template placed
-        // nothing. Cheap + idempotent — the lobby dimension is pure void, so this is the safety net.
-        ensureSpawnPlatform(lobby, baseX, FLOOR_Y, 0);
-        player.teleportTo(lobby,
-            baseX + SPAWN_OX, FLOOR_Y + SPAWN_OY, SPAWN_OZ,
-            Set.of(), 180.0f, 0.0f);
+        ensureSharedRoom(lobby);
+        double[] pad = spawnPad();
+        ensureSpawnPlatform(lobby, (int) Math.floor(pad[0]), (int) Math.floor(pad[1]), (int) Math.floor(pad[2]));
+        player.teleportTo(lobby, pad[0], pad[1], pad[2], Set.of(), 180.0f, 0.0f);
     }
 
-    /** Teleports player to the overworld spawn point. */
+    /** Teleports player to the overworld world spawn. */
     public void teleportToSpawn(ServerPlayer player) {
         ServerLevel overworld = server.overworld();
         BlockPos spawn = overworld.getSharedSpawnPos();
@@ -117,169 +136,98 @@ public class PrivateRoomManager {
             Set.of(), 0.0f, 0.0f);
     }
 
-    /** Admin /lobby: drop into a reserved preview room, always rebuilt so design changes show. */
+    /** Admin /lobby: drop into the shared lobby, re-placing the bundled template so design changes show. */
     public void teleportToPreview(ServerPlayer player) {
-        builtRooms.remove(PREVIEW_SLOT);
-        usedSlots.add(PREVIEW_SLOT);
-        teleportToRoom(player, PREVIEW_SLOT);
+        sharedBuilt = false;
+        teleportToRoom(player, 0);
     }
 
-    /** Returns the expected frozen position for a player in this slot (in the lobby dimension). */
+    /** Compatibility: the shared lobby spawn pad (old per-slot signature; slot ignored). */
     public double[] getRoomSpawnPos(int slot) {
-        int baseX = ROOM_BASE_X + slot * ROOM_SPACING;
-        return new double[]{baseX + SPAWN_OX, FLOOR_Y + SPAWN_OY, SPAWN_OZ};
+        return spawnPad();
     }
 
-    // ── Room building ─────────────────────────────────────────────────────────
+    // ── Startup / force-load ──────────────────────────────────────────────────
 
-    // The lobby design is the structure NBT bundled in the jar (see loadBundledTemplate); it is placed
-    // automatically on every room build. The procedural build below is the fallback used only if the
-    // bundled template can't be loaded, so a room is always produced.
-    private void buildRoom(ServerLevel level, int slot) {
-        int bx = ROOM_BASE_X + slot * ROOM_SPACING;
-        int by = FLOOR_Y;
-        int bz = 0;
-
-        // Bundled lobby design wins; otherwise build procedurally so the room is never empty void.
-        if (placeTemplate(level, bx, by, bz)) return;
-
-        // Solid foundation (3 layers below floor — prevents void gap)
-        for (int x = bx - 2; x < bx + ROOM_W + 2; x++) {
-            for (int z = bz - 2; z < bz + ROOM_D + 2; z++) {
-                set(level, x, by - 1, z, Blocks.SMOOTH_STONE.defaultBlockState());
-                set(level, x, by - 2, z, Blocks.SMOOTH_STONE.defaultBlockState());
-                set(level, x, by - 3, z, Blocks.SMOOTH_STONE.defaultBlockState());
-            }
+    /** Permanently force-loads the lobby region around the anchor so it never goes cold (the freeze fix),
+     *  then ensures a safe shared room exists. */
+    public void initSharedLobby() {
+        ServerLevel lobby = server.getLevel(LOBBY_DIMENSION);
+        if (lobby == null) {
+            CoffeesAeroAuth.LOGGER.error("[Lobby] auth_lobby dimension missing at startup — cannot force-load.");
+            return;
         }
-
-        // Shell: stone brick walls + floor + ceiling
-        for (int x = bx; x < bx + ROOM_W; x++) {
-            for (int y = by; y < by + ROOM_H; y++) {
-                for (int z = bz; z < bz + ROOM_D; z++) {
-                    boolean shell = x == bx || x == bx + ROOM_W - 1
-                                 || y == by || y == by + ROOM_H - 1
-                                 || z == bz || z == bz + ROOM_D - 1;
-                    set(level, x, y, z, shell ? Blocks.STONE_BRICKS.defaultBlockState() : Blocks.AIR.defaultBlockState());
-                }
-            }
-        }
-
-        // Floor interior: polished andesite
-        for (int x = bx + 1; x < bx + ROOM_W - 1; x++)
-            for (int z = bz + 1; z < bz + ROOM_D - 1; z++)
-                set(level, x, by, z, Blocks.POLISHED_ANDESITE.defaultBlockState());
-
-        // Dark oak floor trim rows (industrial aesthetic)
-        for (int x = bx + 1; x < bx + ROOM_W - 1; x++) {
-            if (x % 3 == 0) {
-                set(level, x, by, bz + 1, Blocks.DARK_OAK_PLANKS.defaultBlockState());
-                set(level, x, by, bz + ROOM_D - 2, Blocks.DARK_OAK_PLANKS.defaultBlockState());
-            }
-        }
-
-        // Copper block wall accents (east/west walls, mid-height)
-        for (int y = by + 2; y <= by + 5; y++) {
-            set(level, bx,               y, bz + 4, Blocks.COPPER_BLOCK.defaultBlockState());
-            set(level, bx,               y, bz + 5, Blocks.COPPER_BLOCK.defaultBlockState());
-            set(level, bx + ROOM_W - 1, y, bz + 4, Blocks.COPPER_BLOCK.defaultBlockState());
-            set(level, bx + ROOM_W - 1, y, bz + 5, Blocks.COPPER_BLOCK.defaultBlockState());
-        }
-
-        // Iron bar window: north wall (z=bz) mid-section
-        for (int x = bx + 4; x <= bx + 10; x++)
-            for (int y = by + 2; y <= by + 3; y++)
-                set(level, x, y, bz, Blocks.IRON_BARS.defaultBlockState());
-
-        // Vista TV: framed 3×3 screen on the south wall (z = bz + ROOM_D - 1).
-        // Screen stays BLACK_WOOL as a placeholder until the 360° spawn-pan video is wired into a Vista TV.
-        int tvZ = bz + ROOM_D - 1;
-        for (int dx = -1; dx <= 3; dx++)            // deepslate-tile frame border
-            for (int dy = 2; dy <= 6; dy++)
-                set(level, bx + 6 + dx, by + dy, tvZ, Blocks.DEEPSLATE_TILES.defaultBlockState());
-        for (int dx = 0; dx < 3; dx++)              // 3×3 screen
-            for (int dy = 0; dy < 3; dy++)
-                set(level, bx + 6 + dx, by + 3 + dy, tvZ, Blocks.BLACK_WOOL.defaultBlockState());
-        set(level, bx + 5, by + 4, tvZ, Blocks.SEA_LANTERN.defaultBlockState());   // power lights
-        set(level, bx + 9, by + 4, tvZ, Blocks.SEA_LANTERN.defaultBlockState());
-
-        // Chains hanging from ceiling (two symmetrical positions)
-        set(level, bx + 5, by + ROOM_H - 2, bz + 5, Blocks.CHAIN.defaultBlockState());
-        set(level, bx + 9, by + ROOM_H - 2, bz + 5, Blocks.CHAIN.defaultBlockState());
-
-        // Hanging lanterns below chains
-        set(level, bx + 5, by + ROOM_H - 3, bz + 5,
-            Blocks.LANTERN.defaultBlockState().setValue(BlockStateProperties.HANGING, true));
-        set(level, bx + 9, by + ROOM_H - 3, bz + 5,
-            Blocks.LANTERN.defaultBlockState().setValue(BlockStateProperties.HANGING, true));
-
-        // Floor lanterns (corners)
-        set(level, bx + 2, by + 1, bz + 2, Blocks.LANTERN.defaultBlockState());
-        set(level, bx + 12, by + 1, bz + 2, Blocks.LANTERN.defaultBlockState());
-
-        // Lectern at center, facing player (south = toward iron bar window)
-        set(level, bx + 7, by + 1, bz + 4,
-            Blocks.LECTERN.defaultBlockState()
-                .setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.NORTH));
-
-        // Decorative trapped chests (locked aesthetic, near back corners)
-        set(level, bx + 2, by + 1, bz + 8, Blocks.TRAPPED_CHEST.defaultBlockState());
-        set(level, bx + 12, by + 1, bz + 8, Blocks.TRAPPED_CHEST.defaultBlockState());
-
-        // Music station beneath the Vista TV — jukebox flanked by note blocks.
-        // (The Create: Aeronautics disc / looping chill track is the media piece, added later.)
-        set(level, bx + 7, by + 1, tvZ - 1, Blocks.JUKEBOX.defaultBlockState());
-        set(level, bx + 6, by + 1, tvZ - 1, Blocks.NOTE_BLOCK.defaultBlockState());
-        set(level, bx + 8, by + 1, tvZ - 1, Blocks.NOTE_BLOCK.defaultBlockState());
-
-        // Create-themed decor — graceful vanilla fallback if Create isn't present.
-        BlockState casing = createBlock("andesite_casing", Blocks.POLISHED_ANDESITE.defaultBlockState());
-        BlockState brass  = createBlock("brass_block",     Blocks.WAXED_COPPER_BLOCK.defaultBlockState());
-        for (int y = by + 1; y <= by + 4; y++) {          // andesite-casing corner pillars
-            set(level, bx + 1,          y, bz + 1,          casing);
-            set(level, bx + ROOM_W - 2, y, bz + 1,          casing);
-            set(level, bx + 1,          y, bz + ROOM_D - 2, casing);
-            set(level, bx + ROOM_W - 2, y, bz + ROOM_D - 2, casing);
-        }
-        for (int x = bx + 3; x <= bx + ROOM_W - 4; x += 3) // brass ceiling-beam accents
-            set(level, x, by + ROOM_H - 2, bz + 5, brass);
-
-        CoffeesAeroAuth.LOGGER.info("[PrivateRoom] Built room for slot {} at X={}", slot, bx);
+        int r = AuthConfig.LOBBY_FORCELOAD_RADIUS_CHUNKS.get();
+        int cx = ANCHOR_X >> 4, cz = ANCHOR_Z >> 4;
+        int n = 0;
+        for (int x = cx - r; x <= cx + r; x++)
+            for (int z = cz - r; z <= cz + r; z++) { lobby.setChunkForced(x, z, true); n++; }
+        ensureSharedRoom(lobby);
+        CoffeesAeroAuth.LOGGER.info("[Lobby] Shared lobby ready — force-loaded {} chunks around ({}, {}).", n, ANCHOR_X, ANCHOR_Z);
     }
 
-    /** Places the bundled lobby template at this room's foundation corner. False if it can't be loaded. */
+    /** Runs on server start: force-load + ensure the single shared lobby, and set up the overworld spawn. */
+    public void runStartupCleanup(ProfileStore store) {
+        initSharedLobby();
+        initSpawnArea();
+        CoffeesAeroAuth.LOGGER.info("[PrivateRoom] Shared lobby startup done.");
+    }
+
+    /** Sets the overworld world-spawn to the configured coords (where /spawn + the lobby paper land players)
+     *  and permanently force-loads the surrounding chunks so joining/spawning there is instant. */
+    public void initSpawnArea() {
+        ServerLevel ow = server.overworld();
+        if (ow == null) return;
+        int sx = AuthConfig.OVERWORLD_SPAWN_X.get();
+        int sy = AuthConfig.OVERWORLD_SPAWN_Y.get();
+        int sz = AuthConfig.OVERWORLD_SPAWN_Z.get();
+        ow.setDefaultSpawnPos(new BlockPos(sx, sy, sz), 0.0f);
+        int r = AuthConfig.SPAWN_FORCELOAD_RADIUS_CHUNKS.get();
+        int cx = sx >> 4, cz = sz >> 4, n = 0;
+        for (int x = cx - r; x <= cx + r; x++)
+            for (int z = cz - r; z <= cz + r; z++) { ow.setChunkForced(x, z, true); n++; }
+        CoffeesAeroAuth.LOGGER.info("[Spawn] Overworld spawn set to ({}, {}, {}) — force-loaded {} chunks.", sx, sy, sz, n);
+    }
+
+    /** Places the shared lobby build once per server run (bundled template if present) and guarantees
+     *  footing at the spawn pad. Idempotent; the op pastes the real build over this and forceload persists it. */
+    private void ensureSharedRoom(ServerLevel lobby) {
+        if (sharedBuilt) return;
+        // When the lobby build is a pre-placed map (dropped into the dimension's region folder), place NO
+        // template or platform — that would carve into the map. Force-loading alone (initSharedLobby) is enough.
+        if (AuthConfig.LOBBY_PREPLACED_BUILD.get()) { sharedBuilt = true; return; }
+        placeTemplate(lobby, ANCHOR_X, FLOOR_Y, ANCHOR_Z);
+        double[] pad = spawnPad();
+        ensureSpawnPlatform(lobby, (int) Math.floor(pad[0]), (int) Math.floor(pad[1]), (int) Math.floor(pad[2]));
+        sharedBuilt = true;
+    }
+
+    // ── Template build / anti-void ────────────────────────────────────────────
+
+    /** Places the bundled lobby template at the given corner. False if it can't be loaded. */
     private boolean placeTemplate(ServerLevel level, int bx, int by, int bz) {
         StructureTemplate tmpl = loadBundledTemplate(level);
         if (tmpl == null) return false;
-        // Guard against an empty/corrupt template silently placing nothing → every player falls. Treat a
-        // zero-size template as "no template" so the procedural build runs instead.
         net.minecraft.core.Vec3i size = tmpl.getSize();
         if (size.getX() <= 0 || size.getY() <= 0 || size.getZ() <= 0) {
-            CoffeesAeroAuth.LOGGER.warn("[PrivateRoom] Bundled lobby template is empty ({}×{}×{}) — building procedurally.",
+            CoffeesAeroAuth.LOGGER.warn("[PrivateRoom] Bundled lobby template is empty ({}×{}×{}) — platform only.",
                 size.getX(), size.getY(), size.getZ());
             return false;
         }
         BlockPos origin = new BlockPos(bx - 2, by - 3, bz - 2);
-        // The bundled NBT already carries the correct vista:television connection grid (top_left/top/…/
-        // center/…), so the screen renders merged straight from the blockstate models — no post-placement
-        // relink needed (and none that could re-break it after a flag-2 placement).
         tmpl.placeInWorld(level, origin, origin,
             new net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings(),
             level.getRandom(), 2);
         return true;
     }
 
-    /**
-     * Loads the lobby design bundled in the mod jar at {@value #BUNDLED_TEMPLATE_RESOURCE}, parsing it
-     * through the server's structure manager (applies data-fixing). Cached after the first success; a
-     * failure is remembered so we don't re-attempt every build. Returns null if unavailable, in which
-     * case {@link #buildRoom} falls back to the procedural room.
-     */
+    /** Loads the bundled lobby design from the jar; cached after first success, failure remembered. */
     private StructureTemplate loadBundledTemplate(ServerLevel level) {
         if (bundledTemplate != null)  return bundledTemplate;
         if (bundledTemplateMissing)   return null;
         try (InputStream in = PrivateRoomManager.class.getResourceAsStream(BUNDLED_TEMPLATE_RESOURCE)) {
             if (in == null) {
-                CoffeesAeroAuth.LOGGER.error("[PrivateRoom] Bundled lobby template not found on classpath at {} — using procedural room.",
+                CoffeesAeroAuth.LOGGER.error("[PrivateRoom] Bundled lobby template not found on classpath at {} — platform only.",
                     BUNDLED_TEMPLATE_RESOURCE);
                 bundledTemplateMissing = true;
                 return null;
@@ -290,40 +238,31 @@ public class PrivateRoomManager {
             CoffeesAeroAuth.LOGGER.info("[PrivateRoom] Loaded bundled lobby template ({}×{}×{}).", s.getX(), s.getY(), s.getZ());
             return bundledTemplate;
         } catch (Exception e) {
-            CoffeesAeroAuth.LOGGER.error("[PrivateRoom] Failed to load bundled lobby template — using procedural room.", e);
+            CoffeesAeroAuth.LOGGER.error("[PrivateRoom] Failed to load bundled lobby template — platform only.", e);
             bundledTemplateMissing = true;
             return null;
         }
     }
 
-    /**
-     * Stamps a guaranteed solid platform with headroom under the room spawn point so a player can
-     * NEVER fall into the void, independent of template/procedural build state. Idempotent: only fills
-     * blocks that are currently air, so it never overwrites an existing floor or decoration.
-     */
-    private void ensureSpawnPlatform(ServerLevel level, int bx, int by, int bz) {
-        int sx = bx + (int) Math.floor(SPAWN_OX);   // spawn block X (player feet land here)
-        int sz = bz + (int) Math.floor(SPAWN_OZ);   // spawn block Z
+    /** Stamps a guaranteed solid 7×7 platform (with 3 blocks headroom) under the spawn pad so a player
+     *  can NEVER fall into the void. Idempotent: only fills air, never overwrites an existing floor. */
+    private void ensureSpawnPlatform(ServerLevel level, int sx, int py, int sz) {
+        int floorY = py - 1;
         for (int x = sx - 3; x <= sx + 3; x++) {
             for (int z = sz - 3; z <= sz + 3; z++) {
-                BlockPos floor = new BlockPos(x, by, z);
+                BlockPos floor = new BlockPos(x, floorY, z);
                 if (level.getBlockState(floor).isAir()) {
-                    set(level, x, by, z, Blocks.SMOOTH_STONE.defaultBlockState());
+                    set(level, x, floorY, z, Blocks.SMOOTH_STONE.defaultBlockState());
                 }
             }
         }
-        // Clear 3 blocks of headroom directly above the spawn point so the player never suffocates.
-        for (int y = by + 1; y <= by + 3; y++) {
+        for (int y = py; y <= py + 2; y++) {
             BlockPos head = new BlockPos(sx, y, sz);
             if (!level.getBlockState(head).isAir()) set(level, sx, y, sz, Blocks.AIR.defaultBlockState());
         }
     }
 
-    /**
-     * Emergency anti-void net for an already-authenticated player: if they are sitting over void in the
-     * lobby (e.g. a returning player whose persisted position is an un-rebuilt room), drop a small solid
-     * platform directly beneath them so they don't fall before they type {@code /spawn}. No-op if grounded.
-     */
+    /** Emergency anti-void net for an already-authenticated player sitting over void in the lobby. */
     public void ensureSafeFooting(ServerPlayer player) {
         if (player.level().dimension() != LOBBY_DIMENSION) return;
         if (!(player.level() instanceof ServerLevel level)) return;
@@ -341,135 +280,27 @@ public class PrivateRoomManager {
             player.getGameProfile().getName());
     }
 
-    /**
-     * Admin /lobby save: captures the current preview room as the template applied to EVERY player's
-     * lobby. Clears the built-room cache so existing rooms rebuild from the new template on next visit.
-     */
+    /** Admin /lobby save: captures a small box at the anchor as the bundled template (small edits only —
+     *  large pasted builds exceed a structure template and are persisted via the force-load instead). */
     public boolean saveTemplate() {
         ServerLevel level = server.getLevel(LOBBY_DIMENSION);
         if (level == null) return false;
-        int bx = ROOM_BASE_X + PREVIEW_SLOT * ROOM_SPACING;
-        BlockPos start = new BlockPos(bx - 2, FLOOR_Y - 3, -2);
+        BlockPos start = new BlockPos(ANCHOR_X - 2, FLOOR_Y - 3, ANCHOR_Z - 2);
         net.minecraft.core.Vec3i size = new net.minecraft.core.Vec3i(ROOM_W + 4, ROOM_H + 4, ROOM_D + 4);
         var mgr = level.getStructureManager();
         var t = mgr.getOrCreate(LOBBY_TEMPLATE);
         t.fillFromWorld(level, start, size, true, null);
         boolean ok = mgr.save(LOBBY_TEMPLATE);
         if (ok) {
-            builtRooms.clear();   // force all rooms to rebuild from the new template
-            CoffeesAeroAuth.LOGGER.info("[PrivateRoom] Saved lobby template from preview room (X={}).", bx);
+            sharedBuilt = false;   // re-place from the new template on next visit
+            CoffeesAeroAuth.LOGGER.info("[PrivateRoom] Saved lobby template from shared room (X={}).", ANCHOR_X);
         }
         return ok;
-    }
-
-    // ── Room deletion ─────────────────────────────────────────────────────────
-
-    public void deleteRoom(ServerLevel level, int slot) {
-        if (level == null) { if (builtRooms.contains(slot)) releaseSlot(slot); return; }
-        int bx = ROOM_BASE_X + slot * ROOM_SPACING;
-        clearVolume(level, bx);
-        releaseSlot(slot);
-        CoffeesAeroAuth.LOGGER.info("[PrivateRoom] Deleted room at slot {}", slot);
-    }
-
-    /**
-     * Clears a room's whole volume and rebuilds it from the current bundled design. Used on startup so
-     * every deploy refreshes existing lobby rooms — otherwise the blocks saved on disk (e.g. an older
-     * TV layout) stay until the player happens to revisit. Clearing first also removes any stale blocks
-     * an older design left outside the new template's footprint.
-     */
-    private void forceRebuildRoom(ServerLevel level, int slot) {
-        int bx = ROOM_BASE_X + slot * ROOM_SPACING;
-        clearVolume(level, bx);
-        builtRooms.remove(slot);
-        buildRoom(level, slot);
-        builtRooms.add(slot);
-    }
-
-    /**
-     * Empties a room's whole volume WITHOUT spilling contents into the lobby. Replacing a container
-     * block (Numismatics vendor, jukebox with a cassette, chests, lamps that hold items) with a plain
-     * {@code setBlock(air)} runs the block's {@code onRemove}, which drops its inventory as item
-     * entities — so a rebuild would flood the lobby with loose items. Here we (1) clear each block
-     * entity's inventory first, (2) set air with {@code UPDATE_SUPPRESS_DROPS} as a belt-and-braces,
-     * and (3) sweep every non-player entity in the volume (loose items, XP orbs, AND Create contraption
-     * entities, which are entities — never cleared by a block wipe). The bundled template re-adds its
-     * own decor entities (item frames / armor stands) on rebuild, so this stays consistent.
-     */
-    private void clearVolume(ServerLevel level, int bx) {
-        if (level == null) return;
-        int by = FLOOR_Y;
-        int bz = 0;
-        int x0 = bx - 2,          y0 = by - 3,          z0 = bz - 2;
-        int x1 = bx + ROOM_W + 2, y1 = by + ROOM_H + 1, z1 = bz + ROOM_D + 2;
-        BlockState air = Blocks.AIR.defaultBlockState();
-        int flags = net.minecraft.world.level.block.Block.UPDATE_CLIENTS
-                  | net.minecraft.world.level.block.Block.UPDATE_SUPPRESS_DROPS;
-        BlockPos.MutableBlockPos mp = new BlockPos.MutableBlockPos();
-        for (int x = x0; x < x1; x++)
-            for (int y = y0; y < y1; y++)
-                for (int z = z0; z < z1; z++) {
-                    mp.set(x, y, z);
-                    net.minecraft.world.level.block.entity.BlockEntity be = level.getBlockEntity(mp);
-                    if (be != null) net.minecraft.world.Clearable.tryClear(be); // empty container → nothing to drop
-                    level.setBlock(mp, air, flags);
-                }
-        // Sweep loose entities the old contents/contraptions left behind (players are never present at
-        // startup cleanup, but guard anyway so an admin standing in the room is never removed).
-        net.minecraft.world.phys.AABB box = new net.minecraft.world.phys.AABB(x0, y0, z0, x1, y1, z1);
-        for (net.minecraft.world.entity.Entity e : level.getEntitiesOfClass(
-                net.minecraft.world.entity.Entity.class, box,
-                e -> !(e instanceof net.minecraft.world.entity.player.Player))) {
-            e.discard();
-        }
-    }
-
-    // ── Startup cleanup ───────────────────────────────────────────────────────
-
-    /** Runs on server start: re-registers in-use slots, purges expired rooms, and rebuilds the rest from
-     *  the current bundled design so each deploy refreshes the lobby. */
-    public void runStartupCleanup(ProfileStore store) {
-        ServerLevel lobby = server.getLevel(LOBBY_DIMENSION);
-        long now = System.currentTimeMillis();
-        long APPROVED_TTL = 24L * 3600 * 1000;      // 24 hours after approval
-        long PENDING_TTL  = 7L * 24 * 3600 * 1000;  // 7 days for unapproved inactive
-
-        int rebuilt = 0;
-        for (PlayerProfile p : store.getAll()) {
-            if (p.roomSlot < 0) continue;
-            usedSlots.add(p.roomSlot); // re-register as in-use
-
-            long age = p.roomCreatedAt > 0 ? now - p.roomCreatedAt : 0;
-            boolean expired = p.roomCreatedAt > 0
-                && ((p.nameApproved && age > APPROVED_TTL)
-                 || (!p.nameApproved && !p.nameApprovalPending && age > PENDING_TTL));
-
-            if (lobby == null) continue;
-            if (expired) {
-                deleteRoom(lobby, p.roomSlot);
-                p.roomSlot      = -1;
-                p.roomCreatedAt = 0;
-                store.save(p);
-            } else {
-                // Active room → refresh it from the current bundled lobby design.
-                forceRebuildRoom(lobby, p.roomSlot);
-                rebuilt++;
-            }
-        }
-        CoffeesAeroAuth.LOGGER.info("[PrivateRoom] Startup cleanup done. Slots in use: {}, rooms refreshed: {}.",
-            usedSlots.size(), rebuilt);
     }
 
     // ── Utility ───────────────────────────────────────────────────────────────
 
     private static void set(ServerLevel level, int x, int y, int z, BlockState state) {
         level.setBlock(new BlockPos(x, y, z), state, 2);
-    }
-
-    /** Resolves a Create block by path, falling back to a vanilla block if Create isn't installed. */
-    private static BlockState createBlock(String path, BlockState fallback) {
-        net.minecraft.world.level.block.Block b = net.minecraft.core.registries.BuiltInRegistries.BLOCK.get(
-            ResourceLocation.fromNamespaceAndPath("create", path));
-        return (b == null || b == Blocks.AIR) ? fallback : b.defaultBlockState();
     }
 }

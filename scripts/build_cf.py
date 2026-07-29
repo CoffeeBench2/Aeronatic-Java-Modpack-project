@@ -29,7 +29,7 @@ import zipfile
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RELEASES = r"D:\MC Project\Releases"
 # The no-updater Core jar built by `gradlew jar -PnoUpdater` (staged copy is the source of truth).
-CF_CORE = os.path.join(RELEASES, "cf-core-noupdater", "CoffeesAeroCore-1.3.14-cf.jar")
+CF_CORE = os.path.join(RELEASES, "cf-core-noupdater", "CoffeesAeroCore-1.3.15-cf.jar")
 
 
 def pack_version():
@@ -60,6 +60,16 @@ def rewrite_zip(src_zip, out_zip):
          zipfile.ZipFile(out_zip, "w", zipfile.ZIP_DEFLATED) as zout:
         for item in zin.infolist():
             name = item.filename
+            # FLATTEN overrides/overrides/... -> overrides/...   (fixed 2026-07-29)
+            # packwiz exports pack-ROOT-relative paths into the zip's overrides/ folder. This pack
+            # keeps its client files in a folder literally named `overrides/`, and the index lists
+            # them as `overrides/config/...`, so the export doubles the prefix. Two consequences,
+            # both bad: (1) config/.analogaudio landed at overrides/overrides/... so EVERY strip
+            # rule below silently missed — including the CF-BLACKLISTED analogplayer lavaplayer jar
+            # that caused the automated 2026-07-20 rejection; (2) players' configs would install to
+            # the wrong path and be ignored. Normalise FIRST so the strip rules see real paths.
+            if name.startswith("overrides/overrides/"):
+                name = "overrides/" + name[len("overrides/overrides/"):]
             low = name.lower()
             # Drop the FULL Core jar bundled by packwiz (any CoffeesAeroCore*.jar under overrides/mods).
             if low.startswith("overrides/mods/") and "coffeesaerocore" in low and low.endswith(".jar"):
@@ -75,7 +85,19 @@ def rewrite_zip(src_zip, out_zip):
             # so CF installs lose only the pre-seed, not the feature.
             if low.startswith("overrides/.analogaudio/"):
                 continue
-            zout.writestr(item, zin.read(name))
+            # Drop the Analog Audio MOD JAR + config. A CF human moderator rejected the 1.8.1.1 file
+            # (2026-07-22): the mod "transfers user-selected files through the server ... security risk."
+            # Analog Audio (PMOL, palm1) isn't a CF project, so it can't be referenced — CF won't carry
+            # it at all. It stays intact on Modrinth/GitHub/in-client-updater. (cf_fingerprint.py also
+            # strips it — belt-and-suspenders.)
+            if low.startswith("overrides/mods/") and low.rsplit("/", 1)[-1].startswith("analog-audio") and low.endswith(".jar"):
+                continue
+            if low.startswith("overrides/config/analogaudio/"):
+                continue
+            info = zipfile.ZipInfo(name, date_time=item.date_time)
+            info.compress_type = zipfile.ZIP_DEFLATED
+            info.external_attr = item.external_attr
+            zout.writestr(info, zin.read(item.filename))
         # Add the -cf Core (no updater) into overrides/mods.
         zout.writestr("overrides/mods/" + cf_core_name, cf_core_bytes)
 

@@ -13,6 +13,14 @@ public class PlayerProfile {
     public String passwordHash;     // null for premium accounts
     public String passwordSalt;     // null for premium accounts
     public long   joinDate;         // epoch millis of first join
+    /**
+     * Epoch millis the profile was last saved — in practice the player's last logout, since a save
+     * always runs on leave. The {@code last_seen} column was written on every save but was NEVER
+     * mapped back into Java until 2026-07-27, so nothing could read it. It is now the clock behind
+     * the lobby-bypass rule (premium players have no session token, so SessionTokenManager cannot
+     * answer "how long were they away?"). 0 = never recorded → treated as "away a long time".
+     */
+    public long   lastSeen;
     public String firstIp;          // IP recorded on the very first login (set once, never overwritten)
     public long   totalPlaytimeSeconds;
     public long   sessionStartEpoch; // set on auth, cleared on leave

@@ -49,10 +49,20 @@ public class DatabaseManager {
             cfg.setPassword(pass);
             cfg.setMaximumPoolSize(10);
             cfg.setMinimumIdle(2);
-            cfg.setConnectionTimeout(5_000);
-            cfg.setIdleTimeout(300_000);
-            cfg.setMaxLifetime(600_000);
-            cfg.setConnectionTestQuery("SELECT 1");
+            // Cybrancee's MySQL 8.0.46 has wait_timeout = interactive_timeout = 300s, and the DB
+            // lives in Helsinki while the game node is in Singapore (~234ms RTT), so idle
+            // connections get reaped aggressively. The old values had maxLifetime=600s — DOUBLE the
+            // server's 300s limit — so MySQL killed connections that Hikari still believed were
+            // alive, producing "No operations allowed after connection closed." on next borrow.
+            // HikariCP's rule: maxLifetime must be comfortably SHORTER than any DB-imposed limit.
+            cfg.setConnectionTimeout(10_000);   // was 5s; a cross-continent connect needs headroom
+            cfg.setIdleTimeout(120_000);        // must be < maxLifetime
+            cfg.setMaxLifetime(240_000);        // 60s of margin under the server's 300s wait_timeout
+            cfg.setKeepaliveTime(60_000);       // ping idle conns so they never reach 300s idle
+            cfg.setValidationTimeout(5_000);
+            // NOTE: deliberately NOT setting connectionTestQuery. MySQL Connector/J 8.3.0 is JDBC4,
+            // so Hikari uses the lighter Connection.isValid() ping instead of a full round-trip
+            // "SELECT 1" — which matters at 234ms RTT. Hikari explicitly recommends omitting it.
             cfg.setPoolName("AeroAuth-MySQL");
             cfg.setInitializationFailTimeout(-1); // never fail pool creation on startup
 

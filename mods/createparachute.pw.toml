@@ -1,0 +1,13 @@
+name = "Create:Parachute"
+filename = "create_parachute-1.0.4a.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/vnyV74Zs/versions/KYArxJys/create_parachute-1.0.4a.jar"
+hash-format = "sha512"
+hash = "57a8105bdf925264b7d165996ba333b8215c882d8cb54a2cfce25c4475fe4b134b35430fd37dde4c04a8f0efe7e80b3c3f65c087cc04cb988eabdc95961c529b"
+
+[update]
+[update.modrinth]
+mod-id = "vnyV74Zs"
+version = "KYArxJys"
