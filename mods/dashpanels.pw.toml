@@ -1,0 +1,13 @@
+name = "Dashpanels"
+filename = "dashpanels-1.6+neoforge1.21.1.jar"
+side = "both"
+
+[download]
+hash-format = "sha1"
+hash = "c59c77d2b412e593edac31bc8956741d4af0bce8"
+mode = "metadata:curseforge"
+
+[update]
+[update.curseforge]
+file-id = 8441973
+project-id = 1585610

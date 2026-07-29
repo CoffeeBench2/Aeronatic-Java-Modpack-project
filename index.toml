@@ -1,6 +1,11 @@
 hash-format = "sha256"
 
 [[files]]
+file = "mods/abyssal-decor.pw.toml"
+hash = "d50226c94a37c71af5c57af00c5ab3c1713b66c32573b0ef3d72464f0943a2b2"
+metafile = true
+
+[[files]]
 file = "mods/accessories-neoforge-1-1-0-beta-53-1-21-1.pw.toml"
 hash = "63e7ae1d4a8fc2f2000317562cdfcbf8d732e3e1057cfff411935d4c302f5f14"
 metafile = true
@@ -63,6 +68,11 @@ metafile = true
 [[files]]
 file = "mods/balm-neoforge-1-21-1-21-0-59.pw.toml"
 hash = "18cc39020811712c24d80625297e4e22ec28d58e9522bd0464da4979ed14a6e7"
+metafile = true
+
+[[files]]
+file = "mods/barbeques-delight.pw.toml"
+hash = "feb35b136d405fe64075a577514f228c0cbc69d31efd30a81b058f8643e182d5"
 metafile = true
 
 [[files]]
@@ -216,13 +226,43 @@ hash = "3249678012dd5bc27af549464569253986c315dcf8d9a10d1924ca053e61e2c4"
 metafile = true
 
 [[files]]
+file = "mods/create-aeronauticstoolgun.pw.toml"
+hash = "8a2941d050cb0636a824f3edddbbe43c29fff9ae8a374e39852cfe0b5c82f319"
+metafile = true
+
+[[files]]
+file = "mods/create-aeroworks.pw.toml"
+hash = "ff5cc2cb323fcfc334b4975b2d23ddffa01a6c42fb9b73128f7409bc617d9f4b"
+metafile = true
+
+[[files]]
 file = "mods/create-aquatic-ambitions-1-21-1-2-0-2.pw.toml"
 hash = "20fecec3bee3ee028fa58ecca57f5ecaf6fda93ef92a7322452e822a3efd3457"
 metafile = true
 
 [[files]]
+file = "mods/create-cafe.pw.toml"
+hash = "dd621a9c036f46c5505bb4973ba146ffce576e4a465f755da63dc607f2dcb72a"
+metafile = true
+
+[[files]]
+file = "mods/create-cobblestone.pw.toml"
+hash = "c7b0f9d98e29d0c5054cb5eef83743fb639389e166d279ab12178baeffe7cff7"
+metafile = true
+
+[[files]]
+file = "mods/create-confectionery.pw.toml"
+hash = "421fe3905c6a32fbcc3e102dccbde7ee9dc43076c43cab25b0806f1e6b6726b7"
+metafile = true
+
+[[files]]
 file = "mods/create-connected.pw.toml"
 hash = "a548a99f9d9ba0d237aaf64acee67b29271d05a40c1c3ef87bc1bc18267c640c"
+metafile = true
+
+[[files]]
+file = "mods/create-deep-seas.pw.toml"
+hash = "96b3a6fcba1cbf8d976211fb2d13f934e0586ed6b80f0f4bed1a4b4ffe9a2a70"
 metafile = true
 
 [[files]]
@@ -241,13 +281,33 @@ hash = "12d1a6b7980c3ec83b53160a27bf85ee55bc66d7e9971cbf05ce3591163e8086"
 metafile = true
 
 [[files]]
+file = "mods/create-factory.pw.toml"
+hash = "81feac4e7db72adbec39b6b5e62fd54ba6bd6b4cbc30cb8761755a81ad6803d3"
+metafile = true
+
+[[files]]
 file = "mods/create-goggles.pw.toml"
 hash = "5cade39d5b141f35e73a1880022b6cffa00462f4d43952207ea83a97e269fea7"
 metafile = true
 
 [[files]]
+file = "mods/create-industry.pw.toml"
+hash = "27ba9439d6b25314cfca911c474a9a34933dc7a25b4ee42ae3f2782f8d03b676"
+metafile = true
+
+[[files]]
 file = "mods/create-jetpack-forge-5-1-2.pw.toml"
 hash = "0b428bfc190d493d9355480637b67879795b90671fc1b3903a3fc9e6fe36543a"
+metafile = true
+
+[[files]]
+file = "mods/create-kinetic-grip.pw.toml"
+hash = "9cbc43b7e0d958c45b733f1408ecf477f4fc199ded13ee2c5c85aeed8f20bddb"
+metafile = true
+
+[[files]]
+file = "mods/create-more-girder.pw.toml"
+hash = "3ef714ce48f0eb21d61c03650f6c581d2ac712fc820731e313cccd73f3f0b39c"
 metafile = true
 
 [[files]]
@@ -258,6 +318,11 @@ metafile = true
 [[files]]
 file = "mods/create-sky-village-0-0-38-neoforge-1-21-1.pw.toml"
 hash = "1109edda8a886094e0f9ef59f7e1780bc338f4ad7f63072f13fc52da706ec1a8"
+metafile = true
+
+[[files]]
+file = "mods/create-solar-powered.pw.toml"
+hash = "ee7c2c839b356beb25888eace843e0450538e2dbe9241bdc7a16f6681b816ae4"
 metafile = true
 
 [[files]]
@@ -273,6 +338,11 @@ metafile = true
 [[files]]
 file = "mods/create-stuff-additions.pw.toml"
 hash = "e93b0dfd2ddefaa088e6f12c76b0e7938b4323483be07a2357be5dd241b03323"
+metafile = true
+
+[[files]]
+file = "mods/create-tracks.pw.toml"
+hash = "6652073f815bed51608dc9d6a9e769ec783a131526054b35e8de6f47c8745fa2"
 metafile = true
 
 [[files]]
@@ -316,6 +386,11 @@ hash = "e8a777d5f276931e5b4ecd112e492ab0e4f61a2432ea0d40c43cd4a86a7a4604"
 metafile = true
 
 [[files]]
+file = "mods/createparachute.pw.toml"
+hash = "64a29159dcfb1ba1acb2793d329df289b1538937d3a90ba1537c60add8a41dfa"
+metafile = true
+
+[[files]]
 file = "mods/createpropulsion-1-1-4.pw.toml"
 hash = "52c8cfeb14e1908a30804edb63e09987eca0df50d1f631492fc1f906e9f6b9af"
 metafile = true
@@ -333,6 +408,11 @@ metafile = true
 [[files]]
 file = "mods/cwb-neoforge-3-0-0-mc1-21.pw.toml"
 hash = "cfdf964add1e78de8a1d45cb7b9b51b6ec2a962d3f1b7f3e878290f7208630b6"
+metafile = true
+
+[[files]]
+file = "mods/dashpanels.pw.toml"
+hash = "07ed4f948b6d9829a28247f9f92774e823b5e26a0be7a8647fc745a33b826762"
 metafile = true
 
 [[files]]
@@ -501,6 +581,11 @@ hash = "538e95da0d469d0ceaee08e7d10820cca41ddcb8e8788d4aa100c240388ffb66"
 metafile = true
 
 [[files]]
+file = "mods/ftb-ultimine-forge.pw.toml"
+hash = "3529bc9c3a7b54933869be1d1d84a948d091c3d6064bbb6b17874d7c153b4dca"
+metafile = true
+
+[[files]]
 file = "mods/fzzy-config-0-7-6-1-21-neoforge.pw.toml"
 hash = "47c93b695383024d934d044e379ed0dd839e276d9918a57959c601747327926b"
 metafile = true
@@ -517,7 +602,7 @@ metafile = true
 
 [[files]]
 file = "mods/glitchcore.pw.toml"
-hash = "013cbf60c21b29702dc889edd573ab7a326dcc38b491c7ad93374abfe52dcefa"
+hash = "e53646f88aeb6bd54c38db50da972abdac91e83c145a8f974107b0ca103b15bc"
 metafile = true
 
 [[files]]
@@ -541,8 +626,23 @@ hash = "0004feab868f7b873c12db05aae0d0dac6c87b497490b48bb66480e7c8d0f340"
 metafile = true
 
 [[files]]
+file = "mods/hots-aerostuff.pw.toml"
+hash = "204c2537ff1383d973a32677b566b898d0a92046b8245ced5d72653f3624f19f"
+metafile = true
+
+[[files]]
+file = "mods/hypertubes.pw.toml"
+hash = "ac3048de2c76da8d99d34c918540fd6db4f44245725e8a349a9a963671f2eea6"
+metafile = true
+
+[[files]]
 file = "mods/immediatelyfast-neoforge-1-6-10-1-21-1.pw.toml"
 hash = "75ae3a825c9d4a9dd6d95429e11121a7c072a3f40a4cf4cf877fe8b27d89f884"
+metafile = true
+
+[[files]]
+file = "mods/immersive-hotbar.pw.toml"
+hash = "98bc379caf66f871f9669ed79ae8116024602476e486a8aef30c7862a1255c49"
 metafile = true
 
 [[files]]
@@ -601,6 +701,16 @@ hash = "deef103113f2cdc5da105029173b41303f938cbce02e9e19d1a7a5262eb5b6ca"
 metafile = true
 
 [[files]]
+file = "mods/kaleidoscope-cookery.pw.toml"
+hash = "736320078bdd72041452e9bb1c6efd44859e46b0e5d862dbd814cf48ef5b92aa"
+metafile = true
+
+[[files]]
+file = "mods/kaleidoscope-tavern.pw.toml"
+hash = "922dd23ad46dedbc8a4d550e29c352799b894dafc03a4e9fbd17ec9f734d2b91"
+metafile = true
+
+[[files]]
 file = "mods/kotlinforforge-5-11-0-all.pw.toml"
 hash = "7e5a1ce4a5352d43e57b0536b6fa2f033d8418275782c81f5b916dc604e40ab6"
 metafile = true
@@ -621,6 +731,11 @@ hash = "9afc51f3bc26caee2b087cafa23bd211b2d18b7e638f65830331969d4957c61d"
 metafile = true
 
 [[files]]
+file = "mods/lodestone.pw.toml"
+hash = "8590e77951c4fb7c1ac4a52f8e1e0fa0103518b8c64ef3ae55ae654bfd6d2594"
+metafile = true
+
+[[files]]
 file = "mods/longerchathistory-fabric-1-7.pw.toml"
 hash = "87d7da8f8a6a9f350f7feda6c97074c5c2ed1d8558d93c8c1026b16130179485"
 metafile = true
@@ -633,6 +748,11 @@ metafile = true
 [[files]]
 file = "mods/macaws-paintings.pw.toml"
 hash = "643d332b262b72f86f806cc1410b4354803a07b6012c1210f06d2ca231cccd30"
+metafile = true
+
+[[files]]
+file = "mods/miners-delight-plus.pw.toml"
+hash = "6309c1eba3f762ba6141a0369c5be7673a3056cc3804a8ff424300551157f8bd"
 metafile = true
 
 [[files]]
@@ -736,6 +856,11 @@ hash = "5ead8d8bc26cdbe1a17dc055f7f0fe762a08254d0199d6ea8fcc58839ab274f2"
 metafile = true
 
 [[files]]
+file = "mods/power-grid.pw.toml"
+hash = "94f92fecc2a48a76f3fa40672343d676e4b2aac2a905949b4decb7f5aaa37aea"
+metafile = true
+
+[[files]]
 file = "mods/punchy-2-5-7-neoforge-1-21-1.pw.toml"
 hash = "fc53b2bcea63d9a9441530dbe8d2450fd78db9dd72132fece88fbbf11a7269c1"
 metafile = true
@@ -781,13 +906,18 @@ hash = "563615de1de32874d959e9424206062c87a6b59ee33ca34349b4272f3f9a6492"
 metafile = true
 
 [[files]]
+file = "mods/scribble.pw.toml"
+hash = "c2eb6c47129aed9baba5e5336b4f1910c06199082d0216368f319dc3c683d79d"
+metafile = true
+
+[[files]]
 file = "mods/searchables-neoforge-1-21-1-1-0-2.pw.toml"
 hash = "fc2a6d93ec7d3b80aea54a696962992c30ad153fed69dd8938d63fbee4fd0afa"
 metafile = true
 
 [[files]]
 file = "mods/serene-seasons.pw.toml"
-hash = "b47fd223bccd808ed0a080b910d789fcc9d02aad13b025fa740b2bc06a70a5ec"
+hash = "73b1e4f6608fcd396acc3e4e7aa753d314c8810ef4caf831ed93d9932d93f896"
 metafile = true
 
 [[files]]
@@ -803,6 +933,11 @@ metafile = true
 [[files]]
 file = "mods/slice-and-dice.pw.toml"
 hash = "47f7a98662dff8dae871424d210f1f8144617140a9d84b9f502a6d620c124883"
+metafile = true
+
+[[files]]
+file = "mods/smooth-gui.pw.toml"
+hash = "f426bf796ef6dbf6af88ed29b957b3e216f2d3c84683b0c6df4f30ed8b4f5bdf"
 metafile = true
 
 [[files]]
@@ -848,6 +983,11 @@ metafile = true
 [[files]]
 file = "mods/stellarity.pw.toml"
 hash = "d00442fc5ca76e08c5b1dc9eb15ee67ea993b608fae12c7b48529e044b543303"
+metafile = true
+
+[[files]]
+file = "mods/storage-delight-forge.pw.toml"
+hash = "b61616fdc55a68b0cbb601a642b221b91e02ff67097fd02912c0c888d10245aa"
 metafile = true
 
 [[files]]
@@ -968,7 +1108,7 @@ hash = "2e60cb11fc0f91b4d1b119d5d0839c604639c72d92183947bc3b1fcf1b0d0ac6"
 
 [[files]]
 file = "overrides/config/coffeesaerosmp_core-client.toml"
-hash = "606f78d2090fffcea5bd02ce7621b51632862fa7682b3a095193404a63fd01ea"
+hash = "40d0f26f8fd4f39bb29d947a859eb4265ae868f7910f58e088170562ea6ea731"
 
 [[files]]
 file = "overrides/config/entity_texture_features.json"
@@ -991,8 +1131,20 @@ file = "overrides/config/ftbquests/quests/chapters/aeronautics.snbt"
 hash = "5589ae11e2cb3bfe62e37aaf1e6d20b39addd1792c3f94feada207ebac58f1f0"
 
 [[files]]
+file = "overrides/config/ftbquests/quests/chapters/coin_cargo.snbt"
+hash = "ca9a7eac5209300eec55804372e54eb3cc6c87a41db29bcdc394774a61cdf24a"
+
+[[files]]
+file = "overrides/config/ftbquests/quests/chapters/create_gauntlet.snbt"
+hash = "66798c184f25b5ba352467248439807484f32659fd2367c3a458fa7dedc610f7"
+
+[[files]]
 file = "overrides/config/ftbquests/quests/chapters/exploration.snbt"
-hash = "d1d98007d30330a574b2d635fc4b0d4ed7387503027912b75e084f94cc2d4f14"
+hash = "884b9c1f404df40fa13c3dd69f36f6d6e69cd3371ca879fd0cb8e61b798ce7a6"
+
+[[files]]
+file = "overrides/config/ftbquests/quests/chapters/realms_reckoning.snbt"
+hash = "0dcb589efe90d129d95b365e2cab98fcb75cff6d2a28c13ced111bcc84bd7509"
 
 [[files]]
 file = "overrides/config/ftbquests/quests/chapters/skyworthy.snbt"

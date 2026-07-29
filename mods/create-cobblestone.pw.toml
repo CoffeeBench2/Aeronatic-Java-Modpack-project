@@ -1,0 +1,13 @@
+name = "Create Cobblestone"
+filename = "createcobblestone-1.4.12+neoforge-1.21.1-144.jar"
+side = "both"
+
+[download]
+hash-format = "sha1"
+hash = "29f465559142e15016fcc516556590e0cdae0705"
+mode = "metadata:curseforge"
+
+[update]
+[update.curseforge]
+file-id = 8494642
+project-id = 1023532
