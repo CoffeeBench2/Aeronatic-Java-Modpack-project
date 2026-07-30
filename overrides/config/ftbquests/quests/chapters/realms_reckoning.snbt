@@ -1,0 +1,307 @@
+{
+	id: "1700000000000001"
+	group: ""
+	order_index: 6
+	filename: "realms_reckoning"
+	title: "Realms \& Reckoning"
+	icon: {
+		id: "minecraft:dragon_head"
+		Count: 1
+	}
+	default_quest_shape: ""
+	default_hide_dependency_lines: false
+	quests: [
+		{
+			x: 0.0d
+			y: 0.0d
+			shape: "hexagon"
+			size: 1.5d
+			id: "1700000000000010"
+			dependencies: ["1300000000000002"]
+			title: "Arm Yourself"
+			subtitle: "No captain sails into a fight unready"
+			description: [
+				"The skies below the clouds are not kind. Before you hunt monsters,",
+				"forge yourself proper steel — &fnetherite&r.",
+				"",
+				"Smith a Netherite Ingot to prove you're ready for the reckoning."
+			]
+			tasks: [{
+				id: "1700000000000011"
+				type: "item"
+				item: {
+					id: "minecraft:netherite_ingot"
+					Count: 1
+				}
+			}]
+			rewards: [
+				{
+					id: "1700000000000012"
+					type: "item"
+					item: {
+						id: "minecraft:golden_apple"
+						Count: 2
+					}
+				}
+				{
+					id: "1700000000000013"
+					type: "xp_levels"
+					xp_levels: 3
+				}
+			]
+		}
+		{
+			x: 2.0d
+			y: -3.0d
+			shape: "circle"
+			id: "1700000000000020"
+			dependencies: ["1700000000000010"]
+			title: "The Ferrous Wroughtnaut"
+			subtitle: "An axe in a tomb"
+			description: [
+				"Deep in the earth sleeps the &7Ferrous Wroughtnaut&r — a Mowzie's guardian",
+				"of iron and fury. Wake it, dodge its cleaves, and put it down.",
+				"",
+				"&7Boss hunt 1 of 4.&r"
+			]
+			tasks: [{
+				id: "1700000000000021"
+				type: "kill"
+				entity: "mowziesmobs:ferrous_wroughtnaut"
+				value: 1L
+			}]
+			rewards: [
+				{
+					id: "1700000000000022"
+					type: "item"
+					item: { id: "minecraft:iron_block", Count: 4 }
+				}
+				{
+					id: "1700000000000023"
+					type: "xp_levels"
+					xp_levels: 5
+				}
+			]
+		}
+		{
+			x: 2.0d
+			y: -1.0d
+			shape: "circle"
+			id: "1700000000000030"
+			dependencies: ["1700000000000010"]
+			title: "Frostmaw's Hoard"
+			subtitle: "The beast of the peaks"
+			description: [
+				"High in the frozen mountains, the &bFrostmaw&r guards its den.",
+				"Climb, brave the cold, and claim the summit.",
+				"",
+				"&7Boss hunt 2 of 4.&r"
+			]
+			tasks: [{
+				id: "1700000000000031"
+				type: "kill"
+				entity: "mowziesmobs:frostmaw"
+				value: 1L
+			}]
+			rewards: [
+				{
+					id: "1700000000000032"
+					type: "item"
+					item: { id: "minecraft:diamond", Count: 3 }
+				}
+				{
+					id: "1700000000000033"
+					type: "xp_levels"
+					xp_levels: 5
+				}
+			]
+		}
+		{
+			x: 2.0d
+			y: 1.0d
+			shape: "circle"
+			id: "1700000000000040"
+			dependencies: ["1700000000000010"]
+			title: "The Warped Mosco"
+			subtitle: "Terror on wings"
+			description: [
+				"A monstrous, gas-belching fly stalks the swamps — Alex's &2Warped Mosco&r.",
+				"Bring it down before it drags you into the murk.",
+				"",
+				"&7Boss hunt 3 of 4.&r"
+			]
+			tasks: [{
+				id: "1700000000000041"
+				type: "kill"
+				entity: "alexsmobs:warped_mosco"
+				value: 1L
+			}]
+			rewards: [
+				{
+					id: "1700000000000042"
+					type: "item"
+					item: { id: "minecraft:emerald", Count: 5 }
+				}
+				{
+					id: "1700000000000043"
+					type: "xp_levels"
+					xp_levels: 5
+				}
+			]
+		}
+		{
+			x: 2.0d
+			y: 3.0d
+			shape: "circle"
+			id: "1700000000000050"
+			dependencies: ["1700000000000010"]
+			title: "Wither's Fall"
+			subtitle: "Three skulls, one grave"
+			description: [
+				"Raise the &8Wither&r and end it. A classic trial — but on an airship server,",
+				"why not fight it a mile above the ground?",
+				"",
+				"&7Boss hunt 4 of 4.&r"
+			]
+			tasks: [{
+				id: "1700000000000051"
+				type: "kill"
+				entity: "minecraft:wither"
+				value: 1L
+			}]
+			rewards: [
+				{
+					id: "1700000000000052"
+					type: "item"
+					item: { id: "minecraft:netherite_scrap", Count: 2 }
+				}
+				{
+					id: "1700000000000053"
+					type: "xp_levels"
+					xp_levels: 5
+				}
+			]
+		}
+		{
+			x: 4.0d
+			y: -1.0d
+			shape: "diamond"
+			size: 1.25d
+			id: "1700000000000060"
+			dependencies: [
+				"1700000000000020"
+				"1700000000000030"
+				"1700000000000040"
+				"1700000000000050"
+			]
+			min_required_dependencies: 2
+			title: "Into the Void"
+			subtitle: "Something ancient stirs"
+			description: [
+				"You've felled monsters of earth, ice, and swamp. Now face Alex's deadliest:",
+				"the colossal &5Void Worm&r that burrows between worlds.",
+				"",
+				"&cUnlocks after any 2 of the 4 boss hunts.&r"
+			]
+			tasks: [{
+				id: "1700000000000061"
+				type: "kill"
+				entity: "alexsmobs:void_worm"
+				value: 1L
+			}]
+			rewards: [
+				{
+					id: "1700000000000062"
+					type: "item"
+					item: { id: "minecraft:diamond_block", Count: 1 }
+				}
+				{
+					id: "1700000000000063"
+					type: "xp_levels"
+					xp_levels: 8
+				}
+			]
+		}
+		{
+			x: 4.0d
+			y: 2.0d
+			shape: "circle"
+			id: "1700000000000070"
+			dependencies: ["1700000000000010"]
+			title: "Journey's End"
+			subtitle: "Beyond the last portal"
+			description: [
+				"Stellarity has reshaped The End into something worth exploring.",
+				"Step through the portal and see what waits among the stars.",
+				"",
+				"&7Reach The End dimension.&r"
+			]
+			tasks: [{
+				id: "1700000000000071"
+				type: "dimension"
+				dimension: "minecraft:the_end"
+			}]
+			rewards: [
+				{
+					id: "1700000000000072"
+					type: "item"
+					item: { id: "minecraft:ender_pearl", Count: 8 }
+				}
+				{
+					id: "1700000000000073"
+					type: "xp_levels"
+					xp_levels: 4
+				}
+			]
+		}
+		{
+			x: 6.0d
+			y: 0.0d
+			shape: "gear"
+			size: 2.0d
+			id: "1700000000000080"
+			dependencies: [
+				"1700000000000060"
+				"1700000000000070"
+			]
+			title: "The Sky Dragon"
+			subtitle: "The reckoning"
+			description: [
+				"Everything led here. The &5Ender Dragon&r — reborn in this world's own image —",
+				"waits at the heart of The End.",
+				"",
+				"Prove yourself, captain. Slay the dragon and take your place in the harbor's legends.",
+				"&7(Needs the Void Worm felled and The End reached.)&r"
+			]
+			tasks: [{
+				id: "1700000000000081"
+				type: "kill"
+				entity: "minecraft:ender_dragon"
+				value: 1L
+			}]
+			rewards: [
+				{
+					id: "1700000000000082"
+					type: "item"
+					item: {
+						id: "minecraft:dragon_head"
+						Count: 1
+					}
+				}
+				{
+					id: "1700000000000083"
+					type: "item"
+					item: {
+						id: "minecraft:elytra"
+						Count: 1
+					}
+				}
+				{
+					id: "1700000000000084"
+					type: "xp_levels"
+					xp_levels: 15
+				}
+			]
+		}
+	]
+}

@@ -1,0 +1,320 @@
+{
+	id: "1500000000000001"
+	group: ""
+	order_index: 4
+	filename: "create_gauntlet"
+	title: "The Create Gauntlet"
+	icon: {
+		id: "create:precision_mechanism"
+		Count: 1
+	}
+	default_quest_shape: ""
+	default_hide_dependency_lines: false
+	quests: [
+		{
+			x: 0.0d
+			y: 0.0d
+			shape: "hexagon"
+			size: 1.5d
+			id: "1500000000000010"
+			title: "The Andesite Age"
+			subtitle: "Every empire starts with a casing"
+			description: [
+				"Rotational power is nice — but machines need bodies.",
+				"",
+				"Craft an &eAndesite Casing&r: the humblest, most-used block in all of Create.",
+				"You'll wrap a thousand of these before you're done, captain."
+			]
+			tasks: [{
+				id: "1500000000000011"
+				type: "item"
+				item: {
+					id: "create:andesite_casing"
+					Count: 1
+				}
+			}]
+			rewards: [
+				{
+					id: "1500000000000012"
+					type: "item"
+					item: {
+						id: "create:andesite_alloy"
+						Count: 16
+					}
+				}
+				{
+					id: "1500000000000013"
+					type: "xp_levels"
+					xp_levels: 2
+				}
+			]
+		}
+		{
+			x: 2.0d
+			y: 0.0d
+			shape: "hexagon"
+			size: 1.5d
+			id: "1500000000000020"
+			dependencies: ["1500000000000010"]
+			title: "The Brass Standard"
+			subtitle: "Precision changes everything"
+			description: [
+				"Zinc + copper = &6brass&r, and brass is the gateway to real engineering.",
+				"",
+				"Craft a &6Precision Mechanism&r — cogs, a little brass, and an electron tube.",
+				"&7This is the gate. Everything past here branches off your mastery of it.&r"
+			]
+			tasks: [{
+				id: "1500000000000021"
+				type: "item"
+				item: {
+					id: "create:precision_mechanism"
+					Count: 1
+				}
+			}]
+			rewards: [
+				{
+					id: "1500000000000022"
+					type: "item"
+					item: {
+						id: "create:precision_mechanism"
+						Count: 2
+					}
+				}
+				{
+					id: "1500000000000023"
+					type: "item"
+					item: {
+						id: "create:brass_ingot"
+						Count: 8
+					}
+				}
+				{
+					id: "1500000000000024"
+					type: "xp_levels"
+					xp_levels: 5
+				}
+			]
+		}
+		{
+			x: 4.0d
+			y: -3.0d
+			shape: "circle"
+			id: "1500000000000030"
+			dependencies: ["1500000000000020"]
+			title: "Steam \& Diesel"
+			subtitle: "Burn something, spin everything"
+			description: [
+				"The old ways still work best. Distill &ecrude oil&r into &6diesel&r,",
+				"then let a &6Diesel Engine&r roar.",
+				"",
+				"Craft a Diesel Engine to power your heaviest machinery.",
+				"&7Branch 1 of 4 — the fuel path.&r"
+			]
+			tasks: [{
+				id: "1500000000000031"
+				type: "item"
+				item: {
+					id: "createdieselgenerators:diesel_engine"
+					Count: 1
+				}
+			}]
+			rewards: [
+				{
+					id: "1500000000000032"
+					type: "item"
+					item: {
+						id: "createdieselgenerators:diesel_bucket"
+						Count: 2
+					}
+				}
+				{
+					id: "1500000000000033"
+					type: "xp_levels"
+					xp_levels: 4
+				}
+			]
+		}
+		{
+			x: 4.0d
+			y: -1.0d
+			shape: "circle"
+			id: "1500000000000040"
+			dependencies: ["1500000000000020"]
+			title: "Going Electric"
+			subtitle: "Charge the future"
+			description: [
+				"Rotation in, &bForge Energy&r out. Crafts \& Additions bridges Create to FE.",
+				"",
+				"Craft an &bElectric Motor&r — the first step to a fully electrified base.",
+				"&7Branch 2 of 4 — the electric path.&r"
+			]
+			tasks: [{
+				id: "1500000000000041"
+				type: "item"
+				item: {
+					id: "createaddition:electric_motor"
+					Count: 1
+				}
+			}]
+			rewards: [
+				{
+					id: "1500000000000042"
+					type: "item"
+					item: {
+						id: "createaddition:capacitor"
+						Count: 2
+					}
+				}
+				{
+					id: "1500000000000043"
+					type: "xp_levels"
+					xp_levels: 4
+				}
+			]
+		}
+		{
+			x: 4.0d
+			y: 1.0d
+			shape: "circle"
+			id: "1500000000000050"
+			dependencies: ["1500000000000020"]
+			title: "The Enchantment Line"
+			subtitle: "Bottle the experience"
+			description: [
+				"Why grind for XP when you can &apump&r it? Enchantment Industry turns",
+				"raw experience into a liquid you can store, move, and automate.",
+				"",
+				"Craft a &aPrinter&r to copy books and stamp enchantments on demand.",
+				"&7Branch 3 of 4 — the arcane path.&r"
+			]
+			tasks: [{
+				id: "1500000000000051"
+				type: "item"
+				item: {
+					id: "create_enchantment_industry:printer"
+					Count: 1
+				}
+			}]
+			rewards: [
+				{
+					id: "1500000000000052"
+					type: "item"
+					item: {
+						id: "create_enchantment_industry:experience_bucket"
+						Count: 1
+					}
+				}
+				{
+					id: "1500000000000053"
+					type: "xp_levels"
+					xp_levels: 4
+				}
+			]
+		}
+		{
+			x: 6.0d
+			y: 2.0d
+			shape: "diamond"
+			size: 1.25d
+			id: "1500000000000060"
+			dependencies: [
+				"1500000000000030"
+				"1500000000000040"
+				"1500000000000050"
+			]
+			min_required_dependencies: 2
+			title: "Go Nuclear"
+			subtitle: "The pinnacle of power"
+			description: [
+				"Diesel roars. Electricity hums. But nothing matches a &2reactor&r.",
+				"",
+				"&cThis is hard-gated:&r you must master at least &e2 of the 3 power branches&r",
+				"before the schematics will make sense.",
+				"",
+				"Build a &2Reactor Casing&r and begin your nuclear age."
+			]
+			tasks: [{
+				id: "1500000000000061"
+				type: "item"
+				item: {
+					id: "create_new_age:reactor_casing"
+					Count: 1
+				}
+			}]
+			rewards: [
+				{
+					id: "1500000000000062"
+					type: "item"
+					item: {
+						id: "create_new_age:nuclear_fuel"
+						Count: 2
+					}
+				}
+				{
+					id: "1500000000000063"
+					type: "item"
+					item: {
+						id: "minecraft:diamond"
+						Count: 3
+					}
+				}
+				{
+					id: "1500000000000064"
+					type: "xp_levels"
+					xp_levels: 8
+				}
+			]
+		}
+		{
+			x: 8.0d
+			y: 0.0d
+			shape: "gear"
+			size: 2.0d
+			id: "1500000000000070"
+			dependencies: [
+				"1500000000000030"
+				"1500000000000040"
+				"1500000000000050"
+				"1500000000000060"
+			]
+			min_required_dependencies: 2
+			title: "Master Engineer"
+			subtitle: "You've built the backbone"
+			description: [
+				"Two paths mastered, maybe more. Few captains take their Create this far.",
+				"",
+				"Wear the title with pride — the harbor's finest machines carry your mark.",
+				"&7(Unlocks once you've completed any 2 of the 4 specializations.)&r"
+			]
+			tasks: [{
+				id: "1500000000000071"
+				type: "checkmark"
+				title: "Claim your Master Engineer standing"
+			}]
+			rewards: [
+				{
+					id: "1500000000000072"
+					type: "item"
+					item: {
+						id: "create:precision_mechanism"
+						Count: 8
+					}
+				}
+				{
+					id: "1500000000000073"
+					type: "item"
+					item: {
+						id: "create:brass_block"
+						Count: 1
+					}
+				}
+				{
+					id: "1500000000000074"
+					type: "xp_levels"
+					xp_levels: 10
+				}
+			]
+		}
+	]
+}

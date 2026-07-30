@@ -1,0 +1,329 @@
+{
+	id: "1600000000000001"
+	group: ""
+	order_index: 5
+	filename: "coin_cargo"
+	title: "Coin \& Cargo"
+	icon: {
+		id: "numismatics:sun"
+		Count: 1
+	}
+	default_quest_shape: ""
+	default_hide_dependency_lines: false
+	quests: [
+		{
+			x: 0.0d
+			y: 0.0d
+			shape: "hexagon"
+			size: 1.5d
+			id: "1600000000000010"
+			dependencies: ["1500000000000020"]
+			title: "Mint Condition"
+			subtitle: "Metal in, money out"
+			description: [
+				"Numismatics gives the harbor a real currency, backed by honest metal.",
+				"",
+				"Earn your first &6Spurs&r — the humblest coin in the realm.",
+				"&7(Needs brass from the Create Gauntlet, so it's gated on The Brass Standard.)&r"
+			]
+			tasks: [{
+				id: "1600000000000011"
+				type: "item"
+				item: {
+					id: "numismatics:spur"
+					Count: 8
+				}
+			}]
+			rewards: [
+				{
+					id: "1600000000000012"
+					type: "item"
+					item: {
+						id: "numismatics:banking_guide"
+						Count: 1
+					}
+				}
+				{
+					id: "1600000000000013"
+					type: "xp_levels"
+					xp_levels: 3
+				}
+			]
+		}
+		{
+			x: 2.0d
+			y: 0.0d
+			shape: "circle"
+			id: "1600000000000020"
+			dependencies: ["1600000000000010"]
+			title: "Making Change"
+			subtitle: "Learn the ladder"
+			description: [
+				"Coins climb in value: &7Spur → Bevel → Sprocket → Cog → Crown → &6Sun&r.",
+				"",
+				"Collect one of every denomination so you know a fair price when you see one."
+			]
+			tasks: [
+				{
+					id: "1600000000000021"
+					type: "item"
+					item: { id: "numismatics:spur", Count: 1 }
+				}
+				{
+					id: "1600000000000022"
+					type: "item"
+					item: { id: "numismatics:bevel", Count: 1 }
+				}
+				{
+					id: "1600000000000023"
+					type: "item"
+					item: { id: "numismatics:sprocket", Count: 1 }
+				}
+				{
+					id: "1600000000000024"
+					type: "item"
+					item: { id: "numismatics:cog", Count: 1 }
+				}
+				{
+					id: "1600000000000025"
+					type: "item"
+					item: { id: "numismatics:crown", Count: 1 }
+				}
+				{
+					id: "1600000000000026"
+					type: "item"
+					item: { id: "numismatics:sun", Count: 1 }
+				}
+			]
+			rewards: [
+				{
+					id: "1600000000000027"
+					type: "item"
+					item: {
+						id: "create:brass_ingot"
+						Count: 8
+					}
+				}
+				{
+					id: "1600000000000028"
+					type: "xp_levels"
+					xp_levels: 5
+				}
+			]
+		}
+		{
+			x: 2.0d
+			y: -2.0d
+			shape: "circle"
+			id: "1600000000000030"
+			dependencies: ["1600000000000010"]
+			title: "Open a Bank"
+			subtitle: "Keep your fortune safe"
+			description: [
+				"Loose coins get lost. Convert a Blaze Burner into a &6Blaze Banker&r",
+				"with your Banking Guide to open a proper account.",
+				"",
+				"Craft (or convert) a &6Blaze Banker&r."
+			]
+			tasks: [{
+				id: "1600000000000031"
+				type: "item"
+				item: {
+					id: "numismatics:blaze_banker"
+					Count: 1
+				}
+			}]
+			rewards: [
+				{
+					id: "1600000000000032"
+					type: "item"
+					item: {
+						id: "numismatics:white_card"
+						Count: 1
+					}
+				}
+				{
+					id: "1600000000000033"
+					type: "xp_levels"
+					xp_levels: 3
+				}
+			]
+		}
+		{
+			x: 4.0d
+			y: 0.0d
+			shape: "circle"
+			id: "1600000000000040"
+			dependencies: ["1600000000000020"]
+			title: "Open for Business"
+			subtitle: "Stock it and they will come"
+			description: [
+				"A shop needs a catalog. A &6Stock Link&r registers your inventory to a",
+				"&6Stock Ticker&r, so customers (and your own logistics) can order remotely.",
+				"",
+				"Craft a Stock Link and a Stock Ticker to run a real storefront."
+			]
+			tasks: [
+				{
+					id: "1600000000000041"
+					type: "item"
+					item: { id: "create:stock_link", Count: 1 }
+				}
+				{
+					id: "1600000000000042"
+					type: "item"
+					item: { id: "create:stock_ticker", Count: 1 }
+				}
+			]
+			rewards: [
+				{
+					id: "1600000000000043"
+					type: "item"
+					item: {
+						id: "create:brass_ingot"
+						Count: 16
+					}
+				}
+				{
+					id: "1600000000000044"
+					type: "xp_levels"
+					xp_levels: 5
+				}
+			]
+		}
+		{
+			x: 4.0d
+			y: -2.0d
+			shape: "circle"
+			id: "1600000000000050"
+			dependencies: [
+				"1600000000000040"
+				"1400000000000020"
+			]
+			title: "Sky Freight"
+			subtitle: "Cargo that flies itself"
+			description: [
+				"Your ship is registered — now put her to work. &6Delivery Required&r lets",
+				"you mark a Sable sub-level and have &6Contractors&r scan it for automated runs.",
+				"",
+				"Craft a &6Contractor&r and a &6Delivery Marker&r to open a freight route.",
+				"&7(Needs a registered ship from Skyworthy.)&r"
+			]
+			tasks: [
+				{
+					id: "1600000000000051"
+					type: "item"
+					item: { id: "createdeliveryrequired:contractor", Count: 1 }
+				}
+				{
+					id: "1600000000000052"
+					type: "item"
+					item: { id: "createdeliveryrequired:delivery_marker", Count: 1 }
+				}
+			]
+			rewards: [
+				{
+					id: "1600000000000053"
+					type: "item"
+					item: {
+						id: "create:andesite_alloy"
+						Count: 32
+					}
+				}
+				{
+					id: "1600000000000054"
+					type: "xp_levels"
+					xp_levels: 5
+				}
+			]
+		}
+		{
+			x: 6.0d
+			y: -2.0d
+			shape: "pentagon"
+			id: "1600000000000060"
+			dependencies: ["1600000000000050"]
+			title: "Contract Work"
+			subtitle: "The harbor always needs hands"
+			description: [
+				"Deliver a crate of processed goods and the harbor rewards you with supplies.",
+				"",
+				"&7Repeatable — but it pays in &rmaterials, not coin&7, on purpose:",
+				"the harbor stocks parts, not a money-printing press. Real income comes from",
+				"trade and the Bank, not from hauling andesite in circles.&r"
+			]
+			repeatable: true
+			tasks: [{
+				id: "1600000000000061"
+				type: "item"
+				item: { id: "create:andesite_alloy", Count: 32 }
+				consume_items: true
+			}]
+			rewards: [
+				{
+					id: "1600000000000062"
+					type: "item"
+					item: {
+						id: "minecraft:diamond"
+						Count: 1
+					}
+				}
+				{
+					id: "1600000000000063"
+					type: "xp_levels"
+					xp_levels: 2
+				}
+			]
+		}
+		{
+			x: 6.0d
+			y: 0.0d
+			shape: "gear"
+			size: 2.0d
+			id: "1600000000000070"
+			dependencies: [
+				"1600000000000020"
+				"1600000000000040"
+			]
+			title: "Merchant Prince"
+			subtitle: "Wealth beyond a captain's dreams"
+			description: [
+				"Bank &68 Suns&r — a small fortune by any harbor's reckoning.",
+				"",
+				"Do it honestly and the docks will know your name. This one's a &etrophy&r,",
+				"not a payout — you keep your Suns, you just prove you earned them."
+			]
+			tasks: [{
+				id: "1600000000000071"
+				type: "item"
+				item: {
+					id: "numismatics:sun"
+					Count: 8
+				}
+			}]
+			rewards: [
+				{
+					id: "1600000000000072"
+					type: "item"
+					item: {
+						id: "numismatics:bank_terminal"
+						Count: 1
+					}
+				}
+				{
+					id: "1600000000000073"
+					type: "item"
+					item: {
+						id: "minecraft:gold_block"
+						Count: 1
+					}
+				}
+				{
+					id: "1600000000000074"
+					type: "xp_levels"
+					xp_levels: 8
+				}
+			]
+		}
+	]
+}
