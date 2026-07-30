@@ -3,9 +3,9 @@ filename = "ftb-ultimine-neoforge-2101.1.15.jar"
 side = "both"
 
 [download]
-hash-format = "sha1"
-hash = "c96a7cc0b52bf919660ea61c1536cebd9d5773b3"
-mode = "metadata:curseforge"
+url = "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/download/v1.8.2/ftb-ultimine-neoforge-2101.1.15.jar"
+hash-format = "sha256"
+hash = "1393a85ceb6e4794450d5f06043e3a033278e31b86de8e03950d8b87604b2213"
 
 [update]
 [update.curseforge]
