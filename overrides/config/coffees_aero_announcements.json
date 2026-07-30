@@ -15,18 +15,6 @@
       "removed": []
     },
     {
-      "version": "1.8.2.1",
-      "date": "July 2026",
-      "title": "Housekeeping",
-      "added": [],
-      "fixed": [
-        "Heads-up: this one resets your video settings and keybinds to the pack defaults — worth a minute to put them back how you like them"
-      ],
-      "removed": [
-        "A bundled visual-effects pack. It's cleared from your game automatically, and it takes a big chunk off the download"
-      ]
-    },
-    {
       "version": "1.8.2",
       "date": "July 2026",
       "title": "Forge & Feast",
