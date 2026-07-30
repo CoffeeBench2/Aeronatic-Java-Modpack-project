@@ -14,15 +14,17 @@
 		{
 			x: 0.0d
 			y: 0.0d
-			shape: "circle"
+			shape: "hexagon"
+			size: 1.5d
 			id: "1300000000000002"
 			title: "Scout the World"
 			subtitle: "The world is vast"
 			description: [
-				"Coffees Aero SMP uses Terralith + Tectonic for a stunning world.",
+				"Coffees Aero SMP uses &bTerralith&r + &bTectonic&r for a stunning, dramatic world —",
+				"towering peaks, deep canyons, and hundreds of new biomes.",
 				"",
-				"Grab a spyglass and explore! The world has 85+ new structure types",
-				"from When Dungeons Arise, including abandoned hostile airships."
+				"Grab a spyglass and explore! &bTowns and Towers&r scatters new villages,",
+				"pillager outposts and towers across the land, just waiting to be found."
 			]
 			tasks: [{
 				id: "1300000000000003"
@@ -43,29 +45,129 @@
 		}
 		{
 			x: 2.0d
+			y: -2.0d
+			shape: "circle"
+			id: "1300000000000030"
+			dependencies: ["1300000000000002"]
+			title: "Cartographer's Desk"
+			subtitle: "Know where you're going"
+			description: [
+				"A true explorer never wanders blind. Craft a &eCartography Table&r and turn",
+				"blank paper into a proper &emap&r — then zoom, copy and expand it as you roam.",
+				"",
+				"Pin one to the wall with item frames to chart the whole harbor coastline."
+			]
+			tasks: [{
+				id: "1300000000000031"
+				type: "item"
+				item: {
+					id: "minecraft:cartography_table"
+					Count: 1
+				}
+			}]
+			rewards: [{
+				id: "1300000000000032"
+				type: "item"
+				item: {
+					id: "minecraft:map"
+					Count: 2
+				}
+			}]
+		}
+		{
+			x: 2.0d
 			y: 0.0d
 			shape: "circle"
 			id: "1300000000000010"
 			dependencies: ["1300000000000002"]
-			title: "The Aether"
-			subtitle: "Ascend beyond the clouds"
+			title: "The Waystone Web"
+			subtitle: "Never walk the same road twice"
 			description: [
-				"Find a glowing Aether Portal (a gold-framed portal with water) to enter the Aether.",
+				"A world this big needs shortcuts. Craft and place a &6Waystone&r,",
+				"then right-click to activate it.",
 				"",
-				"The Aether is a sky dimension filled with floating islands,",
-				"unique mobs, and valuable loot — perfect for aerial explorers."
+				"Once you've activated a few, a &6Warp Stone&r (or the server's waystones",
+				"at spawn and outposts) lets you hop across the map in an instant —",
+				"perfect for an explorer who ranges far from home."
 			]
 			tasks: [{
 				id: "1300000000000011"
-				type: "manual"
-				title: "Enter the Aether dimension"
+				type: "item"
+				item: {
+					id: "waystones:waystone"
+					Count: 1
+				}
 			}]
 			rewards: [{
 				id: "1300000000000012"
 				type: "item"
 				item: {
-					id: "minecraft:diamond"
-					Count: 3
+					id: "waystones:warp_stone"
+					Count: 1
+				}
+			}]
+		}
+		{
+			x: 2.0d
+			y: 2.0d
+			shape: "circle"
+			id: "1300000000000060"
+			dependencies: ["1300000000000002"]
+			title: "Camp Under the Stars"
+			subtitle: "Rest wherever the road ends"
+			description: [
+				"Ranging far from the harbor? Don't trek all the way home just to sleep.",
+				"Craft a &bSleeping Bag&r — bed down anywhere for the night, then roll it",
+				"back up at dawn and move on.",
+				"",
+				"&7(It skips the night without setting your spawn — a safe rest on the trail.)&r"
+			]
+			tasks: [{
+				id: "1300000000000061"
+				type: "item"
+				item: {
+					id: "comforts:sleeping_bag_red"
+					Count: 1
+				}
+			}]
+			rewards: [{
+				id: "1300000000000062"
+				type: "item"
+				item: {
+					id: "minecraft:cooked_beef"
+					Count: 8
+				}
+			}]
+		}
+		{
+			x: 4.0d
+			y: -2.0d
+			shape: "circle"
+			id: "1300000000000050"
+			dependencies: ["1300000000000010"]
+			title: "Warp Scrolls"
+			subtitle: "One-way tickets across the map"
+			description: [
+				"Unlocked a few &6Waystones&r? Now craft a &6Warp Scroll&r — a single-use",
+				"jump to ANY waystone you've activated, no walking required.",
+				"",
+				"Keep a stack for expeditions; a &6Bound Scroll&r ties itself to one",
+				"favourite stone for a reusable trip home."
+			]
+			tasks: [{
+				id: "1300000000000051"
+				type: "item"
+				item: {
+					id: "waystones:warp_scroll"
+					Count: 1
+				}
+			}]
+			rewards: [{
+				id: "1300000000000052"
+				type: "item"
+				item: {
+					id: "waystones:bound_scroll"
+					Count: 1
 				}
 			}]
 		}
@@ -75,18 +177,19 @@
 			shape: "circle"
 			id: "1300000000000020"
 			dependencies: ["1300000000000002"]
-			title: "The Twilight Forest"
-			subtitle: "Through the portal of leaves"
+			title: "Into the Nether"
+			subtitle: "Fire, fortresses, and fortune"
 			description: [
-				"Build a 2×2 pool of water surrounded by flowers and throw a diamond in.",
-				"Lightning strikes — a Twilight Forest portal opens.",
+				"Every explorer must brave the &cNether&r sooner or later.",
+				"Build a portal, step through, and survive the burning wastes.",
 				"",
-				"This dense magical forest has unique bosses and progression."
+				"You'll want its treasures soon enough — blaze rods, netherite scrap,",
+				"and the ingredients for the harbor's finest machines await below."
 			]
 			tasks: [{
 				id: "1300000000000021"
-				type: "manual"
-				title: "Enter the Twilight Forest dimension"
+				type: "dimension"
+				dimension: "minecraft:the_nether"
 			}]
 			rewards: [{
 				id: "1300000000000022"
@@ -95,6 +198,35 @@
 					id: "minecraft:diamond"
 					Count: 3
 				}
+			}]
+		}
+		{
+			x: 4.0d
+			y: 2.0d
+			shape: "circle"
+			id: "1300000000000040"
+			dependencies: ["1300000000000002"]
+			title: "Lost and Found"
+			subtitle: "The way back to your bones"
+			description: [
+				"Exploration is dangerous. When you fall in some far-flung ravine,",
+				"a &cRecovery Compass&r points straight to where you last died —",
+				"so your gear is never truly lost to the wilds.",
+				"",
+				"Craft one from a &ccompass&r ringed with eight &cEcho Shards&r from the Deep Dark."
+			]
+			tasks: [{
+				id: "1300000000000041"
+				type: "item"
+				item: {
+					id: "minecraft:recovery_compass"
+					Count: 1
+				}
+			}]
+			rewards: [{
+				id: "1300000000000042"
+				type: "xp_levels"
+				xp_levels: 5
 			}]
 		}
 	]
