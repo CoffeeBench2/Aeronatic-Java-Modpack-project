@@ -174,14 +174,27 @@ public class AeroTitleScreen extends Screen {
      * mod's exact gate (config {@code lavaplayerWelcomeScreen} && {@code isMissing()}), so a
      * player's "Don't install" choice and the bundled-player installs both stay prompt-free.
      */
-    private static boolean lavaplayerPromptChecked = false;
+    private static boolean audioPromptChecked = false;
 
     @Override
     public void tick() {
         super.tick();
-        if (lavaplayerPromptChecked) return;
-        lavaplayerPromptChecked = true;
-        if (!ModList.get().isLoaded("analogaudio")) return;
+        if (audioPromptChecked) return;
+        audioPromptChecked = true;
+        if (ModList.get().isLoaded("analogaudio")) {
+            // Mod present (Modrinth/GitHub build): re-fire the mod's OWN Lavaplayer install prompt,
+            // which hooks the vanilla TitleScreen we replaced and so never fires on its own here.
+            fireLavaplayerWelcomeIfNeeded();
+        } else if (!AeroConfig.ANALOG_AUDIO_PROMPT_SHOWN.get()) {
+            // Mod absent (the CurseForge-website zip strips it). Analog Audio registers a required
+            // network channel, so without it the player can't join the server and radios/cassettes
+            // are dead — offer a one-click manual-install path. Invisible on builds that bundle it.
+            this.minecraft.setScreen(
+                new com.coffeesaerosmp.core.screen.AnalogAudioSetupScreen(this));
+        }
+    }
+
+    private void fireLavaplayerWelcomeIfNeeded() {
         try {
             Class<?> cfg = Class.forName("com.palm1.analogaudio.config.ModConfig$Client");
             if (!cfg.getField("lavaplayerWelcomeScreen").getBoolean(null)) return;

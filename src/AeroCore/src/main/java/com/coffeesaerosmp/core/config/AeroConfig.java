@@ -12,6 +12,7 @@ public class AeroConfig {
     public static final ModConfigSpec.ConfigValue<String> VERSION_CHECK_URL;
     public static final ModConfigSpec.ConfigValue<String> PACK_TOML_URL;
     public static final ModConfigSpec.ConfigValue<String> NEWS_URL;
+    public static final ModConfigSpec.BooleanValue ANALOG_AUDIO_PROMPT_SHOWN;
 
     static {
         ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
@@ -51,6 +52,13 @@ public class AeroConfig {
                      "config/coffees_aero_announcements.json (then the in-jar copy) when offline. Blank = local only.")
             .define("newsUrl",
                 "https://raw.githubusercontent.com/CoffeeBench2/Aeronatic-Java-Modpack-project/main/overrides/config/coffees_aero_announcements.json");
+
+        ANALOG_AUDIO_PROMPT_SHOWN = builder
+            .comment("Internal flag. Set true once the player has permanently dismissed the one-time",
+                     "'install Analog Audio' helper. That helper appears ONLY on builds that don't bundle",
+                     "the mod (the CurseForge-website download strips it); Modrinth/GitHub builds include",
+                     "it, so this is always ignored there. Not meant to be edited by hand.")
+            .define("analogAudioPromptShown", false);
 
         CLIENT_SPEC = builder.build();
     }

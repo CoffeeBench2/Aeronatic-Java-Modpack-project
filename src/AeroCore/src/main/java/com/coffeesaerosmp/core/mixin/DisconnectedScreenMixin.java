@@ -33,7 +33,7 @@ public class DisconnectedScreenMixin {
     private Component coffeesAero$rewriteReason(DisconnectionDetails details) {
         Component reason = details.reason();
         if (coffeesAero$looksLikeRegistryMismatch(reason)) {
-            return coffeesAero$outdatedMessage();
+            return coffeesAero$outdatedMessage(reason);
         }
         if (coffeesAero$looksLikeAuthFailure(reason)) {
             return coffeesAero$conflictMessage();
@@ -54,24 +54,57 @@ public class DisconnectedScreenMixin {
             || (s.contains("missing") && s.contains("mod"));
     }
 
+    /** Longest slice of the server's own reason we keep; the screen wraps, but it is not infinite. */
+    @Unique private static final int COFFEES_AERO$MAX_REASON = 400;
+
+    /**
+     * Explains a registry/mod-channel kick WITHOUT throwing away what the server actually said.
+     *
+     * <p>The original text is the only thing that names the missing mods, so it is appended rather
+     * than replaced — discarding it made these kicks undiagnosable.</p>
+     *
+     * <p>The headline also stops asserting "out of date" when the bundled version already equals
+     * the latest. That case is real: {@code packVersion} comes from a downloaded config file, so a
+     * client whose config landed but whose mod jars did not will report the correct version while
+     * still being refused. Telling that player to "update" sends them in a circle.</p>
+     */
     @Unique
-    private Component coffeesAero$outdatedMessage() {
+    private Component coffeesAero$outdatedMessage(Component original) {
         String bridgeUrl = com.coffeesaerosmp.core.UpdaterBridge.downloadUrl();
         final String url = (bridgeUrl == null || bridgeUrl.isBlank())
             ? AeroConfig.UPDATE_URL.get() : bridgeUrl;    // CF build has no version check
         String ver = com.coffeesaerosmp.core.UpdaterBridge.latestVersion();
-        String verText = (ver == null || ver.isBlank()) ? "the latest pack" : "Coffees Aero SMP v" + ver;
-        return Component.literal("Your modpack is out of date.")
+        String mine = String.valueOf(AeroConfig.PACK_VERSION.get());
+        boolean sameVersion = ver != null && !ver.isBlank() && ver.equals(mine);
+
+        String headline = sameVersion
+            ? "Your pack files don't match the server."
+            : "Your modpack is out of date.";
+        String action = sameVersion
+            ? "\n\nYour pack says v" + mine + ", but some mods are missing or stale. "
+              + "Re-import the pack (a fresh import, not an update) and relaunch."
+            : "\n\nRe-import " + ((ver == null || ver.isBlank())
+                ? "the latest pack" : "Coffees Aero SMP v" + ver) + " and relaunch to join.";
+
+        net.minecraft.network.chat.MutableComponent msg = Component.literal(headline)
             .withStyle(ChatFormatting.YELLOW)
-            .append(Component.literal("\n\nRe-import " + verText + " and relaunch to join.")
-                .withStyle(ChatFormatting.WHITE))
+            .append(Component.literal(action).withStyle(ChatFormatting.WHITE))
             .append(Component.literal("\n\n" + url)
                 .withStyle(style -> style
                     .withColor(ChatFormatting.AQUA)
                     .withUnderlined(true)
                     .withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, url))))
-            .append(Component.literal("\n\n(Your bundled version: v" + AeroConfig.PACK_VERSION.get() + ")")
+            .append(Component.literal("\n\n(Your bundled version: v" + mine + ")")
                 .withStyle(ChatFormatting.DARK_GRAY));
+
+        String raw = (original == null) ? "" : original.getString();
+        if (!raw.isBlank()) {
+            String trimmed = raw.length() > COFFEES_AERO$MAX_REASON
+                ? raw.substring(0, COFFEES_AERO$MAX_REASON) + "…" : raw;
+            msg = msg.append(Component.literal("\n\nServer said: " + trimmed)
+                .withStyle(ChatFormatting.DARK_GRAY));
+        }
+        return msg;
     }
 
     @Unique
