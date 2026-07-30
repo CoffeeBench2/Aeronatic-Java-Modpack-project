@@ -1,7 +1,7 @@
 {
-  "version": "1.8.2.1",
+  "version": "1.8.2",
   "url": "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/latest",
   "neoforge": "21.1.244",
   "minecraft": "1.21.1",
-  "notes": "1.8.2.1 - removes the Visual Effects+ resourcepack (it is deleted from your instance automatically) and a stray backup file. Client-side only, no server change. Note: this update resets video settings and keybinds to the pack defaults. Includes all of 1.8.2's 28 new mods. Relaunch to apply."
+  "notes": "1.8.2 - 28 new mods including Aeroworks, Aeronautics Toolgun, TFMG, Factory, Power Grid, Tracks, Hypertubes, Parachute, Submarine, FTB Ultimine and the Kaleidoscope food line. Relaunch to apply."
 }

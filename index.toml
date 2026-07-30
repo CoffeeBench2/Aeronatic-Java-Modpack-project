@@ -1104,11 +1104,11 @@ hash = "ff15da34b5f6f825dcc32399ab150c2462393031a41c8ea6938d6dd61b11fb04"
 
 [[files]]
 file = "overrides/config/coffees_aero_announcements.json"
-hash = "f879728d6a686736df12a47c34220a93fef2647fe0808c3abaf16626127b86a1"
+hash = "7508b96cdcc4bcfe3e03f6329b8722f520e5d6852f065f0d95cc8995bbac938a"
 
 [[files]]
 file = "overrides/config/coffeesaerosmp_core-client.toml"
-hash = "299ea10e046259d3e67f83e9e66fc6c7a2ae17021f9a19a12968a5685531ebf4"
+hash = "40d0f26f8fd4f39bb29d947a859eb4265ae868f7910f58e088170562ea6ea731"
 
 [[files]]
 file = "overrides/config/entity_texture_features.json"
@@ -1196,7 +1196,7 @@ hash = "6e021d45c48931bb84e306a4a9644a6b84d81b46272774e37bab3f0eccbae532"
 
 [[files]]
 file = "overrides/options.txt"
-hash = "8461d3464fad9f395bb895831fb0abcbf4a053582c520189aa6bc092cf4ba55a"
+hash = "758b13a01d76e9224973ca969fb477ba4ee78d7d5e69ca4018bf595c7f0ba1c0"
 
 [[files]]
 file = "resourcepacks/amazing-mace-3d.pw.toml"
@@ -1246,6 +1246,11 @@ metafile = true
 [[files]]
 file = "resourcepacks/trabens-3d-arrows-1-1.pw.toml"
 hash = "a5fbfa8f1d8c32bb47aea0e64750e8306a3777427d237f6078a33137f22fec64"
+metafile = true
+
+[[files]]
+file = "resourcepacks/visual-effects-plus.pw.toml"
+hash = "75800d894c2d2600bb590f396a5aac164c6342b033e23a3672da8f46915da856"
 metafile = true
 
 [[files]]
