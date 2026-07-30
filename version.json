@@ -1,7 +1,7 @@
 {
-  "version": "1.8.1.1",
+  "version": "1.8.2",
   "url": "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/latest",
-  "neoforge": "21.1.234",
+  "neoforge": "21.1.244",
   "minecraft": "1.21.1",
-  "notes": "1.8.1.1 hotfix: removed MoreCulling (crashed on join with our Sodium 0.6.13). Relaunch to apply. Includes all of 1.8.1 Dragon's Due."
+  "notes": "1.8.2 - 28 new mods: Aeroworks, Aeronautics Toolgun, Kinetic Grip, TFMG, Factory, Power Grid, Tracks, Hypertubes, Parachute, Submarine, Solar, Cobblestone, Dashpanels, Lodestone, More Girder, Abyssal Decor, Hot's Aerostuff, FTB Ultimine, plus the Kaleidoscope Cookery/Tavern, Cafe, Confectionery and Delight food line. Client-side: Smooth GUI, Immersive Hotbar, Scribble. Airship claim protection restored. Relaunch to apply."
 }
