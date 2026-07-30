@@ -15,6 +15,38 @@
       "removed": []
     },
     {
+      "version": "1.8.2.1",
+      "date": "July 2026",
+      "title": "Housekeeping",
+      "added": [],
+      "fixed": [
+        "Heads-up: this one resets your video settings and keybinds to the pack defaults — worth a minute to put them back how you like them"
+      ],
+      "removed": [
+        "A bundled visual-effects pack. It's cleared from your game automatically, and it takes a big chunk off the download"
+      ]
+    },
+    {
+      "version": "1.8.2",
+      "date": "July 2026",
+      "title": "Forge & Feast",
+      "added": [
+        "A whole industrial age — factories, power grids, solar arrays and heavy machinery to build out",
+        "Cook properly at last: a full kitchen, a tavern, a café and a confectionery, plus three new spreads of hearty food",
+        "New ways to get around — hypertubes, dash panels, rails, and a parachute for when it all goes wrong",
+        "Submarines, for when the fight belongs below the waves",
+        "A shipwright's toolkit: precision building tools and new gear for handling your airship",
+        "Mine a whole vein in one swing",
+        "Deep-sea and abyssal decor, plus more girders to frame it all",
+        "A smoother interface, a tidier hotbar, and notes you can scribble in-game"
+      ],
+      "fixed": [
+        "Kitchen items that were rendering wrong now look right",
+        "Steadier server performance, and the world loads noticeably faster than before"
+      ],
+      "removed": []
+    },
+    {
       "version": "1.8.1",
       "date": "July 2026",
       "title": "Dragon's Due",
