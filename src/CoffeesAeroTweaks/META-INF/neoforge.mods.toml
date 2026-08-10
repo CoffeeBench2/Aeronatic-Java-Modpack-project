@@ -4,7 +4,7 @@ license = "All Rights Reserved (c) 2026 MrCoffeeBench"
 
 [[mods]]
 modId       = "coffeesaero_tweaks"
-version     = "1.3.0"
+version     = "1.3.1"
 displayName = "Coffees Aero Tweaks"
 authors     = "MrCoffeeBench"
 credits     = "Coffees Aero SMP"

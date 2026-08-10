@@ -18,6 +18,9 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import net.minecraft.network.chat.ClickEvent;
+import net.minecraft.network.chat.HoverEvent;
+import com.coffeesaerosmp.auth.util.Sounds;
 
 /**
  * The ONE owner of every cosmetic welcome surface (2026-07-18 rework — user report: the full
@@ -88,6 +91,7 @@ public final class WelcomeMessages {
 
         if (firstJoin) {                                        // once in a lifetime — never throttled
             firstJoinSequence(player, serverName);
+            broadcastNewArrival(player, displayName);
             stamp(player.getUUID());
             return;
         }
@@ -121,11 +125,50 @@ public final class WelcomeMessages {
             Component.literal("§6§l" + serverName)));
         player.connection.send(new ClientboundSetSubtitleTextPacket(
             Component.literal("§eYour adventure begins now ✈")));
+        chat(player, "");
         chat(player, "§6§l╔═══════════════════════════╗");
         chat(player, "§6§l║  §e✈ Welcome aboard, pilot!  §6§l║");
         chat(player, "§6§l║  §7The #1 Create: Aeronautics  §6§l║");
         chat(player, "§6§l║  §7experience in Asia.         §6§l║");
         chat(player, "§6§l╚═══════════════════════════╝");
+        chat(player, "");
+        chat(player, "§7Getting started:");
+        chat(player, "  §6• §f/spawn §7— back to the world spawn");
+        chat(player, "  §6• §f/daily §7— your streak reward, claimable now");
+        chat(player, "  §6• §f/profile §7— your hours, name and stats");
+        chat(player, "  §6• §f/rtp §7— drop somewhere wild and start building");
+
+        // Clickable invite. A raw URL in chat is not clickable in vanilla, so the link has to carry
+        // a ClickEvent — otherwise new players have to retype it by hand and simply don't.
+        String invite = AuthConfig.DISCORD_INVITE_URL.get();
+        if (invite != null && !invite.isBlank()) {
+            chat(player, "");
+            player.sendSystemMessage(
+                Component.literal("§9§l[Discord] §r§7Join the community — ")
+                    .append(Component.literal("§b§n" + invite)
+                        .withStyle(s -> s
+                            .withClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, invite))
+                            .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+                                Component.literal("§7Click to open the Discord invite"))))));
+        }
+        chat(player, "");
+        Sounds.reward(player);
+    }
+
+    /**
+     * Tells everyone online that a brand-new player has arrived. First join only — a returning
+     * login must never trigger this, or the "new player" signal stops meaning anything.
+     */
+    public static void broadcastNewArrival(ServerPlayer player, String displayName) {
+        if (!AuthConfig.BROADCAST_NEW_PLAYERS.get()) return;
+        var server = player.getServer();
+        if (server == null) return;
+        server.getPlayerList().broadcastSystemMessage(Component.literal(
+            TextUtil.PREFIX + "§6✦ §e" + displayName
+            + " §6just joined for the first time — welcome them aboard! o7"), false);
+        for (ServerPlayer p : server.getPlayerList().getPlayers()) {
+            if (p != player) Sounds.notify(p);
+        }
     }
 
     private static void welcomeTitle(ServerPlayer player, String displayName, String serverName) {

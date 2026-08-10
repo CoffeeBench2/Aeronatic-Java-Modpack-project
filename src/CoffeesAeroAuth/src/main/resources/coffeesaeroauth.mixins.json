@@ -11,7 +11,9 @@
         "ServerPacketListenerMixin",
         "ServerCommonCookieMixin",
         "PlayerInfoPacketAccessor",
-        "AeroClaimsProtectionBypassMixin"
+        "ServerPlayerPlotGuardMixin",
+        "ServerPlayerTeleportGuardMixin",
+        "ContraptionColliderNpeFixMixin"
     ],
     "client": [],
     "injectors": {

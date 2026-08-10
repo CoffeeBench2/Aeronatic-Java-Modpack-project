@@ -84,7 +84,7 @@ public class DiscordBridge {
         String pub = AuthConfig.DISCORD_WEBHOOK_PUBLIC.get();
         if (AuthConfig.DISCORD_PUBLIC_JOINLEAVE.get() && !pub.isBlank()) {
             String name = displayNameOf(player);
-            DiscordWebhook.send(pub, isFirstEver
+            publish(pub, isFirstEver
                 ? AlertFormatter.publicEmbed("🌟 **" + name + "** just made their first flight on "
                     + AuthConfig.SERVER_DISPLAY_NAME.get() + " — welcome aboard, pilot! o7", 0xFEE75C)
                 : AlertFormatter.publicEmbed("🛫 **" + name + "** boarded the server", 0x57F287));
@@ -94,11 +94,12 @@ public class DiscordBridge {
     public void onPlayerLeave(ServerPlayer player) {
         String url = AuthConfig.DISCORD_WEBHOOK_WATCHDOG.get();
         if (!url.isBlank()) {
-            DiscordWebhook.send(url, AlertFormatter.watchdogEmbed("💨 **" + player.getGameProfile().getName() + "** left the server", 0xED4245));
+            queue.enqueue(url, AlertFormatter.watchdogEmbed("💨 **" + player.getGameProfile().getName() + "** left the server", 0xED4245),
+                com.coffeesaerosmp.auth.watchdog.Severity.LOW);
         }
         String pub = AuthConfig.DISCORD_WEBHOOK_PUBLIC.get();
         if (AuthConfig.DISCORD_PUBLIC_JOINLEAVE.get() && !pub.isBlank()) {
-            DiscordWebhook.send(pub, AlertFormatter.publicEmbed(
+            publish(pub, AlertFormatter.publicEmbed(
                 "🛬 **" + displayNameOf(player) + "** left the server", 0x99AAB5));
         }
     }
@@ -117,10 +118,29 @@ public class DiscordBridge {
         if (!AuthConfig.DISCORD_PUBLIC_DEATHS.get()) return;
         String url = AuthConfig.DISCORD_WEBHOOK_PUBLIC.get();
         if (url.isBlank()) return;
-        DiscordWebhook.send(url, AlertFormatter.publicEmbed("💀 " + deathMessage, 0x808080));
+        publish(url, AlertFormatter.publicEmbed("💀 " + deathMessage, 0x808080));
     }
 
     public void onPlayerChat(String badge, String displayName, String rawMessage) {
+        onPlayerChat(badge, displayName, rawMessage, null, null);
+    }
+
+    public void onPlayerChat(String badge, String displayName, String rawMessage, String accountName) {
+        onPlayerChat(badge, displayName, rawMessage, accountName, null);
+    }
+
+    /**
+     * {@code skinTextures} = the profile's stored base64 "textures" value, {@code accountName} = the
+     * real Mojang username. Together they resolve the Discord avatar so each line shows the player's
+     * head; the skin is preferred because it is the only one that works for OFFLINE players (1.7.8).
+     * See {@link AlertFormatter#avatarUrl}.
+     *
+     * <p>Only ServerChatEvent reaches here, so commands, /msg and any other hidden text are already
+     * excluded by construction — the event fires for chat packets only, never for the command
+     * dispatcher. Nothing extra is filtered because nothing extra arrives.
+     */
+    public void onPlayerChat(String badge, String displayName, String rawMessage,
+                             String accountName, String skinTextures) {
         // OFF by default since 2026-07-12 — the public feed stays curated (joins/leaves,
         // achievements, milestones); in-game chatter doesn't belong in the community server.
         // Hot-reloadable; Discord→MC (gateway MESSAGE_CREATE) is a separate path and unaffected.
@@ -128,7 +148,7 @@ public class DiscordBridge {
         String url = AuthConfig.DISCORD_WEBHOOK_PUBLIC.get();
         if (url.isBlank()) return;
         queue.enqueue(url,
-            AlertFormatter.chatMessage(badge, displayName, rawMessage),
+            AlertFormatter.chatMessage(badge, displayName, rawMessage, accountName, skinTextures),
             com.coffeesaerosmp.auth.watchdog.Severity.LOW);
     }
 
@@ -149,7 +169,7 @@ public class DiscordBridge {
         String json = pub
             ? AlertFormatter.achievementEmbed(name, title, description, frame, discordId)
             : AlertFormatter.watchdogEmbed("🏆 **" + name + "** just earned **[" + title + "]**", 0xFEE75C);
-        DiscordWebhook.send(url, json);
+        publish(url, json);
     }
 
     /** Live player count -> bot status. */
@@ -184,7 +204,7 @@ public class DiscordBridge {
             if (totalHours >= m && m > prev) {
                 String desc = "🎉 **" + displayNameOf(player)
                         + "** has played for **" + m + " hours** on " + AuthConfig.SERVER_DISPLAY_NAME.get() + "!";
-                DiscordWebhook.send(url, discordId != null && !discordId.isBlank()
+                publish(url, discordId != null && !discordId.isBlank()
                     ? AlertFormatter.publicEmbedMention(desc, 0x5865F2, discordId)
                     : AlertFormatter.publicEmbed(desc, 0x5865F2));
                 newHigh = Math.max(newHigh, m);
@@ -200,11 +220,68 @@ public class DiscordBridge {
 
     /** Called by DiscordGateway on incoming MESSAGE_CREATE. Runs on server thread. */
     public void onDiscordMessage(MinecraftServer server, String authorName, String content) {
-        Component msg = Component.literal("§9[Discord | " + authorName + "]§r " + content);
+        onDiscordMessage(server, "", authorName, content);
+    }
+
+    /**
+     * Discord → MC with LINKED IDENTITY (1.7.5).
+     *
+     * <p>If the Discord author has completed /link, the message renders under their in-game display
+     * name — the same name the server shows in chat and tab — so a linked player talking from their
+     * phone reads as themselves rather than as a stranger's Discord handle. Unlinked members still
+     * come through, tagged with their Discord username, so the bridge never silently drops anyone.
+     *
+     * <p>Resolution is by Discord snowflake, never by username: Discord handles are changeable and
+     * not unique, and matching on them would let anyone impersonate a linked player by renaming.
+     *
+     * <p>Content is sanitised before it reaches MC chat — section signs would otherwise let Discord
+     * inject colour codes (and, with §k, unreadable scrambled text) into every player's chat.
+     */
+    public void onDiscordMessage(MinecraftServer server, String authorId, String authorName, String content) {
+        String safe = content.replace('§', '&');
+        if (safe.length() > 256) safe = safe.substring(0, 256) + "…";
+
+        String label;
+        var store = com.coffeesaerosmp.auth.CoffeesAeroAuth.PROFILE_STORE;
+        var profile = store != null ? store.findByDiscordId(authorId) : null;
+        if (profile != null) {
+            String shown = (profile.displayName != null && !profile.displayName.isBlank())
+                ? profile.displayName : profile.username;
+            label = "§9[Discord]§r §b" + shown + "§r";      // linked → their server identity
+        } else {
+            label = "§9[Discord | " + authorName + "]§r";   // unlinked → plain Discord handle
+        }
+
+        Component msg = Component.literal(label + " " + safe);
         server.getPlayerList().broadcastSystemMessage(msg, false);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    /**
+     * The single MC → Discord exit point for non-chat events.
+     *
+     * <p>WHY THIS EXISTS: until 2026-08-08 chat was the only event that went through
+     * {@link WebhookQueue}; join, leave, death, achievement and milestone posts each called
+     * {@code DiscordWebhook.send} directly. That had two consequences, and both are exactly what
+     * players reported:
+     *
+     * <ol>
+     *   <li>Whenever the queue stalled, <b>chat went silent while joins and achievements kept
+     *       arriving</b> — they were never in the queue to begin with, so the outage looked
+     *       partial and pointed away from its own cause.</li>
+     *   <li>{@code send()} discards the {@code retry_after} that {@code sendForRetry()} returns, so
+     *       any direct post that met a 429 was <b>dropped with no retry</b> — the intermittent
+     *       "achievements sometimes don't come".</li>
+     * </ol>
+     *
+     * <p>Routing everything through the queue means one rate-limit gate, one retry policy and one
+     * ordering guarantee for the whole bridge. {@code MEDIUM} keeps these out of the LOW batch
+     * wrapper, which is watchdog-channel styling and must never wrap a public post.
+     */
+    private void publish(String url, String json) {
+        queue.enqueue(url, json, com.coffeesaerosmp.auth.watchdog.Severity.MEDIUM);
+    }
 
     private static int[] parseMilestones(String csv) {
         try {

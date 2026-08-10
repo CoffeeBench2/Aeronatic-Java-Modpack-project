@@ -93,7 +93,7 @@
 			]
 			tasks: [{
 				id: "1200000000000021"
-				type: "manual"
+				type: "checkmark"
 				title: "Successfully pilot a flying contraption"
 			}]
 			rewards: [{

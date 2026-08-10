@@ -60,7 +60,7 @@
 			]
 			tasks: [{
 				id: "1100000000000011"
-				type: "manual"
+				type: "checkmark"
 				title: "Claim at least one chunk"
 			}]
 			rewards: [{
@@ -88,7 +88,7 @@
 			]
 			tasks: [{
 				id: "1100000000000021"
-				type: "manual"
+				type: "checkmark"
 				title: "Set up Simple Voice Chat"
 			}]
 			rewards: [{

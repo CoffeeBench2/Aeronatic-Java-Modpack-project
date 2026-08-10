@@ -24,6 +24,20 @@ public class AeroButton extends Button {
     private static final int BRASS_HOV    = 0xFFF0C05A;
     private static final int COG_SIZE     = 12;
 
+    /**
+     * Optional square icon. When set the button renders as an icon tile — no label, no cogwheel —
+     * because at the ~20px size these are used for, a glyph plus a spinning cog is unreadable mush.
+     * The message is kept for narration and tooltips.
+     */
+    private net.minecraft.resources.ResourceLocation icon;
+    private int iconSize;
+
+    /**
+     * Suppresses the cogwheel and centres the label. For narrow glyph buttons ("✎", arrows) the cog
+     * competes with the glyph instead of decorating it.
+     */
+    private boolean plain;
+
     public AeroButton(int x, int y, int width, int height, Component message, OnPress onPress) {
         super(x, y, width, height, message, onPress, DEFAULT_NARRATION);
     }
@@ -37,6 +51,9 @@ public class AeroButton extends Button {
         private final Component message;
         private final OnPress onPress;
         private int x, y, w = 150, h = 20;
+        private net.minecraft.resources.ResourceLocation icon;
+        private int iconSize;
+        private boolean plain;
 
         Builder(Component message, OnPress onPress) { this.message = message; this.onPress = onPress; }
 
@@ -44,7 +61,24 @@ public class AeroButton extends Button {
             this.x = x; this.y = y; this.w = w; this.h = h; return this;
         }
 
-        public AeroButton build() { return new AeroButton(x, y, w, h, message, onPress); }
+        /**
+         * Render as an icon tile. {@code size} must match the texture's pixel size so it blits 1:1 —
+         * scaling a small texture up is what makes pixel art look smeared.
+         */
+        public Builder icon(net.minecraft.resources.ResourceLocation icon, int size) {
+            this.icon = icon; this.iconSize = size; return this;
+        }
+
+        /** Label only, centred, no cogwheel — for narrow glyph buttons. */
+        public Builder plain() { this.plain = true; return this; }
+
+        public AeroButton build() {
+            AeroButton b = new AeroButton(x, y, w, h, message, onPress);
+            b.icon = this.icon;
+            b.iconSize = this.iconSize;
+            b.plain = this.plain;
+            return b;
+        }
     }
 
     @Override
@@ -61,10 +95,24 @@ public class AeroButton extends Button {
         g.fill(x0, y0, x0 + 1, y1, brass);
         g.fill(x1 - 1, y0, x1, y1, brass);
 
+        // Icon tile: blit 1:1, centered, and stop. Rounding down keeps it on whole pixels so the
+        // pixel art stays crisp instead of landing on a half-pixel and blurring.
+        if (this.icon != null) {
+            int ix = x0 + (width - this.iconSize) / 2;
+            int iy = y0 + (height - this.iconSize) / 2;
+            g.blit(this.icon, ix, iy, 0.0F, 0.0F,
+                this.iconSize, this.iconSize, this.iconSize, this.iconSize);
+            return;
+        }
+
         // Label (centered, leaving room for the cog on the left)
         int textColor = this.active ? (hov ? 0xFFFFE6A8 : 0xFFEADCC3) : 0xFFA0A0A0;
-        int cx = x0 + width / 2 + COG_SIZE / 2;
         var font = Minecraft.getInstance().font;
+        if (this.plain) {
+            g.drawCenteredString(font, getMessage(), x0 + width / 2, y0 + (height - 8) / 2, textColor);
+            return;
+        }
+        int cx = x0 + width / 2 + COG_SIZE / 2;
         g.drawCenteredString(font, getMessage(), cx, y0 + (height - 8) / 2, textColor);
 
         // Cogwheel icon left of the label — spins while hovered.

@@ -22,6 +22,30 @@
     "create:andesite_table_cloth",
     "create:brass_table_cloth",
     "create:copper_table_cloth",
-    { "id": "#waystones:is_teleport_target", "required": false }
+    { "id": "#waystones:is_teleport_target", "required": false },
+
+    "create:white_seat",
+    "create:orange_seat",
+    "create:magenta_seat",
+    "create:light_blue_seat",
+    "create:yellow_seat",
+    "create:lime_seat",
+    "create:pink_seat",
+    "create:gray_seat",
+    "create:light_gray_seat",
+    "create:cyan_seat",
+    "create:purple_seat",
+    "create:blue_seat",
+    "create:brown_seat",
+    "create:green_seat",
+    "create:red_seat",
+    "create:black_seat",
+
+
+    { "id": "numismatics:vendor", "required": false },
+    { "id": "numismatics:creative_vendor", "required": false },
+    { "id": "numismatics:bank_terminal", "required": false },
+    { "id": "numismatics:andesite_depositor", "required": false },
+    { "id": "numismatics:brass_depositor", "required": false }
   ]
 }

@@ -1,6 +1,6 @@
-package com.coffeesaerosmp.auth.mixin;
+package com.coffeesaerosmp.guard.mixin;
 
-import com.coffeesaerosmp.auth.protect.AdminBypass;
+import com.coffeesaerosmp.guard.protect.AdminBypass;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
 import org.spongepowered.asm.mixin.Mixin;

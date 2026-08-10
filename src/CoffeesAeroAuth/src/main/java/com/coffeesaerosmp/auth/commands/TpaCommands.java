@@ -145,6 +145,6 @@ public final class TpaCommands {
     }
 
     private static void msg(ServerPlayer player, String text) {
-        player.sendSystemMessage(Component.literal(TextUtil.PREFIX + text));
+        TextUtil.msg(player, text);
     }
 }

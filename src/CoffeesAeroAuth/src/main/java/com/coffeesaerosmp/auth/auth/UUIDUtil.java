@@ -27,4 +27,28 @@ public final class UUIDUtil {
             ("OfflinePlayer:" + username).getBytes(StandardCharsets.UTF_8)
         );
     }
+
+    /**
+     * True when {@code candidate} is the offline UUID vanilla would mint for {@code username} —
+     * i.e. the connection is the SAME HUMAN as the premium account of that name, arriving without a
+     * verified identity, not somebody impersonating them.
+     *
+     * <p>WHY THIS EXISTS (2026-08-08). A premium player is resolved OFFLINE by five separate paths:
+     * cookie timeout, missing {@code AERO_GATE_SECRET}, invalid cookie, absent cookie, and direct
+     * connect. When that happens the backend (which is {@code online-mode=false}) assigns them
+     * {@code md5("OfflinePlayer:" + name)} instead of their real Mojang UUID — a DIFFERENT UUID for
+     * the same person. The anti-spoof check then saw their own name owned by their own premium
+     * profile under another UUID and kicked them as an impersonator of themselves:
+     * <em>"The name X is reserved by (or too close to) a verified player (X)"</em>.
+     *
+     * <p>That is the "I'm premium but it says I'm offline" report. The name is only impersonated if
+     * the offline UUID does NOT derive from that same name — a real impostor picks someone else's
+     * name, so their offline UUID derives from the name they chose, which still matches. The
+     * distinguishing fact is therefore whether the ACCOUNT NAMES agree, which is what the caller
+     * checks by passing the premium owner's own username here.
+     */
+    public static boolean isSelfOfflineAlias(UUID candidate, String username) {
+        if (candidate == null || username == null || username.isBlank()) return false;
+        return expectedOfflineUUID(username).equals(candidate);
+    }
 }

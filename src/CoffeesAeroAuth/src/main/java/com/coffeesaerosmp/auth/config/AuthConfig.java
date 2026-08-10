@@ -6,6 +6,19 @@ public class AuthConfig {
 
     public static final ModConfigSpec SERVER_SPEC;
 
+    public static final ModConfigSpec.ConfigValue<String> DISCORD_INVITE_URL;
+    public static final ModConfigSpec.BooleanValue BROADCAST_NEW_PLAYERS;
+    public static final ModConfigSpec.BooleanValue LAG_WARN_ENABLED;
+    public static final ModConfigSpec.IntValue     LAG_WARN_MSPT;
+    public static final ModConfigSpec.IntValue     LAG_WARN_SUSTAIN_SECONDS;
+    public static final ModConfigSpec.IntValue     LAG_WARN_COOLDOWN_SECONDS;
+    public static final ModConfigSpec.BooleanValue SOUND_FEEDBACK;
+    public static final ModConfigSpec.BooleanValue SAVEGUARD_ENABLED;
+    public static final ModConfigSpec.IntValue     SAVEGUARD_PLAYER_SECONDS;
+    public static final ModConfigSpec.IntValue     SAVEGUARD_WORLD_SECONDS;
+    public static final ModConfigSpec.BooleanValue SAVEGUARD_SKIP_WHEN_EMPTY;
+    public static final ModConfigSpec.IntValue     SAVEGUARD_SLOW_WARN_MS;
+
     public static final ModConfigSpec.IntValue     AUTH_TIMEOUT_SECONDS;
     public static final ModConfigSpec.IntValue     SESSION_GRACE_MINUTES;
     public static final ModConfigSpec.IntValue     LOBBY_BYPASS_MINUTES;
@@ -61,7 +74,6 @@ public class AuthConfig {
     public static final ModConfigSpec.ConfigValue<String>  QUIET_HOURS_END;
 
     // ── Rail protection ─────────────────────────────────────────────────────────
-    public static final ModConfigSpec.BooleanValue LOCK_END_DIMENSION;
     public static final ModConfigSpec.BooleanValue RAIL_AUTOCLAIM_ENABLED;
     public static final ModConfigSpec.IntValue     RAIL_AUTOCLAIM_RADIUS;
     public static final ModConfigSpec.BooleanValue RAIL_AUTOCLAIM_AUTOGRANT;
@@ -93,6 +105,24 @@ public class AuthConfig {
     public static final ModConfigSpec.IntValue     RTP_MIN_WAIT_SECONDS;
     public static final ModConfigSpec.IntValue     RTP_TIMEOUT_SECONDS;
     public static final ModConfigSpec.IntValue     RTP_PREGEN_RADIUS;
+    public static final ModConfigSpec.IntValue     RTP_ANCHOR_COUNT;
+    public static final ModConfigSpec.IntValue     RTP_ANCHOR_MAX_DISTANCE;
+    public static final ModConfigSpec.IntValue     RTP_ANCHOR_SPREAD;
+    public static final ModConfigSpec.IntValue     RTP_ANCHOR_WARM_MAX_PLAYERS;
+    public static final ModConfigSpec.IntValue     RTP_ANCHOR_WARM_RING_STEP;
+    public static final ModConfigSpec.IntValue     RTP_ANCHOR_WARM_MARGIN;
+
+    public static final ModConfigSpec.BooleanValue MOVEMENT_ALERT_DISCORD;
+
+    // ── /shipname ─────────────────────────────────────────────────────────────
+    public static final ModConfigSpec.BooleanValue SHIPNAME_ENABLED;
+    public static final ModConfigSpec.IntValue     SHIPNAME_MAX_LENGTH;
+
+    // ── Plot-space guard (Sable sub-level coords / ChunkMap crash) ────────────
+    public static final ModConfigSpec.BooleanValue PLOTGUARD_ENABLED;
+    public static final ModConfigSpec.BooleanValue PLOTGUARD_RESCUE;
+    public static final ModConfigSpec.IntValue     PLOTGUARD_LIMIT;
+    public static final ModConfigSpec.BooleanValue PLOTGUARD_BLOCK_TELEPORTS;
 
     // ── Gate reconnect grace ──────────────────────────────────────────────────
     public static final ModConfigSpec.IntValue     PREMIUM_RECONNECT_GRACE_MINUTES;
@@ -166,7 +196,7 @@ public class AuthConfig {
             .define("velocityForwardingSecret", "");
         TYPE_RESOLVE_TIMEOUT_SECONDS = b
             .comment("Seconds to wait for the proxy's premium/cracked signal before assuming offline (e.g. a direct, non-proxied connection). 0 = wait forever.")
-            .defineInRange("typeResolveTimeoutSeconds", 8, 0, 120);
+            .defineInRange("typeResolveTimeoutSeconds", 25, 0, 120);
         TRUST_FORWARDED_UUID = b
             .comment("Read premium/offline directly from the forwarded UUID version (v4=premium, v3=offline) instead of waiting for the aerosmp:player_type plugin message.",
                      "Enable ONLY once Velocity modern forwarding (NeoVelocity) is verified AND the backend game port is firewalled to the proxy IP — otherwise a direct connection could present a v4 UUID and skip auth.",
@@ -263,11 +293,6 @@ public class AuthConfig {
         b.pop();
 
         b.comment("World Gates — dimension access control.").push("worldgates");
-        LOCK_END_DIMENSION = b
-            .comment("Block players from entering the End by ANY route (portals, waystones, /tpa, grave",
-                     "recalls...). Ops (permission 2+) bypass. Hot-reloadable: flip to false and save to",
-                     "open the End without a restart.")
-            .define("lockEndDimension", true);
         b.pop();
 
         b.comment("Discord Integration").push("discord");
@@ -343,8 +368,10 @@ public class AuthConfig {
         b.push("spawn");
         SPAWN_TP_COOLDOWN_MINUTES = b.comment(
                 "Minutes between in-world /spawn teleports per player. Ops are exempt, and CombatGuard",
-                "already blocks /spawn while combat-tagged. In-memory (resets on server restart). 0 = no cooldown.")
-            .defineInRange("spawnTeleportCooldownMinutes", 180, 0, 1440);
+                "already blocks /spawn while combat-tagged. In-memory (resets on server restart). 0 = no cooldown.",
+                "Default 1 (2026-08-08). NOTE: this default only applies to a FRESH config file —",
+                "an existing coffees_aero_auth-server.toml keeps whatever value it already has.")
+            .defineInRange("spawnTeleportCooldownMinutes", 1, 0, 1440);
         b.pop();
 
         b.push("dailyReward");
@@ -380,6 +407,106 @@ public class AuthConfig {
                 "worldgen burst stall the main thread via c2me sync-loads (2026-07-17: 36s freeze AFTER a 5x5-only",
                 "pregen teleport). Bigger = longer /rtp wait but a smooth arrival.")
             .defineInRange("rtpPregenRadius", 7, 2, 16);
+        RTP_ANCHOR_COUNT = b.comment(
+                "ANCHOR MODE (1.7.5). Number of fixed destinations reused by /rtp instead of rolling a fresh",
+                "random target every time. Each anchor is generated ONCE (background warmer, one at a time, only",
+                "while no player rtp is running) and then persists on disk, so later arrivals LOAD chunks (~ms)",
+                "instead of GENERATING them (0.5-3.4s each measured live). That is the whole win: the pregen wait",
+                "and the worldgen burst both disappear for every use after the first.",
+                "Anchors are stored in rtp_anchors.json. Delete that file to re-roll them.",
+                "0 = disable anchors entirely and use the original per-request random target.")
+            .defineInRange("rtpAnchorCount", 30, 0, 200);
+        RTP_ANCHOR_MAX_DISTANCE = b.comment(
+                "Max distance (blocks) from world spawn when PICKING anchors. rtpMinDistance is still the floor.",
+                "Anchors are spread evenly by angle around spawn so they do not clump.")
+            .defineInRange("rtpAnchorMaxDistance", 15000, 1000, 1_000_000);
+        RTP_ANCHOR_SPREAD = b.comment(
+                "Blocks of random scatter around an anchor when landing. Stops 30 anchors becoming 30 exact",
+                "blocks that get stripped bare and built over. Kept inside the pregenerated bubble: with",
+                "rtpPregenRadius=7 the safe ceiling is about 7*16-16 = 96. Larger risks landing on the",
+                "ungenerated rim, which re-introduces the arrival worldgen burst this feature exists to remove.")
+            .defineInRange("rtpAnchorSpread", 64, 0, 96);
+        RTP_ANCHOR_WARM_MAX_PLAYERS = b.comment(
+                "Warm anchors ONLY while at most this many players are online. Default 0 = empty server only.",
+                "ADDED 1.7.6 after 1.7.5 went live: the warmer previously ran in every idle window, so it was",
+                "generating 6750 chunks (30 anchors x 225) WHILE players were on, and that worldgen is exactly",
+                "the load /rtp anchors exist to eliminate. Warming an empty server is free; warming a busy one",
+                "just moves the lag rather than removing it.",
+                "Pausing costs nothing: generated chunks persist on DISK, so a paused job simply resumes later",
+                "and re-walks the finished rings at load speed instead of generation speed.",
+                "Raise it only if you want warming to continue with players online.")
+            .defineInRange("rtpAnchorWarmMaxPlayers", 0, 0, 200);
+        RTP_ANCHOR_WARM_RING_STEP = b.comment(
+                "How many chunk-rings the WARMER widens by each time the current ring completes (player /rtp",
+                "pregens always use 2). Higher = fewer poll cycles and more chunks generating in parallel =",
+                "faster warming, at the cost of a heavier burst. 4 is safe because warming only runs when the",
+                "server is under rtpAnchorWarmMaxPlayers, i.e. normally empty with nobody to disturb.")
+            .defineInRange("rtpAnchorWarmRingStep", 4, 1, 8);
+        RTP_ANCHOR_WARM_MARGIN = b.comment(
+                "Extra chunk rings the WARMER generates BEYOND rtpPregenRadius. 1.7.8 fix — do not set to 0.",
+                "A pregenerated bubble's outermost ring is SOFT: those chunks are FULL on disk, but promoting",
+                "them back to FULL on the next visit needs their own neighbours one ring further out, which the",
+                "warmer never generated. So arriving re-ran worldgen for the rim only — measured live 2026-08-05:",
+                "the inner 169 chunks loaded in under a second, then the 56-chunk rim took 152s at ~2.7s/chunk.",
+                "Warming one or two rings past what /rtp requires puts the required rim's neighbours on disk too,",
+                "so the whole player bubble is a pure load. Cost is one-time and offline: radius 7 + margin 2 is",
+                "19x19 = 361 chunks per anchor instead of 225.")
+            .defineInRange("rtpAnchorWarmMargin", 2, 0, 6);
+        b.pop();
+
+        b.comment("Watchdog notification routing").push("watchdogalerts");
+        MOVEMENT_ALERT_DISCORD = b.comment(
+                "Send 'Impossible Movement' to the Discord webhook. Default FALSE (1.7.5).",
+                "This check fires on any large server-applied velocity — AeroKit's launch stick, mount",
+                "glitches, lag spikes — and at MEDIUM severity each one queued a webhook. One AeroKit",
+                "session was enough to rate limit the bridge and stall chat delivery (2026-08-04).",
+                "Detection and the velocity-zeroing are unaffected; the daily anomaly roll-up still lists it.",
+                "Use /authmod movegrace <player> <seconds> to exempt a player before an intentional launch.")
+            .define("movementAlertDiscord", false);
+        b.pop();
+
+        b.comment("Player-facing /shipname. Sable's own rename is /sable sub_level name set, which is op-only,",
+                  "so without this players had to ask an admin for a purely cosmetic change. The name shown on",
+                  "the AeroClaims claim screen is this same sub-level name — every ship reads 'ship' until set.")
+            .push("shipname");
+        SHIPNAME_ENABLED = b.comment("Enable /shipname for players.")
+            .define("shipNameEnabled", true);
+        SHIPNAME_MAX_LENGTH = b.comment("Maximum ship name length. Section signs are stripped regardless,",
+                "so players cannot inject colour codes or §k scramble into the claim UI.")
+            .defineInRange("shipNameMaxLength", 32, 4, 64);
+        b.pop();
+
+        b.comment("Plot-space guard. Sable parks sub-level DATA at ~20,000,000 blocks out; a PLAYER at those",
+                  "coordinates makes vanilla ask for chunks Sable's plot.ChunkMapMixin owns, the ChunkHolder is",
+                  "absent, and ChunkMap.acquireGeneration NPEs on the MAIN TICK LOOP (live crash 2026-08-04).",
+                  "The position is saved in playerdata/<uuid>.dat, so it recurs every login until someone edits",
+                  "the .dat offline. This clamps it at load instead.")
+            .push("plotguard");
+        PLOTGUARD_ENABLED = b.comment("Master switch. The load-time clamp (the anti-crash-loop half) is always on when this is true.")
+            .define("plotGuardEnabled", true);
+        PLOTGUARD_RESCUE = b.comment(
+                "Governs the 1Hz LIVE sweep only — whether an already-online player found in plot space is",
+                "teleported back (true) or merely logged (false).",
+                "Ships false on purpose: it rests on the assumption that Sable never legitimately places a",
+                "player past the limit (a player on a normal assembled ship has NORMAL world coordinates).",
+                "Run it false first; if the only names in the [PlotGuard] log lines are genuinely stuck players,",
+                "flip it true. If someone appears while happily flying a ship, raise plotGuardLimit instead.")
+            .define("plotGuardRescue", false);
+        PLOTGUARD_LIMIT = b.comment(
+                "Blocks from origin on X or Z past which a player is considered to be in plot space.",
+                "Sable plots sit near 20,000,000; normal survival play never approaches 1,000,000.")
+            .defineInRange("plotGuardLimit", 1_000_000, 100_000, 25_000_000);
+        PLOTGUARD_BLOCK_TELEPORTS = b.comment(
+                "Refuse any teleport whose DESTINATION is past plotGuardLimit. Default true — this prevents a",
+                "hard server crash, so it is NOT gated behind plotGuardRescue.",
+                "ADDED 1.7.7: warping to a waystone placed inside a SHIP crashed the server (heavy lag first).",
+                "A waystone stores its own BLOCK position, and ship blocks live in Sable plot space at",
+                "~20,000,000 — so the warp is a teleport to plot space, i.e. the same ChunkMap.acquireGeneration",
+                "NPE as 08-04, reached by an ordinary player action.",
+                "The tick sweep CANNOT cover this: ServerPlayer.teleportTo adds a POST_TELEPORT chunk ticket at",
+                "the destination on its first two lines, before any tick handler runs. Only a HEAD guard is early",
+                "enough. Blocked teleports leave the player where they were and tell them why.")
+            .define("plotGuardBlockTeleports", true);
         b.pop();
 
         b.comment("Transfer-gate reconnect grace").push("gate");
@@ -442,6 +569,78 @@ public class AuthConfig {
                      "When true, vanilla's announceAdvancements chat broadcast is disabled at startup and replaced",
                      "by a display-name version. The earner's own toast popup is unaffected.")
             .define("maskAdvancementNames", true);
+        b.pop();
+
+
+        b.push("community");
+        DISCORD_INVITE_URL = b
+            .comment("Discord invite shown to new players in the first-join welcome (clickable).",
+                     "Blank = the Discord line is omitted entirely.")
+            .define("discordInviteUrl", "https://discord.gg/AnFUh5vTz6");
+        BROADCAST_NEW_PLAYERS = b
+            .comment("Announce a brand-new player's arrival to everyone online. First join only —",
+                     "never on a returning login.")
+            .define("broadcastNewPlayers", true);
+        b.pop();
+
+        b.comment("Lag warning. See LagMonitor.").push("lagwarn");
+        LAG_WARN_ENABLED = b
+            .comment("Tell players when the server is genuinely struggling, instead of leaving them",
+                     "to guess whether it is them or the server.")
+            .define("lagWarnEnabled", true);
+        LAG_WARN_MSPT = b
+            .comment("Average milliseconds-per-tick that counts as BAD lag. 50 = a perfect 20 TPS.",
+                     "Default 250 (~4 TPS) — deliberately high, so this fires on real trouble and not",
+                     "on the routine 4s spikes this pack already produces. Lower it and players get",
+                     "spammed during normal chunk loading, which trains them to ignore it.")
+            .defineInRange("lagWarnMsptThreshold", 250, 100, 5000);
+        LAG_WARN_SUSTAIN_SECONDS = b
+            .comment("How long the average must stay above the threshold before anyone is told.",
+                     "Stops a single garbage-collection pause from announcing itself.")
+            .defineInRange("lagWarnSustainSeconds", 10, 1, 300);
+        LAG_WARN_COOLDOWN_SECONDS = b
+            .comment("Minimum seconds between lag warnings, so a long bad patch warns once, not forever.")
+            .defineInRange("lagWarnCooldownSeconds", 300, 30, 3600);
+        b.pop();
+
+        b.push("feedback");
+        SOUND_FEEDBACK = b
+            .comment("Play a short sound when a command succeeds, is refused, or a reward is ready.",
+                     "Sent only to the acting player (playNotifySound), never to bystanders.",
+                     "false = every command is silent again.")
+            .define("soundFeedback", true);
+        b.pop();
+
+        b.comment("Crash-loss protection. See SaveGuard.").push("saveguard");
+        SAVEGUARD_ENABLED = b
+            .comment("Periodically flush player data and the world so a hard crash loses less.",
+                     "WHY: Sable's native Rapier physics can panic across the JNI boundary, and that",
+                     "boundary cannot unwind, so Rust calls abort(). The JVM dies instantly — no crash",
+                     "report, no shutdown, NO WORLD SAVE. On 2026-08-08 the server aborted 3m18s after",
+                     "boot, inside vanilla's 5-minute autosave window, so every one of the six players",
+                     "online lost the entire session (including a Tombstone grave created 36s earlier).",
+                     "This cannot prevent the abort. It bounds what an abort costs.")
+            .define("saveGuardEnabled", true);
+        SAVEGUARD_PLAYER_SECONDS = b
+            .comment("Seconds between PLAYER-DATA saves (inventories, ender chests, positions).",
+                     "Cheap: writes one small file per online player, no chunk I/O. This is the setting",
+                     "that protects backpacks and inventories. 0 disables just this half.")
+            .defineInRange("saveGuardPlayerSeconds", 60, 0, 3600);
+        SAVEGUARD_WORLD_SECONDS = b
+            .comment("Seconds between FULL world saves (chunks + player data). Expensive — this is the",
+                     "one that can cause a tick spike, so keep it well above saveGuardPlayerSeconds.",
+                     "Needed for anything stored in the WORLD rather than on the player: Tombstone",
+                     "graves, dropped items, chests, ships. Vanilla's own autosave is 300s; 120 halves",
+                     "the worst-case loss. 0 disables just this half.")
+            .defineInRange("saveGuardWorldSeconds", 120, 0, 3600);
+        SAVEGUARD_SKIP_WHEN_EMPTY = b
+            .comment("Skip both saves when nobody is online. Default true — there is nothing to lose on",
+                     "an empty server, and it keeps idle disk I/O at zero.")
+            .define("saveGuardSkipWhenEmpty", true);
+        SAVEGUARD_SLOW_WARN_MS = b
+            .comment("Log a WARN when a save blocks the server thread longer than this (ms). Tune the",
+                     "intervals up if this fires often — a save that stalls the tick loop is its own problem.")
+            .defineInRange("saveGuardSlowWarnMs", 1000, 100, 60_000);
         b.pop();
 
         SERVER_SPEC = b.build();

@@ -31,6 +31,11 @@ public final class InClientUpdater {
     private static final HttpClient HTTP = HttpClient.newBuilder()
         .followRedirects(HttpClient.Redirect.NORMAL).connectTimeout(Duration.ofSeconds(15)).build();
 
+    /** Concurrent index scans. Modest on purpose — enough to hide per-request latency without
+     *  looking like a burst to the CDN that already 429'd us once. */
+    private static final int SCAN_THREADS  = 8;
+    private static final int HTTP_ATTEMPTS = 4;
+
     // ── Progress (polled by the screen) ────────────────────────────────────────
     public static volatile String  phase    = "Starting…";
     public static volatile String  current  = "";
@@ -84,51 +89,72 @@ public final class InClientUpdater {
                     + " — the pack was published without a packwiz refresh; try again shortly");
 
             phase = "Checking files…";
-            List<Target> plan = new ArrayList<>();
-            Set<String>  managed = new LinkedHashSet<>();         // target paths this update controls
-            List<String[]> files = parseFilesArray(indexRaw);     // [file, hash, metafile]
-            int scanned = 0;
-            for (String[] f : files) {
-                String file = f[0], hash = f[1]; boolean meta = "true".equals(f[2]);
-                current = file; done = ++scanned; total = files.size();
-                if (meta) {
-                    Map<String, String> mf = parseToml(get(base + file));
-                    String fname = mf.get("filename");
-                    if (fname == null) continue;
-                    String dlUrl = mf.get("download.url");
-                    String dlHash = mf.get("download.hash");
-                    String dlFmt  = mf.getOrDefault("download.hash-format", "sha512");
-                    Path target = gameDir.resolve(parentDir(file)).resolve(fname);
-                    managed.add(rel(gameDir, target));
-                    if (dlUrl != null && !matches(target, dlHash, dlFmt))
-                        plan.add(new Target(dlUrl, target, dlHash, dlFmt));
-                } else {
-                    // override file: strip the leading "overrides/" to get the in-instance target
-                    String t = file.startsWith("overrides/") ? file.substring("overrides/".length()) : file;
-                    Path target = gameDir.resolve(t);
-                    managed.add(rel(gameDir, target));
-                    if (!matches(target, hash, idxHashFmt))
-                        plan.add(new Target(base + file, target, hash, idxHashFmt));
+            List<String[]> files = parseFilesArray(indexRaw);      // [file, hash, metafile]
+
+            // PARALLEL SCAN. Every metafile is its own HTTPS round-trip and every local jar has to be
+            // hashed, so doing this one-at-a-time meant ~150 sequential round-trips plus ~1-2 GB of
+            // SHA-512 before a single byte was downloaded — the bulk of the "checking" wait. Results
+            // land in a positional array so the manifest order stays deterministic despite the pool.
+            Scan[] scans = new Scan[files.size()];
+            total = files.size(); done = 0;
+            java.util.concurrent.atomic.AtomicInteger progress = new java.util.concurrent.atomic.AtomicInteger();
+            java.util.concurrent.ExecutorService pool =
+                java.util.concurrent.Executors.newFixedThreadPool(SCAN_THREADS, r -> {
+                Thread t = new Thread(r, "AeroCore-Scan");
+                t.setDaemon(true);
+                return t;
+            });
+            try {
+                List<java.util.concurrent.Future<?>> futures = new ArrayList<>();
+                for (int i = 0; i < files.size(); i++) {
+                    final int idx = i;
+                    futures.add(pool.submit(() -> {
+                        scans[idx] = scanOne(files.get(idx), gameDir, base, idxHashFmt);
+                        current = files.get(idx)[0];
+                        done = progress.incrementAndGet();
+                        return null;
+                    }));
                 }
+                for (var fut : futures) {
+                    try { fut.get(); }
+                    catch (java.util.concurrent.ExecutionException ee) {
+                        Throwable c = ee.getCause();
+                        throw (c instanceof Exception ex) ? ex : new IOException(String.valueOf(c));
+                    }
+                }
+            } finally {
+                pool.shutdownNow();
+            }
+
+            List<Target> plan = new ArrayList<>();
+            Set<String>  managed = new LinkedHashSet<>();          // target paths this update controls
+            for (Scan s : scans) {
+                if (s == null) continue;                           // metafile with no filename
+                managed.add(s.managedRel());
+                if (s.target() != null) plan.add(s.target());
             }
 
             // Orphans: files a previous in-client update installed that the pack no longer lists.
             List<String> removals = orphans(gameDir, managed);
 
-            // mods/ is FULLY managed: any jar not in the pack index is stale — an old-version
-            // leftover from a filename-changing release or from the original mrpack import (which
-            // writes no manifest, so plain orphan tracking can never catch it). This is what left
-            // CoffeesAeroCore-1.0.0.jar sitting next to 1.2.0 on Prism installs: both declared the
-            // same mod version, and FML silently picked the OLD file.
-            removals.addAll(staleModJars(gameDir, managed));
+            // Duplicate jars of a mod the pack DOES manage — e.g. CoffeesAeroCore-1.0.0.jar sitting
+            // next to 1.3.3 after a filename-changing release. Both declare the same mod id and FML
+            // silently loads the OLD one. The original mrpack import writes no manifest, so orphan
+            // tracking alone can never catch these.
+            removals.addAll(duplicateModJars(gameDir, managed));
 
             if (plan.isEmpty() && removals.isEmpty()) {
                 phase = "Already up to date."; success = true; finished = true; return;
             }
 
             // Download changed files into staging (mirroring their target-relative path).
+            // WIPE FIRST. Staging used to persist across runs, and the Applier copies whatever it
+            // finds there WITHOUT re-verifying — so a file that failed its hash check in a previous
+            // run sat around and got applied by the next successful one. That is a silent path to a
+            // corrupt jar in mods/, and it is why this directory starts empty every time.
+            deleteRecursively(staging);
             Files.createDirectories(staging);
-            total = plan.size(); done = 0;
+            total = plan.size(); done = 0; current = "";
             for (Target tg : plan) {
                 current = tg.target().getFileName().toString();
                 phase = "Downloading " + (done + 1) + " / " + total;
@@ -147,8 +173,38 @@ public final class InClientUpdater {
             success = true; finished = true;
         } catch (Exception e) {
             LOGGER.error("[Updater] in-client update failed", e);
-            error = e.getMessage(); success = false; finished = true;
+            // getMessage() is null for plenty of exceptions (NPE being the classic), and the screen
+            // rendered that as a literal "null" with no clue what went wrong.
+            String m = e.getMessage();
+            error = (m == null || m.isBlank()) ? e.getClass().getSimpleName() : m;
+            success = false; finished = true;
         }
+    }
+
+    /** One index entry resolved: the path it manages, and a download Target when it is out of date. */
+    private record Scan(String managedRel, Target target) {}
+
+    /** Runs on the scan pool — fetches the metafile if needed and hashes the local file. */
+    private static Scan scanOne(String[] f, Path gameDir, String base, String idxHashFmt) throws Exception {
+        String file = f[0], hash = f[1];
+        boolean meta = "true".equals(f[2]);
+        if (meta) {
+            Map<String, String> mf = parseToml(get(base + file));
+            String fname = mf.get("filename");
+            if (fname == null) return null;
+            String dlUrl  = mf.get("download.url");
+            String dlHash = mf.get("download.hash");
+            String dlFmt  = mf.getOrDefault("download.hash-format", "sha512");
+            Path target = gameDir.resolve(parentDir(file)).resolve(fname);
+            Target t = (dlUrl != null && !matches(target, dlHash, dlFmt))
+                ? new Target(dlUrl, target, dlHash, dlFmt) : null;
+            return new Scan(rel(gameDir, target), t);
+        }
+        // override file: strip the leading "overrides/" to get the in-instance target
+        String rel = file.startsWith("overrides/") ? file.substring("overrides/".length()) : file;
+        Path target = gameDir.resolve(rel);
+        Target t = matches(target, hash, idxHashFmt) ? null : new Target(base + file, target, hash, idxHashFmt);
+        return new Scan(rel(gameDir, target), t);
     }
 
     // ── Applier hand-off ────────────────────────────────────────────────────────
@@ -230,21 +286,67 @@ public final class InClientUpdater {
         return url + (url.indexOf('?') < 0 ? "?" : "&") + "aerocb=" + token;
     }
 
+    /**
+     * Bounded retry around a single request.
+     *
+     * <p>There was none, so ONE transient blip anywhere in ~150 metafile fetches aborted the whole
+     * update and showed the player a raw exception. On a release day that is exactly when the CDN is
+     * least happy: the 1.7.3 rollout died to a thundering-herd 429, and a 429 was treated as fatal
+     * rather than as the "wait and retry" it literally means. 5xx and 429 are retried with backoff
+     * and {@code Retry-After} is honoured; 4xx other than 429 is a real error and fails immediately.
+     */
+    private static <T> HttpResponse<T> sendWithRetry(HttpRequest.Builder builder, String url,
+                                                     HttpResponse.BodyHandler<T> handler)
+            throws IOException, InterruptedException {
+        IOException last = null;
+        for (int attempt = 1; attempt <= HTTP_ATTEMPTS; attempt++) {
+            try {
+                HttpResponse<T> r = HTTP.send(builder.copy().uri(URI.create(bust(url))).build(), handler);
+                int sc = r.statusCode();
+                if (sc == 200) return r;
+                boolean retryable = sc == 429 || sc == 408 || sc >= 500;
+                last = new IOException("HTTP " + sc + " for " + url);
+                if (!retryable || attempt == HTTP_ATTEMPTS) throw last;
+                Thread.sleep(retryAfterMs(r, attempt));
+            } catch (IOException e) {
+                last = e;
+                if (attempt == HTTP_ATTEMPTS) throw e;
+                Thread.sleep(backoffMs(attempt));
+            }
+        }
+        throw last != null ? last : new IOException("request failed: " + url);
+    }
+
+    /** Server-directed wait when offered, otherwise plain exponential backoff. */
+    private static long retryAfterMs(HttpResponse<?> r, int attempt) {
+        try {
+            var h = r.headers().firstValue("Retry-After");
+            if (h.isPresent()) {
+                long secs = Long.parseLong(h.get().trim());
+                return Math.min(Math.max(secs * 1000L, 1000L), 30_000L);
+            }
+        } catch (Exception ignored) {}
+        return backoffMs(attempt);
+    }
+
+    private static long backoffMs(int attempt) {
+        // Jittered so a whole player base retrying a release-day 429 doesn't march back in lockstep.
+        long baseMs = 1000L << Math.min(attempt - 1, 4);
+        return baseMs + (long) (Math.random() * 500);
+    }
+
     private static String get(String url) throws IOException, InterruptedException {
-        HttpResponse<String> r = HTTP.send(
-            HttpRequest.newBuilder(URI.create(bust(url))).timeout(Duration.ofSeconds(30))
-                .header("Cache-Control", "no-cache").header("Pragma", "no-cache").GET().build(),
-            HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
-        if (r.statusCode() != 200) throw new IOException("HTTP " + r.statusCode() + " for " + url);
-        return r.body();
+        return sendWithRetry(
+            HttpRequest.newBuilder().timeout(Duration.ofSeconds(30))
+                .header("Cache-Control", "no-cache").header("Pragma", "no-cache").GET(),
+            url, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8)).body();
     }
 
     private static void download(String url, Path target) throws IOException, InterruptedException {
-        HttpResponse<Path> r = HTTP.send(
-            HttpRequest.newBuilder(URI.create(bust(url))).timeout(Duration.ofMinutes(5))
-                .header("Cache-Control", "no-cache").GET().build(),
-            HttpResponse.BodyHandlers.ofFile(target));
-        if (r.statusCode() != 200) throw new IOException("HTTP " + r.statusCode() + " downloading " + url);
+        sendWithRetry(
+            HttpRequest.newBuilder().timeout(Duration.ofMinutes(5))
+                .header("Cache-Control", "no-cache").GET(),
+            url, HttpResponse.BodyHandlers.ofFile(target));
     }
 
     // ── Hashing ─────────────────────────────────────────────────────────────────
@@ -296,21 +398,81 @@ public final class InClientUpdater {
         Files.write(manifestPath(gameDir), managed, StandardCharsets.UTF_8);
     }
 
-    /** Every *.jar under mods/ that the pack index doesn't manage. The pack is a closed set —
-     *  a jar the index doesn't know is either an outdated leftover or breaks server negotiation. */
-    private static List<String> staleModJars(Path gameDir, Set<String> managed) {
+    /**
+     * Older copies of jars the pack DOES manage — nothing else.
+     *
+     * <p>This used to delete every jar under {@code mods/} the index didn't list, on the theory that
+     * the pack is a closed set. That silently deleted any mod a player added themselves, with no
+     * prompt, and it actively breaks the CurseForge install route: the Core jar is hand-dropped from
+     * Discord there, so the moment its filename didn't match the index it deleted the very updater
+     * doing the deleting. Now a jar is only removed when a DIFFERENT version of the same mod is
+     * managed — which still solves the case this was written for (an old CoffeesAeroCore next to the
+     * new one, same mod id, FML silently loading the old file) while leaving personal mods alone.
+     */
+    private static List<String> duplicateModJars(Path gameDir, Set<String> managed) {
         List<String> out = new ArrayList<>();
         Path mods = gameDir.resolve("mods");
         if (!Files.isDirectory(mods)) return out;
+
+        Set<String> managedKeys = new HashSet<>();
+        Set<String> managedNames = new HashSet<>();
+        for (String rel : managed) {
+            if (!rel.startsWith("mods/")) continue;
+            String name = rel.substring("mods/".length());
+            if (name.contains("/")) continue;                 // nested dirs are not the duplicate case
+            managedNames.add(name.toLowerCase(Locale.ROOT));
+            managedKeys.add(modKey(name));
+        }
+
+        String self = runningCoreJarName(gameDir);
         try (Stream<Path> s = Files.list(mods)) {
             for (Path jar : (Iterable<Path>) s::iterator) {
                 String name = jar.getFileName().toString();
-                if (!name.toLowerCase(Locale.ROOT).endsWith(".jar")) continue;
-                String rel = "mods/" + name;
-                if (!managed.contains(rel)) out.add(rel);
+                String lower = name.toLowerCase(Locale.ROOT);
+                if (!lower.endsWith(".jar")) continue;
+                if (managedNames.contains(lower)) continue;    // it IS the managed copy
+                if (name.equals(self)) continue;               // never delete the jar we are running from
+                if (managedKeys.contains(modKey(name))) out.add("mods/" + name);
             }
         } catch (IOException ignored) {}
         return out;
+    }
+
+    /**
+     * Filename reduced to a mod identity: everything before the first version-looking segment.
+     * {@code CoffeesAeroCore-1.3.3-2fa5e52e.jar -> coffeesaerocore},
+     * {@code sodium-neoforge-0.6.13+mc1.21.1.jar -> sodium-neoforge}.
+     */
+    private static String modKey(String fileName) {
+        String n = fileName.toLowerCase(Locale.ROOT);
+        if (n.endsWith(".jar")) n = n.substring(0, n.length() - 4);
+        String[] parts = n.split("-");
+        StringBuilder key = new StringBuilder();
+        for (String part : parts) {
+            if (!part.isEmpty() && Character.isDigit(part.charAt(0))) break;   // version segment
+            if (key.length() > 0) key.append('-');
+            key.append(part);
+        }
+        return key.length() == 0 ? n : key.toString();
+    }
+
+    /** The Core jar this process is running from, so the sweep can never delete it. */
+    private static String runningCoreJarName(Path gameDir) {
+        try {
+            return resolveSelfJar(gameDir).getFileName().toString();
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    /** Staging must start empty — see the call site for why a leftover file is dangerous. */
+    private static void deleteRecursively(Path dir) {
+        if (!Files.exists(dir)) return;
+        try (Stream<Path> walk = Files.walk(dir)) {
+            walk.sorted((a, b) -> b.getNameCount() - a.getNameCount()).forEach(p -> {
+                try { Files.deleteIfExists(p); } catch (IOException ignored) {}
+            });
+        } catch (IOException ignored) {}
     }
 
     private static List<String> orphans(Path gameDir, Set<String> nowManaged) {

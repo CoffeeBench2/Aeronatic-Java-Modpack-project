@@ -38,3 +38,15 @@ overrides/mods/
 overrides/resourcepacks/
 overrides/shaderpacks/
 .cf-key
+
+# Runtime server/client logs — never commit (player IPs, chat, auth events).
+# 2026-08-10: logs/ had leaked into the packwiz index and shipped to every client.
+logs/
+**/logs/
+index.toml.bak-*
+pack.toml.bak-*
+
+# Local-only build/deploy staging — NEVER commit (847 MB of jars, and the packwiz updater
+# pulls this repo raw). CLAUDE.md lists both as excluded; they had never been tracked.
+server-mods/
+dist/

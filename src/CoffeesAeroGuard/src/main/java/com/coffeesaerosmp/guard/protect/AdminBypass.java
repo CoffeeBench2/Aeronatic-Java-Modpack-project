@@ -1,4 +1,4 @@
-package com.coffeesaerosmp.auth.protect;
+package com.coffeesaerosmp.guard.protect;
 
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;

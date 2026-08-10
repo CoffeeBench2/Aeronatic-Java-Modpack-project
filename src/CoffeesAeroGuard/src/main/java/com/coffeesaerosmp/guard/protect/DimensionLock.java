@@ -1,6 +1,6 @@
-package com.coffeesaerosmp.auth.protect;
+package com.coffeesaerosmp.guard.protect;
 
-import com.coffeesaerosmp.auth.config.AuthConfig;
+import com.coffeesaerosmp.guard.config.GuardConfig;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
@@ -28,7 +28,7 @@ public final class DimensionLock {
 
     public static void onTravelToDimension(EntityTravelToDimensionEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        if (!AuthConfig.LOCK_END_DIMENSION.get()) return;
+        if (!GuardConfig.LOCK_END_DIMENSION.get()) return;
         if (!event.getDimension().equals(Level.END)) return;
         if (player.hasPermissions(2)) return;   // admins may inspect
 

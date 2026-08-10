@@ -23,6 +23,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import com.coffeesaerosmp.auth.util.Sounds;
 
 public class AuthManager {
 
@@ -115,7 +116,26 @@ public class AuthManager {
             if (nameOwner != null && !nameOwner.equals(uuid)) {
                 PlayerProfile ownerProfile = store.get(nameOwner);
                 if (ownerProfile != null && ownerProfile.getAccountType() == PlayerProfile.AccountType.PREMIUM) {
-                    reservedBy = mcName;
+                    // SELF-IMPERSONATION GUARD (2026-08-08). `!nameOwner.equals(uuid)` is not enough:
+                    // a PREMIUM player who lands here has been resolved OFFLINE (cookie timeout,
+                    // missing secret, invalid/absent cookie, or a direct connect), so the backend
+                    // gave them md5("OfflinePlayer:"+name) instead of their real Mojang UUID. Same
+                    // human, different UUID — and the old check kicked them as an impostor of
+                    // themselves. That is the "I'm premium but it says I'm offline" report.
+                    //
+                    // A genuine impostor picks SOMEONE ELSE'S name, so their offline UUID still
+                    // derives from the name they chose — the test below holds for both, which is
+                    // why it discriminates: it asks whether this connection is the offline alias of
+                    // the very account that owns the name.
+                    if (UUIDUtil.isSelfOfflineAlias(uuid, ownerProfile.username)) {
+                        CoffeesAeroAuth.LOGGER.warn(
+                            "[Auth] {} is the offline alias of PREMIUM {} — not a spoof, letting them in. "
+                            + "Their gate cookie did not arrive; playtime lives on {} and this session "
+                            + "accrues to {}. Run /authmod duplicates.",
+                            uuid, nameOwner, nameOwner, uuid);
+                    } else {
+                        reservedBy = mcName;
+                    }
                 }
             }
             // near: their MC name impersonates a known premium username (lookalike / substring / edit-distance 1)
@@ -407,7 +427,6 @@ public class AuthManager {
         awaitingType.remove(uuid);
         nameHidden.remove(uuid);
         if (CoffeesAeroAuth.ROOM_MANAGER != null) CoffeesAeroAuth.ROOM_MANAGER.releaseFrozenSpot(uuid);
-        com.coffeesaerosmp.auth.protect.AdminBypass.clear(uuid);
         NameVisibility.clear(player);
     }
 
@@ -995,8 +1014,9 @@ public class AuthManager {
         if (cooldownMs > 0 && !player.hasPermissions(2)) {
             Long last = lastSpawnTp.get(uuid);
             if (last != null && now - last < cooldownMs) {
-                long remMin = (cooldownMs - (now - last) + 59_999) / 60_000;
-                send(player, TextUtil.PREFIX + "§7You can §f/spawn§7 again in §e" + remMin + "m§7.");
+                String rem = TextUtil.formatRemaining(cooldownMs - (now - last));
+                send(player, TextUtil.PREFIX + "§7You can §f/spawn§7 again in §e" + rem + "§7.");
+                Sounds.error(player);
                 return false;
             }
         }
@@ -1006,7 +1026,12 @@ public class AuthManager {
         }
         lastSpawnTp.put(uuid, now);
         CoffeesAeroAuth.ROOM_MANAGER.teleportToSpawn(player);
-        send(player, TextUtil.PREFIX + "§a✈ Teleported to world spawn. §7(Usable once per hour.)");
+        // The cooldown is read from config, so the message must be too — this said "once per hour"
+        // while the default was 180 minutes, and would have kept saying it at any other setting.
+        Sounds.teleport(player);
+        send(player, TextUtil.PREFIX + "§a✈ Teleported to world spawn."
+            + (cooldownMs > 0 && !player.hasPermissions(2)
+               ? " §7(Usable again in " + TextUtil.formatRemaining(cooldownMs) + ".)" : ""));
         return true;
     }
 
@@ -1029,8 +1054,9 @@ public class AuthManager {
         if (cooldownMs > 0 && !player.hasPermissions(2)) {
             Long last = lastHomeTp.get(uuid);
             if (last != null && now - last < cooldownMs) {
-                long remMin = (cooldownMs - (now - last) + 59_999) / 60_000;
-                send(player, TextUtil.PREFIX + "§7You can §f/home§7 again in §e" + remMin + "m§7.");
+                String rem = TextUtil.formatRemaining(cooldownMs - (now - last));
+                send(player, TextUtil.PREFIX + "§7You can §f/home§7 again in §e" + rem + "§7.");
+                Sounds.error(player);
                 return false;
             }
         }
@@ -1080,6 +1106,10 @@ public class AuthManager {
         // ALL cosmetic greeting surfaces (title, welcome chat, skin tip) live in WelcomeMessages,
         // throttled to once per welcomeIntervalHours — the every-join replay was the 07-18 spam bug.
         WelcomeMessages.onAuthComplete(player, profile, firstJoin);
+        // Daily nudge AFTER the welcome sequence: onAuthComplete has three early-return branches
+        // and its own throttle, and this is actionable state ("you have something to collect"),
+        // not a greeting — it must not inherit that throttle. Silent when nothing is claimable.
+        if (CoffeesAeroAuth.DAILY_REWARDS != null) CoffeesAeroAuth.DAILY_REWARDS.remindOnJoin(player);
 
         if (profile.getAccountType() == PlayerProfile.AccountType.OFFLINE) {
             com.coffeesaerosmp.auth.events.PlayerAuthEvents.onOfflinePlayerAuthenticated(player);

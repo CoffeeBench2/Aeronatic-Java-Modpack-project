@@ -43,8 +43,30 @@ public class DatabaseManager {
 
         try {
             HikariConfig cfg = new HikariConfig();
+            // ── Tuned for a 234ms cross-continent link (DB Helsinki / game node Singapore) ──
+            // useLocalSessionState is the important one. HikariCP calls Connection.isReadOnly()
+            // while setting up EVERY new connection, and Connector/J answers it by round-tripping
+            // "SELECT @@session.transaction_read_only" to the server. At 234ms that query, stacked
+            // on top of the TCP+auth handshake, blew past the 5s network timeout Hikari applies
+            // during setup — the "Communications link failure / Read timed out after 5,004ms" on
+            // 2026-08-08. With local session state the driver answers from its own cache and the
+            // round-trip disappears entirely, which fixes the cause rather than widening the window.
+            // elideSetAutoCommits removes the matching redundant autocommit round-trip.
+            // socketTimeout is a LAST-RESORT ceiling, deliberately far above any healthy query.
             cfg.setJdbcUrl("jdbc:mysql://" + host + ":" + port + "/" + db
-                + "?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&characterEncoding=utf8");
+                + "?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&characterEncoding=utf8"
+                + "&useLocalSessionState=true&elideSetAutoCommits=true"
+                // NO socketTimeout. DELIBERATE — 2026-08-09, after it broke boot twice.
+                // socketTimeout is a per-read deadline applied to EVERY query, and it cannot tell
+                // "SELECT 1 on a dead link" from "stream 108 profile rows across 234ms". The bulk
+                // load in loadAllFromDatabase legitimately takes ~42s on this link (measured), so a
+                // 30s limit made it fragile and a 10s limit killed it outright: "Loaded 0 profiles".
+                // Slow queries are bounded per-call with Statement.setQueryTimeout instead, which
+                // can be short exactly where it should be (the health probe) without capping the
+                // one query that is genuinely allowed to take a minute.
+                + "&connectTimeout=10000"
+                + "&cachePrepStmts=true&prepStmtCacheSize=250&prepStmtCacheSqlLimit=2048"
+                + "&useServerPrepStmts=true&rewriteBatchedStatements=true");
             cfg.setUsername(user);
             cfg.setPassword(pass);
             cfg.setMaximumPoolSize(10);
@@ -55,7 +77,13 @@ public class DatabaseManager {
             // server's 300s limit — so MySQL killed connections that Hikari still believed were
             // alive, producing "No operations allowed after connection closed." on next borrow.
             // HikariCP's rule: maxLifetime must be comfortably SHORTER than any DB-imposed limit.
-            cfg.setConnectionTimeout(10_000);   // was 5s; a cross-continent connect needs headroom
+            // RESTORED to the values that were stable through 1.7.14. The 1.7.15/1.7.19 passes
+            // moved these twice — first too high, then too low — and the second attempt made things
+            // worse, not better: shorter maxLifetime and keepalive mean MORE connection churn, and
+            // on a link that is already dropping, every new connection is another handshake that
+            // can fail. Do not re-tune these without a measured reason.
+            cfg.setConnectionTimeout(10_000);   // MAIN-THREAD exposure: a cache-miss profile read
+                                               // waits this long for a pool connection.
             cfg.setIdleTimeout(120_000);        // must be < maxLifetime
             cfg.setMaxLifetime(240_000);        // 60s of margin under the server's 300s wait_timeout
             cfg.setKeepaliveTime(60_000);       // ping idle conns so they never reach 300s idle
@@ -93,6 +121,10 @@ public class DatabaseManager {
         if (pool == null) return;
         boolean wasUp = available.get();
         try (Connection c = pool.getConnection(); Statement s = c.createStatement()) {
+            // Bounded well under the 30s check interval. Without this the probe inherited
+            // socketTimeout, so a dead link produced a check that was still running when the next
+            // one fired — overlapping probes against a socket already known to be broken.
+            s.setQueryTimeout(5);
             s.execute("SELECT 1");
             if (!wasUp) {
                 available.set(true);

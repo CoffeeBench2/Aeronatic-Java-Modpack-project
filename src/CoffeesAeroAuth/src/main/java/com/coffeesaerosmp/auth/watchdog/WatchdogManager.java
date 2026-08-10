@@ -288,8 +288,32 @@ public class WatchdogManager {
         return true;
     }
 
+    /**
+     * Players currently exempt from the speed check, uuid -> expiry epoch ms.
+     *
+     * <p>WHY (2026-08-04): AeroKit's launch stick sets a large server-side velocity. checkMovement
+     * saw it as impossible movement, ZEROED it — so the launch silently did nothing — and then
+     * spammed the Discord webhook, which is what put the queue into a permanent rate limit. A
+     * server-authored velocity is by definition not a cheating client, so it needs a way to say so.
+     */
+    private static final Map<UUID, Long> movementGrace = new ConcurrentHashMap<>();
+
+    /** Exempt a player from the speed check for {@code millis}. Safe to call repeatedly. */
+    public static void grantMovementGrace(UUID uuid, long millis) {
+        if (uuid == null || millis <= 0) return;
+        movementGrace.put(uuid, System.currentTimeMillis() + Math.min(millis, 60_000L));
+    }
+
     /** Called from WatchdogEvents every tick for authenticated players. */
     public void checkMovement(ServerPlayer player) {
+        Long graceUntil = movementGrace.get(player.getUUID());
+        if (graceUntil != null) {
+            if (System.currentTimeMillis() < graceUntil) {
+                movementOffenses.remove(player.getUUID());
+                return;
+            }
+            movementGrace.remove(player.getUUID());
+        }
         // Legitimate fast movement must NOT be velocity-zeroed (2026-07-12: spectators couldn't
         // noclip/boost — the check killed their velocity every tick; same for elytra dives,
         // riptide and ship/mount passengers on an AERONAUTICS server of all places).
@@ -312,12 +336,21 @@ public class WatchdogManager {
             int offenses = movementOffenses
                 .computeIfAbsent(player.getUUID(), k -> new AtomicInteger()).incrementAndGet();
             if (offenses >= 3 && offenses % 5 == 0) {
-                alert(WatchdogEvent.of(Severity.MEDIUM, "Impossible Movement (Repeat Offender)",
-                    "Velocity zeroed",
-                    "Player", player.getGameProfile().getName(),
-                    "Speed", String.format("%.2f", speed) + " b/t",
-                    "Offenses", String.valueOf(offenses)));
                 dailyAnomalies.add("Movement hack: " + player.getGameProfile().getName());
+                // Discord notification is opt-in (default off). This fires on every legitimate
+                // server-applied launch, mount glitch and lag spike, and at MEDIUM it went to the
+                // webhook queue — one AeroKit session was enough to rate limit the whole bridge and
+                // take chat delivery down with it. The daily anomaly roll-up above still records it.
+                if (!AuthConfig.MOVEMENT_ALERT_DISCORD.get()) {
+                    CoffeesAeroAuth.LOGGER.info("[Watchdog] Impossible movement: {} at {} b/t ({} offenses).",
+                        player.getGameProfile().getName(), String.format("%.2f", speed), offenses);
+                } else {
+                    alert(WatchdogEvent.of(Severity.MEDIUM, "Impossible Movement (Repeat Offender)",
+                        "Velocity zeroed",
+                        "Player", player.getGameProfile().getName(),
+                        "Speed", String.format("%.2f", speed) + " b/t",
+                        "Offenses", String.valueOf(offenses)));
+                }
             }
         }
     }

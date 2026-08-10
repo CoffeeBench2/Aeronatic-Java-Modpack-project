@@ -22,6 +22,7 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import com.coffeesaerosmp.auth.util.Sounds;
 
 /**
  * The {@code /daily} streak reward. Once per {@code dailyRewardIntervalHours}, a player claims a
@@ -87,10 +88,9 @@ public final class DailyRewardManager {
         if (e.lastClaimMs > 0) {
             long since = now - e.lastClaimMs;
             if (since < intervalMs) {
-                long remMin = (intervalMs - since + 59_999) / 60_000;
-                long h = remMin / 60, m = remMin % 60;
                 msg(player, "§7You've already claimed. Come back in §e"
-                    + (h > 0 ? h + "h " : "") + m + "m§7.");
+                    + TextUtil.formatRemaining(intervalMs - since) + "§7.");
+                Sounds.error(player);
                 return false;
             }
             e.streak = (since <= resetMs) ? e.streak + 1 : 1;   // continue the streak vs. break it
@@ -105,6 +105,7 @@ public final class DailyRewardManager {
         save();
 
         int cycleDay = dayIndex + 1;
+        Sounds.reward(player);
         msg(player, TextUtil.PREFIX + "§a✦ Daily reward claimed! §f" + tier.name()
             + " §7(streak §e" + e.streak + "§7 · day §e" + cycleDay + "§7/7)");
 
@@ -118,6 +119,53 @@ public final class DailyRewardManager {
             }
         }
         return true;
+    }
+
+    /** Milliseconds until this player may claim again; {@code 0} means claimable right now. */
+    public long msUntilClaimable(java.util.UUID uuid) {
+        Entry e = state.get(uuid.toString());
+        if (e == null || e.lastClaimMs <= 0) return 0L;          // never claimed = ready
+        long intervalMs = AuthConfig.DAILY_REWARD_INTERVAL_HOURS.get() * 3_600_000L;
+        long since = System.currentTimeMillis() - e.lastClaimMs;
+        return since >= intervalMs ? 0L : intervalMs - since;
+    }
+
+    /**
+     * Join-time nudge, sent once after auth completes. **Silent unless there is something to claim**
+     * — a reminder that fires when the reward is not available is just noise on every join, and the
+     * welcome sequence is already busy.
+     *
+     * <p>The streak it advertises is computed the same way {@link #claim} computes it, including the
+     * {@code resetMs} break rule, so the number here cannot disagree with what the player actually
+     * receives.
+     */
+    public void remindOnJoin(ServerPlayer player) {
+        try {
+            if (!AuthConfig.DAILY_REWARD_ENABLED.get()) return;
+            if (msUntilClaimable(player.getUUID()) > 0) return;
+
+            Entry e = state.get(player.getUUID().toString());
+            long intervalMs = AuthConfig.DAILY_REWARD_INTERVAL_HOURS.get() * 3_600_000L;
+            int streak;
+            if (e == null || e.lastClaimMs <= 0) {
+                streak = 1;
+            } else {
+                long since = System.currentTimeMillis() - e.lastClaimMs;
+                streak = (since <= intervalMs * 2) ? e.streak + 1 : 1;   // mirrors claim()
+            }
+            int cycleDay = ((streak - 1) % TIERS.length) + 1;
+            Tier tier = TIERS[cycleDay - 1];
+
+            msg(player, TextUtil.PREFIX + "§e✦ Your §f/daily§e reward is ready! §7("
+                + tier.name() + " · streak §e" + streak + "§7 · day §e" + cycleDay + "§7/7)");
+            Sounds.notify(player);
+            if (streak == 1 && e != null && e.lastClaimMs > 0) {
+                msg(player, TextUtil.PREFIX + "§7Your streak reset — claim daily to keep it going.");
+            }
+        } catch (Exception ex) {
+            // A cosmetic nudge must never interfere with a join.
+            CoffeesAeroAuth.LOGGER.debug("[Daily] join reminder skipped: {}", ex.toString());
+        }
     }
 
     private void grant(ServerPlayer player, Tier tier) {

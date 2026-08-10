@@ -157,23 +157,6 @@ public class AuthCommands {
             )
         );
 
-        // /aerobypass — admin only: toggle protection bypass so you can open/break/place on any
-        // claimed ship or protected block without owning it (aeroclaims has no bypass of its own).
-        // Since 2026-07-27 this ALSO covers aeroclaims' packet-level protection (assemble, glue,
-        // toolbox, clipboard, wrench, throttle, kinetic placer, block-breaking) via
-        // mixin/AeroClaimsProtectionBypassMixin — those go through CreateProtectionHelper rather
-        // than NeoForge events, so the event handlers in AdminBypass never saw them.
-        dispatcher.register(Commands.literal("aerobypass")
-            .requires(src -> src.hasPermission(2))
-            .executes(ctx -> {
-                ServerPlayer player = ctx.getSource().getPlayerOrException();
-                boolean on = com.coffeesaerosmp.auth.protect.AdminBypass.toggle(player.getUUID());
-                player.sendSystemMessage(Component.literal(on
-                    ? "§a[Bypass] ON §7— you can now open/break/place, and assemble, glue, wrench or throttle any claimed ship. §e/aerobypass§7 to turn off."
-                    : "§e[Bypass] OFF §7— claim protection applies to you again."));
-                return 1;
-            })
-        );
 
         // /changename <newName> — one-time post-approval display name change (authenticated only)
         dispatcher.register(Commands.literal("changename")

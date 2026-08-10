@@ -42,7 +42,14 @@ public class DiscordGateway {
     private final String                     botToken;
     private final String                     channelId;
     private final String                     allowedRoleId;
-    private final BiConsumer<String, String> messageHandler; // (authorName, content) → MC
+    /** (authorId, authorName, content) → MC. The ID is what resolves a LINKED player (1.7.5); the
+     *  username is only a fallback label for unlinked Discord members. */
+    @FunctionalInterface
+    public interface InboundHandler {
+        void accept(String authorId, String authorName, String content);
+    }
+
+    private final InboundHandler messageHandler;
     private final String                     adminChannelId;  // Feature B: admin console channel
     private final String                     adminRoleId;     // Feature B: role gating console commands
     private final BiConsumer<String, String> adminHandler;    // (authorName, content) → run as command
@@ -82,7 +89,7 @@ public class DiscordGateway {
 
     public DiscordGateway(MinecraftServer server, String botToken,
                           String channelId, String allowedRoleId,
-                          BiConsumer<String, String> messageHandler,
+                          InboundHandler messageHandler,
                           String adminChannelId, String adminRoleId,
                           BiConsumer<String, String> adminHandler,
                           java.util.function.Consumer<JsonObject> interactionHandler) {
@@ -188,6 +195,7 @@ public class DiscordGateway {
                 JsonObject author = d.getAsJsonObject("author");
                 if (author.has("bot") && author.get("bot").getAsBoolean()) return;
                 String name    = author.get("username").getAsString();
+                String authorId = author.has("id") ? author.get("id").getAsString() : "";
                 String content = d.has("content") && !d.get("content").isJsonNull()
                     ? d.get("content").getAsString() : "";
 
@@ -204,7 +212,7 @@ public class DiscordGateway {
                 if (!channelId.equals(chan)) return;
                 if (!hasRole(d, allowedRoleId)) return;
                 if (!content.isBlank() && messageHandler != null) {
-                    server.execute(() -> messageHandler.accept(name, content));
+                    server.execute(() -> messageHandler.accept(authorId, name, content));
                 }
             }
             case "INTERACTION_CREATE" -> {

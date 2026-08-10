@@ -75,6 +75,10 @@ public class CoffeesAeroAuth {
         // Networking: receive premium/cracked tag from the AeroVelocity proxy (mod bus event)
         modBus.addListener(AeroNetworking::register);
 
+        // Global Loot Modifier codecs. The TYPE must be registered in code; the RULES stay in a
+        // datapack (coffees_aero_auth:loot_modifiers/rarity_nerf.json) so they are /reload-tunable.
+        com.coffeesaerosmp.auth.loot.AeroLootModifiers.register(modBus);
+
         // Server lifecycle
         NeoForge.EVENT_BUS.addListener(CoffeesAeroAuth::onServerStarting);
         NeoForge.EVENT_BUS.addListener(CoffeesAeroAuth::onServerStopping);
@@ -89,7 +93,6 @@ public class CoffeesAeroAuth {
         com.coffeesaerosmp.auth.compat.SkinsHook.install();
 
         // Restrictions: movement, interaction, inventory
-        NeoForge.EVENT_BUS.addListener(com.coffeesaerosmp.auth.protect.DimensionLock::onTravelToDimension);
         NeoForge.EVENT_BUS.addListener(PlayerRestrictEvents::onLivingTick);
         NeoForge.EVENT_BUS.addListener(PlayerRestrictEvents::onRightClickBlock);
         NeoForge.EVENT_BUS.addListener(PlayerRestrictEvents::onRightClickItem);
@@ -105,20 +108,7 @@ public class CoffeesAeroAuth {
         NeoForge.EVENT_BUS.addListener(PlayerRestrictEvents::onLobbyDeath);
         NeoForge.EVENT_BUS.addListener(PlayerRestrictEvents::onLobbyRespawn);
 
-        // Admin protection bypass (/aerobypass) — LOWEST priority + receive already-cancelled events so
-        // these run AFTER aeroclaims' setCanceled(true) and reverse it for bypassing ops.
-        NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.LOWEST, true,
-            net.neoforged.neoforge.event.entity.player.PlayerInteractEvent.RightClickBlock.class,
-            com.coffeesaerosmp.auth.protect.AdminBypass::onRightClickBlock);
-        NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.LOWEST, true,
-            net.neoforged.neoforge.event.entity.player.PlayerInteractEvent.RightClickItem.class,
-            com.coffeesaerosmp.auth.protect.AdminBypass::onRightClickItem);
-        NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.LOWEST, true,
-            net.neoforged.neoforge.event.level.BlockEvent.BreakEvent.class,
-            com.coffeesaerosmp.auth.protect.AdminBypass::onBlockBreak);
-        NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.LOWEST, true,
-            net.neoforged.neoforge.event.level.BlockEvent.EntityPlaceEvent.class,
-            com.coffeesaerosmp.auth.protect.AdminBypass::onBlockPlace);
+
 
         // Animated tab-list header/footer (airship + live pilot count + rotating tips).
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.tick.ServerTickEvent.Post e) ->
@@ -127,6 +117,21 @@ public class CoffeesAeroAuth {
         // /rtp async pregen driver (progress action bar, teleport-when-ready, timeouts).
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.tick.ServerTickEvent.Post e) ->
             com.coffeesaerosmp.auth.commands.RtpCommand.onServerTick(e.getServer()));
+
+        // Plot-space sweep (1Hz internally). The anti-crash-loop half runs from the ServerPlayer
+        // mixin at load time; this is the mid-session net. See PlotGuard for the 2026-08-04 crash.
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.tick.ServerTickEvent.Post e) ->
+            com.coffeesaerosmp.auth.protect.PlotGuard.onServerTick(e.getServer()));
+
+        // Periodic saves (1Hz internally). Sable's native Rapier panic calls abort(), which kills
+        // the JVM with no shutdown and no world save — see SaveGuard for the 2026-08-08 data loss.
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.tick.ServerTickEvent.Post e) ->
+            com.coffeesaerosmp.auth.protect.SaveGuard.onServerTick(e.getServer()));
+
+        // Sustained-lag warning, so players stop blaming their own connection. Deliberately hard to
+        // trigger — see LagMonitor for why warning on this pack's routine spikes would be worse.
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.tick.ServerTickEvent.Post e) ->
+            com.coffeesaerosmp.auth.watchdog.LagMonitor.onServerTick(e.getServer()));
 
         // Chat formatting + Discord bridge
         NeoForge.EVENT_BUS.addListener(ChatEvents::onServerChat);
@@ -153,6 +158,10 @@ public class CoffeesAeroAuth {
         Path dataDir = event.getServer().getWorldPath(LevelResource.ROOT).resolve("coffeesaeroauth");
         Map<String, String> env = EnvLoader.load();
         AeroNetworking.initSecret(env);
+
+        // Start the save clocks from boot, so the first periodic save lands one interval from now
+        // rather than immediately (a join burst is the worst moment to add disk I/O).
+        com.coffeesaerosmp.auth.protect.SaveGuard.onServerStarted();
 
         // Gate cookie verifier — shared HMAC secret with the Velocity AeroGate plugin (secret.txt).
         COOKIE_AUTH = new com.coffeesaerosmp.auth.auth.CookieAuth(
@@ -202,7 +211,7 @@ public class CoffeesAeroAuth {
             discordToken,
             AuthConfig.DISCORD_PUBLIC_CHANNEL_ID.get(),
             AuthConfig.DISCORD_TO_MC_ROLE_ID.get(),
-            (author, msg) -> { if (DISCORD_BRIDGE != null) DISCORD_BRIDGE.onDiscordMessage(event.getServer(), author, msg); },
+            (authorId, author, msg) -> { if (DISCORD_BRIDGE != null) DISCORD_BRIDGE.onDiscordMessage(event.getServer(), authorId, author, msg); },
             AuthConfig.DISCORD_ADMIN_CHANNEL_ID.get(),
             AuthConfig.DISCORD_ADMIN_ROLE_ID.get(),
             (author, msg) -> { if (ADMIN_CONSOLE != null) ADMIN_CONSOLE.runCommand(author, msg); },
@@ -239,6 +248,7 @@ public class CoffeesAeroAuth {
         DAILY_REWARDS  = new com.coffeesaerosmp.auth.daily.DailyRewardManager(dataDir);
         com.coffeesaerosmp.auth.clan.ClanTags.initialize(dataDir);
         com.coffeesaerosmp.auth.commands.RtpCommand.initialize(dataDir);
+        com.coffeesaerosmp.auth.commands.RtpAnchors.initialize(dataDir);
         com.coffeesaerosmp.auth.auth.WelcomeMessages.initialize(dataDir);
         com.coffeesaerosmp.auth.util.NameStyles.initialize(dataDir);
 
@@ -354,6 +364,7 @@ public class CoffeesAeroAuth {
         com.coffeesaerosmp.auth.pvp.CombatGuard.registerCommands(event.getDispatcher());
         com.coffeesaerosmp.auth.commands.TpaCommands.register(event.getDispatcher());
         com.coffeesaerosmp.auth.commands.RtpCommand.register(event.getDispatcher());
+        com.coffeesaerosmp.auth.commands.ShipNameCommand.register(event.getDispatcher());
         com.coffeesaerosmp.auth.commands.NameColorCommands.register(event.getDispatcher());
     }
 }

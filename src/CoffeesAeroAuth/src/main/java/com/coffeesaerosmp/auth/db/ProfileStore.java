@@ -1,6 +1,7 @@
 package com.coffeesaerosmp.auth.db;
 
 import com.coffeesaerosmp.auth.CoffeesAeroAuth;
+import com.coffeesaerosmp.auth.auth.UUIDUtil;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -165,6 +166,31 @@ public class ProfileStore implements CredentialStore {
     /** Admin lookup by display name OR Minecraft username, case-insensitive — works for OFFLINE
      *  players (all profiles are cached at boot). Display-name index first (O(1)), then a username
      *  scan. Used by /authmod resetpassword + /authmod player. */
+    /** Reverse of the /link flow: Discord snowflake → profile. All profiles are cached at boot, so
+     *  this resolves OFFLINE players too — which is the point, since someone typing in Discord is
+     *  usually not in-game. Linear over the cache (75 profiles); called once per bridged message. */
+    public PlayerProfile findByDiscordId(String discordId) {
+        if (discordId == null || discordId.isBlank()) return null;
+        for (PlayerProfile p : cache.values()) {
+            if (discordId.equals(p.discordId)) return p;
+        }
+        return null;
+    }
+
+    /**
+     * Resolve a profile by display name or account name.
+     *
+     * <p>DETERMINISTIC SINCE 2026-08-08. The old loop returned the FIRST match from a
+     * {@link ConcurrentHashMap} iteration. When one player owns two profiles — the real Mojang
+     * (v4) UUID and the {@code md5("OfflinePlayer:"+name)} (v3) alias minted whenever their gate
+     * cookie fails — the winner was whatever order the map happened to iterate, and it could change
+     * between restarts. That is why SideBlackStar's Discord card read "0h 34m" while all their
+     * hours sat on the other record.
+     *
+     * <p>Order now: exact display-name index → PREMIUM/v4 profiles → highest playtime → most
+     * recently seen. Playtime breaks the tie rather than account type alone because a player can
+     * legitimately own two premium-flagged rows once the alias has been logged into.
+     */
     public PlayerProfile findByAnyName(String name) {
         if (name == null || name.isBlank()) return null;
         UUID byDisplay = nameIndex.get(name.toLowerCase(Locale.ROOT));
@@ -172,10 +198,42 @@ public class ProfileStore implements CredentialStore {
             PlayerProfile p = get(byDisplay);
             if (p != null) return p;
         }
+        return matchesByName(name).stream()
+            .max(Comparator
+                .comparing((PlayerProfile p) -> UUIDUtil.isPremiumUUID(p.getUUID()))
+                .thenComparingLong(p -> p.totalPlaytimeSeconds)
+                .thenComparingLong(p -> p.lastSeen))
+            .orElse(null);
+    }
+
+    /** Every cached profile whose account name or display name matches, case-insensitively. */
+    public List<PlayerProfile> matchesByName(String name) {
+        List<PlayerProfile> out = new ArrayList<>();
+        if (name == null || name.isBlank()) return out;
         for (PlayerProfile p : cache.values()) {
-            if (name.equalsIgnoreCase(p.username) || name.equalsIgnoreCase(p.displayName)) return p;
+            if (name.equalsIgnoreCase(p.username) || name.equalsIgnoreCase(p.displayName)) out.add(p);
         }
-        return null;
+        return out;
+    }
+
+    /**
+     * Account names owned by more than one profile — i.e. a player split across their real Mojang
+     * UUID and an offline alias. Each list is ordered by {@link #findByAnyName}'s preference, so
+     * element 0 is the record that should be treated as canonical.
+     */
+    public Map<String, List<PlayerProfile>> findDuplicateAccounts() {
+        Map<String, List<PlayerProfile>> byName = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        for (PlayerProfile p : cache.values()) {
+            if (p.username == null || p.username.isBlank()) continue;
+            byName.computeIfAbsent(p.username, k -> new ArrayList<>()).add(p);
+        }
+        byName.values().removeIf(l -> l.size() < 2);
+        Comparator<PlayerProfile> best = Comparator
+            .comparing((PlayerProfile p) -> UUIDUtil.isPremiumUUID(p.getUUID()))
+            .thenComparingLong(p -> p.totalPlaytimeSeconds)
+            .thenComparingLong(p -> p.lastSeen);
+        byName.values().forEach(l -> l.sort(best.reversed()));
+        return byName;
     }
 
     // ── DB helpers ────────────────────────────────────────────────────────────

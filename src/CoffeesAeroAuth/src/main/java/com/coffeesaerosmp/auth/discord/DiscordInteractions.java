@@ -85,11 +85,16 @@ public class DiscordInteractions {
         }
     }
 
-    // ── Slash commands (/uptime, /link) ───────────────────────────────────────
+    // ── Slash commands (/uptime, /leaderboard, /link) ─────────────────────────
 
     /** Global command definitions — bulk-PUT on every READY (idempotent). */
     public static final String GLOBAL_COMMANDS_JSON = "["
         + "{\"name\":\"uptime\",\"type\":1,\"description\":\"How long has Coffees Aero SMP been running?\"},"
+        + "{\"name\":\"leaderboard\",\"type\":1,\"description\":\"Top 10 pilots by playtime\","
+        +  "\"options\":[{\"type\":3,\"name\":\"board\",\"required\":false,"
+        +   "\"description\":\"Which ranking to show (default: playtime)\",\"choices\":["
+        +    "{\"name\":\"Most hours flown\",\"value\":\"playtime\"},"
+        +    "{\"name\":\"Longest-serving (oldest members)\",\"value\":\"oldest\"}]}]},"
         + "{\"name\":\"link\",\"type\":1,\"description\":\"Link your Discord to your Minecraft account\","
         +  "\"options\":[{\"type\":3,\"name\":\"code\",\"required\":true,"
         +   "\"description\":\"The code from /discord link in-game\"}]}"
@@ -101,6 +106,12 @@ public class DiscordInteractions {
             case "uptime" -> server.execute(() ->
                 rest.respondInteraction(id, token,
                     "{\"type\":4,\"data\":{\"embeds\":[" + uptimeEmbedJson(server) + "]}}"));
+            case "leaderboard" -> {
+                String board = extractOption(data, "board");
+                server.execute(() ->
+                    rest.respondInteraction(id, token,
+                        "{\"type\":4,\"data\":{\"embeds\":[" + leaderboardEmbedJson(server, board) + "]}}"));
+            }
             case "link" -> {
                 String code = extractOption(data, "code");
                 String userId = interactionUserId(d);
@@ -137,6 +148,90 @@ public class DiscordInteractions {
             + (days >= 0 ? " — **" + days + " day" + (days == 1 ? "" : "s") + "** and counting!" : "!")
             + "\nCurrent session: " + sh + "h " + sm + "m • Pilots aboard: " + online;
         return "{\"description\":\"" + esc(desc) + "\",\"color\":5793266}";
+    }
+
+    // ── /leaderboard ──────────────────────────────────────────────────────────
+
+    private static final int LEADERBOARD_SIZE = 10;
+    private static final String[] MEDALS = {"🥇", "🥈", "🥉"};
+
+    /**
+     * Top 10 card, by playtime (default) or by how long ago the player joined ({@code oldest}).
+     * Both rankings print BOTH numbers, since "who has been here longest" and "who has played most"
+     * are the two things people actually argue about.
+     *
+     * <p>Reads {@link com.coffeesaerosmp.auth.db.ProfileStore#getAll()}, which is the in-memory cache
+     * (every profile is loaded at boot) — NOT a query. A slash command must be answered inside 3
+     * seconds and this runs on the server thread, so a synchronous remote-MySQL call here would be
+     * the 07-18 freeze vector all over again.</p>
+     *
+     * <p>Names are printed as PLAIN TEXT, never as {@code <@id>} mentions: a public leaderboard that
+     * pings ten people every time someone runs it is a good way to get the bot muted, and unlinked
+     * players have no snowflake to mention anyway. Display names (not account usernames) are used,
+     * matching NameMask everywhere else.</p>
+     */
+    public static String leaderboardEmbedJson(MinecraftServer server, String board) {
+        boolean byAge = "oldest".equalsIgnoreCase(board);
+        var store = CoffeesAeroAuth.PROFILE_STORE;
+        if (store == null) {
+            return "{\"description\":\"" + esc("⚠️ Profiles aren't loaded yet — try again in a moment.")
+                + "\",\"color\":16776960}";
+        }
+
+        record Row(String name, long seconds, long joined) {}
+        java.util.List<Row> rows = new java.util.ArrayList<>();
+        for (var p : store.getAll()) {
+            if (p == null || p.getUUID() == null) continue;
+            long secs = p.totalPlaytimeSeconds;
+            // Add the live session so the card is current while someone is playing. Gated on the
+            // player actually being ONLINE: a session that was never closed (hard restart, crash)
+            // leaves a stale sessionStartEpoch that would otherwise inflate them by days.
+            if (p.sessionStartEpoch > 0 && server.getPlayerList().getPlayer(p.getUUID()) != null) {
+                secs += (System.currentTimeMillis() - p.sessionStartEpoch) / 1000;
+            }
+            String name = (p.displayName != null && !p.displayName.isBlank()) ? p.displayName : p.username;
+            if (name == null || name.isBlank()) continue;
+            if (!byAge && secs <= 0) continue;          // don't pad the hours board with 0h ghosts
+            rows.add(new Row(name, secs, p.joinDate));
+        }
+        // Explicit type witness on the reversed() branch: Comparator.comparingLong(Row::seconds) is
+        // the receiver of a call, not a poly expression, so javac has no target type to infer T from.
+        java.util.Comparator<Row> order = byAge
+            ? java.util.Comparator.comparingLong(Row::joined)                  // earliest first
+            : java.util.Comparator.<Row>comparingLong(Row::seconds).reversed();
+        rows.sort(order);
+        if (byAge) rows.removeIf(r -> r.joined() <= 0);  // unknown join date can't be ranked by age
+
+        String title = byAge ? "🏆 Longest-serving pilots" : "🏆 Top pilots by hours flown";
+        if (rows.isEmpty()) {
+            return "{\"title\":\"" + esc(title) + "\",\"description\":\""
+                + esc("Nobody has logged any flight time yet.") + "\",\"color\":5793266}";
+        }
+
+        StringBuilder desc = new StringBuilder();
+        int shown = Math.min(LEADERBOARD_SIZE, rows.size());
+        for (int i = 0; i < shown; i++) {
+            Row r = rows.get(i);
+            String rank = i < MEDALS.length ? MEDALS[i] : "`" + (i + 1) + ".`";
+            desc.append(rank).append(" **").append(r.name()).append("** — ")
+                .append(formatPlaytime(r.seconds()));
+            if (r.joined() > 0) {
+                // <t:unix:D> renders in each viewer's own locale and timezone.
+                desc.append(" · joined <t:").append(r.joined() / 1000L).append(":D>");
+            }
+            desc.append('\n');
+        }
+        desc.append("\n*").append(rows.size()).append(" pilots on the roster · ")
+            .append(byAge ? "sorted by join date" : "sorted by total playtime").append('*');
+
+        return "{\"title\":\"" + esc(com.coffeesaerosmp.auth.config.AuthConfig.SERVER_DISPLAY_NAME.get()
+                + " — " + title)
+            + "\",\"description\":\"" + esc(desc.toString()) + "\",\"color\":5793266}";
+    }
+
+    private static String formatPlaytime(long seconds) {
+        long h = seconds / 3600, m = (seconds % 3600) / 60;
+        return h > 0 ? h + "h " + m + "m" : m + "m";
     }
 
     private static String extractOption(JsonObject data, String optionName) {

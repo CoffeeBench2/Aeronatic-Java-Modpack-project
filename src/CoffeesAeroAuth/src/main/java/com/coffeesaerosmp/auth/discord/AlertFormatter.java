@@ -220,9 +220,81 @@ public final class AlertFormatter {
     }
 
     public static String chatMessage(String badge, String displayName, String message) {
+        return chatMessage(badge, displayName, message, null, null);
+    }
+
+    public static String chatMessage(String badge, String displayName, String message, String accountName) {
+        return chatMessage(badge, displayName, message, accountName, null);
+    }
+
+    /**
+     * Per-player chat webhook (1.7.5). Discord renders each line under the PLAYER's name and head
+     * instead of one shared bot identity, which is what makes the feed read like the in-game tab
+     * list rather than a log file.
+     *
+     * <p>{@code displayName} is what the server shows (NameMask display names, /namecolor styling
+     * stripped by the caller). {@code skinTextures} is the profile's stored base64 "textures" value
+     * and {@code accountName} the real Mojang username — see {@link #avatarUrl} for how they pick
+     * the head.
+     *
+     * <p>allowed_mentions is locked to an empty parse list: chat is untrusted player input and must
+     * never be able to ping @everyone from in-game.
+     */
+    public static String chatMessage(String badge, String displayName, String message,
+                                     String accountName, String skinTextures) {
         JsonObject payload = new JsonObject();
-        payload.addProperty("username", PUBLIC_BOT);
-        payload.addProperty("content", badge + " **" + displayName + "**: " + message);
+        String shown = (badge == null || badge.isBlank()) ? displayName : badge + " " + displayName;
+        // Discord rejects usernames over 80 chars, and forbids "discord" in them.
+        if (shown.length() > 80) shown = shown.substring(0, 80);
+        payload.addProperty("username", shown);
+        String avatar = avatarUrl(skinTextures, accountName);
+        if (avatar != null) payload.addProperty("avatar_url", avatar);
+        payload.addProperty("content", message);
+
+        JsonObject mentions = new JsonObject();
+        mentions.add("parse", new com.google.gson.JsonArray());
+        payload.add("allowed_mentions", mentions);
         return GSON.toJson(payload);
+    }
+
+    /**
+     * Head render URL for the webhook avatar, preferring the skin the player actually WEARS here.
+     *
+     * <p>1.7.8 — offline players used to show as Steve. The old code only ever passed the Mojang
+     * username, and mc-heads resolves a name through Mojang: an offline name matches no account, so
+     * it served the default head (verified 2026-08-05 — an unregistered name returns a 549-byte
+     * default, a real one 337 bytes). Worse, an offline player who picks a name that IS a real
+     * premium account was shown that stranger's head.
+     *
+     * <p>{@code skinTextures} is the base64 "textures" property CoffeesAeroSkins stores on every
+     * profile (premium and offline alike). Decoding it yields the Mojang CDN skin URL, whose last
+     * path segment is the texture hash — and mc-heads renders a head straight from a texture hash,
+     * no account lookup involved. So this works for offline players, and for premium players it is
+     * strictly better too: it shows the skin they chose with /skin rather than their Mojang one.
+     *
+     * <p>Falls back to the account name (old behaviour) when no skin is stored, and to null — the
+     * webhook's own avatar — when there is nothing usable. Never throws: a malformed textures blob
+     * must cost a nice avatar, not a chat message.
+     */
+    public static String avatarUrl(String skinTextures, String accountName) {
+        if (skinTextures != null && !skinTextures.isBlank()) {
+            try {
+                String json = new String(java.util.Base64.getDecoder().decode(skinTextures),
+                    java.nio.charset.StandardCharsets.UTF_8);
+                String url = com.google.gson.JsonParser.parseString(json).getAsJsonObject()
+                    .getAsJsonObject("textures").getAsJsonObject("SKIN").get("url").getAsString();
+                String hash = url.substring(url.lastIndexOf('/') + 1);
+                // Hashes are lowercase hex. Anything else means a hand-edited or hostile value, and
+                // it would be pasted straight into a URL we hand to Discord — reject it.
+                if (hash.matches("[0-9a-fA-F]{32,128}")) {
+                    return "https://mc-heads.net/avatar/" + hash + "/64";
+                }
+            } catch (Exception ignored) { /* fall through to the name */ }
+        }
+        if (accountName != null && !accountName.isBlank()) {
+            String safe = accountName.replaceAll("[^A-Za-z0-9_]", "");
+            if (!safe.isEmpty()) return "https://mc-heads.net/avatar/" + safe + "/64";
+        }
+        return null;
     }
 }

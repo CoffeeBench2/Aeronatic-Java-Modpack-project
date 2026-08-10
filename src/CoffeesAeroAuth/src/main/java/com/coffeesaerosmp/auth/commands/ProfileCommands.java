@@ -5,6 +5,7 @@ import com.coffeesaerosmp.auth.db.PlayerProfile;
 import com.coffeesaerosmp.auth.lobby.NameApprovalQueue;
 import com.coffeesaerosmp.auth.util.TextUtil;
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 import net.minecraft.commands.CommandSourceStack;
@@ -129,6 +130,9 @@ public class ProfileCommands {
         // /authmod — admin commands (op level 2+)
         dispatcher.register(Commands.literal("authmod")
             .requires(src -> src.hasPermission(2))
+            .then(Commands.literal("duplicates")
+                .executes(ctx -> listDuplicates(ctx.getSource()))
+            )
             .then(Commands.literal("info")
                 .then(Commands.argument("player", EntityArgument.player())
                     .executes(ctx -> adminInfo(ctx.getSource(), EntityArgument.getPlayer(ctx, "player")))
@@ -158,9 +162,46 @@ public class ProfileCommands {
                     .executes(ctx -> adminClearIps(ctx.getSource(), EntityArgument.getPlayer(ctx, "player")))
                 )
             )
+            // Name-based (works OFFLINE). Exists because editing total_playtime in MySQL directly
+            // does NOT stick: ProfileStore is cache-first and loaded once at boot, so the next
+            // bank (SaveGuard, or onPlayerLeave) writes the stale cached value straight back over
+            // the manual UPDATE. This sets the cache AND the DB in one go.
+            .then(Commands.literal("setplaytime")
+                .then(Commands.argument("name", StringArgumentType.word())
+                    .suggests(ONLINE_NAMES)
+                    .then(Commands.argument("hours", DoubleArgumentType.doubleArg(0))
+                        .executes(ctx -> adminSetPlaytime(ctx.getSource(),
+                            StringArgumentType.getString(ctx, "name"),
+                            DoubleArgumentType.getDouble(ctx, "hours")))
+                    )
+                )
+            )
+            // Name-based (works OFFLINE) — the whole point is unsticking someone who cannot get in.
+            .then(Commands.literal("resetpos")
+                .then(Commands.argument("name", StringArgumentType.word())
+                    .suggests(ONLINE_NAMES)
+                    .executes(ctx -> adminResetPos(ctx.getSource(), StringArgumentType.getString(ctx, "name")))
+                )
+            )
             .then(Commands.literal("clearban")
                 .then(Commands.argument("ip", StringArgumentType.word())
                     .executes(ctx -> adminClearBan(ctx.getSource(), StringArgumentType.getString(ctx, "ip")))
+                )
+            )
+            .then(Commands.literal("anchors")
+                .executes(ctx -> anchorStatus(ctx.getSource()))
+            )
+            // Exempt a player from the impossible-movement check for a few seconds. Exists so
+            // server-side launchers (AeroKit's launch stick) can throw someone without the watchdog
+            // zeroing the velocity mid-flight. KubeJS: server.runCommand('authmod movegrace ' + name + ' 5')
+            .then(Commands.literal("movegrace")
+                .then(Commands.argument("player", EntityArgument.player())
+                    .executes(ctx -> adminMoveGrace(ctx.getSource(), EntityArgument.getPlayer(ctx, "player"), 5))
+                    .then(Commands.argument("seconds", com.mojang.brigadier.arguments.IntegerArgumentType.integer(1, 60))
+                        .executes(ctx -> adminMoveGrace(ctx.getSource(),
+                            EntityArgument.getPlayer(ctx, "player"),
+                            com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "seconds")))
+                    )
                 )
             )
             // ── Aggressive ban: name OR IP. A name bans the account + EVERY IP it ever used
@@ -211,6 +252,84 @@ public class ProfileCommands {
 
     // ── Command handlers ──────────────────────────────────────────────────────
 
+    /**
+     * {@code /authmod duplicates} — every account name owned by more than one profile.
+     *
+     * <p>READ-ONLY BY DESIGN. It deliberately does not merge or delete anything: the split is
+     * between a player's real Mojang UUID and the {@code md5("OfflinePlayer:"+name)} alias minted
+     * whenever their gate cookie fails, and BOTH rows can hold real progress once the alias has
+     * been played on. Merging is a data decision with no undo, so it stays a human one — this just
+     * shows the damage. `>` marks the record {@link ProfileStore#findByAnyName} now treats as
+     * canonical.
+     */
+    private static int listDuplicates(CommandSourceStack source) {
+        try {
+            // PROFILE_STORE, not AUTH_MANAGER.getStore() — the latter is typed as the
+            // CredentialStore interface, which deliberately exposes only auth operations.
+            var store = CoffeesAeroAuth.PROFILE_STORE;
+            if (store == null) {
+                source.sendFailure(Component.literal("§cProfile store is not initialised yet."));
+                return 0;
+            }
+            var dupes = store.findDuplicateAccounts();
+            if (dupes.isEmpty()) {
+                source.sendSuccess(() -> Component.literal(
+                    "§a✔ No duplicate accounts — every username maps to one profile."), false);
+                return 1;
+            }
+            StringBuilder sb = new StringBuilder(
+                "\n§6§l═══ §eDuplicate accounts §7(" + dupes.size() + ") §6§l═══");
+            dupes.forEach((name, list) -> {
+                sb.append("\n§e").append(name);
+                for (int i = 0; i < list.size(); i++) {
+                    PlayerProfile p = list.get(i);
+                    boolean premium = com.coffeesaerosmp.auth.auth.UUIDUtil.isPremiumUUID(p.getUUID());
+                    sb.append("\n  ").append(i == 0 ? "§a> " : "§8  ")
+                      .append(premium ? "§6v4 PREMIUM" : "§7v3 offline")
+                      .append(" §8").append(p.getUUID())
+                      .append(" §f").append(formatPlaytime(p.totalPlaytimeSeconds))
+                      .append(p.discordId != null && !p.discordId.isBlank() ? " §9[discord]" : "");
+                }
+            });
+            sb.append("\n§7§o'>' = the record now shown by /profile and the Discord card.");
+            sb.append("\n§7§oNothing was changed. Merging is manual — back up `players` first.");
+            final String out = sb.toString();
+            source.sendSuccess(() -> Component.literal(out), false);
+            return 1;
+        } catch (Exception e) {
+            source.sendFailure(Component.literal("§cDuplicate scan failed: " + e.getMessage()));
+            return 0;
+        }
+    }
+
+    /**
+     * Stored playtime PLUS the session in progress.
+     *
+     * <p>{@code totalPlaytimeSeconds} is only banked when a player leaves, so a player running
+     * /profile mid-session used to see a number frozen at their last logout — the single most
+     * confusing thing about the old output ("where did my hours go?"). {@code sessionStartEpoch} is
+     * set on auth and cleared on leave, so adding it back gives a live figure.
+     */
+    private static long livePlaytimeSeconds(PlayerProfile p) {
+        long total = p.totalPlaytimeSeconds;
+        if (p.sessionStartEpoch > 0) {
+            long live = (System.currentTimeMillis() - p.sessionStartEpoch) / 1000L;
+            if (live > 0) total += live;
+        }
+        return total;
+    }
+
+    /** "34h 12m" / "2d 5h 9m" — raw minutes stopped being readable somewhere around hour twelve. */
+    private static String formatPlaytime(long seconds) {
+        long mins  = Math.max(0, seconds) / 60;
+        long days  = mins / 1440;
+        long hours = (mins % 1440) / 60;
+        long rem   = mins % 60;
+        if (days  > 0) return days + "d " + hours + "h " + rem + "m";
+        if (hours > 0) return hours + "h " + rem + "m";
+        return rem + "m";
+    }
+
     private static int showProfile(CommandSourceStack source, ServerPlayer target) {
         try {
             ServerPlayer viewer = source.getPlayerOrException();
@@ -226,7 +345,6 @@ public class ProfileCommands {
             String badge    = profile.getAccountType() == PlayerProfile.AccountType.PREMIUM
                               ? "§6✦ §eVerified" : "§7◈ §8Offline";
             String joinDate = DATE_FMT.format(Instant.ofEpochMilli(profile.joinDate));
-            long   mins     = profile.totalPlaytimeSeconds / 60;
 
             viewer.sendSystemMessage(Component.literal(
                 "\n§6§l══════ §eProfile §6§l══════\n" +
@@ -234,7 +352,7 @@ public class ProfileCommands {
                 "§7Account: " + badge + "\n" +
                 "§7Bio:     §f" + (profile.bio == null || profile.bio.isBlank() ? "§8No bio set" : profile.bio) + "\n" +
                 "§7Joined:  §f" + joinDate + "\n" +
-                "§7Played:  §f" + mins + " minutes\n" +
+                "§7Played:  §f" + formatPlaytime(livePlaytimeSeconds(profile)) + "\n" +
                 "§6§l══════════════════"
             ));
             return 1;
@@ -336,6 +454,122 @@ public class ProfileCommands {
             online.connection.disconnect(Component.literal(
                 "§eYour password was reset by an admin.\n§7Reconnect and use §a/register§7 to set a new one."
             ));
+        }
+        return 1;
+    }
+
+    /** /authmod resetpos &lt;name&gt; — clears a player's stored return position so their next /spawn
+     *  drops them at world spawn instead of restoring them into a chunk that is crashing, griefed
+     *  or otherwise unenterable.
+     *
+     *  <p>WHAT WINS ON LOGIN, because it matters here and is easy to get wrong: the MySQL
+     *  {@code returnDim/X/Y/Z} is what {@link com.coffeesaerosmp.auth.auth.AuthManager#handleSpawn}
+     *  teleports to, so clearing it is what changes where the player ENDS UP. But vanilla still
+     *  reads {@code playerdata/&lt;uuid&gt;.dat} on login and loads THAT chunk before auth can move
+     *  anyone to the lobby. So for a chunk that crashes on load, this command alone is not enough —
+     *  the .dat has to be edited offline too. For the ordinary "stuck in a bad spot" case it is.</p>
+     *
+     *  <p>Name-based rather than EntityArgument so it works on offline players, matching
+     *  {@code resetpassword}. Written through ProfileStore.save, which is AsyncIo-backed — never
+     *  make this a synchronous remote-MySQL call, that is the 07-18 freeze vector.</p> */
+    /** /authmod anchors — RTP anchor pool progress. */
+    private static int anchorStatus(CommandSourceStack source) {
+        String status = com.coffeesaerosmp.auth.commands.RtpAnchors.status();
+        int online = source.getServer().getPlayerList().getPlayerCount();
+        int cap = com.coffeesaerosmp.auth.config.AuthConfig.RTP_ANCHOR_WARM_MAX_PLAYERS.get();
+        String gate = online > cap
+            ? "§ePAUSED§7 — " + online + " online, warms at ≤" + cap
+            : "§aWARMING§7 — " + online + " online, cap " + cap;
+        source.sendSuccess(() -> Component.literal(
+            "§6[Anchors]§7 " + status + " · " + gate), false);
+        return 1;
+    }
+
+    /** /authmod movegrace &lt;player&gt; [seconds] — see WatchdogManager.grantMovementGrace. */
+    private static int adminMoveGrace(CommandSourceStack source, net.minecraft.server.level.ServerPlayer player, int seconds) {
+        com.coffeesaerosmp.auth.watchdog.WatchdogManager.grantMovementGrace(
+            player.getUUID(), seconds * 1000L);
+        source.sendSuccess(() -> Component.literal(
+            "§7Movement check paused for §f" + player.getGameProfile().getName()
+                + "§7 for §f" + seconds + "s§7."), false);
+        return 1;
+    }
+
+    /**
+     * Sets a player's banked playtime. Works for offline players.
+     *
+     * <p>If they are online, {@code sessionStartEpoch} is rolled forward to now rather than left
+     * alone — otherwise the in-progress session would be added on top at logout and the number the
+     * admin just set would be wrong by the length of that session. Same reasoning as
+     * {@code SaveGuard}'s periodic bank.
+     */
+    private static int adminSetPlaytime(CommandSourceStack source, String name, double hours) {
+        PlayerProfile p = CoffeesAeroAuth.PROFILE_STORE != null
+            ? CoffeesAeroAuth.PROFILE_STORE.findByAnyName(name) : null;
+        if (p == null) {
+            source.sendFailure(Component.literal("§cNo profile found for '" + name + "' (username or display name)."));
+            return 0;
+        }
+
+        final long was  = p.totalPlaytimeSeconds;
+        final long secs = Math.round(hours * 3600.0);
+        p.totalPlaytimeSeconds = secs;
+
+        final boolean online = p.sessionStartEpoch > 0;
+        if (online) p.sessionStartEpoch = System.currentTimeMillis();
+
+        CoffeesAeroAuth.PROFILE_STORE.save(p);
+
+        source.sendSuccess(() -> Component.literal(
+            "§aPlaytime set for §f" + p.displayName + "§a (" + p.getUUID() + ")\n"
+                + "§7was §f" + formatPlaytime(was) + " §7→ now §f" + formatPlaytime(secs)
+                + (online ? "\n§7Player is online — current session re-based to now, so it will not"
+                          + " be added on top at logout." : "")
+        ), true);
+        return 1;
+    }
+
+    private static int adminResetPos(CommandSourceStack source, String name) {
+        PlayerProfile p = CoffeesAeroAuth.PROFILE_STORE != null
+            ? CoffeesAeroAuth.PROFILE_STORE.findByAnyName(name) : null;
+        if (p == null) {
+            source.sendFailure(Component.literal("§cNo profile found for '" + name + "' (username or display name)."));
+            return 0;
+        }
+        if (p.returnDim == null) {
+            source.sendSuccess(() -> Component.literal(
+                "§e" + p.displayName + "§7 had no stored return position — nothing to clear. "
+                    + "They already fall through to world spawn."
+            ), true);
+            return 1;
+        }
+
+        final String was = p.returnDim + " " + Math.round(p.returnX) + " "
+            + Math.round(p.returnY) + " " + Math.round(p.returnZ);
+        p.returnDim = null;
+        p.returnX = 0;
+        p.returnY = 0;
+        p.returnZ = 0;
+        CoffeesAeroAuth.PROFILE_STORE.save(p);
+
+        source.sendSuccess(() -> Component.literal(
+            "§aCleared return position for §f" + p.displayName + "§a.\n"
+                + "§7Was: §f" + was + "§7 — next /spawn sends them to world spawn."
+        ), true);
+
+        // If they are connected right now, move them out immediately; otherwise the stale position
+        // is still live in this session and their logout would write it straight back.
+        ServerPlayer online = source.getServer().getPlayerList().getPlayer(p.getUUID());
+        if (online != null && CoffeesAeroAuth.ROOM_MANAGER != null) {
+            CoffeesAeroAuth.ROOM_MANAGER.teleportToSpawn(online);
+            online.sendSystemMessage(Component.literal(
+                "§eAn admin moved you to spawn and cleared your saved return position."));
+            source.sendSuccess(() -> Component.literal(
+                "§7They were online — teleported to spawn so logout cannot re-save the old spot."), false);
+        } else {
+            source.sendSuccess(() -> Component.literal(
+                "§7Offline. Note: vanilla still loads their playerdata position on login — if that "
+                    + "chunk is the problem, edit the .dat offline as well."), false);
         }
         return 1;
     }

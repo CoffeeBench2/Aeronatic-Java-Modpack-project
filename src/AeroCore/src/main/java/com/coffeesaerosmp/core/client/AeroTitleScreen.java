@@ -17,6 +17,8 @@ import net.minecraft.client.multiplayer.resolver.ServerAddress;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.fml.ModList;
+import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
+import net.neoforged.neoforge.client.gui.ModListScreen;
 import net.neoforged.neoforge.internal.versions.neoforge.NeoForgeVersion;
 import org.lwjgl.glfw.GLFW;
 
@@ -33,8 +35,13 @@ public class AeroTitleScreen extends Screen {
         ResourceLocation.fromNamespaceAndPath("coffeesaerosmp_core", "textures/gui/title_logo.png");
     private static final int LOGO_W = 1024, LOGO_H = 548;
 
+    /** 16px pack logo for the small config tile. Native size — blitted 1:1 so it stays crisp. */
+    private static final ResourceLocation CONFIG_ICON =
+        ResourceLocation.fromNamespaceAndPath("coffeesaerosmp_core", "textures/gui/logo_icon.png");
+
     private static final int ANNOUNCE_W = 74;
     private int announceX, announceY;
+    private int joinY;
 
     public AeroTitleScreen() {
         super(Component.literal("Coffees Aero SMP"));
@@ -46,11 +53,15 @@ public class AeroTitleScreen extends Screen {
         // Poll the pack version once per session so the Join button can block a stale pack.
         // No-op on the CurseForge build (updater absent) — the CF app handles pack updates.
         com.coffeesaerosmp.core.UpdaterBridge.startCheck();
+        // Live player count. Self-throttling and on a daemon thread, so calling it from init() —
+        // which fires again on every window resize — costs nothing.
+        com.coffeesaerosmp.core.net.GatePing.refresh();
 
         boolean isAdmin = Minecraft.getInstance().getUser().getName()
             .equalsIgnoreCase(AeroConfig.ADMIN_USERNAME.get());
 
-        int joinY = (int) (this.height * 0.62);
+        this.joinY = (int) (this.height * 0.62);
+        int joinY = this.joinY;
         // If the version check already knows the pack is stale, route to the update screen
         // instead of connecting (prevents the raw registry-mismatch wall). Fail-open otherwise.
         this.addRenderableWidget(AeroButton.aero(
@@ -64,15 +75,44 @@ public class AeroTitleScreen extends Screen {
                 }
         ).bounds(this.width / 2 - 100, joinY, 200, 20).build());
 
+        // Singleplayer (Normal or Flat). Full width because it is a primary destination, not a
+        // settings shortcut — this is where people test contraptions before building them live.
+        this.addRenderableWidget(AeroButton.aero(
+                Component.literal("Singleplayer"),
+                b -> this.minecraft.setScreen(new com.coffeesaerosmp.core.screen.SingleplayerScreen(this))
+        ).bounds(this.width / 2 - 100, joinY + 26, 200, 20).build());
+
+        // Mods sits directly under Singleplayer — it's a destination, not a settings shortcut,
+        // so it belongs with the primary buttons rather than below Options/Quit.
+        this.addRenderableWidget(AeroButton.aero(
+                Component.literal("Mods"),
+                b -> this.minecraft.setScreen(new ModListScreen(this))
+        ).bounds(this.width / 2 - 100, joinY + 52, 200, 20).build());
+
         this.addRenderableWidget(AeroButton.aero(
                 Component.translatable("menu.options"),
                 b -> this.minecraft.setScreen(new OptionsScreen(this, this.minecraft.options))
-        ).bounds(this.width / 2 - 100, joinY + 26, 98, 20).build());
+        ).bounds(this.width / 2 - 100, joinY + 78, 98, 20).build());
 
         this.addRenderableWidget(AeroButton.aero(
                 Component.translatable("menu.quit"),
                 b -> this.minecraft.stop()
-        ).bounds(this.width / 2 + 2, joinY + 26, 98, 20).build());
+        ).bounds(this.width / 2 + 2, joinY + 78, 98, 20).build());
+
+        // Small logo tile beside the Options/Quit row — same shape and placement as the little
+        // spark / Create-goggles buttons on the pause menu. Opens the pack's own settings screen
+        // (client-mod on/off switches), which is more useful to a player than the raw config UI.
+        AeroButton cfg = AeroButton.aero(
+                Component.literal("Aero Settings"),
+                b -> this.minecraft.setScreen(
+                        new com.coffeesaerosmp.core.screen.AeroSettingsScreen(this))
+        ).bounds(this.width / 2 + 104, joinY + 78, 20, 20)
+         .icon(CONFIG_ICON, 16)
+         .build();
+        // The icon alone is not self-explanatory, so give it a hover label.
+        cfg.setTooltip(net.minecraft.client.gui.components.Tooltip.create(
+                Component.literal("Coffees Aero SMP settings")));
+        this.addRenderableWidget(cfg);
 
         // Announcements (pack changelog) — small button in the TOP-RIGHT corner. Opening it plays the
         // parchment-scroll animation. A NEW badge is drawn beside it in render() until first opened.
@@ -157,12 +197,134 @@ public class AeroTitleScreen extends Screen {
             graphics.drawString(this.font, badge, bx + 3, by + 2, 0xFFFFFFFF, false);
         }
 
+        // Live server status — a standing gauge on the right edge, clear of the button stack.
+        drawServerStatus(graphics);
+
+        // RAM warning. Deliberately on the title screen rather than a modal: it is advice, not an
+        // error, and a dialog you must dismiss every launch gets clicked through blindly.
+        String ram = RamCheck.message();
+        if (ram != null) {
+            int rw = this.font.width(ram);
+            int rx = (this.width - rw) / 2;
+            int ry = this.joinY + 104;  // clears the fourth button row (Mods / Aero Config)
+            graphics.fill(rx - 4, ry - 2, rx + rw + 4, ry + 10, 0xB0000000);
+            graphics.drawString(this.font, ram, rx, ry,
+                RamCheck.verdict() == RamCheck.Verdict.TOO_HIGH ? 0xFFFF6B6B : 0xFFFFC857);
+        }
+
         // Vanilla-style detail lines, bottom-left (kept from the stock menu: MC + loader + mods).
         String line1 = "Minecraft " + SharedConstants.getCurrentVersion().getName()
             + " / NeoForge " + NeoForgeVersion.getVersion();
         String line2 = ModList.get().size() + " mods loaded";
         graphics.drawString(this.font, line1, 2, this.height - 20, 0xFFFFFF);
         graphics.drawString(this.font, line2, 2, this.height - 10, 0xFFFFFF);
+    }
+
+    /**
+     * Live server gauge: a brass instrument panel pinned to the right edge, vertically centred.
+     *
+     * <p>It sits on the right rather than above Join for two reasons. The button stack is already
+     * three rows plus a RAM warning, and a fifth centred line turned that column into a wall of
+     * text. And the count is ambient information — you glance at it, you don't read it — so it
+     * belongs beside the eye's path to the Join button, not in it.
+     *
+     * <p>The player count is rendered at 2× so it reads at a glance from across the room; the
+     * status word above it carries the colour, and the left edge bar repeats that colour so the
+     * state is legible even in peripheral vision.
+     */
+    private void drawServerStatus(GuiGraphics g) {
+        final int BRASS = 0xFF9C7430;
+        var state = com.coffeesaerosmp.core.net.GatePing.state;
+
+        String heading;
+        String bigNumber = null;
+        java.util.List<String> lines = new java.util.ArrayList<>();
+        int accent;
+
+        switch (state) {
+            case ONLINE -> {
+                accent = 0xFF6FD98A;
+                heading = "SERVER ONLINE";
+                int on = com.coffeesaerosmp.core.net.GatePing.online;
+                int max = com.coffeesaerosmp.core.net.GatePing.max;
+                bigNumber = Integer.toString(on);
+                lines.add(on == 1 ? "pilot aboard" : "pilots aboard");
+                if (max > 0) lines.add("of " + max + " berths");
+            }
+            case OFFLINE -> {
+                accent = 0xFFE06C6C;
+                heading = "SERVER OFFLINE";
+                lines.add("Likely maintenance —");
+                lines.add("check Discord for news");
+            }
+            default -> {
+                accent = 0xFFC9A227;
+                heading = "CONTACTING GATE";
+                lines.add("hold tight…");
+            }
+        }
+
+        // ── measure ───────────────────────────────────────────────────────────
+        final int PAD = 7, BAR = 3, DOT = 5, LINE = 10;
+        int headW = DOT + 4 + this.font.width(heading);
+        int textW = 0;
+        for (String l : lines) textW = Math.max(textW, this.font.width(l));
+        int bodyW = textW;
+        int numW = 0;
+        if (bigNumber != null) {
+            numW = this.font.width(bigNumber) * 2;      // drawn at 2× scale
+            bodyW = numW + 6 + textW;
+        }
+        int contentW = Math.max(headW, bodyW);
+        int cardW = BAR + PAD + contentW + PAD;
+
+        int bodyH = (bigNumber != null)
+            ? Math.max(16, lines.size() * LINE)          // 16 = the 2× digit's height
+            : lines.size() * LINE;
+        int cardH = PAD + LINE + 4 + bodyH + PAD;
+
+        int x1 = this.width - 10;
+        int x0 = x1 - cardW;
+        int y0 = (this.height - cardH) / 2;
+        int y1 = y0 + cardH;
+
+        // ── panel ─────────────────────────────────────────────────────────────
+        g.fill(x0 - 1, y0 - 1, x1 + 1, y1 + 1, 0xFF120B05);                 // outer rim
+        g.fillGradient(x0, y0, x1, y1, 0xE84A331E, 0xE82E1F10);             // dark oak, matches AeroButton
+        g.fill(x0, y0, x1, y0 + 1, BRASS);                                  // brass top edge
+        g.fill(x0, y1 - 1, x1, y1, BRASS);                                  // brass bottom edge
+        g.fill(x1 - 1, y0, x1, y1, BRASS);                                  // brass outer edge
+        g.fill(x0, y0, x0 + BAR, y1, accent);                               // status bar, left
+
+        int cx = x0 + BAR + PAD;
+        int cy = y0 + PAD;
+
+        // Heading: dot + word. The dot breathes while online so a live server reads as alive.
+        int dotColor = accent;
+        if (state == com.coffeesaerosmp.core.net.GatePing.State.ONLINE) {
+            float pulse = 0.6F + 0.4F * (float) Math.sin(Util.getMillis() / 420.0);
+            dotColor = ((int) (pulse * 255) << 24) | (accent & 0x00FFFFFF);
+        }
+        g.fill(cx, cy + 2, cx + DOT, cy + 2 + DOT, dotColor);
+        g.drawString(this.font, heading, cx + DOT + 4, cy, accent, false);
+
+        int by = cy + LINE + 4;
+
+        if (bigNumber != null) {
+            g.pose().pushPose();
+            g.pose().translate(cx, by, 0);
+            g.pose().scale(2.0F, 2.0F, 1.0F);
+            g.drawString(this.font, bigNumber, 0, 0, 0xFFFFFFFF, false);
+            g.pose().popPose();
+            int tx = cx + numW + 6;
+            for (int i = 0; i < lines.size(); i++) {
+                g.drawString(this.font, lines.get(i), tx, by + 1 + i * LINE, 0xFFD8C9AE, false);
+            }
+        } else {
+            for (int i = 0; i < lines.size(); i++) {
+                g.drawString(this.font, lines.get(i), cx, by + i * LINE, 0xFFD8C9AE, false);
+            }
+        }
     }
 
     /**

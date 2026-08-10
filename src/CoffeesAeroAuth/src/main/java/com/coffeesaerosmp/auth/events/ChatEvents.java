@@ -76,8 +76,11 @@ public class ChatEvents {
             // Strip formatting codes from badge for Discord
             String cleanBadge = profile.getAccountType() == PlayerProfile.AccountType.PREMIUM
                 ? "[✦ Verified]" : "[◈ Offline]";
+            // skinUrl (the stored base64 textures) is what makes OFFLINE players show a real head:
+            // their name resolves to nothing at Mojang, so the account name alone gave Steve.
             CoffeesAeroAuth.DISCORD_BRIDGE.onPlayerChat(cleanBadge,
-                (clanTag != null ? "[" + clanTag + "] " : "") + displayName, rawText);
+                (clanTag != null ? "[" + clanTag + "] " : "") + displayName, rawText,
+                player.getGameProfile().getName(), profile.skinUrl);
         }
     }
 }

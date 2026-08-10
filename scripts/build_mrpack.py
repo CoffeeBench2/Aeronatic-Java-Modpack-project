@@ -1,11 +1,11 @@
-"""Build CoffeesAeroSMP-<version>.mrpack â€” self-contained (files:[], everything bundled
+﻿"""Build CoffeesAeroSMP-<version>.mrpack Ã¢â‚¬â€ self-contained (files:[], everything bundled
 as overrides/). Mirrors the proven 1.2.0 layout: config, mods, resourcepacks,
 shaderpacks, options.txt. Skips empty/world-scoped datapacks."""
 import zipfile, json, os
 
 ROOT = r"D:\MC Project\untitled"
 OVERRIDES = os.path.join(ROOT, "overrides")
-VERSION = "1.8.2"
+VERSION = "1.8.4"
 OUT = rf"D:\MC Project\Releases\CoffeesAeroSMP-{VERSION}.mrpack"
 
 # Stamp the version into the CoffeesAeroCore client config so the in-game version check
@@ -23,7 +23,7 @@ if os.path.isfile(_CORE_CFG):
 
 # .analogaudio holds the bundled analogplayer-1.0.2.jar (Lavaplayer runtime) so Analog
 # Audio's first-launch download prompt never fires and audio works offline. isInstalled()
-# checks <gamedir>/.analogaudio/internal/analogplayer-1.0.2.jar â€” keep this dir bundled.
+# checks <gamedir>/.analogaudio/internal/analogplayer-1.0.2.jar Ã¢â‚¬â€ keep this dir bundled.
 INCLUDE_DIRS = {"config", "mods", "resourcepacks", "shaderpacks", ".analogaudio"}
 INCLUDE_FILES = {"options.txt"}
 
