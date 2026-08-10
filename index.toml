@@ -1,6 +1,10 @@
 hash-format = "sha256"
 
 [[files]]
+file = "index.toml.bak-2026-08-10"
+hash = "56c1beb6c935bfd14e61970d0ab8b7fb0973961a390df1cd1ed33f9d6f720bf2"
+
+[[files]]
 file = "mods/abyssal-decor.pw.toml"
 hash = "d50226c94a37c71af5c57af00c5ab3c1713b66c32573b0ef3d72464f0943a2b2"
 metafile = true
@@ -1108,7 +1112,7 @@ hash = "7508b96cdcc4bcfe3e03f6329b8722f520e5d6852f065f0d95cc8995bbac938a"
 
 [[files]]
 file = "overrides/config/coffeesaerosmp_core-client.toml"
-hash = "40d0f26f8fd4f39bb29d947a859eb4265ae868f7910f58e088170562ea6ea731"
+hash = "8adbff91603e92a5df1a6339c27f0bebb585f123e5f1fc2af66d9d9181ead40e"
 
 [[files]]
 file = "overrides/config/entity_texture_features.json"
@@ -1128,7 +1132,7 @@ hash = "169eee64601a301281858c12b8ddcf552e6c406bfe2331d7a63827c7efeb3a9b"
 
 [[files]]
 file = "overrides/config/ftbquests/quests/chapters/aeronautics.snbt"
-hash = "5589ae11e2cb3bfe62e37aaf1e6d20b39addd1792c3f94feada207ebac58f1f0"
+hash = "280d287752564ec24367372d15054d3dfd39e36c5941861960a57b412ff415f9"
 
 [[files]]
 file = "overrides/config/ftbquests/quests/chapters/coin_cargo.snbt"
@@ -1152,7 +1156,7 @@ hash = "36c4a8ca1bad167f934d57b63a2c0396f590c9b70f0fc2f2b5b09b7fb2c4b4dc"
 
 [[files]]
 file = "overrides/config/ftbquests/quests/chapters/welcome.snbt"
-hash = "55f69cd48da1a6a99d670129ce57c7371f5855a824537ca1ada91860ad67b45f"
+hash = "022fed767463b8e4cf314c0e651bc2ebac7508c3f4bbd0697165d33d03fff622"
 
 [[files]]
 file = "overrides/config/grand_teleport.properties"
@@ -1196,7 +1200,11 @@ hash = "6e021d45c48931bb84e306a4a9644a6b84d81b46272774e37bab3f0eccbae532"
 
 [[files]]
 file = "overrides/options.txt"
-hash = "758b13a01d76e9224973ca969fb477ba4ee78d7d5e69ca4018bf595c7f0ba1c0"
+hash = "68b1755454290154d6b758c98d076fd988ed5bf73ffc9aa26f7761018f48ffbe"
+
+[[files]]
+file = "pack.toml.bak-2026-08-10"
+hash = "32ea1d04e2d067994369067088bc873d082558810568cd40d61a08d9395760f4"
 
 [[files]]
 file = "resourcepacks/amazing-mace-3d.pw.toml"

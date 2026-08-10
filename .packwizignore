@@ -58,3 +58,4 @@ README.md
 # Shaderpacks are updater-managed via shaderpacks/*.pw.toml; the override copy is only for the
 # self-contained mrpack channel and must not be double-indexed.
 overrides/shaderpacks/
+logs/
