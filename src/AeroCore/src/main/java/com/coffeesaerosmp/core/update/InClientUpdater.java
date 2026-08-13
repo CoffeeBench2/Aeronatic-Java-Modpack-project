@@ -150,6 +150,7 @@ public final class InClientUpdater {
             // update it would silently survive into the new pack — leaving them running content the
             // server no longer has.
             removals.addAll(retiredMods(gameDir));
+            removals.addAll(retiredFiles(gameDir));
 
             if (plan.isEmpty() && removals.isEmpty()) {
                 phase = "Already up to date."; success = true; finished = true; return;
@@ -439,6 +440,38 @@ public final class InClientUpdater {
     private static final List<String> RETIRED_MOD_PREFIXES = List.of(
         "waystones", "waystonessable", "balm-", "balm_",
         "createdeliveryrequired", "create aeronautics gyroscope");
+
+    /**
+     * Loose files, outside {@code mods/}, that the pack once installed and no longer wants.
+     *
+     * <p><b>Why these need their own list.</b> These are not, and never were, in the packwiz index —
+     * {@code overrides/kubejs/} does not exist in the repo. They were written into players' instances
+     * by an OLDER pack release and then orphaned when the owning mod was dropped. packwiz only
+     * manages what it indexes, so nothing in the normal update path can ever reach them: they are
+     * not orphans (no manifest entry), not duplicates (no surviving version), and not indexed files.
+     * They simply persist forever until something deletes them by name.
+     *
+     * <p>The KubeJS entries below are the visible case: with {@code createdeliveryrequired} removed in
+     * 1.8.4, these ponder scripts reference item IDs that no longer resolve, so KubeJS throws a
+     * red "client script errors" screen on every launch. Harmless, but it looks like a broken pack.
+     * A CurseForge "repair" also restores them, which is how it surfaced.
+     */
+    private static final List<String> RETIRED_FILES = List.of(
+        "kubejs/client_scripts/cdr_contractor_ponder.js",
+        "kubejs/client_scripts/cdr_market_ponder.js",
+        "kubejs/client_scripts/cdr_p2p_ponder.js");
+
+    /** Retired loose files that actually exist on disk. */
+    private static List<String> retiredFiles(Path gameDir) {
+        List<String> out = new ArrayList<>();
+        for (String rel : RETIRED_FILES) {
+            if (Files.exists(gameDir.resolve(rel))) {
+                out.add(rel);
+                LOGGER.info("[Updater] retiring orphaned file: {}", rel);
+            }
+        }
+        return out;
+    }
 
     /** Jars in {@code mods/} whose name matches a retired prefix. Returns index-relative paths. */
     private static List<String> retiredMods(Path gameDir) {
