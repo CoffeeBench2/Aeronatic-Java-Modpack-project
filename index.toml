@@ -162,7 +162,7 @@ metafile = true
 
 [[files]]
 file = "mods/coffeesaerocore.pw.toml"
-hash = "5100d74d4496250511bdb5389c77f5b44b84fbd746b9fd8e548a7ef18049af1c"
+hash = "1c35074c8578c8d400b4ca970c4aa7a9fa86c196100aa975f84d7917f448b2db"
 metafile = true
 
 [[files]]
@@ -1326,11 +1326,6 @@ metafile = true
 [[files]]
 file = "resourcepacks/trabens-3d-arrows-1-1.pw.toml"
 hash = "a5fbfa8f1d8c32bb47aea0e64750e8306a3777427d237f6078a33137f22fec64"
-metafile = true
-
-[[files]]
-file = "resourcepacks/visual-effects-plus.pw.toml"
-hash = "75800d894c2d2600bb590f396a5aac164c6342b033e23a3672da8f46915da856"
 metafile = true
 
 [[files]]

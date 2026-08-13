@@ -459,7 +459,11 @@ public final class InClientUpdater {
     private static final List<String> RETIRED_FILES = List.of(
         "kubejs/client_scripts/cdr_contractor_ponder.js",
         "kubejs/client_scripts/cdr_market_ponder.js",
-        "kubejs/client_scripts/cdr_p2p_ponder.js");
+        "kubejs/client_scripts/cdr_p2p_ponder.js",
+        // Dropped in 1.8.4. This one IS a packwiz-indexed file, so orphan tracking would
+        // eventually catch it -- but only on a player's SECOND update, because the first run is
+        // what writes the manifest in the first place. Listing it here makes it deterministic.
+        "resourcepacks/Visual Effects+.zip");
 
     /** Retired loose files that actually exist on disk. */
     private static List<String> retiredFiles(Path gameDir) {
