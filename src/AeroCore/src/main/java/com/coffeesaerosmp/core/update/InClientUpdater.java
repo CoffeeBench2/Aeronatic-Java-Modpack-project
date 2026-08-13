@@ -143,6 +143,14 @@ public final class InClientUpdater {
             // tracking alone can never catch these.
             removals.addAll(duplicateModJars(gameDir, managed));
 
+            // Mods the pack has DROPPED outright. Neither mechanism above can catch these: orphan
+            // tracking only sees files a previous in-client update installed (an mrpack or CF import
+            // writes no manifest at all), and duplicate detection only fires when the pack still
+            // manages some version of the same mod. A dropped mod has neither, so on a player's first
+            // update it would silently survive into the new pack — leaving them running content the
+            // server no longer has.
+            removals.addAll(retiredMods(gameDir));
+
             if (plan.isEmpty() && removals.isEmpty()) {
                 phase = "Already up to date."; success = true; finished = true; return;
             }
@@ -409,6 +417,54 @@ public final class InClientUpdater {
      * managed — which still solves the case this was written for (an old CoffeesAeroCore next to the
      * new one, same mod id, FML silently loading the old file) while leaving personal mods alone.
      */
+    /**
+     * Mod-id prefixes the pack has retired, matched against the jars actually on disk.
+     *
+     * <p>Matched on the FILENAME PREFIX, lowercased, not on an exact filename — the same mod reaches
+     * players under several names depending on channel and how they downloaded it
+     * ({@code waystones-neoforge-1.21.1-21.1.34.jar}, a CurseForge copy with spaces, a browser's
+     * {@code " (1)"} duplicate). An exact-name list would miss most of them.
+     *
+     * <p>Entries must be specific enough not to shadow a mod that is KEPT. Verified against the 1.8.4
+     * index at the time of writing: nothing the pack still ships starts with any of these.
+     *
+     * <p>1.8.4 (Season 2) retirements:
+     * <ul>
+     *   <li>{@code waystones} + {@code waystonessable} + {@code balm} — Waystones removed; balm was
+     *       its only consumer (dependency sweep of all 237 jars found no other required edge).</li>
+     *   <li>{@code createdeliveryrequired} — removed.</li>
+     *   <li>{@code create aeronautics gyroscope} — removed.</li>
+     * </ul>
+     */
+    private static final List<String> RETIRED_MOD_PREFIXES = List.of(
+        "waystones", "waystonessable", "balm-", "balm_",
+        "createdeliveryrequired", "create aeronautics gyroscope");
+
+    /** Jars in {@code mods/} whose name matches a retired prefix. Returns index-relative paths. */
+    private static List<String> retiredMods(Path gameDir) {
+        List<String> out = new ArrayList<>();
+        Path mods = gameDir.resolve("mods");
+        if (!Files.isDirectory(mods)) return out;
+        try (Stream<Path> s = Files.list(mods)) {
+            for (Path jar : (Iterable<Path>) s::iterator) {
+                String name = jar.getFileName().toString();
+                if (!name.toLowerCase(Locale.ROOT).endsWith(".jar")) continue;
+                String low = name.toLowerCase(Locale.ROOT);
+                for (String prefix : RETIRED_MOD_PREFIXES) {
+                    if (low.startsWith(prefix)) {
+                        out.add("mods/" + name);
+                        LOGGER.info("[Updater] retiring dropped mod: {}", name);
+                        break;
+                    }
+                }
+            }
+        } catch (IOException e) {
+            // Non-fatal: a failed prune leaves a stale mod, which the join will surface anyway.
+            LOGGER.warn("[Updater] could not scan mods/ for retired mods: {}", e.toString());
+        }
+        return out;
+    }
+
     private static List<String> duplicateModJars(Path gameDir, Set<String> managed) {
         List<String> out = new ArrayList<>();
         Path mods = gameDir.resolve("mods");

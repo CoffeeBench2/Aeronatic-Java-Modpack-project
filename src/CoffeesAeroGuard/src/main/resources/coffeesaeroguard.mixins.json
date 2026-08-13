@@ -5,7 +5,10 @@
     "compatibilityLevel": "JAVA_21",
     "mixins": [],
     "server": [
-        "AeroClaimsProtectionBypassMixin"
+        "AeroClaimsProtectionBypassMixin",
+        "CreateConfigPacketMixin",
+        "ToolboxEquipPacketMixin",
+        "ToolboxDisposeAllPacketMixin"
     ],
     "client": [],
     "injectors": {

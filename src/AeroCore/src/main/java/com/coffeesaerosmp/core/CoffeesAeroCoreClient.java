@@ -27,8 +27,18 @@ public class CoffeesAeroCoreClient {
             // screen of a session; the migration itself is additionally idempotent on disk.
             if (!xaeroMigrationChecked) {
                 xaeroMigrationChecked = true;
-                com.coffeesaerosmp.core.client.XaeroDataMigration.run(
-                    net.minecraft.client.Minecraft.getInstance().gameDirectory.toPath());
+                java.nio.file.Path gameDir =
+                    net.minecraft.client.Minecraft.getInstance().gameDirectory.toPath();
+                com.coffeesaerosmp.core.client.XaeroDataMigration.run(gameDir);
+                // DH LOD reset, CurseForge path only. The -PnoUpdater build strips
+                // com/coffeesaerosmp/core/version/**, so VersionCheck — which carries the REMOTE
+                // token on the Modrinth/GitHub channel — does not exist here. Without this, CF
+                // players would keep Season 1 ghost terrain forever. They cannot be given the
+                // remote token either: fetching files from outside the pack is exactly what CF
+                // policy forbids and why that package is excluded. So the CF jar falls back to a
+                // token baked in at build time, which is correct for that channel because CF
+                // players receive a new jar precisely when the pack updates.
+                com.coffeesaerosmp.core.client.DhLodReset.applyBakedIfNoVersionCheck(gameDir);
             }
         });
         NeoForge.EVENT_BUS.addListener((ScreenEvent.Init.Post e) -> {

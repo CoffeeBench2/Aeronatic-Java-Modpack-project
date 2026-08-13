@@ -29,11 +29,15 @@ import java.util.stream.Stream;
  * a file that already exists at the destination: if a player has already explored some of the map
  * under the new address, that newer data wins and only the missing files are brought across.
  *
- * <p>Distant Horizons is NOT affected and needs no migration — it keys on the server ENTRY NAME
+ * <p>Distant Horizons needs no migration for an ADDRESS change — it keys on the server ENTRY NAME
  * ({@code Distant_Horizons_server_data/Coffees+Aero+SMP}), and the Join button has always used the
  * same name. A player who instead joins by typing the address gets DH's default "Minecraft Server"
  * store, which is a separate pile of LOD data; that is a reason to use the Join button, not a bug
  * we can safely auto-merge.
+ *
+ * <p>⚠ That same name-keying is a PROBLEM for a WORLD reset, which is the opposite case: the folder
+ * survives when the world does not, so Season 1 terrain renders as ghost LOD in Season 2. That is
+ * handled separately by {@link DhLodReset}.
  */
 public final class XaeroDataMigration {
 

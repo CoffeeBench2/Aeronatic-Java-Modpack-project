@@ -994,6 +994,9 @@ public class AuthManager {
                 grantStartupBonus(player);
                 profile.startupBonusGiven = true;
             }
+            // Season 1 loyalty reward, once per veteran. Reads an in-memory set loaded at boot —
+            // no DB round trip on the join path (the login path already blocks the main thread).
+            com.coffeesaerosmp.auth.season.VeteranReward.grantIfOwed(player);
             profile.firstJoinComplete = true;
             store.save(profile);
         }

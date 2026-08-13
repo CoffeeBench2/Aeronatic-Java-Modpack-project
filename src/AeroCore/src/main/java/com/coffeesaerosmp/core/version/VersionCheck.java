@@ -59,6 +59,14 @@ public final class VersionCheck {
 
             String local = AeroConfig.PACK_VERSION.get();
             state = compare(local, latestVersion) < 0 ? State.OUTDATED : State.UP_TO_DATE;
+
+            // Remote one-shot switch for wiping Distant Horizons' stale LOD after a world reset.
+            // Rides this fetch on purpose: it already runs once per session, off the render thread,
+            // and cache-busted — so flipping the token in version.json takes effect the same day
+            // without shipping a jar. See DhLodReset for why the trigger cannot be "on update".
+            com.coffeesaerosmp.core.client.DhLodReset.applyIfRequested(
+                net.minecraft.client.Minecraft.getInstance().gameDirectory.toPath(),
+                o.has("lodReset") ? o.get("lodReset").getAsString() : "");
         } catch (Exception e) {
             state = State.ERROR;
         }

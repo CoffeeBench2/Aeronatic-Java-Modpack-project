@@ -23,6 +23,8 @@ public class AuthConfig {
     public static final ModConfigSpec.IntValue     SESSION_GRACE_MINUTES;
     public static final ModConfigSpec.IntValue     LOBBY_BYPASS_MINUTES;
     public static final ModConfigSpec.IntValue     STARTUP_BONUS_SPURS;
+    public static final ModConfigSpec.BooleanValue SEASON_CLEAR_WORLD_DATA;
+    public static final ModConfigSpec.BooleanValue SEASON_GRANT_REWARDS;
     public static final ModConfigSpec.BooleanValue KICK_ON_NAME_CONFLICT;
     public static final ModConfigSpec.IntValue     MAX_FAILED_ATTEMPTS;
     public static final ModConfigSpec.BooleanValue BYPASS_AUTH_FOR_OPS;
@@ -181,6 +183,24 @@ public class AuthConfig {
         STARTUP_BONUS_SPURS = b
             .comment("Starter Numismatics currency (spurs) granted once on a player's first /spawn. 0 = disabled.")
             .defineInRange("startupBonusSpurs", 200, 0, 100000);
+        SEASON_CLEAR_WORLD_DATA = b
+            .comment("WORLD RESET pass. On boot, wipes data that describes the OLD world: logout return",
+                     "positions (which would teleport a returning player into brand-new terrain) and",
+                     "lobby room slots. Also freezes each player's Season 1 playtime and flags veterans.",
+                     "Safe and idempotent -- it runs once per season, stamped in the 'season' column.",
+                     "Safe to leave TRUE on a test server: it grants nothing, it only clears stale data.")
+            .define("seasonClearWorldData", true);
+        SEASON_GRANT_REWARDS = b
+            .comment("REWARD pass. Re-arms the startupBonusSpurs grant for returning players and enables",
+                     "the one-time Season 1 veteran reward.",
+                     "",
+                     "*** LEAVE THIS FALSE ON A TEST OR CREATIVE SERVER. ***",
+                     "The player database is SHARED between servers. If a test server runs this pass, the",
+                     "first veteran who joins it collects their reward there and is marked as paid -- so",
+                     "they would receive NOTHING on the real season launch. Set it TRUE only on the live",
+                     "server, and only when the real season world is the one players are joining.",
+                     "It is stamped separately from seasonClearWorldData, so enabling it later still works.")
+            .define("seasonGrantRewards", false);
         KICK_ON_NAME_CONFLICT = b
             .comment("Kick offline players whose Minecraft username matches a verified player's display name.")
             .define("kickOnNameConflict", true);

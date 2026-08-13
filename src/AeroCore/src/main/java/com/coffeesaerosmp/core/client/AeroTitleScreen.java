@@ -33,7 +33,7 @@ public class AeroTitleScreen extends Screen {
 
     private static final ResourceLocation LOGO =
         ResourceLocation.fromNamespaceAndPath("coffeesaerosmp_core", "textures/gui/title_logo.png");
-    private static final int LOGO_W = 1024, LOGO_H = 548;
+    private static final int LOGO_W = 1405, LOGO_H = 752;   // Season 2 art
 
     /** 16px pack logo for the small config tile. Native size — blitted 1:1 so it stays crisp. */
     private static final ResourceLocation CONFIG_ICON =

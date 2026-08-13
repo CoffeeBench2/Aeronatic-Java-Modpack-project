@@ -176,6 +176,10 @@ public class CoffeesAeroAuth {
         if (DB_MANAGER.isAvailable()) {
             DB_MANAGER.createSchema();
             MigrationRunner.runIfNeeded(DB_MANAGER, dataDir);
+            // Season/world-reset migration. MUST run before ProfileStore.initialize() below:
+            // the store is cache-first, so if it loaded first the in-memory copies would still
+            // hold Season 1 return positions and write them straight back over this.
+            com.coffeesaerosmp.auth.db.SeasonMigration.run(DB_MANAGER);
         }
         DB_MANAGER.startHealthCheck();
 

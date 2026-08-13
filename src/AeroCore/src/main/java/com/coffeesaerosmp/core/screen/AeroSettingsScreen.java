@@ -53,6 +53,11 @@ public class AeroSettingsScreen extends Screen {
         return Component.literal(t.label() + ": " + (on ? "§aON" : "§cOFF"));
     }
 
+    /** Shown under the title so a toggle that found zero flags is visible, not silent. */
+    private String diagnostics() {
+        return this.toggles == null ? "" : ("§8" + this.toggles.size() + " toggles detected");
+    }
+
     /** Cheapest correct refresh — the toggle list is tiny and rebuilding keeps labels honest. */
     private void rebuildLabels() {
         this.clearWidgets();
@@ -69,6 +74,7 @@ public class AeroSettingsScreen extends Screen {
         } else {
             g.drawCenteredString(this.font, "§7Changes apply immediately.",
                 this.width / 2, this.height - 46, 0xFFAAAAAA);
+            g.drawCenteredString(this.font, diagnostics(), this.width / 2, 38, 0xFF888888);
         }
     }
 

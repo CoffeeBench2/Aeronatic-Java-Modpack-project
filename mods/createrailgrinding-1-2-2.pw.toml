@@ -1,0 +1,13 @@
+name = "Create: Train Track Rail Grinding"
+filename = "createrailgrinding-1.2.2.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/ix2S0LbR/versions/CXkzFrZ9/createrailgrinding-1.2.2.jar"
+hash-format = "sha512"
+hash = "5b6cb02081ef294728aaf701215346041d9e95ff7a4502d856d27de2c510c8e0a7d874c5305bb82a262c1fae380e3a60921d9d3a9f757acc7a275ce0bc89cbba"
+
+[update]
+[update.modrinth]
+mod-id = "ix2S0LbR"
+version = "CXkzFrZ9"
