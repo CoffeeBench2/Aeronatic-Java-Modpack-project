@@ -162,7 +162,7 @@ metafile = true
 
 [[files]]
 file = "mods/coffeesaerocore.pw.toml"
-hash = "81ef54d69c92f49e4a2f83965147c9709550fe8815356661dc519e28b32e098e"
+hash = "c44b6382f4ef4649abb8067065951bc25bcc3fc2f2267f7d7530244c9ffa197d"
 metafile = true
 
 [[files]]
@@ -383,6 +383,11 @@ metafile = true
 [[files]]
 file = "mods/createbb-4-0-1.pw.toml"
 hash = "3f3c2936963cdc75f32104e065d4bd0e2ead38b2d4fafa8f511069a586e266ad"
+metafile = true
+
+[[files]]
+file = "mods/createbigcannons-5-11-7-mc-1-21-1.pw.toml"
+hash = "4700586b767718acbd8bdfe16f5d7723de8defcaca8bffbb8150c05d34fde1e3"
 metafile = true
 
 [[files]]
@@ -926,11 +931,6 @@ hash = "3797079fc240ee1376e934d004a9f29cc303682b4b6d32131dd2fba114e1ce45"
 metafile = true
 
 [[files]]
-file = "mods/railwaysuntold-neoforge-1-2-0.pw.toml"
-hash = "6ad66f15c8c4bcca51a4508f08d983cce2c0174928dd899933b70948a51dfab2"
-metafile = true
-
-[[files]]
 file = "mods/resourceful-config.pw.toml"
 hash = "27721caca5a03b743bf25888e1d984142948069dace31453f103f94f7f24d2ce"
 metafile = true
@@ -951,6 +951,11 @@ hash = "dac9e24635d5a192cb31ee6249f134d59f337913856b6cd2574a4b2585c3a427"
 metafile = true
 
 [[files]]
+file = "mods/ritchiesprojectilelib-2-1-2-mc-1-21-1-neoforge.pw.toml"
+hash = "b86b99a2b756060a8159b0af9e8152a4222079d4e3c327fbb041b65c8166fa3f"
+metafile = true
+
+[[files]]
 file = "mods/sable-neoforge-1-21-1-2-0-3.pw.toml"
 hash = "674aaf0dc67f808f0054cfc7bbe041d6725fcbbe97644a85ffbd946a22d35666"
 metafile = true
@@ -958,6 +963,11 @@ metafile = true
 [[files]]
 file = "mods/sable-player-ragdoll-1-21-1-0-7-5.pw.toml"
 hash = "bf3c84eff52457596d58a73882e72759804117f0731a0fde343cfd54d33e55ba"
+metafile = true
+
+[[files]]
+file = "mods/sablecollisiondamage-1-0-8.pw.toml"
+hash = "751e1ca43aa126ee1a8c78c80e6126da5c3f4d4478a13032553618126363323a"
 metafile = true
 
 [[files]]
@@ -1188,7 +1198,7 @@ hash = "7508b96cdcc4bcfe3e03f6329b8722f520e5d6852f065f0d95cc8995bbac938a"
 
 [[files]]
 file = "overrides/config/coffeesaerosmp_core-client.toml"
-hash = "8adbff91603e92a5df1a6339c27f0bebb585f123e5f1fc2af66d9d9181ead40e"
+hash = "71442263d3e47d9bbaba3e05a583bc8cec05d8f1401edd836cec867ef329a18c"
 
 [[files]]
 file = "overrides/config/entity_texture_features.json"
