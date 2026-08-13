@@ -11,6 +11,14 @@ public class CoffeesAeroCoreClient {
     private static boolean xaeroMigrationChecked = false;
 
     public static void init(IEventBus modBus) {
+        // Delete files left by dropped mods, as early as the mod system allows. KubeJS reads
+        // kubejs/client_scripts/ during its own early init, so this races it -- hence the mod
+        // CONSTRUCTOR rather than a screen event. Losing the race only costs one more launch of the
+        // error screen; winning it fixes the launch in progress. Uses FMLPaths, not
+        // Minecraft.getInstance(), because configs are not loaded yet at this point.
+        com.coffeesaerosmp.core.client.OrphanCleanup.run(
+            net.neoforged.fml.loading.FMLPaths.GAMEDIR.get());
+
         // Native title screen (replaced FancyMenu in 1.3.0) — panorama + pack logo + cogwheels,
         // Join button with version gating, admin corner buttons.
         NeoForge.EVENT_BUS.addListener((ScreenEvent.Opening e) -> {

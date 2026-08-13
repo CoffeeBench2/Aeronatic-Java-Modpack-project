@@ -32,7 +32,7 @@ SRC = os.path.join(RELEASES, "CoffeesAeroSMP-%s-CURSEFORGE.zip" % VERSION)
 OUT = os.path.join(RELEASES, "CoffeesAeroSMP-%s-CF-IMPORT.zip" % VERSION)
 
 # Ours. Never CF-referenced, always bundled.
-OURS = ["CoffeesAeroCore-1.3.21.jar", "CoffeesAeroSkins-1.1.0.jar", "CoffeesAeroTweaks-1.0.0.jar"]
+OURS = ["CoffeesAeroCore-1.3.22.jar", "CoffeesAeroSkins-1.1.0.jar", "CoffeesAeroTweaks-1.0.0.jar"]
 
 def cf_names(mod_ids):
     """Bulk-resolve CF project ids -> names, to catch a fingerprint matching one of our mods."""
@@ -91,6 +91,23 @@ try:
         if not os.path.isfile(src):
             sys.exit("missing %s in overrides/mods" % jar)
         shutil.copyfile(src, os.path.join(mods_dir, jar))
+
+    # --- 2b. strip files the pack has retired ------------------------------------
+    # The store zip is produced from a packwiz export that may predate a removal, so a dropped
+    # file can still be sitting in overrides/ here. Shipping it would hand every importer content
+    # the pack no longer wants, and they would only lose it later when the updater pruned it.
+    # Keep this in sync with InClientUpdater.RETIRED_FILES.
+    RETIRED = [
+        "overrides/resourcepacks/Visual Effects+.zip",
+        "overrides/kubejs/client_scripts/cdr_contractor_ponder.js",
+        "overrides/kubejs/client_scripts/cdr_market_ponder.js",
+        "overrides/kubejs/client_scripts/cdr_p2p_ponder.js",
+    ]
+    for rel in RETIRED:
+        p = os.path.join(work, rel.replace("/", os.sep))
+        if os.path.isfile(p):
+            os.remove(p)
+            print("  stripped retired file: %s" % rel)
 
     # --- 3. stamp the version behind live so the updater fires -------------------
     cfg = os.path.join(work, "overrides", "config", "coffeesaerosmp_core-client.toml")
