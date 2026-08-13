@@ -1,8 +1,8 @@
 {
-  "version": "1.9.1",
+  "version": "1.9.2",
   "url": "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/latest",
   "neoforge": "21.1.244",
   "minecraft": "1.21.1",
-  "notes": "1.9.1 - Create Big Cannons: Advanced Technologies plus its Aeronautics crash fix. Relaunch to apply.",
+  "notes": "1.9.2 - CBC Neo Warfare (modern cannons/artillery for Create Big Cannons). Relaunch to apply.",
   "lodReset": "season1"
 }

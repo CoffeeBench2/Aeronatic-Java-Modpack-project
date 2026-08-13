@@ -121,6 +121,11 @@ hash = "e1744d6432a1f666bc699fad4e6acec7ffa2af9276daf25b6143f44d32cffd55"
 metafile = true
 
 [[files]]
+file = "mods/cbcmodernwarfare-0-0-6v-mc-1-21-1-neoforge.pw.toml"
+hash = "fd164b5e1f14c9eb6c49050c9f394534fb7414a3839f64cf31634e4ba55e9cb4"
+metafile = true
+
+[[files]]
 file = "mods/chat-heads-0-15-1-neoforge-1-21.pw.toml"
 hash = "021d6034aea938fc8295f9f677a0404f2e84034a248baebb8bc6a14d29c226cd"
 metafile = true
@@ -172,7 +177,7 @@ metafile = true
 
 [[files]]
 file = "mods/coffeesaerocore.pw.toml"
-hash = "a0796146e3fd81a840f2758976ac5d573d5fe1ea35f2c5c765aef6b533e64d26"
+hash = "0f43bdd871600839116e5e6224b5613a4e425ccb435d1a920b8713d79bb6a457"
 metafile = true
 
 [[files]]
@@ -1208,7 +1213,7 @@ hash = "7508b96cdcc4bcfe3e03f6329b8722f520e5d6852f065f0d95cc8995bbac938a"
 
 [[files]]
 file = "overrides/config/coffeesaerosmp_core-client.toml"
-hash = "0bf25bf72d14cb4361211ef26e55135282baff73d986bb6c497be73100551aa2"
+hash = "9f7b1d188836bcd3cf0c07190eada86a139035fa92d8d5923a76f949d27d17ab"
 
 [[files]]
 file = "overrides/config/entity_texture_features.json"
