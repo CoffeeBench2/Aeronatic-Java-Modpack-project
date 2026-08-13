@@ -439,7 +439,9 @@ public final class InClientUpdater {
      */
     private static final List<String> RETIRED_MOD_PREFIXES = List.of(
         "waystones", "waystonessable", "balm-", "balm_",
-        "createdeliveryrequired", "create aeronautics gyroscope");
+        "createdeliveryrequired", "create aeronautics gyroscope",
+        // dropped in 1.8.5
+        "railwaysuntold");
 
     /**
      * Loose files, outside {@code mods/}, that the pack once installed and no longer wants.

@@ -29,7 +29,7 @@ import zipfile
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RELEASES = r"D:\MC Project\Releases"
 # The no-updater Core jar built by `gradlew jar -PnoUpdater` (staged copy is the source of truth).
-CF_CORE = os.path.join(RELEASES, "cf-core-noupdater", "CoffeesAeroCore-1.3.22-cf.jar")
+CF_CORE = os.path.join(RELEASES, "cf-core-noupdater", "CoffeesAeroCore-1.3.23-cf.jar")
 
 
 def pack_version():

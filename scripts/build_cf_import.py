@@ -26,13 +26,13 @@ KEY_FILE = os.path.join(ROOT, ".cf-key")
 
 VERSION = "1.8.4"
 # Deliberately behind VERSION so the in-client updater fires on first launch.
-IMPORT_STAMP = "1.8.3-import"
+IMPORT_STAMP = "1.8.9-import"
 
 SRC = os.path.join(RELEASES, "CoffeesAeroSMP-%s-CURSEFORGE.zip" % VERSION)
 OUT = os.path.join(RELEASES, "CoffeesAeroSMP-%s-CF-IMPORT.zip" % VERSION)
 
 # Ours. Never CF-referenced, always bundled.
-OURS = ["CoffeesAeroCore-1.3.22.jar", "CoffeesAeroSkins-1.1.0.jar", "CoffeesAeroTweaks-1.0.0.jar"]
+OURS = ["CoffeesAeroCore-1.3.23.jar", "CoffeesAeroSkins-1.1.0.jar", "CoffeesAeroTweaks-1.0.0.jar"]
 
 def cf_names(mod_ids):
     """Bulk-resolve CF project ids -> names, to catch a fingerprint matching one of our mods."""
