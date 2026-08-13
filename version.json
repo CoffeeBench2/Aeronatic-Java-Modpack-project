@@ -1,8 +1,8 @@
 {
-  "version": "1.9.0",
+  "version": "1.9.1",
   "url": "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/latest",
   "neoforge": "21.1.244",
   "minecraft": "1.21.1",
-  "notes": "1.9.0 - Create: Big Cannons returns (Sable 2.0.3 + Aeronautics 1.3.0 finally satisfy it), Sable Collision Damage so falling debris breaks on impact, Railways Untold removed. Relaunch to apply.",
+  "notes": "1.9.1 - Create Big Cannons: Advanced Technologies plus its Aeronautics crash fix. Relaunch to apply.",
   "lodReset": "season1"
 }

@@ -1,0 +1,13 @@
+name = "CBC: Advanced Technologies crash fix"
+filename = "cbcatfix-1.21.1-neoforge-1.0.1.jar"
+side = "both"
+
+[download]
+url = "https://edge.forgecdn.net/files/8478/560/cbcatfix-1.21.1-neoforge-1.0.1.jar"
+hash-format = "sha512"
+hash = "e5d617a75b1d258f205307cc82a75a7c98dad0abe3426814866a5d82ec94d85d430b9e58e3c9fa140ceeb7ffb3bde0c13cd3eb1e8346080c4bed68f67059ba3c"
+
+[update]
+[update.curseforge]
+file-id = 8478560
+project-id = 1603954
