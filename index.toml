@@ -1,10 +1,6 @@
 hash-format = "sha256"
 
 [[files]]
-file = "index.toml.bak-2026-08-10"
-hash = "56c1beb6c935bfd14e61970d0ab8b7fb0973961a390df1cd1ed33f9d6f720bf2"
-
-[[files]]
 file = "mods/abyssal-decor.pw.toml"
 hash = "d50226c94a37c71af5c57af00c5ab3c1713b66c32573b0ef3d72464f0943a2b2"
 metafile = true
@@ -1281,10 +1277,6 @@ hash = "6e021d45c48931bb84e306a4a9644a6b84d81b46272774e37bab3f0eccbae532"
 [[files]]
 file = "overrides/options.txt"
 hash = "68b1755454290154d6b758c98d076fd988ed5bf73ffc9aa26f7761018f48ffbe"
-
-[[files]]
-file = "pack.toml.bak-2026-08-10"
-hash = "32ea1d04e2d067994369067088bc873d082558810568cd40d61a08d9395760f4"
 
 [[files]]
 file = "resourcepacks/amazing-mace-3d.pw.toml"

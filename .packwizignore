@@ -59,3 +59,4 @@ README.md
 # self-contained mrpack channel and must not be double-indexed.
 overrides/shaderpacks/
 logs/
+*.bak-*
