@@ -1,0 +1,13 @@
+name = "Create: Backtank Trims & Dyes"
+filename = "createbacktanktrims-1.2.0.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/yxqh0Zmh/versions/nMOCJpau/createbacktanktrims-1.2.0.jar"
+hash-format = "sha512"
+hash = "0ebd33f984c34879b505bc51e72c98ecf2b28b8da5bbc697fc557493a50c9e1be0aa12d891b6a294f9a0599cea305a94ff8a547b35c0a51360330d2f8d2db909"
+
+[update]
+[update.modrinth]
+mod-id = "yxqh0Zmh"
+version = "nMOCJpau"
