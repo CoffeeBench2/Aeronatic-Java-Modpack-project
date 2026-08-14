@@ -8,11 +8,29 @@
       "added": [
         "Speak in proximity voice and watch your words appear above your head",
         "Chat with anyone — we'll translate across languages for you",
-        "Real ship-to-ship collision damage for proper aerial battles",
         "…and a few more secrets we're keeping rolled up for now"
       ],
       "fixed": [],
       "removed": []
+    },
+    {
+      "version": "1.9.3",
+      "date": "August 2026",
+      "title": "Guns, Gears & Guardrails",
+      "added": [
+        "Big cannons are here — build them, mount them, and fire them from the deck of your airship",
+        "Radar dishes to sweep the skies and spot what is coming before it reaches you",
+        "Escalators, because ladders were getting old",
+        "Build faster with a new placement assist, and browse resource packs without leaving the game",
+        "A proper screenshot viewer, so your best shots are one click away"
+      ],
+      "fixed": [
+        "The updater now clears out mods and files that older versions left behind",
+        "Old map data from the previous world no longer bleeds into the new one"
+      ],
+      "removed": [
+        "A handful of experimental extras that were causing crashes — the skies are steadier for it"
+      ]
     },
     {
       "version": "1.8.2",
