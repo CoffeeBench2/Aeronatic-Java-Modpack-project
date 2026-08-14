@@ -1,8 +1,8 @@
 {
-  "version": "1.9.2",
+  "version": "1.9.3",
   "url": "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/latest",
   "neoforge": "21.1.244",
   "minecraft": "1.21.1",
-  "notes": "1.9.2 - CBC Neo Warfare (modern cannons/artillery for Create Big Cannons). Relaunch to apply.",
+  "notes": "1.9.3 - Adds Create: Radars, Easy Building, Screenshot Viewer and Resourcify. Removes the CBC Advanced Technologies addons, Modern Warfare, Sable Collision Damage, Tectonic and Sable Ragdoll. Relaunch to apply.",
   "lodReset": "season1"
 }
