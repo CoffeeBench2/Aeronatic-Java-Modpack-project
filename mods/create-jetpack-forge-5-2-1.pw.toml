@@ -1,0 +1,13 @@
+name = "Neoforge 5.2.1"
+filename = "create_jetpack-forge-5.2.1.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/UbFnAd4l/versions/sCwiqLqq/create_jetpack-forge-5.2.1.jar"
+hash-format = "sha512"
+hash = "dd9856cf9f84d58174bcdb097f405a107d86d0947ab3d67f090994ed3a4939cc9d52bab0f56f988cd290b1e8f68d534c3e9155e33a1d67983d80923f3b67f4f3"
+
+[update]
+[update.modrinth]
+mod-id = "UbFnAd4l"
+version = "sCwiqLqq"

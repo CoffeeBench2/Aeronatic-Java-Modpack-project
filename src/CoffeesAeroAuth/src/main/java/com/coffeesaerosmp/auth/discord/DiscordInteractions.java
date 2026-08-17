@@ -92,8 +92,9 @@ public class DiscordInteractions {
         + "{\"name\":\"uptime\",\"type\":1,\"description\":\"How long has Coffees Aero SMP been running?\"},"
         + "{\"name\":\"leaderboard\",\"type\":1,\"description\":\"Top 10 pilots by playtime\","
         +  "\"options\":[{\"type\":3,\"name\":\"board\",\"required\":false,"
-        +   "\"description\":\"Which ranking to show (default: playtime)\",\"choices\":["
-        +    "{\"name\":\"Most hours flown\",\"value\":\"playtime\"},"
+        +   "\"description\":\"Which ranking to show (default: this season)\",\"choices\":["
+        +    "{\"name\":\"Most hours flown (this season)\",\"value\":\"playtime\"},"
+        +    "{\"name\":\"Most hours flown (all time)\",\"value\":\"alltime\"},"
         +    "{\"name\":\"Longest-serving (oldest members)\",\"value\":\"oldest\"}]}]},"
         + "{\"name\":\"link\",\"type\":1,\"description\":\"Link your Discord to your Minecraft account\","
         +  "\"options\":[{\"type\":3,\"name\":\"code\",\"required\":true,"
@@ -171,7 +172,8 @@ public class DiscordInteractions {
      * matching NameMask everywhere else.</p>
      */
     public static String leaderboardEmbedJson(MinecraftServer server, String board) {
-        boolean byAge = "oldest".equalsIgnoreCase(board);
+        boolean byAge   = "oldest".equalsIgnoreCase(board);
+        boolean allTime = "alltime".equalsIgnoreCase(board);
         var store = CoffeesAeroAuth.PROFILE_STORE;
         if (store == null) {
             return "{\"description\":\"" + esc("⚠️ Profiles aren't loaded yet — try again in a moment.")
@@ -182,7 +184,14 @@ public class DiscordInteractions {
         java.util.List<Row> rows = new java.util.ArrayList<>();
         for (var p : store.getAll()) {
             if (p == null || p.getUUID() == null) continue;
-            long secs = p.totalPlaytimeSeconds;
+            // Default board is THIS SEASON: lifetime minus the total frozen at the last rollover.
+            // total_playtime is deliberately never zeroed (milestones, /uptime and account history
+            // are lifetime facts), so the season board is a subtraction, not a reset. clamped at 0
+            // because an admin /authmod setplaytime below the frozen figure would otherwise go
+            // negative and sort to the bottom of a DESC board as if they had never played.
+            long secs = (byAge || allTime)
+                ? p.totalPlaytimeSeconds
+                : Math.max(0L, p.totalPlaytimeSeconds - p.season1PlaytimeSeconds);
             // Add the live session so the card is current while someone is playing. Gated on the
             // player actually being ONLINE: a session that was never closed (hard restart, crash)
             // leaves a stale sessionStartEpoch that would otherwise inflate them by days.
@@ -202,10 +211,17 @@ public class DiscordInteractions {
         rows.sort(order);
         if (byAge) rows.removeIf(r -> r.joined() <= 0);  // unknown join date can't be ranked by age
 
-        String title = byAge ? "🏆 Longest-serving pilots" : "🏆 Top pilots by hours flown";
+        String season = "Season " + com.coffeesaerosmp.auth.db.SeasonMigration.CURRENT_SEASON;
+        String title = byAge   ? "🏆 Longest-serving pilots"
+                     : allTime ? "🏆 Top pilots by hours flown (all time)"
+                               : "🏆 Top pilots by hours flown — " + season;
         if (rows.isEmpty()) {
             return "{\"title\":\"" + esc(title) + "\",\"description\":\""
-                + esc("Nobody has logged any flight time yet.") + "\",\"color\":5793266}";
+                + esc(byAge || allTime
+                    ? "Nobody has logged any flight time yet."
+                    : "🛫 " + season + " has just begun — nobody has logged any flight time yet. "
+                      + "Use `/leaderboard board:Most hours flown (all time)` for the lifetime board.")
+                + "\",\"color\":5793266}";
         }
 
         StringBuilder desc = new StringBuilder();
@@ -221,8 +237,14 @@ public class DiscordInteractions {
             }
             desc.append('\n');
         }
-        desc.append("\n*").append(rows.size()).append(" pilots on the roster · ")
-            .append(byAge ? "sorted by join date" : "sorted by total playtime").append('*');
+        // Wording matters here: on the season board `rows` is only the people who have flown SINCE
+        // the rollover, so "N pilots on the roster" would understate the roster rather than describe it.
+        desc.append("\n*")
+            .append(byAge   ? rows.size() + " pilots on the roster · sorted by join date"
+                  : allTime ? rows.size() + " pilots on the roster · sorted by lifetime playtime"
+                            : rows.size() + " pilot" + (rows.size() == 1 ? " has" : "s have")
+                              + " flown this season · " + season)
+            .append('*');
 
         return "{\"title\":\"" + esc(com.coffeesaerosmp.auth.config.AuthConfig.SERVER_DISPLAY_NAME.get()
                 + " — " + title)

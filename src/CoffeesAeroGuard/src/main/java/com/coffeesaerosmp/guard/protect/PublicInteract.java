@@ -47,10 +47,31 @@ public final class PublicInteract {
     /** LOWEST priority + receiveCanceled=true — registered that way in CoffeesAeroAuth. */
     public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
         if (!GuardConfig.PUBLIC_INTERACT_ENABLED.get()) return;
-        if (!event.isCanceled()) return;                  // nobody denied it; nothing to undo
 
         BlockState state = event.getLevel().getBlockState(event.getPos());
-        if (!state.is(PUBLIC_INTERACT)) return;
+        boolean tagged = state.is(PUBLIC_INTERACT);
+
+        // ── TEMPORARY DIAGNOSTIC (1.0.1) ────────────────────────────────────────────
+        // Every static check passed while the feature still did nothing, so this prints
+        // the actual runtime state instead of us inferring it. Fires only for TAGGED
+        // blocks on the server, so it cannot spam. Read it like this:
+        //   no line at all      -> the event never reaches us for this block; the denial
+        //                          is NOT PlayerInteractEvent.RightClickBlock
+        //   canceled=false      -> nobody cancelled it; something else blocks the click
+        //   canceled=true       -> we un-cancel it below; if the block STILL won't open,
+        //                          something downstream denies it again
+        // Remove this block once the cause is known.
+        if (tagged && !event.getLevel().isClientSide()) {
+            com.coffeesaerosmp.guard.CoffeesAeroGuard.LOGGER.info(
+                "[PublicInteract] block={} pos={} player={} canceled={} useBlock={} useItem={}",
+                net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(state.getBlock()),
+                event.getPos(), event.getEntity().getName().getString(),
+                event.isCanceled(), event.getUseBlock(), event.getUseItem());
+        }
+        // ────────────────────────────────────────────────────────────────────────────
+
+        if (!event.isCanceled()) return;                  // nobody denied it; nothing to undo
+        if (!tagged) return;
 
         event.setCanceled(false);
         // Restoring both TriStates matters: a protection mod that DENYs useBlock leaves the click

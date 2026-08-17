@@ -92,6 +92,46 @@ public class AuthCommands {
             })
         );
 
+        // /vote — the link, plus whether they can vote right now. No permission: this is the one
+        // command we actively WANT every player to run.
+        dispatcher.register(Commands.literal("vote")
+            .executes(ctx -> {
+                ServerPlayer player = ctx.getSource().getPlayerOrException();
+                if (CoffeesAeroAuth.VOTE_REWARDS == null) {
+                    player.sendSystemMessage(Component.literal("§cVoting is not set up yet."));
+                    return 0;
+                }
+                String url = com.coffeesaerosmp.auth.config.AuthConfig.VOTE_URL.get();
+                long wait = CoffeesAeroAuth.VOTE_REWARDS.msUntilVotable(player.getUUID());
+                int votes = CoffeesAeroAuth.VOTE_REWARDS.voteCount(player.getUUID());
+
+                player.sendSystemMessage(Component.literal(
+                    com.coffeesaerosmp.auth.util.TextUtil.PREFIX + "§6✦ Vote for the server §7— " + url));
+                if (wait > 0) {
+                    player.sendSystemMessage(Component.literal(
+                        com.coffeesaerosmp.auth.util.TextUtil.PREFIX + "§7You can vote again in §e"
+                            + com.coffeesaerosmp.auth.util.TextUtil.formatRemaining(wait) + "§7."));
+                    com.coffeesaerosmp.auth.util.Sounds.error(player);
+                } else {
+                    player.sendSystemMessage(Component.literal(
+                        com.coffeesaerosmp.auth.util.TextUtil.PREFIX + "§aYou can vote right now!"));
+                    com.coffeesaerosmp.auth.util.Sounds.notify(player);
+                }
+                int cap = com.coffeesaerosmp.auth.config.AuthConfig.VOTE_REWARD_MAX_REWARDED.get();
+                player.sendSystemMessage(Component.literal(
+                    com.coffeesaerosmp.auth.util.TextUtil.PREFIX + "§7Votes: §e" + votes
+                        + (cap > 0 ? "§7/§e" + cap + " §7rewarded" : "")
+                        + " §8· §7rewards land automatically, even if you're offline."));
+                if (cap > 0 && votes >= cap) {
+                    player.sendSystemMessage(Component.literal(
+                        com.coffeesaerosmp.auth.util.TextUtil.PREFIX
+                            + "§6You've collected every vote reward §7— voting still helps the "
+                            + "server climb the list. §6❤"));
+                }
+                return 1;
+            })
+        );
+
         // /daily — claim the once-per-interval streak reward (items + XP; no currency)
         dispatcher.register(Commands.literal("daily")
             .executes(ctx -> {

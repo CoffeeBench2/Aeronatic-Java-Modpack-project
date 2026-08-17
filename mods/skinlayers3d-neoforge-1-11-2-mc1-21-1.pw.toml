@@ -1,6 +1,6 @@
-name = "skinlayers3d-neoforge-1.11.2-mc1.21.1"
+name = "1.11.2-1.21.1 - NeoForge"
 filename = "skinlayers3d-neoforge-1.11.2-mc1.21.1.jar"
-side = "client"
+side = "both"
 
 [download]
 url = "https://cdn.modrinth.com/data/zV5r3pPn/versions/xPYbAPfz/skinlayers3d-neoforge-1.11.2-mc1.21.1.jar"

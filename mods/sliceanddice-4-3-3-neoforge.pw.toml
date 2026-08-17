@@ -1,0 +1,13 @@
+name = "Neoforge 4.3.3"
+filename = "sliceanddice-4.3.3-neoforge.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/GmjmRQ0A/versions/N67LJgrN/sliceanddice-4.3.3-neoforge.jar"
+hash-format = "sha512"
+hash = "3bdbd282ae5aa11ef6c186b752497541730b50fb400c4962230bcd7734cfe4e8daa2ee565387450dfe0eb6deaa0fa44bf81f99c788bac09b1a60d8f1991db37f"
+
+[update]
+[update.modrinth]
+mod-id = "GmjmRQ0A"
+version = "N67LJgrN"

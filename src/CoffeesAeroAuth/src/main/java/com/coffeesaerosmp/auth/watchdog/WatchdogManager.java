@@ -259,7 +259,11 @@ public class WatchdogManager {
                 "Op", name, "Command", command, "Time", ts));
         }
 
-        // Rate limit
+        // Rate limit — exempt admins skip it entirely, but note they were NOT skipped above: the
+        // Discord audit line and the quiet-hours alert already fired. Exemption removes the lock,
+        // never the paper trail.
+        if (isRateLimitExempt(op.getGameProfile().getName())) return;
+
         if (lockedAdmins.getOrDefault(uuid, 0L) > now) {
             op.sendSystemMessage(Component.literal("§c[Watchdog] Admin commands are temporarily locked. Too many recent actions."));
             return;
@@ -271,12 +275,14 @@ public class WatchdogManager {
             long windowMs = AuthConfig.ADMIN_CMD_WINDOW_SECONDS.get() * 1000L;
             times.removeIf(t -> now - t > windowMs);
             if (times.size() > AuthConfig.ADMIN_CMD_LIMIT.get()) {
-                long lockUntil = now + 5 * 60_000L; // 5 min lock
-                lockedAdmins.put(uuid, lockUntil);
+                int mins = AuthConfig.ADMIN_LOCK_MINUTES.get();
+                lockedAdmins.put(uuid, now + mins * 60_000L);
                 alert(WatchdogEvent.of(Severity.CRITICAL, "Admin Abuse Detected",
-                    "Admin commands locked for 5 minutes",
+                    "Admin commands locked for " + mins + " minute" + (mins == 1 ? "" : "s")
+                        + " — clear with /authmod unlockadmin " + name,
                     "Op", name, "Commands in window", String.valueOf(times.size())));
-                op.sendSystemMessage(Component.literal("§c[Watchdog] Admin commands locked for 5 minutes due to excessive use."));
+                op.sendSystemMessage(Component.literal("§c[Watchdog] Admin commands locked for "
+                    + mins + " minute" + (mins == 1 ? "" : "s") + " due to excessive use."));
             }
         }
     }
@@ -286,6 +292,42 @@ public class WatchdogManager {
         if (lockUntil == null) return false;
         if (lockUntil <= System.currentTimeMillis()) { lockedAdmins.remove(uuid); return false; }
         return true;
+    }
+
+    /**
+     * Is this account never rate-limited on admin commands? Matched on ACCOUNT NAME, not display
+     * name — a display name can be changed by the player, so keying the exemption to it would make
+     * the limiter bypassable by anyone who could rename themselves.
+     */
+    public static boolean isRateLimitExempt(String accountName) {
+        if (accountName == null || accountName.isBlank()) return false;
+        String csv = AuthConfig.ADMIN_RATE_LIMIT_EXEMPT.get();
+        if (csv == null || csv.isBlank()) return false;
+        for (String s : csv.split(",")) {
+            if (accountName.equalsIgnoreCase(s.trim())) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Clears an active admin lock early. Returns true if a lock was actually cleared.
+     *
+     * <p>Deliberately reachable from the console and the Discord admin bridge, so a locked-out op
+     * can always be freed by someone who is not themselves locked.
+     */
+    public boolean clearAdminLock(UUID uuid) {
+        if (uuid == null) return false;
+        boolean had = lockedAdmins.remove(uuid) != null;
+        adminCmdTimes.remove(uuid);   // also reset the window, or they re-lock on the next command
+        return had;
+    }
+
+    /** Milliseconds left on an active lock, or 0 if not locked. */
+    public long adminLockRemainingMs(UUID uuid) {
+        Long until = lockedAdmins.get(uuid);
+        if (until == null) return 0L;
+        long left = until - System.currentTimeMillis();
+        return left > 0 ? left : 0L;
     }
 
     /**

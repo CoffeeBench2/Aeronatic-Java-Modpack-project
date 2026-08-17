@@ -1,0 +1,13 @@
+name = "lootr-neoforge-1.21.1-1.11.38.123"
+filename = "lootr-neoforge-1.21.1-1.11.38.123.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/EltpO5cN/versions/rxFmYTxd/lootr-neoforge-1.21.1-1.11.38.123.jar"
+hash-format = "sha512"
+hash = "c34950f95a73799c82b1c214f6f019e532790f45622811c1deceb66d6e622f6dbaebb5a77c3ac942f5fccbe4a4e63358f97d318ab0441ef6600644bc37bb887a"
+
+[update]
+[update.modrinth]
+mod-id = "EltpO5cN"
+version = "rxFmYTxd"

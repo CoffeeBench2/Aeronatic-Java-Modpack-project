@@ -415,6 +415,31 @@ public final class ClientToggles {
                     }
                 }
             }
+            // 🔴 THE BLOCK SOUNDS ARE NOT ConfiguredSounds AT ALL.
+            // WorldSoundsConfig gates every generic block-interaction sound behind a PLAIN BOOLEAN,
+            // `disableBlocksEntirely`, alongside an `ignoredBlocks` list. The loop above only
+            // collects fields assignable to ConfiguredSound, so it never saw it — which is why
+            // "Extra Sounds: OFF" silenced the named sounds (jukebox, cake, bow…) while blocks kept
+            // making noise. Reported 2026-08-17.
+            //
+            // Its polarity is INVERTED against every other flag here: enabled=true means ON, but
+            // disableBlocksEntirely=true means OFF. So it is registered as an inverted Flag —
+            // get() reports "are block sounds audible", set(false) disables them. That way mute()
+            // and unmute() keep working unchanged, and the player's original choice is snapshotted
+            // and restored like everything else.
+            for (Object g : groupList) {
+                try {
+                    Field f = g.getClass().getField("disableBlocksEntirely");
+                    if (f.getType() != boolean.class) continue;
+                    final Object owner = g;
+                    flags.add(new Flag(g.getClass().getSimpleName() + ".blockSounds",
+                        () -> { try { return !f.getBoolean(owner); } catch (Throwable t) { return false; } },
+                        v  -> { try { f.setBoolean(owner, !v); }   catch (Throwable ignored) { } }));
+                } catch (NoSuchFieldException ignored) {
+                    // Group has no block-sound gate; only WorldSoundsConfig does.
+                }
+            }
+
             if (flags.isEmpty()) throw new IllegalStateException("no ConfiguredSound fields found");
             final Runnable persist = () -> {
                 for (Object g : groupList) {

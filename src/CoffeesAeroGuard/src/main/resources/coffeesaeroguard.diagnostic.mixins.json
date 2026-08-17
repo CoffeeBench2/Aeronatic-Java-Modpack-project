@@ -1,0 +1,14 @@
+{
+    "required": false,
+    "minVersion": "0.8",
+    "package": "com.coffeesaerosmp.guard.mixin",
+    "compatibilityLevel": "JAVA_21",
+    "mixins": [],
+    "server": [
+        "NumismaticsOpenScreenDebugMixin"
+    ],
+    "client": [],
+    "injectors": {
+        "defaultRequire": 0
+    }
+}

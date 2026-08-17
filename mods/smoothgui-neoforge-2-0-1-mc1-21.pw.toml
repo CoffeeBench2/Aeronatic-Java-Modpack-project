@@ -1,0 +1,13 @@
+name = "2.0.1"
+filename = "smoothgui-neoforge-2.0.1+mc1.21.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/j6yrZogB/versions/41wQBB9A/smoothgui-neoforge-2.0.1%2Bmc1.21.jar"
+hash-format = "sha512"
+hash = "d6ab61ffb8e0a113010779ab701c1f313377c9ebcf32f891a21d3ca22c95270c26b8c01f7deb4d51954764a9db7be2e8d2e07cd32fd907870f1799e55360ff87"
+
+[update]
+[update.modrinth]
+mod-id = "j6yrZogB"
+version = "41wQBB9A"

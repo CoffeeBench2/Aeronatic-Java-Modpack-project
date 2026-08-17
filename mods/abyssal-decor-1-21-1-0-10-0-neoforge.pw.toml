@@ -1,0 +1,13 @@
+name = "Abyssal Decor 0.10.0"
+filename = "abyssal_decor_1.21.1_0.10.0_Neoforge.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/dzmhUvoY/versions/GCBLIGA6/abyssal_decor_1.21.1_0.10.0_Neoforge.jar"
+hash-format = "sha512"
+hash = "d47f9a318ee726f03d366fa25a36f53a32eea34682720aa6810c24162a06cbdb6d58c569493d38a38c061a825aa9f21d256543c26555c35441e4355957c7055e"
+
+[update]
+[update.modrinth]
+mod-id = "dzmhUvoY"
+version = "GCBLIGA6"

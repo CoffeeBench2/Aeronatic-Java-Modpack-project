@@ -335,6 +335,10 @@ public class ProfileStore implements CredentialStore {
         p.firstIp              = rs.getString("first_ip");
         p.lastSeen             = rs.getLong("last_seen");
         p.totalPlaytimeSeconds = rs.getLong("total_playtime");
+        // Defensive: SeasonMigration adds this column before ProfileStore.initialize(), but a DB
+        // where the ALTER failed must NOT throw here — fromResultSet throwing takes down the whole
+        // bulk load and produces "Loaded 0 profiles" (the 1.7.19 socketTimeout failure mode).
+        p.season1PlaytimeSeconds = optLong(rs, "season1_playtime");
         p.bio                  = rs.getString("bio");
         p.skinUrl              = rs.getString("skin_url");
         p.capeEnabled          = rs.getBoolean("cape_enabled");
@@ -353,6 +357,15 @@ public class ProfileStore implements CredentialStore {
         p.skinChangesUsed      = rs.getInt("skin_changes_used");
         p.discordId            = rs.getString("discord_id");
         return p;
+    }
+
+    /** Reads a long column, returning 0 if the column is absent rather than failing the whole row. */
+    private static long optLong(ResultSet rs, String column) {
+        try {
+            return rs.getLong(column);
+        } catch (SQLException missingColumn) {
+            return 0L;
+        }
     }
 
     // ── Flat-file fallback ────────────────────────────────────────────────────

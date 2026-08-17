@@ -21,7 +21,7 @@ import java.time.Duration;
  */
 public final class VersionCheck {
 
-    public enum State { UNKNOWN, UP_TO_DATE, OUTDATED, ERROR }
+    public enum State { UNKNOWN, CHECKING, UP_TO_DATE, OUTDATED, ERROR }
 
     private static volatile State  state         = State.UNKNOWN;
     private static volatile String latestVersion = "";
@@ -34,12 +34,42 @@ public final class VersionCheck {
     public static void startAsync() {
         if (started) return;
         started = true;
+        spawn();
+    }
+
+    /**
+     * Forces a fresh check, ignoring the once-per-session guard. Backs the manual "Updates" button.
+     *
+     * <p>The automatic check deliberately runs once — it fires from {@code init()}, which re-runs on
+     * every window resize, and re-polling on each resize would be silly. A player pressing a button
+     * is the opposite situation: they are asking BECAUSE they think the cached answer is stale, so
+     * the guard has to be bypassed rather than worked around.
+     *
+     * <p>Re-entry is blocked while a fetch is in flight, so mashing the button cannot spawn threads.
+     */
+    public static void recheckAsync() {
+        if (state == State.CHECKING) return;
+        started = true;
+        spawn();
+    }
+
+    private static void spawn() {
         String url = AeroConfig.VERSION_CHECK_URL.get();
         if (url == null || url.isBlank()) { state = State.UNKNOWN; return; }
+        state = State.CHECKING;
         Thread t = new Thread(() -> fetch(url), "AeroCore-VersionCheck");
         t.setDaemon(true);
         t.start();
     }
+
+    /**
+     * Current state as a plain String.
+     *
+     * <p>String rather than the enum on purpose: {@link com.coffeesaerosmp.core.UpdaterBridge} reads
+     * this reflectively, and the CurseForge build ships without this package entirely. Returning an
+     * enum would force the bridge to load a class that may not exist.
+     */
+    public static String stateName() { return state.name(); }
 
     private static void fetch(String url) {
         try {

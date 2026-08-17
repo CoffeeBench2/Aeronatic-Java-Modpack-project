@@ -16,11 +16,16 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
+import net.minecraft.world.level.Level;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+
 import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import com.coffeesaerosmp.auth.util.Sounds;
 
@@ -62,6 +67,13 @@ public final class DailyRewardManager {
     private final Path file;
     private final Map<String, Entry> state = new ConcurrentHashMap<>();
 
+    /**
+     * Players whose "your reward is ready" nudge was withheld because they authenticated somewhere
+     * that cannot claim (the lobby). The nudge is not dropped — it is re-sent the moment they set
+     * foot in the Overworld, so every notification still arrives, just where the command works.
+     */
+    private final Set<UUID> pendingReminder = ConcurrentHashMap.newKeySet();
+
     public DailyRewardManager(Path dataDir) {
         this.file = dataDir == null ? null : dataDir.resolve("daily_rewards.json");
         load();
@@ -76,6 +88,16 @@ public final class DailyRewardManager {
         if (CoffeesAeroAuth.AUTH_MANAGER == null
                 || !CoffeesAeroAuth.AUTH_MANAGER.isAuthenticated(player.getUUID())) {
             msg(player, "§cYou must be logged in to claim a daily reward.");
+            return false;
+        }
+        // The reward is items + XP straight into the inventory. In the lobby that inventory is the
+        // stashed/limited one and anything dropped falls into void, so the claim would be consumed
+        // for nothing. Overworld only.
+        if (!inOverworld(player)) {
+            msg(player, TextUtil.PREFIX + (inLobby(player)
+                ? "§cYou can't claim §f/daily§c in the lobby. Type §a/spawn§c first."
+                : "§cYou can only claim §f/daily§c in the Overworld."));
+            Sounds.error(player);
             return false;
         }
 
@@ -144,6 +166,54 @@ public final class DailyRewardManager {
             if (!AuthConfig.DAILY_REWARD_ENABLED.get()) return;
             if (msUntilClaimable(player.getUUID()) > 0) return;
 
+            // Authenticated in the lobby (or anywhere /daily is refused): hold the nudge rather than
+            // advertising a command that will be rejected. It fires on arrival in the Overworld.
+            if (!inOverworld(player)) {
+                pendingReminder.add(player.getUUID());
+                return;
+            }
+            sendReminder(player);
+        } catch (Exception ex) {
+            // A cosmetic nudge must never interfere with a join.
+            CoffeesAeroAuth.LOGGER.debug("[Daily] join reminder skipped: {}", ex.toString());
+        }
+    }
+
+    /**
+     * Delivers a withheld nudge the moment the player reaches the Overworld — the lobby → world
+     * step is a dimension change, so this is where a deferred reminder lands.
+     */
+    public void onChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
+        try {
+            if (!(event.getEntity() instanceof ServerPlayer player)) return;
+            if (!pendingReminder.contains(player.getUUID())) return;
+            if (player.level().dimension() != Level.OVERWORLD) return;
+            pendingReminder.remove(player.getUUID());
+
+            if (!AuthConfig.DAILY_REWARD_ENABLED.get()) return;
+            if (msUntilClaimable(player.getUUID()) > 0) return;   // claimed in between somehow
+            sendReminder(player);
+        } catch (Exception ex) {
+            CoffeesAeroAuth.LOGGER.debug("[Daily] deferred reminder skipped: {}", ex.toString());
+        }
+    }
+
+    /** Drops any withheld nudge for a leaving player, so the set never grows across sessions. */
+    public void onPlayerLeave(ServerPlayer player) {
+        pendingReminder.remove(player.getUUID());
+    }
+
+    private static boolean inOverworld(ServerPlayer player) {
+        return player.level().dimension() == Level.OVERWORLD;
+    }
+
+    private static boolean inLobby(ServerPlayer player) {
+        return player.level().dimension()
+            == com.coffeesaerosmp.auth.lobby.PrivateRoomManager.LOBBY_DIMENSION;
+    }
+
+    private void sendReminder(ServerPlayer player) {
+        try {
             Entry e = state.get(player.getUUID().toString());
             long intervalMs = AuthConfig.DAILY_REWARD_INTERVAL_HOURS.get() * 3_600_000L;
             int streak;

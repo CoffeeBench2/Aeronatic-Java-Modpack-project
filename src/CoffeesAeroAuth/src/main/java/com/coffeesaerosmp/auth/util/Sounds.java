@@ -58,4 +58,43 @@ public final class Sounds {
     public static void teleport(ServerPlayer player) {
         play(player, SoundEvents.ENDERMAN_TELEPORT, 0.5f, 1.4f);
     }
+
+    /**
+     * Server-wide attention: a restart warning, a mode change. Two tones so it reads as a signal
+     * rather than as another UI blip — a single note is what every other command already sounds
+     * like, and this needs to cut through that.
+     */
+    public static void alert(ServerPlayer player) {
+        play(player, SoundEvents.NOTE_BLOCK_PLING.value(), 0.8f, 0.7f);
+        play(player, SoundEvents.NOTE_BLOCK_PLING.value(), 0.8f, 1.0f);
+    }
+
+    /** A server-wide mode switched. Rising = on, falling = off, so it is audible which way it went. */
+    public static void mode(ServerPlayer player, boolean on) {
+        play(player, SoundEvents.NOTE_BLOCK_BIT.value(), 0.7f, on ? 0.8f : 1.4f);
+        play(player, SoundEvents.NOTE_BLOCK_BIT.value(), 0.7f, on ? 1.4f : 0.8f);
+    }
+
+    /**
+     * The teleport as BYSTANDERS experience it — a positional enderman VWOOP plus portal particles
+     * at a world position, so people nearby see and hear that someone left or arrived.
+     *
+     * <p><b>Deliberately not {@code playNotifySound}, and deliberately not gated on
+     * {@code soundFeedback}.</b> Everything else in this class is UI for the acting player, and
+     * that config's own wording is "sent only to the acting player, never to bystanders". This is
+     * the opposite: a world event, like a door or an ender pearl, and it belongs to the world
+     * rather than to whoever typed the command.
+     */
+    public static void teleportAmbient(net.minecraft.server.level.ServerLevel level,
+                                       double x, double y, double z) {
+        if (level == null) return;
+        try {
+            level.playSound(null, x, y, z, SoundEvents.ENDERMAN_TELEPORT,
+                SoundSource.PLAYERS, 0.9f, 1.0f);
+            level.sendParticles(net.minecraft.core.particles.ParticleTypes.PORTAL,
+                x, y + 1.0, z, 40, 0.35, 0.9, 0.35, 0.4);
+        } catch (Exception ignored) {
+            // Cosmetics must never break the teleport they are decorating.
+        }
+    }
 }

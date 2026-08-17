@@ -1,6 +1,6 @@
-name = "Cinematic Respawn"
+name = "[NeoForge][1.21.1] Cinematic Respawn 1.2.0-1.21.1"
 filename = "cinematic_respawn-1.21.1-neoforge-1.2.0.jar"
-side = "client"
+side = "both"
 
 [download]
 url = "https://cdn.modrinth.com/data/CFJWaa89/versions/21SvM5An/cinematic_respawn-1.21.1-neoforge-1.2.0.jar"

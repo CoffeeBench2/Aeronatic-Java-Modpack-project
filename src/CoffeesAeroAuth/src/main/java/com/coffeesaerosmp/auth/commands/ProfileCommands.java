@@ -6,6 +6,7 @@ import com.coffeesaerosmp.auth.lobby.NameApprovalQueue;
 import com.coffeesaerosmp.auth.util.TextUtil;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.DoubleArgumentType;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 import net.minecraft.commands.CommandSourceStack;
@@ -13,7 +14,14 @@ import net.minecraft.commands.Commands;
 import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.game.ClientboundSetSubtitleTextPacket;
+import net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket;
+import net.minecraft.network.protocol.game.ClientboundSetTitlesAnimationPacket;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import com.coffeesaerosmp.auth.util.Sounds;
+import com.coffeesaerosmp.auth.util.TestingMode;
+import com.coffeesaerosmp.auth.util.RestartWarning;
 
 import java.time.Instant;
 import java.time.ZoneId;
@@ -156,6 +164,72 @@ public class ProfileCommands {
             )
             .then(Commands.literal("players")
                 .executes(ctx -> adminPlayersSummary(ctx.getSource()))
+            )
+            // Clears a watchdog admin-command lock early.
+            .then(Commands.literal("unlockadmin")
+                .then(Commands.argument("name", StringArgumentType.word())
+                    .suggests(ONLINE_NAMES)
+                    .executes(ctx -> adminUnlock(ctx.getSource(),
+                        StringArgumentType.getString(ctx, "name")))
+                )
+            )
+            // Votifier reward hook. Point the Votifier config's command at:
+            //     authmod votereward %player%
+            .then(Commands.literal("votereward")
+                .then(Commands.argument("name", StringArgumentType.word())
+                    .executes(ctx -> voteReward(ctx.getSource(),
+                        StringArgumentType.getString(ctx, "name"), "vote site"))
+                    .then(Commands.argument("service", StringArgumentType.greedyString())
+                        .executes(ctx -> voteReward(ctx.getSource(),
+                            StringArgumentType.getString(ctx, "name"),
+                            StringArgumentType.getString(ctx, "service")))
+                    )
+                )
+            )
+            // Restart warning. Bare = "shortly"; with minutes = the actual time, because
+            // "restarting soon" tells a player building a contraption nothing useful.
+            .then(Commands.literal("warn")
+                .executes(ctx -> restartWarn(ctx.getSource(), -1))
+                // Clears the countdown bar if a restart is called off — without this the bar would
+                // sit there counting down to something that is no longer happening.
+                .then(Commands.literal("cancel")
+                    .executes(ctx -> {
+                        boolean was = RestartWarning.isActive();
+                        RestartWarning.cancel(ctx.getSource().getServer());
+                        if (was && ctx.getSource().getServer() != null) {
+                            for (ServerPlayer p : ctx.getSource().getServer().getPlayerList().getPlayers()) {
+                                p.sendSystemMessage(Component.literal(TextUtil.PREFIX
+                                    + "§a✔ Restart cancelled §7— carry on."));
+                                Sounds.success(p);
+                            }
+                        }
+                        ctx.getSource().sendSuccess(() -> Component.literal(TextUtil.PREFIX
+                            + (was ? "§aCountdown cancelled." : "§7No countdown was running.")), true);
+                        return 1;
+                    })
+                )
+                .then(Commands.argument("minutes", IntegerArgumentType.integer(0, 1440))
+                    .executes(ctx -> restartWarn(ctx.getSource(),
+                        IntegerArgumentType.getInteger(ctx, "minutes")))
+                )
+            )
+            // Testing-phase banner. Announce-only: it changes nothing about how the server behaves,
+            // it just makes sure nobody is surprised by restarts or rollbacks.
+            .then(Commands.literal("testing")
+                .executes(ctx -> testingStatus(ctx.getSource()))
+                .then(Commands.literal("status")
+                    .executes(ctx -> testingStatus(ctx.getSource()))
+                )
+                .then(Commands.literal("on")
+                    .executes(ctx -> testingSet(ctx.getSource(), true, ""))
+                    .then(Commands.argument("reason", StringArgumentType.greedyString())
+                        .executes(ctx -> testingSet(ctx.getSource(), true,
+                            StringArgumentType.getString(ctx, "reason")))
+                    )
+                )
+                .then(Commands.literal("off")
+                    .executes(ctx -> testingSet(ctx.getSource(), false, ""))
+                )
             )
             .then(Commands.literal("clearips")
                 .then(Commands.argument("player", EntityArgument.player())
@@ -627,6 +701,159 @@ public class ProfileCommands {
 
         String card = sb.toString();
         source.sendSuccess(() -> Component.literal(card), false);
+        return 1;
+    }
+
+    /**
+     * {@code authmod warn [minutes]} — tells everyone online that a restart is coming.
+     *
+     * <p>Announce-only by design: it does <b>not</b> schedule or trigger the restart. The panel
+     * owns that, and a command that both warns and restarts is one typo away from dropping a full
+     * server. Run it, then restart from the panel when the timer you announced runs out.
+     *
+     * <p>Sent three ways because a single chat line is missed by anyone in a GUI or looking at a
+     * contraption: chat, a title, and a sound. Also echoed to the console so the Discord admin
+     * bridge records who warned and when.
+     */
+    private static int restartWarn(CommandSourceStack source, int minutes) {
+        MinecraftServer server = source.getServer();
+        if (server == null) {
+            source.sendFailure(Component.literal("No server context."));
+            return 0;
+        }
+
+        String when = minutes < 0  ? "shortly"
+                    : minutes == 0 ? "right now"
+                    : minutes + " minute" + (minutes == 1 ? "" : "s");
+        // Under 2 minutes there is no time to finish anything, so the advice changes from
+        // "wrap up" to "stop now" — a warning people can't act on just annoys them.
+        boolean urgent = minutes >= 0 && minutes <= 2;
+
+        Component chat = Component.literal(
+            TextUtil.PREFIX + "§c§l⚠ §eThe server will restart §c§l" + when + "§e.");
+        Component advice = Component.literal(TextUtil.PREFIX + (urgent
+            ? "§7Land your ship and stand still — do not start anything new."
+            : "§7Finish what you're doing and land any ships. Your position is saved."));
+
+        for (ServerPlayer p : server.getPlayerList().getPlayers()) {
+            p.sendSystemMessage(chat);
+            p.sendSystemMessage(advice);
+            p.connection.send(new ClientboundSetTitlesAnimationPacket(10, 60, 20));
+            p.connection.send(new ClientboundSetTitleTextPacket(
+                Component.literal("§c§l⚠ RESTART")));
+            p.connection.send(new ClientboundSetSubtitleTextPacket(
+                Component.literal("§e" + (minutes < 0 ? "shortly" : when))));
+            Sounds.alert(p);
+        }
+
+        // A live countdown bar, but only when there is an actual time to count down to. A bare
+        // "restarting shortly" has no end point, and a bar with no deadline is just clutter.
+        if (minutes > 0) RestartWarning.start(server, minutes);
+
+        int online = server.getPlayerList().getPlayerCount();
+        CoffeesAeroAuth.LOGGER.info("[Restart] {} warned {} player(s): restart {}",
+            source.getTextName(), online, when);
+        source.sendSuccess(() -> Component.literal(
+            TextUtil.PREFIX + "§aWarned §f" + online + "§a player(s): restart §f" + when + "§a."), true);
+        return 1;
+    }
+
+    /**
+     * {@code authmod testing on|off [reason]} — raise or clear the testing-phase banner.
+     *
+     * <p>Persistent (survives restarts, which is the point) and purely informational: it grants
+     * nothing, blocks nothing, and changes no gameplay. See {@link TestingMode}.
+     */
+    private static int testingSet(CommandSourceStack source, boolean on, String reason) {
+        MinecraftServer server = source.getServer();
+        if (server == null) {
+            source.sendFailure(Component.literal("No server context."));
+            return 0;
+        }
+        boolean changed = TestingMode.set(on, reason);
+
+        Component line = on
+            ? Component.literal(TestingMode.banner())
+            : Component.literal(TextUtil.PREFIX
+                + "§a✔ Testing phase over §r§7— the server is back to normal play.");
+
+        for (ServerPlayer p : server.getPlayerList().getPlayers()) {
+            p.sendSystemMessage(line);
+            Sounds.mode(p, on);
+        }
+
+        CoffeesAeroAuth.LOGGER.info("[Testing] {} turned testing mode {}{}",
+            source.getTextName(), on ? "ON" : "OFF",
+            reason == null || reason.isBlank() ? "" : " (" + reason + ")");
+        source.sendSuccess(() -> Component.literal(TextUtil.PREFIX + "§aTesting mode §f"
+            + (on ? "ON" : "OFF") + "§a." + (changed ? "" : " §7(was already.)")), true);
+        return 1;
+    }
+
+    /** {@code authmod testing status} — current state, and how long it has been on. */
+    private static int testingStatus(CommandSourceStack source) {
+        boolean on = TestingMode.isActive();
+        String extra = "";
+        if (on && TestingMode.since() > 0) {
+            extra = " §7(for " + TextUtil.formatRemaining(
+                System.currentTimeMillis() - TestingMode.since()) + ")";
+        }
+        String msg = TextUtil.PREFIX + "§7Testing mode: " + (on ? "§e§lON" : "§aOFF") + extra
+            + (on && !TestingMode.note().isBlank() ? " §f— " + TestingMode.note() : "");
+        source.sendSuccess(() -> Component.literal(msg), false);
+        return 1;
+    }
+
+    /** {@code authmod unlockadmin <name>} — clears a watchdog admin-command lock early. */
+    private static int adminUnlock(CommandSourceStack source, String name) {
+        if (CoffeesAeroAuth.WATCHDOG == null || CoffeesAeroAuth.PROFILE_STORE == null) {
+            source.sendFailure(Component.literal("Watchdog unavailable."));
+            return 0;
+        }
+        PlayerProfile p = CoffeesAeroAuth.PROFILE_STORE.findByAnyName(name);
+        if (p == null || p.getUUID() == null) {
+            source.sendFailure(Component.literal("No player matches '" + name + "'."));
+            return 0;
+        }
+        boolean cleared = CoffeesAeroAuth.WATCHDOG.clearAdminLock(p.getUUID());
+        String who = p.username;
+        source.sendSuccess(() -> Component.literal(TextUtil.PREFIX + (cleared
+            ? "§aCleared the admin lock on §f" + who + "§a."
+            : "§7" + who + " was not locked.")), true);
+        if (cleared) {
+            CoffeesAeroAuth.LOGGER.info("[Watchdog] {} cleared the admin lock on {}",
+                source.getTextName(), who);
+            ServerPlayer online = source.getServer() == null ? null
+                : source.getServer().getPlayerList().getPlayer(p.getUUID());
+            if (online != null) {
+                online.sendSystemMessage(Component.literal(
+                    TextUtil.PREFIX + "§aYour admin command lock has been cleared."));
+                Sounds.success(online);
+            }
+        }
+        return 1;
+    }
+
+    /**
+     * {@code authmod votereward <name> [service]} — grants the vote reward.
+     *
+     * <p>Votifier executes its reward command on its own SOCKET THREAD, which is why a plain
+     * {@code /give} died with {@code ThreadLocalRandom accessed from a different thread} and paid
+     * nobody. This command does almost nothing where it is called: it resolves the name against the
+     * in-memory profile cache and hands the actual payout to the server thread. Keep it that way.
+     */
+    private static int voteReward(CommandSourceStack source, String name, String service) {
+        if (CoffeesAeroAuth.VOTE_REWARDS == null) {
+            source.sendFailure(Component.literal("Vote rewards are not ready."));
+            return 0;
+        }
+        boolean ok = CoffeesAeroAuth.VOTE_REWARDS.recordVote(source.getServer(), name, service);
+        if (!ok) {
+            source.sendFailure(Component.literal(
+                "Vote for '" + name + "' could not be matched to a player (or rewards are disabled)."));
+            return 0;
+        }
+        source.sendSuccess(() -> Component.literal("Vote recorded for " + name + "."), false);
         return 1;
     }
 

@@ -18,11 +18,11 @@ import java.lang.reflect.Method;
 public final class UpdaterBridge {
 
     private static final boolean PRESENT;
-    private static final Method M_START, M_OUTDATED, M_LATEST, M_URL;
+    private static final Method M_START, M_OUTDATED, M_LATEST, M_URL, M_RECHECK, M_STATE;
 
     static {
         boolean present = false;
-        Method start = null, outdated = null, latest = null, url = null;
+        Method start = null, outdated = null, latest = null, url = null, recheck = null, state = null;
         try {
             Class<?> vc = Class.forName("com.coffeesaerosmp.core.version.VersionCheck");
             start    = vc.getMethod("startAsync");
@@ -30,11 +30,17 @@ public final class UpdaterBridge {
             latest   = vc.getMethod("latestVersion");
             url      = vc.getMethod("downloadUrl");
             present  = true;
+            // Looked up separately and tolerated as absent: an older Core jar that predates the
+            // manual button still satisfies everything above, and the button simply stays hidden
+            // rather than the whole bridge failing to initialise.
+            try { recheck = vc.getMethod("recheckAsync"); } catch (Throwable ignored) { }
+            try { state   = vc.getMethod("stateName");    } catch (Throwable ignored) { }
         } catch (Throwable ignored) {
             // No updater in this build (CurseForge variant) — bridge no-ops.
         }
         PRESENT = present;
         M_START = start; M_OUTDATED = outdated; M_LATEST = latest; M_URL = url;
+        M_RECHECK = recheck; M_STATE = state;
     }
 
     private UpdaterBridge() {}
@@ -65,6 +71,17 @@ public final class UpdaterBridge {
 
     public static String latestVersion() { return String.valueOf(invoke(M_LATEST, "")); }
     public static String downloadUrl()   { return String.valueOf(invoke(M_URL, "")); }
+
+    /** True when this jar can be asked to re-check on demand (drives the manual Updates button). */
+    public static boolean canRecheck() { return PRESENT && M_RECHECK != null && M_STATE != null; }
+
+    /** Forces a fresh version check. No-op without the updater. */
+    public static void recheck() {
+        if (PRESENT) invokeVoid(M_RECHECK);
+    }
+
+    /** {@code UNKNOWN | CHECKING | UP_TO_DATE | OUTDATED | ERROR}. */
+    public static String status() { return String.valueOf(invoke(M_STATE, "UNKNOWN")); }
 
     private static Object invoke(Method m, Object fallback) {
         if (m == null) return fallback;

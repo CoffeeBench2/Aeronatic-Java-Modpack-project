@@ -117,6 +117,17 @@ public final class SeasonMigration {
             addColumn(s, "season1_veteran        BOOLEAN NOT NULL DEFAULT FALSE");
             addColumn(s, "season1_reward_claimed BOOLEAN NOT NULL DEFAULT FALSE");
 
+            // The columns are ADDED with DEFAULT 1 so the backfill puts every pre-existing row in the
+            // old season and the passes below pick it up. That default must NOT survive: ProfileStore's
+            // UPSERT does not list these columns, so a player created DURING this season would be born
+            // at season 1 and the next boot would migrate them - wiping the logout position of someone
+            // who never saw the old world, freezing their playtime as if it were last season's, and
+            // (past an hour) flagging them a veteran owed a reward they did not earn.
+            // ALTER ... SET DEFAULT changes future INSERTs only; it never touches existing rows, so
+            // this is safe to run on every boot and cannot disturb the passes below.
+            setDefault(s, "season", CURRENT_SEASON);
+            setDefault(s, "season_rewarded", CURRENT_SEASON);
+
             worldDataPass(s);
             rewardPass(s);
 
@@ -220,6 +231,21 @@ public final class SeasonMigration {
             s.executeUpdate("ALTER TABLE players ADD COLUMN " + definition);
         } catch (SQLException alreadyThere) {
             // Expected on every boot after the first.
+        }
+    }
+
+    /**
+     * Repoints a column's DEFAULT at the current season, so rows inserted from now on are born
+     * already stamped. Existing rows are untouched by this statement.
+     */
+    private static void setDefault(Statement s, String column, int value) {
+        try {
+            s.executeUpdate("ALTER TABLE players ALTER COLUMN " + column + " SET DEFAULT " + value);
+        } catch (SQLException e) {
+            // Not fatal on its own, but it means new players will be born a season behind and the
+            // next boot would migrate them - loud enough to notice.
+            CoffeesAeroAuth.LOGGER.warn("[Season] could not set DEFAULT {} on column '{}': {}",
+                value, column, e.getMessage());
         }
     }
 }

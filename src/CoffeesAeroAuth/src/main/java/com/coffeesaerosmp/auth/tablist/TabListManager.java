@@ -137,10 +137,15 @@ public final class TabListManager {
             else if ((i + frame) % 9 == 0) sky.append("§f☁§3");
             else                           sky.append(' ');
         }
+        // While a testing phase is on, it replaces the tagline rather than adding a line — the
+        // header is a fixed shape and an extra row pushes the player list around every toggle.
+        String tagline = com.coffeesaerosmp.auth.util.TestingMode.isActive()
+            ? "\n§e§l⚙ TESTING PHASE §8— §7restarts expected"
+            : "\n§5✦ §7§oskies brewed daily §5✦";
         return Component.literal(
               "\n" + sky
             + "\n§6§lCOFFEE'S CREATE §e§lAERONAUTICS §8SMP"
-            + "\n§5✦ §7§oskies brewed daily §5✦"
+            + tagline
             + "\n ");
     }
 

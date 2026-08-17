@@ -1028,7 +1028,22 @@ public class AuthManager {
             return false;
         }
         lastSpawnTp.put(uuid, now);
+
+        // Capture the departure point BEFORE the teleport — afterwards the player is already at
+        // spawn and there is nothing left to mark the place they vanished from.
+        net.minecraft.server.level.ServerLevel fromLevel = player.serverLevel();
+        double fx = player.getX(), fy = player.getY(), fz = player.getZ();
+
         CoffeesAeroAuth.ROOM_MANAGER.teleportToSpawn(player);
+
+        // Bystanders get the enderman VWOOP + portal particles at BOTH ends: where they went from,
+        // and where they landed. Departure is skipped if they were in the lobby — nobody is there
+        // to see it, and the lobby is not a place effects belong.
+        if (fromLevel.dimension() != com.coffeesaerosmp.auth.lobby.PrivateRoomManager.LOBBY_DIMENSION) {
+            Sounds.teleportAmbient(fromLevel, fx, fy, fz);
+        }
+        Sounds.teleportAmbient(player.serverLevel(), player.getX(), player.getY(), player.getZ());
+
         // The cooldown is read from config, so the message must be too — this said "once per hour"
         // while the default was 180 minutes, and would have kept saying it at any other setting.
         Sounds.teleport(player);
@@ -1113,6 +1128,24 @@ public class AuthManager {
         // and its own throttle, and this is actionable state ("you have something to collect"),
         // not a greeting — it must not inherit that throttle. Silent when nothing is claimable.
         if (CoffeesAeroAuth.DAILY_REWARDS != null) CoffeesAeroAuth.DAILY_REWARDS.remindOnJoin(player);
+
+        // Votes banked while they were offline — most votes are cast when the player is NOT online,
+        // so this is the normal delivery path rather than an edge case.
+        if (CoffeesAeroAuth.VOTE_REWARDS != null) {
+            CoffeesAeroAuth.VOTE_REWARDS.onPlayerJoin(player);
+            CoffeesAeroAuth.VOTE_REWARDS.remindOnJoin(player);
+        }
+
+        // Someone joining mid-countdown would otherwise be the only person on the server who
+        // cannot see that a restart is imminent.
+        com.coffeesaerosmp.auth.util.RestartWarning.onPlayerJoin(player);
+
+        // Testing-phase notice. After the welcome sequence and the daily nudge, because it is
+        // context for the session rather than a greeting, and it must not be buried above them.
+        if (com.coffeesaerosmp.auth.util.TestingMode.isActive()) {
+            send(player, com.coffeesaerosmp.auth.util.TestingMode.banner());
+            Sounds.alert(player);
+        }
 
         if (profile.getAccountType() == PlayerProfile.AccountType.OFFLINE) {
             com.coffeesaerosmp.auth.events.PlayerAuthEvents.onOfflinePlayerAuthenticated(player);

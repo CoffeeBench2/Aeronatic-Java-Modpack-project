@@ -23,6 +23,11 @@ world.
 [[mixins]]
 config = "coffeesaeroguard.mixins.json"
 
+# Diagnostic only, required=false: it targets another mod's class by name, so a rename
+# must degrade to a warning rather than crashing a live server at boot.
+[[mixins]]
+config = "coffeesaeroguard.diagnostic.mixins.json"
+
 [[dependencies.coffees_aero_guard]]
     modId        = "neoforge"
     type         = "required"

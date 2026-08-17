@@ -1,0 +1,13 @@
+name = "Dashpanels 1.6 Neoforge 1.21.1"
+filename = "dashpanels-1.6+neoforge1.21.1.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/xZJfGh82/versions/Mtoua6EM/dashpanels-1.6%2Bneoforge1.21.1.jar"
+hash-format = "sha512"
+hash = "6c35521d47c1949d7097d7d5f46ceebb0f725a543caab9a55f7fafab808d065b1ac4d70b08ac13a9adb4638b4438eccb2730d3cf324a8e1c33feb820bfb9e2be"
+
+[update]
+[update.modrinth]
+mod-id = "xZJfGh82"
+version = "Mtoua6EM"

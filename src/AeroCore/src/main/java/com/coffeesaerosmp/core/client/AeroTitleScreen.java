@@ -41,6 +41,14 @@ public class AeroTitleScreen extends Screen {
 
     private static final int ANNOUNCE_W = 74;
     private int announceX, announceY;
+
+    /** Manual update check — second slot of the reserved top-right column. */
+    private int updateY;
+    private AeroButton updateButton;
+    /** Wall-clock ms of the last manual check; throttles button-mashing into the CDN. */
+    private static long lastManualCheck;
+    /** Wall-clock ms until the transient "Up to date ✓" label reverts to "Updates". */
+    private static long upToDateUntil;
     private int joinY;
 
     public AeroTitleScreen() {
@@ -123,6 +131,30 @@ public class AeroTitleScreen extends Screen {
                 b -> this.minecraft.setScreen(new com.coffeesaerosmp.core.screen.AnnouncementsScreen(this))
         ).bounds(announceX, announceY, ANNOUNCE_W, 20).build());
 
+        // ── Manual update check ───────────────────────────────────────────────────────────
+        // Directly under News, in the RESERVED top-right utility column. Deliberately NOT in the
+        // centre stack: every primary button there is placed at joinY + n*26, so adding one later
+        // shifts the whole column — anything anchored to the screen edge is immune to that. Both
+        // coordinates derive from width/height and init() re-runs on resize, so it re-anchors
+        // instead of drifting off-screen.
+        //
+        // ⚠ THE TOP-RIGHT IS NOW A TWO-SLOT STRIP: News at y=5, Updates at y=29. A third corner
+        // button starts at y=53. Minecraft widgets do not z-fight — two widgets sharing bounds BOTH
+        // take clicks and the later one wins — so this is layout discipline, not an ordering flag.
+        //
+        // Hidden entirely on a Core that cannot re-check (the CurseForge build has no updater, and
+        // the CF app is the updater there), rather than shown as a button that does nothing.
+        if (com.coffeesaerosmp.core.UpdaterBridge.canRecheck()) {
+            this.updateY = this.announceY + 24;
+            this.updateButton = AeroButton.aero(
+                    updateLabel(),
+                    b -> onUpdatePressed()
+            ).bounds(this.announceX, this.updateY, ANNOUNCE_W, 20).build();
+            this.updateButton.setTooltip(net.minecraft.client.gui.components.Tooltip.create(
+                    Component.literal("Check for pack updates now")));
+            this.addRenderableWidget(this.updateButton);
+        }
+
         if (isAdmin) {
             this.addRenderableWidget(AeroButton.aero(
                     Component.literal("Admin Settings"),
@@ -160,6 +192,7 @@ public class AeroTitleScreen extends Screen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+        tickUpdateButton();                                    // before the draw, so the label is current
         super.render(graphics, mouseX, mouseY, partialTick);   // background (ours) + widgets
 
         // Pack logo, top-center. Height capped at 26% of the screen: the airship in the art starts
@@ -385,6 +418,59 @@ public class AeroTitleScreen extends Screen {
     @Override
     public boolean shouldCloseOnEsc() {
         return false;
+    }
+
+    /**
+     * Label for the update button, derived from the live check state.
+     *
+     * <p>Showing the RESULT is the point. The automatic check is silent, so a player who suspects
+     * they are out of date has no way to ask and ends up asking in Discord instead. "Up to date ✓"
+     * is the answer to that question, and it costs one transient timestamp.
+     */
+    private Component updateLabel() {
+        if (com.coffeesaerosmp.core.UpdaterBridge.isPackOutdated()) {
+            return Component.literal("§6Update ▸");
+        }
+        String s = com.coffeesaerosmp.core.UpdaterBridge.status();
+        if ("CHECKING".equals(s))                        return Component.literal("§7Checking…");
+        if ("ERROR".equals(s))                           return Component.literal("§cUpdates ⚠");
+        if (System.currentTimeMillis() < upToDateUntil)  return Component.literal("§aUp to date ✓");
+        return Component.literal("Updates");
+    }
+
+    private void onUpdatePressed() {
+        // Already known stale — go straight to the existing, tested update flow.
+        if (com.coffeesaerosmp.core.UpdaterBridge.isPackOutdated()) {
+            net.minecraft.client.gui.screens.Screen s =
+                com.coffeesaerosmp.core.UpdaterBridge.openUpdateScreen(this);
+            if (s != null) this.minecraft.setScreen(s);
+            return;
+        }
+        // Each press is a real HTTP round trip to the raw CDN, and a button invites mashing.
+        long now = System.currentTimeMillis();
+        if (now - lastManualCheck < 5_000L) return;
+        lastManualCheck = now;
+        upToDateUntil = 0L;
+        com.coffeesaerosmp.core.UpdaterBridge.recheck();
+    }
+
+    /**
+     * Keeps the update button's label in step with the background check.
+     *
+     * <p>Called from render() rather than from a listener because the check finishes on its own
+     * daemon thread — there is nothing to be notified BY. Comparing the rendered label against the
+     * computed one means the string is only rebuilt when it actually changes.
+     */
+    private void tickUpdateButton() {
+        if (this.updateButton == null) return;
+        if ("UP_TO_DATE".equals(com.coffeesaerosmp.core.UpdaterBridge.status())
+                && lastManualCheck > 0 && upToDateUntil == 0L) {
+            upToDateUntil = System.currentTimeMillis() + 4_000L;   // show the ✓ briefly, then revert
+        }
+        Component want = updateLabel();
+        if (!want.getString().equals(this.updateButton.getMessage().getString())) {
+            this.updateButton.setMessage(want);
+        }
     }
 
     private void connectToServer() {

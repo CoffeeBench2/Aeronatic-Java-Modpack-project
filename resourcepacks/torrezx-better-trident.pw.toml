@@ -1,6 +1,6 @@
-name = "Torrezx-Better trident"
+name = "1.21.11x-1.21"
 filename = "Torrezx-Better_trident.zip"
-side = "client"
+side = "both"
 
 [download]
 url = "https://cdn.modrinth.com/data/ZQpWNN1B/versions/c5XZ9Oq3/Torrezx-Better_trident.zip"

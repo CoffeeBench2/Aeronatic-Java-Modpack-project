@@ -62,6 +62,7 @@ public class CoffeesAeroAuth {
     public static volatile NameApprovalQueue  APPROVAL_QUEUE;
     public static volatile com.coffeesaerosmp.auth.lobby.LobbyInventoryStash LOBBY_STASH;
     public static volatile com.coffeesaerosmp.auth.daily.DailyRewardManager DAILY_REWARDS;
+    public static volatile com.coffeesaerosmp.auth.vote.VoteRewards VOTE_REWARDS;
 
     /** Cookie key the gate sets on the client and we read here (matches AeroGate's aerosmp:auth). */
     public static final net.minecraft.resources.ResourceLocation AUTH_COOKIE_KEY =
@@ -88,6 +89,20 @@ public class CoffeesAeroAuth {
         NeoForge.EVENT_BUS.addListener(PlayerAuthEvents::onPlayerJoin);
         NeoForge.EVENT_BUS.addListener(PlayerAuthEvents::onPlayerLeave);
 
+        // Daily: /daily is Overworld-only, so a nudge withheld in the lobby is delivered on the
+        // dimension change into the world instead of being dropped.
+        NeoForge.EVENT_BUS.addListener(
+            (net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerChangedDimensionEvent e) -> {
+                if (DAILY_REWARDS != null) DAILY_REWARDS.onChangedDimension(e);
+            });
+        NeoForge.EVENT_BUS.addListener(
+            (net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerLoggedOutEvent e) -> {
+                if (DAILY_REWARDS != null
+                        && e.getEntity() instanceof net.minecraft.server.level.ServerPlayer sp) {
+                    DAILY_REWARDS.onPlayerLeave(sp);
+                }
+            });
+
         // Skins: owned by the CoffeesAeroSkins mod since 1.6.0 — auth just plugs in its profile
         // store as storage/policy backend and forwards gate-verified premium UUIDs (SkinsHook).
         com.coffeesaerosmp.auth.compat.SkinsHook.install();
@@ -113,6 +128,16 @@ public class CoffeesAeroAuth {
         // Animated tab-list header/footer (airship + live pilot count + rotating tips).
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.tick.ServerTickEvent.Post e) ->
             com.coffeesaerosmp.auth.tablist.TabListManager.onServerTick(e.getServer()));
+
+        // Restart countdown boss bar — redraws itself; no-op when no countdown is running.
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.tick.ServerTickEvent.Post e) ->
+            com.coffeesaerosmp.auth.util.RestartWarning.onServerTick(e.getServer()));
+
+        // Vote reminder: tells a player the moment their vote cooldown elapses (throttled to ~30s
+        // internally, and once per cooldown rather than once per sweep).
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.tick.ServerTickEvent.Post e) -> {
+            if (VOTE_REWARDS != null) VOTE_REWARDS.onServerTick(e.getServer());
+        });
 
         // /rtp async pregen driver (progress action bar, teleport-when-ready, timeouts).
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.tick.ServerTickEvent.Post e) ->
@@ -184,6 +209,9 @@ public class CoffeesAeroAuth {
         DB_MANAGER.startHealthCheck();
 
         // ── Core auth stack ───────────────────────────────────────────────────
+        // Load before anyone can join, so the first player of the session sees the banner.
+        com.coffeesaerosmp.auth.util.TestingMode.initialize(dataDir);
+
         PROFILE_STORE = new ProfileStore(dataDir, DB_MANAGER);
         PROFILE_STORE.initialize();
         DISPLAY_NAMES = new DisplayNameManager(PROFILE_STORE);
@@ -250,6 +278,7 @@ public class CoffeesAeroAuth {
         LOBBY_STASH    = new com.coffeesaerosmp.auth.lobby.LobbyInventoryStash(dataDir);
         LOBBY_STASH.initialize();
         DAILY_REWARDS  = new com.coffeesaerosmp.auth.daily.DailyRewardManager(dataDir);
+        VOTE_REWARDS   = new com.coffeesaerosmp.auth.vote.VoteRewards(dataDir);
         com.coffeesaerosmp.auth.clan.ClanTags.initialize(dataDir);
         com.coffeesaerosmp.auth.commands.RtpCommand.initialize(dataDir);
         com.coffeesaerosmp.auth.commands.RtpAnchors.initialize(dataDir);

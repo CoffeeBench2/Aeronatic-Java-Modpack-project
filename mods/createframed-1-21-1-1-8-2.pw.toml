@@ -1,0 +1,13 @@
+name = "[Neoforge] Create: Framed 1.8.2 for mc1.21.1"
+filename = "createframed-1.21.1-1.8.2.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/15fFZ3f4/versions/yioQUGiO/createframed-1.21.1-1.8.2.jar"
+hash-format = "sha512"
+hash = "38a3ad408a563543ebee89da2e3dd624188864d42d2d208ac695f2fc2240f6a3c26746ec516aa4b1e0ff45ced8de97317328dbae594bb18f914003680bceaf00"
+
+[update]
+[update.modrinth]
+mod-id = "15fFZ3f4"
+version = "yioQUGiO"

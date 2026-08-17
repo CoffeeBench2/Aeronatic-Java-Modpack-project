@@ -25,6 +25,19 @@ public class AuthConfig {
     public static final ModConfigSpec.IntValue     STARTUP_BONUS_SPURS;
     public static final ModConfigSpec.BooleanValue SEASON_CLEAR_WORLD_DATA;
     public static final ModConfigSpec.BooleanValue SEASON_GRANT_REWARDS;
+    public static final ModConfigSpec.IntValue     ADMIN_LOCK_MINUTES;
+    public static final ModConfigSpec.ConfigValue<String> ADMIN_RATE_LIMIT_EXEMPT;
+    public static final ModConfigSpec.BooleanValue VOTE_REWARD_ENABLED;
+    public static final ModConfigSpec.IntValue     VOTE_REWARD_SPURS_BASE;
+    public static final ModConfigSpec.IntValue     VOTE_REWARD_SPURS_MAX;
+    public static final ModConfigSpec.IntValue     VOTE_REWARD_DIAMONDS_BASE;
+    public static final ModConfigSpec.IntValue     VOTE_REWARD_DIAMONDS_MAX;
+    public static final ModConfigSpec.IntValue     VOTE_REWARD_VOTES_PER_STEP;
+    public static final ModConfigSpec.ConfigValue<String> VOTE_URL;
+    public static final ModConfigSpec.IntValue     VOTE_COOLDOWN_HOURS;
+    public static final ModConfigSpec.BooleanValue VOTE_REMINDER_ENABLED;
+    public static final ModConfigSpec.BooleanValue VOTE_ANNOUNCE_ENABLED;
+    public static final ModConfigSpec.IntValue     VOTE_REWARD_MAX_REWARDED;
     public static final ModConfigSpec.BooleanValue KICK_ON_NAME_CONFLICT;
     public static final ModConfigSpec.IntValue     MAX_FAILED_ATTEMPTS;
     public static final ModConfigSpec.BooleanValue BYPASS_AUTH_FOR_OPS;
@@ -279,12 +292,72 @@ public class AuthConfig {
             .defineInRange("adminCommandLimit", 5, 2, 50);
         ADMIN_CMD_WINDOW_SECONDS   = b.comment("Rolling window (seconds) for admin command rate limiting.")
             .defineInRange("adminCommandWindowSeconds", 120, 30, 600);
+        ADMIN_LOCK_MINUTES         = b.comment(
+                "Minutes admin commands stay locked after the rate limit trips.",
+                "Clear an active lock early with /authmod unlockadmin <player>.")
+            .defineInRange("adminLockMinutes", 5, 1, 120);
+        ADMIN_RATE_LIMIT_EXEMPT    = b.comment(
+                "Comma-separated usernames NEVER rate-limited on /authmod commands.",
+                "The owner belongs here: the limiter exists to catch a compromised or rogue op, and",
+                "locking the person who administers the server out of their own admin commands during",
+                "an incident is the opposite of what it is for. Exempt admins are still fully audited",
+                "-- every command still reaches the Discord watchdog channel.")
+            .define("adminRateLimitExempt", "MrCoffeeBench");
         TRUSTED_IP_MAX_COUNT       = b.comment("Max trusted IPs stored per offline player UUID.")
             .defineInRange("trustedIpMaxCount", 3, 1, 10);
         QUIET_HOURS_START          = b.comment("Quiet hours start (HH:mm UTC). Admin commands trigger owner alert.")
             .define("quietHoursStart", "02:00");
         QUIET_HOURS_END            = b.comment("Quiet hours end (HH:mm UTC).")
             .define("quietHoursEnd", "08:00");
+        b.pop();
+
+        b.comment("Vote rewards. Paid when a server-list site reports a vote through Votifier.",
+                  "The reward SCALES with a player's lifetime vote count and is then capped:",
+                  "    reward = min(max, base + (voteNumber - 1) / votesPerStep)",
+                  "so a regular voter beats a one-off voter, but the per-vote ceiling stops it",
+                  "inflating forever. Votes cast while offline are banked and paid on next join.")
+            .push("voteRewards");
+        VOTE_REWARD_ENABLED        = b.comment("Enable vote rewards.")
+            .define("voteRewardEnabled", true);
+        VOTE_REWARD_SPURS_BASE     = b.comment("Spurs for a player's FIRST vote.")
+            .defineInRange("voteRewardSpursBase", 2, 0, 10000);
+        VOTE_REWARD_SPURS_MAX      = b.comment("HARD CAP on spurs per vote, however many times they vote.")
+            .defineInRange("voteRewardSpursMax", 10, 0, 10000);
+        VOTE_REWARD_DIAMONDS_BASE  = b.comment("Diamonds for a player's FIRST vote.")
+            .defineInRange("voteRewardDiamondsBase", 1, 0, 1000);
+        VOTE_REWARD_DIAMONDS_MAX   = b.comment("HARD CAP on diamonds per vote.")
+            .defineInRange("voteRewardDiamondsMax", 5, 0, 1000);
+        VOTE_URL                   = b.comment(
+                "Where /vote sends players. Shown in the reminder and in /vote.")
+            .define("voteUrl", "https://www.createmodservers.com/");
+        VOTE_COOLDOWN_HOURS        = b.comment(
+                "Hours between votes ON THE SITE. The server cannot read the site's cooldown -- it only",
+                "ever hears about a vote AFTER it lands -- so this is what /vote counts down from, using",
+                "the player's own last recorded vote. Set it to match the site (24 for most, some use 12).",
+                "If it is wrong the reward still pays fine; only the countdown is off.")
+            .defineInRange("voteCooldownHours", 24, 1, 168);
+        VOTE_REMINDER_ENABLED      = b.comment(
+                "Tell a player when they can vote again -- once on join if they are already eligible,",
+                "and once at the moment the cooldown elapses while they are online. Never repeats.")
+            .define("voteReminderEnabled", true);
+        VOTE_REWARD_MAX_REWARDED   = b.comment(
+                "LIFETIME cap on how many of a player's votes are ever PAID. 0 = unlimited.",
+                "With 30, votes 1-30 pay the ladder below and vote 31 onward pays nothing at all.",
+                "Votes past the cap are still recorded and still count for the server's listing",
+                "rank -- the player is simply told they have collected everything.")
+            .defineInRange("voteRewardMaxRewardedVotes", 30, 0, 100000);
+        VOTE_ANNOUNCE_ENABLED      = b.comment(
+                "Announce every vote to the whole server, with a quiet sound for bystanders.",
+                "Fires when the vote LANDS, so it celebrates offline voters too.")
+            .define("voteAnnounceEnabled", true);
+        VOTE_REWARD_VOTES_PER_STEP = b.comment(
+                "Votes needed to earn +1 spur and +1 diamond. 1 = the reward grows every single vote.",
+                "With the defaults (spurs 2->10, diamonds 1->5, step 1) the ladder is:",
+                "    vote 1: 2 spurs, 1 diamond      vote 4: 5 spurs, 4 diamonds",
+                "    vote 2: 3 spurs, 2 diamonds     vote 5: 6 spurs, 5 diamonds  <- diamonds capped",
+                "    vote 3: 4 spurs, 3 diamonds     vote 9: 10 spurs, 5 diamonds <- spurs capped",
+                "and every vote after that pays the caps: 10 spurs + 5 diamonds.")
+            .defineInRange("voteRewardVotesPerStep", 1, 1, 1000);
         b.pop();
 
         b.comment("Rail Protection — auto-claim chunks where players build Create rail (anti-grief).")

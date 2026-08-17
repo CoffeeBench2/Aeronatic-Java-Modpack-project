@@ -1,0 +1,13 @@
+name = "Kaleidoscope Cookery 1.4.1-neoforge+mc1.21.1"
+filename = "kaleidoscopecookery-1.4.1-neoforge+mc1.21.1.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/v17FatAc/versions/TqaHu4Ma/kaleidoscopecookery-1.4.1-neoforge%2Bmc1.21.1.jar"
+hash-format = "sha512"
+hash = "1e60999ff7e411fd5cba662a0816a0a8320249e42ff427aed9f5cd952560452c4a0ae7587ae8da496982223056fec6531f46680003bc5edace7edf9024e7af9b"
+
+[update]
+[update.modrinth]
+mod-id = "v17FatAc"
+version = "TqaHu4Ma"

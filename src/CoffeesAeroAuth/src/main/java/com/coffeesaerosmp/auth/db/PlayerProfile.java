@@ -23,6 +23,12 @@ public class PlayerProfile {
     public long   lastSeen;
     public String firstIp;          // IP recorded on the very first login (set once, never overwritten)
     public long   totalPlaytimeSeconds;
+    /**
+     * Lifetime playtime frozen at the last season rollover (see SeasonMigration). Read-only here —
+     * the mod never writes it outside the migration. Subtract it from {@link #totalPlaytimeSeconds}
+     * to get playtime for the CURRENT season; 0 for anyone who first joined this season.
+     */
+    public long   season1PlaytimeSeconds;
     public long   sessionStartEpoch; // set on auth, cleared on leave
     public String skinUrl;           // base64 "textures" value; null = default skin. Offline skins are cape-stripped.
     public boolean capeEnabled;      // true = allowed a cape (premium only). Offline players never get capes.

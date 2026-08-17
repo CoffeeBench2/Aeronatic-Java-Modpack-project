@@ -50,3 +50,12 @@ pack.toml.bak-*
 # pulls this repo raw). CLAUDE.md lists both as excluded; they had never been tracked.
 server-mods/
 dist/
+
+# Votifier / crypto keys — NEVER commit (repo is public)
+*.key
+*.pem
+private.key
+
+# Local staging + downloaded logs (server IPs, chat, auth events)
+Releases/
+*.log
