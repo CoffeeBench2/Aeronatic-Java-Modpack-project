@@ -75,9 +75,19 @@ found, missing = [], []
 for cat, folder, exts in SOURCES:
     meta_dir = os.path.join(ROOT, cat)
     os.makedirs(meta_dir, exist_ok=True)
-    for f in os.listdir(meta_dir):
-        if f.endswith(".pw.toml"):
-            os.remove(os.path.join(meta_dir, f))   # clear stale metadata
+    # Metadata is PRUNED AT THE END, never up front — see the prune block after the loop.
+    #
+    # 2026-08-17: this used to delete every .pw.toml before regenerating and only write back the
+    # Modrinth hits. That silently destroyed metadata for ~20 self-hosted mods (AeroCore,
+    # CoffeesAeroSkins/Tweaks, the whole FTB suite, Tombstone, SereneSeasons, GlitchCore...).
+    # Pushing it would have made every client's updater DELETE those mods on next launch; it was
+    # caught by hand minutes before the 1.9.4 push.
+    #
+    # The invariant now is simply: AN ENTRY IS ONLY REMOVED IF THE FILE IT NAMES IS NO LONGER IN
+    # THE PACK, or a freshly written entry already covers that same file. Anything still shipping
+    # keeps its metadata even when Modrinth cannot resolve it (self-hosted jars, and mods whose
+    # exact build has since been pulled from Modrinth — three of ours are in that state).
+    # Do not "simplify" this back into an up-front wipe.
     if not os.path.isdir(folder):
         continue
     for jar in sorted(os.listdir(folder)):
@@ -94,7 +104,51 @@ for cat, folder, exts in SOURCES:
             missing.append(jar)
             print(f"  - (not on Modrinth) {jar}")
 
+# ── Prune ────────────────────────────────────────────────────────────────────────────────────
+# Runs LAST, and only ever removes an entry when one of two things is true:
+#   1. the file it names is no longer in the pack   -> genuinely superseded or removed, or
+#   2. another entry already covers that same file  -> a duplicate from a slug rename.
+# An entry for a file that still ships is never touched, whatever its source. That is what keeps
+# self-hosted mods (and mods whose exact build has vanished from Modrinth) in the index.
+pruned, dupes = 0, 0
+for cat, folder, exts in SOURCES:
+    meta_dir = os.path.join(ROOT, cat)
+    present = set(os.listdir(folder)) if os.path.isdir(folder) else set()
+    seen = {}
+    entries = []
+    for f in sorted(os.listdir(meta_dir)):
+        if not f.endswith(".pw.toml"):
+            continue
+        p = os.path.join(meta_dir, f)
+        with open(p, encoding="utf-8") as fh:
+            body = fh.read()
+        m = re.search(r'^filename\s*=\s*"(.+?)"', body, re.M)
+        entries.append((p, f, m.group(1) if m else None, "[update.modrinth]" in body))
+
+    for p, f, fname, tracked in entries:
+        if fname is None or fname not in present:
+            os.remove(p)
+            print(f"  - pruned (file no longer in pack) {f}")
+            pruned += 1
+            continue
+        if fname in seen:
+            # Two entries for one file. Keep the Modrinth-tracked one, since packwiz can update it.
+            keep_new = tracked and not seen[fname][1]
+            drop = p if not keep_new else seen[fname][0]
+            os.remove(drop)
+            print(f"  - pruned (duplicate of {fname}) {os.path.basename(drop)}")
+            dupes += 1
+            if keep_new:
+                seen[fname] = (p, tracked)
+        else:
+            seen[fname] = (p, tracked)
+
+    orphans = sorted(x for x in present if x.lower().endswith(exts) and x not in seen)
+    for o in orphans:
+        print(f"  !! NO METADATA for {o} — run add_hosted_mods.py")
+
 print(f"\n=== Modrinth-pinned: {len(found)}  |  needs CF/self-host: {len(missing)} ===")
-print("--- not on Modrinth (handle via `packwiz url add` from the GitHub Release, or CurseForge): ---")
+print(f"=== pruned {pruned} stale, {dupes} duplicate ===")
+print("--- not on Modrinth (handle via `add_hosted_mods.py` from the GitHub Release, or CurseForge): ---")
 for m in missing:
     print("   ", m)
