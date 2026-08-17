@@ -60,3 +60,10 @@ README.md
 overrides/shaderpacks/
 logs/
 *.bak-*
+
+# Staging folders for server deploys. These are gitignored, so packwiz indexing them means
+# every entry 404s on raw main and the client updater dies mid-download AFTER passing the
+# integrity gate. Exactly the *.bak-* bug from 2026-08-13, hit again on 2026-08-17 with 97
+# files. Anything not committed MUST be listed here.
+Releases/
+server-secrets/
