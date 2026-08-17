@@ -751,8 +751,8 @@ hash = "5f772005bab199c4a794ad6cb68268aa47bc7361d65d1cb985335afe694fd0cb"
 metafile = true
 
 [[files]]
-file = "mods/jei-1-21-1-neoforge-19-27-0-340.pw.toml"
-hash = "2c50145a352e70041e03b6e6cd8e32ff7b5f83b3ea999bc451d919ee18e3ca03"
+file = "mods/jei-1-21-1-neoforge-19-44-0-401.pw.toml"
+hash = "fc56ce82c61230fd9aec61d4cc1d9de305368850e7f57f7998624f80f2a37426"
 metafile = true
 
 [[files]]

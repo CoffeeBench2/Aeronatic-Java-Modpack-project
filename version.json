@@ -1,8 +1,8 @@
 {
-  "version": "1.9.4",
+  "version": "1.9.4.1",
   "url": "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/latest",
   "neoforge": "21.1.244",
   "minecraft": "1.21.1",
-  "notes": "1.9.4 - 29 mod updates. Create addons fix a fluid dupe, a stress dupe and a server freeze. Adds an Updates button to the title screen so you can check for updates any time, and fixes Aero Settings leaving block sounds on when Extra Sounds was off. Power Grid 0.6: the Circuit Design Table now needs electricity. Relaunch to apply.",
+  "notes": "1.9.4.1 - Hotfix. Updates JEI to 19.44.0.401, which ldlib2 requires. If you are stuck on the 'Mod ldlib2 only supports jei 19.39.0.368 or above' screen, grab the JEI jar from the release page and drop it in your mods folder manually - the updater cannot run from that screen. Otherwise just relaunch.",
   "lodReset": "season1"
 }
