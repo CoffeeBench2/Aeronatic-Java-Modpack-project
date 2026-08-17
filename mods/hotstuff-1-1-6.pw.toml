@@ -1,0 +1,13 @@
+name = "Hot's Aerostuff 1.1.6"
+filename = "hotstuff-1.1.6.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/UFCtLrRv/versions/eRu4UNsh/hotstuff-1.1.6.jar"
+hash-format = "sha512"
+hash = "17494031d0a1204808b8a34736b5344f0f2fa1e3ec77515608f6fd9d464fe7b2e451fafc7ddb4097f974164be1eb7212578890d0b9a190a926602982f3f097ea"
+
+[update]
+[update.modrinth]
+mod-id = "UFCtLrRv"
+version = "eRu4UNsh"

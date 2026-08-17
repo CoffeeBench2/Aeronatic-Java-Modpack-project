@@ -1,0 +1,13 @@
+name = "Cristel Lib 3.1.7"
+filename = "cristellib-neoforge-1.21.1-3.1.7.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/cl223EMc/versions/Sduz0AWP/cristellib-neoforge-1.21.1-3.1.7.jar"
+hash-format = "sha512"
+hash = "6d21ceb6cd91e63a248251ded3812208ed5ea4f36abb11e8c6e16aa119a95b0e714f59ec7689ae1b1248c9831e5e3e63aa681aa7dfa9b220d93741118466cbd6"
+
+[update]
+[update.modrinth]
+mod-id = "cl223EMc"
+version = "Sduz0AWP"

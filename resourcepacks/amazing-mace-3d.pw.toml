@@ -1,6 +1,6 @@
-name = "Amazing Mace 3d"
+name = "Amazing Mace 3d - 1.21.x (New Model)"
 filename = "Amazing Mace 3D.zip"
-side = "client"
+side = "both"
 
 [download]
 url = "https://cdn.modrinth.com/data/8fds9qyj/versions/qWHNQa8T/Amazing%20Mace%203D.zip"

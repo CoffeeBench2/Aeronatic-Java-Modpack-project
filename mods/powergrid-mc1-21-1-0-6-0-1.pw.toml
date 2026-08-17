@@ -1,0 +1,13 @@
+name = "Power Grid - 0.6.0.1 - NeoForge"
+filename = "powergrid-mc1.21.1-0.6.0.1.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/eWiBLJ9R/versions/IhWvpljS/powergrid-mc1.21.1-0.6.0.1.jar"
+hash-format = "sha512"
+hash = "947ac20357e5f1529973cff59e7e4d1de6f7ecc2c50adb18febc678017e81bc20d010c459eaddb23351689c9a7adb4329dc452dfa4b4ef535f0d3b608e51dd9c"
+
+[update]
+[update.modrinth]
+mod-id = "eWiBLJ9R"
+version = "IhWvpljS"

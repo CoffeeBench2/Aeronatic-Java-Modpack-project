@@ -1,6 +1,6 @@
-name = "Easy Building"
+name = "v1.1 Neoforge 1.12.1"
 filename = "easybuilding-neoforge-1.21.1-v1.1.jar"
-side = "client"
+side = "both"
 
 [download]
 url = "https://cdn.modrinth.com/data/t3wlJuW5/versions/HxkdqSKS/easybuilding-neoforge-1.21.1-v1.1.jar"

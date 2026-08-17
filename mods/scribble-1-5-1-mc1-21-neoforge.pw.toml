@@ -1,0 +1,13 @@
+name = "1.5.1 - NeoForge 1.21"
+filename = "Scribble-1.5.1+mc1.21-neoforge.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/yXAvIk0x/versions/I0KbSlL9/Scribble-1.5.1%2Bmc1.21-neoforge.jar"
+hash-format = "sha512"
+hash = "94bfe8a3b6f763a4110b43d1f792b1da77b8fa995531a70f3132c8604c20f67621142c53ec63f54c5e09d9fd5c430643c4b67e3e4e3d564131dd7e2608dd243d"
+
+[update]
+[update.modrinth]
+mod-id = "yXAvIk0x"
+version = "I0KbSlL9"
