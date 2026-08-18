@@ -12,6 +12,10 @@ public class AeroConfig {
     public static final ModConfigSpec.ConfigValue<String> VERSION_CHECK_URL;
     public static final ModConfigSpec.ConfigValue<String> PACK_TOML_URL;
     public static final ModConfigSpec.ConfigValue<String> NEWS_URL;
+    public static final ModConfigSpec.ConfigValue<String> DISCORD_URL;
+    public static final ModConfigSpec.BooleanValue MANUAL_UPDATE_ONLY;
+    public static final ModConfigSpec.ConfigValue<String> CURSEFORGE_URL;
+    public static final ModConfigSpec.ConfigValue<String> MODRINTH_URL;
     public static final ModConfigSpec.BooleanValue ANALOG_AUDIO_PROMPT_SHOWN;
 
     static {
@@ -45,6 +49,28 @@ public class AeroConfig {
                      "packwiz-installer (downloads only changed files) after the game closes. Blank = disable in-game update.")
             .define("packTomlUrl",
                 "https://raw.githubusercontent.com/CoffeeBench2/Aeronatic-Java-Modpack-project/main/pack.toml");
+
+        MANUAL_UPDATE_ONLY = builder
+            .comment("Detect updates but DO NOT download them — point the player at CurseForge/Modrinth instead.",
+                     "Set true for the CurseForge import build. Those installs sit several pack versions",
+                     "behind, so the in-client updater has to fetch hundreds of changed files; every request",
+                     "is cache-busted and therefore hits GitHub's origin, which answers 429 Too Many Requests",
+                     "part-way through. The update then fails silently. Re-downloading the pack from the store",
+                     "is both faster and something the launcher already knows how to do.")
+            .define("manualUpdateOnly", false);
+
+        CURSEFORGE_URL = builder
+            .comment("Store page shown when manualUpdateOnly is on.")
+            .define("curseforgeUrl", "https://www.curseforge.com/minecraft/modpacks/coffees-create-aeronautics-smp");
+
+        MODRINTH_URL = builder
+            .comment("Store page shown when manualUpdateOnly is on.")
+            .define("modrinthUrl", "https://modrinth.com/modpack/coffees-create-aeronautics-smp");
+
+        DISCORD_URL = builder
+            .comment("Discord invite opened by the Discord button on the title screen.",
+                     "Blank = hide the button entirely rather than show one that goes nowhere.")
+            .define("discordUrl", "https://discord.gg/AnFUh5vTz6");
 
         NEWS_URL = builder
             .comment("Raw URL of the News/Announcements JSON, fetched live when the title screen opens so news",

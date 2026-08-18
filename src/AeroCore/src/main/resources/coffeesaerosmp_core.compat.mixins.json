@@ -1,0 +1,13 @@
+{
+    "required": false,
+    "package": "com.coffeesaerosmp.core.mixin",
+    "compatibilityLevel": "JAVA_21",
+    "mixins": [],
+    "client": [
+        "JemiPluginMixin",
+        "JeiPluginCallerMixin"
+    ],
+    "injectors": {
+        "defaultRequire": 0
+    }
+}

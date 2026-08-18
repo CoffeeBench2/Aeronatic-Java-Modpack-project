@@ -29,7 +29,16 @@ import zipfile
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RELEASES = r"D:\MC Project\Releases"
 # The no-updater Core jar built by `gradlew jar -PnoUpdater` (staged copy is the source of truth).
-CF_CORE = os.path.join(RELEASES, "cf-core-noupdater", "CoffeesAeroCore-1.3.23-cf.jar")
+# Auto-detect the newest staged -cf jar instead of hardcoding a filename. A pinned name here went
+# stale at 1.3.23 and would have silently shipped an ancient Core (or hard-failed) on every build
+# after that — the same rot that hit add_hosted_mods.py and build_cf_import.py. 2026-08-17.
+def _newest_cf_core():
+    d = os.path.join(RELEASES, "cf-core-noupdater")
+    cands = sorted(glob.glob(os.path.join(d, "CoffeesAeroCore-*-cf.jar")), key=os.path.getmtime)
+    return cands[-1] if cands else os.path.join(d, "CoffeesAeroCore-cf.jar")
+
+
+CF_CORE = _newest_cf_core()
 
 
 def pack_version():

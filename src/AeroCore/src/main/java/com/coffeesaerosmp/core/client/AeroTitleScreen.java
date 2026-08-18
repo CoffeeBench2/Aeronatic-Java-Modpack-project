@@ -35,6 +35,10 @@ public class AeroTitleScreen extends Screen {
         ResourceLocation.fromNamespaceAndPath("coffeesaerosmp_core", "textures/gui/title_logo.png");
     private static final int LOGO_W = 1405, LOGO_H = 752;   // Season 2 art
 
+    /** 16px pixel-art Discord mark for the invite tile. Native size — blitted 1:1 so it stays crisp. */
+    private static final ResourceLocation DISCORD_ICON =
+        ResourceLocation.fromNamespaceAndPath("coffeesaerosmp_core", "textures/gui/discord_icon.png");
+
     /** 16px pack logo for the small config tile. Native size — blitted 1:1 so it stays crisp. */
     private static final ResourceLocation CONFIG_ICON =
         ResourceLocation.fromNamespaceAndPath("coffeesaerosmp_core", "textures/gui/logo_icon.png");
@@ -75,11 +79,13 @@ public class AeroTitleScreen extends Screen {
         this.addRenderableWidget(AeroButton.aero(
                 Component.literal("Join Coffees Aero SMP"),
                 b -> {
-                    net.minecraft.client.gui.screens.Screen update =
-                        com.coffeesaerosmp.core.UpdaterBridge.isPackOutdated()
-                            ? com.coffeesaerosmp.core.UpdaterBridge.openUpdateScreen(this) : null;
-                    if (update != null) this.minecraft.setScreen(update);
-                    else connectToServer();
+                    if (com.coffeesaerosmp.core.UpdaterBridge.isPackOutdated()) {
+                        // manualUpdateOnly installs (the CurseForge import) must NOT run the
+                        // in-client downloader — see StoreUpdateScreen for why it fails there.
+                        this.minecraft.setScreen(openUpdateTarget());
+                        return;
+                    }
+                    connectToServer();
                 }
         ).bounds(this.width / 2 - 100, joinY, 200, 20).build());
 
@@ -144,8 +150,14 @@ public class AeroTitleScreen extends Screen {
         //
         // Hidden entirely on a Core that cannot re-check (the CurseForge build has no updater, and
         // the CF app is the updater there), rather than shown as a button that does nothing.
+        // A CURSOR, not a fixed offset. The CurseForge build has no updater, so hardcoding
+        // Discord to the third slot would leave a hole where Updates should be. Advancing a
+        // cursor keeps the column tight in both builds and means the next corner button added
+        // here needs no arithmetic.
+        int cornerY = this.announceY + 24;
+
         if (com.coffeesaerosmp.core.UpdaterBridge.canRecheck()) {
-            this.updateY = this.announceY + 24;
+            this.updateY = cornerY;
             this.updateButton = AeroButton.aero(
                     updateLabel(),
                     b -> onUpdatePressed()
@@ -153,6 +165,34 @@ public class AeroTitleScreen extends Screen {
             this.updateButton.setTooltip(net.minecraft.client.gui.components.Tooltip.create(
                     Component.literal("Check for pack updates now")));
             this.addRenderableWidget(this.updateButton);
+            cornerY += 24;
+        }
+
+        // Discord — a 20x20 icon tile MIRRORING the Aero Settings gear on the other side of the
+        // Options/Quit row, so the row reads as a symmetric pair rather than a lone gear. That
+        // slot is free in every build, unlike the corner column whose contents differ between the
+        // Modrinth and CurseForge jars.
+        //
+        // Hidden when the invite is blank: a button that goes nowhere is worse than no button, and
+        // the CurseForge build is the one most likely to be run by someone who has never seen the
+        // Discord at all.
+        String discord = AeroConfig.DISCORD_URL.get();
+        if (discord != null && !discord.isBlank()) {
+            AeroButton dc = AeroButton.aero(
+                    Component.literal("Discord"),
+                    // ConfirmLinkScreen, not a bare openUri — Minecraft requires the "do you want
+                    // to open this link" step, and skipping it is how a mod gets flagged.
+                    b -> this.minecraft.setScreen(new net.minecraft.client.gui.screens.ConfirmLinkScreen(
+                            ok -> {
+                                if (ok) net.minecraft.Util.getPlatform().openUri(discord);
+                                this.minecraft.setScreen(this);
+                            }, discord, true))
+            ).bounds(this.width / 2 - 124, joinY + 78, 20, 20)
+             .icon(DISCORD_ICON, 16)
+             .build();
+            dc.setTooltip(net.minecraft.client.gui.components.Tooltip.create(
+                    Component.literal("Join the Coffee's Aero SMP Discord")));
+            this.addRenderableWidget(dc);
         }
 
         if (isAdmin) {
@@ -441,9 +481,7 @@ public class AeroTitleScreen extends Screen {
     private void onUpdatePressed() {
         // Already known stale — go straight to the existing, tested update flow.
         if (com.coffeesaerosmp.core.UpdaterBridge.isPackOutdated()) {
-            net.minecraft.client.gui.screens.Screen s =
-                com.coffeesaerosmp.core.UpdaterBridge.openUpdateScreen(this);
-            if (s != null) this.minecraft.setScreen(s);
+            this.minecraft.setScreen(openUpdateTarget());
             return;
         }
         // Each press is a real HTTP round trip to the raw CDN, and a button invites mashing.
@@ -471,6 +509,24 @@ public class AeroTitleScreen extends Screen {
         if (!want.getString().equals(this.updateButton.getMessage().getString())) {
             this.updateButton.setMessage(want);
         }
+    }
+
+    /**
+     * Where "you are out of date" leads for THIS install.
+     *
+     * <p>Normally the in-client updater. On a {@code manualUpdateOnly} install — the CurseForge
+     * import — it is the store screen instead, because the updater cannot complete a delta that
+     * large without being rate-limited by GitHub. Falls back to the store screen whenever the
+     * updater is absent (the CF store jar strips it), so this never returns null and never leaves
+     * the player on a dead button.
+     */
+    private Screen openUpdateTarget() {
+        if (!AeroConfig.MANUAL_UPDATE_ONLY.get()) {
+            Screen s = com.coffeesaerosmp.core.UpdaterBridge.openUpdateScreen(this);
+            if (s != null) return s;
+        }
+        return new com.coffeesaerosmp.core.screen.StoreUpdateScreen(
+            this, com.coffeesaerosmp.core.UpdaterBridge.latestVersion());
     }
 
     private void connectToServer() {

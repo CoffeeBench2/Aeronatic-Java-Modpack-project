@@ -19,6 +19,15 @@ public class CoffeesAeroCoreClient {
         com.coffeesaerosmp.core.client.OrphanCleanup.run(
             net.neoforged.fml.loading.FMLPaths.GAMEDIR.get());
 
+        // Apply the recipe-viewer choice to EMI's own visibility flag. The JEI half is handled by
+        // JemiPluginMixin during plugin registration; this is the other half, because cancelling
+        // EMI's JEI takeover does not stop EMI drawing its OWN sidebar — without this the player
+        // would see both viewers at once.
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent.LoggingIn e) ->
+            com.coffeesaerosmp.core.client.RecipeViewer.applyEmiVisibility());
+        modBus.addListener((net.neoforged.fml.event.lifecycle.FMLClientSetupEvent e) ->
+            e.enqueueWork(com.coffeesaerosmp.core.client.RecipeViewer::applyEmiVisibility));
+
         // Native title screen (replaced FancyMenu in 1.3.0) — panorama + pack logo + cogwheels,
         // Join button with version gating, admin corner buttons.
         NeoForge.EVENT_BUS.addListener((ScreenEvent.Opening e) -> {

@@ -24,15 +24,49 @@ RELEASES = r"D:\MC Project\Releases"
 OVERRIDES = os.path.join(ROOT, "overrides")
 KEY_FILE = os.path.join(ROOT, ".cf-key")
 
-VERSION = "1.8.4"
-# Deliberately behind VERSION so the in-client updater fires on first launch.
-IMPORT_STAMP = "1.8.9-import"
+def _pack_version():
+    t = open(os.path.join(ROOT, "pack.toml"), encoding="utf-8").read()
+    m = re.search(r'(?m)^version\s*=\s*"([^"]+)"', t)
+    return m.group(1) if m else "0.0.0"
+
+
+# Derived, never pinned. This was hardcoded to "1.8.4" and quietly kept building an import zip
+# five pack versions stale, which is what left CurseForge players unable to update (2026-08-17).
+VERSION = _pack_version()
+
+# Stamped to MATCH live, not behind it. The old build stamped a fake older version so the
+# in-client updater would fire on first launch; that made a CF importer sync a several-hundred-
+# file delta through GitHub origin (every request cache-busted), which answers 429 part-way and
+# fails silently. This zip already IS the current pack, so there is nothing to fetch.
+IMPORT_STAMP = VERSION
 
 SRC = os.path.join(RELEASES, "CoffeesAeroSMP-%s-CURSEFORGE.zip" % VERSION)
 OUT = os.path.join(RELEASES, "CoffeesAeroSMP-%s-CF-IMPORT.zip" % VERSION)
 
 # Ours. Never CF-referenced, always bundled.
-OURS = ["CoffeesAeroCore-1.3.23.jar", "CoffeesAeroSkins-1.1.0.jar", "CoffeesAeroTweaks-1.0.0.jar"]
+def _ours():
+    """Newest build of each of our mods actually present in overrides/mods.
+
+    Pinned filenames rotted here too: CoffeesAeroCore-1.3.23.jar no longer exists, so this
+    script would sys.exit on every run until somebody noticed.
+    """
+    import glob as _g
+    out = []
+    for stem in ("CoffeesAeroCore", "CoffeesAeroSkins", "CoffeesAeroTweaks"):
+        search = [os.path.join(OVERRIDES, "mods", stem + "-*.jar")]
+        if stem == "CoffeesAeroCore":
+            # Prefer the freshest FULL build wherever it was staged.
+            search.insert(0, os.path.join(ROOT, "src", "AeroCore", "build", "libs",
+                                          stem + "-*.jar"))
+        hits = []
+        for pat in search:
+            hits += [h for h in _g.glob(pat) if not h.endswith("-cf.jar")]
+        if hits:
+            out.append(max(hits, key=os.path.getmtime))   # full path, not just a name
+    return out
+
+
+OURS = _ours()
 
 def cf_names(mod_ids):
     """Bulk-resolve CF project ids -> names, to catch a fingerprint matching one of our mods."""
@@ -86,11 +120,28 @@ try:
     for stale in os.listdir(mods_dir):
         if stale.lower().startswith("coffeesaero"):
             os.remove(os.path.join(mods_dir, stale))
-    for jar in OURS:
-        src = os.path.join(OVERRIDES, "mods", jar)
+    for src in OURS:
         if not os.path.isfile(src):
-            sys.exit("missing %s in overrides/mods" % jar)
-        shutil.copyfile(src, os.path.join(mods_dir, jar))
+            sys.exit("missing %s" % src)
+        shutil.copyfile(src, os.path.join(mods_dir, os.path.basename(src)))
+
+    # Mods build_cf.py strips for CurseForge moderation but the SERVER still loads. The import
+    # channel is unmoderated and no longer runs the updater, so these must ride along or the
+    # profile is missing a side=BOTH mod the moment a player connects.
+    MUST_BUNDLE = ["Analog-Audio-"]
+    for prefix in MUST_BUNDLE:
+        import glob as _g2
+        found = _g2.glob(os.path.join(OVERRIDES, "mods", prefix + "*.jar"))
+        if not found:
+            sys.exit("missing a MUST_BUNDLE mod matching %s* in overrides/mods" % prefix)
+        for src in found:
+            name = os.path.basename(src)
+            if not os.path.isfile(os.path.join(mods_dir, name)):
+                shutil.copyfile(src, os.path.join(mods_dir, name))
+                print("  force-bundled (side=BOTH, stripped by build_cf): %s" % name)
+        # And drop any CF manifest reference to it, or the launcher installs it twice.
+        manifest["files"] = [f for f in manifest.get("files", [])
+                             if not str(f.get("__name", "")).startswith(prefix)]
 
     # --- 2b. strip files the pack has retired ------------------------------------
     # The store zip is produced from a packwiz export that may predate a removal, so a dropped
@@ -118,9 +169,16 @@ try:
         if "packTomlUrl" not in t2:
             t2 += ('\npackTomlUrl = "https://raw.githubusercontent.com/CoffeeBench2/'
                    'Aeronatic-Java-Modpack-project/main/pack.toml"\n')
+        # Detect updates, but never download them on this channel. See StoreUpdateScreen: a
+        # CF-import install cannot complete a large packwiz delta without GitHub rate-limiting
+        # it, and the failure is silent. Point at the store instead.
+        if re.search(r"(?m)^manualUpdateOnly\s*=", t2):
+            t2 = re.sub(r"(?m)^manualUpdateOnly\s*=.*$", "manualUpdateOnly = true", t2)
+        else:
+            t2 += "\nmanualUpdateOnly = true\n"
         open(cfg, "w", encoding="utf8", newline="\n").write(t2)
-        print("  packVersion stamped %s (live is %s) -> updater fires on first launch"
-              % (IMPORT_STAMP, VERSION))
+        print("  packVersion stamped %s (matches live) + manualUpdateOnly=true"
+              % IMPORT_STAMP)
 
     manifest["name"] = "Coffees Aero SMP"
     manifest["version"] = VERSION
@@ -142,7 +200,8 @@ try:
     print("size                : %.1f MB" % (os.path.getsize(OUT) / 1024 / 1024))
     print()
     for j in OURS:
-        print("  %-34s %s" % (j, "bundled" if j in bundled else "*** MISSING ***"))
+        n = os.path.basename(j)
+        print("  %-34s %s" % (n, "bundled" if n in bundled else "*** MISSING ***"))
     print("  %-34s %s" % ("Analog Audio",
           "not bundled - updater fetches it" if not any("analog" in b.lower() for b in bundled)
           else "bundled"))

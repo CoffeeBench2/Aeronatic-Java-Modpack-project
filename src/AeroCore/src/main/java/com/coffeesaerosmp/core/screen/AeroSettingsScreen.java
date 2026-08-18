@@ -50,7 +50,14 @@ public class AeroSettingsScreen extends Screen {
 
     private Component label(ClientToggles.Toggle t) {
         boolean on = t.get().getAsBoolean();
-        return Component.literal(t.label() + ": " + (on ? "§aON" : "§cOFF"));
+        // Per-toggle wording, not a hardcoded ON/OFF — the recipe-viewer switch reads
+        // "Recipe Viewer: EMI" / "Recipe Viewer: JEI", which is the actual choice being made.
+        String suffix = "";
+        if ("Recipe Viewer".equals(t.label())
+                && com.coffeesaerosmp.core.client.RecipeViewer.needsRestart()) {
+            suffix = " §6(restart)";
+        }
+        return Component.literal(t.label() + ": " + (on ? t.onText() : t.offText()) + suffix);
     }
 
     /** Shown under the title so a toggle that found zero flags is visible, not silent. */
@@ -72,8 +79,18 @@ public class AeroSettingsScreen extends Screen {
             g.drawCenteredString(this.font, "§7No toggleable client mods are installed.",
                 this.width / 2, 60, 0xFFAAAAAA);
         } else {
-            g.drawCenteredString(this.font, "§7Changes apply immediately.",
-                this.width / 2, this.height - 46, 0xFFAAAAAA);
+            // Only shown while a restart is genuinely outstanding — a permanent notice gets ignored.
+            if (com.coffeesaerosmp.core.client.RecipeViewer.needsRestart()) {
+                g.drawCenteredString(this.font,
+                    "§6⚠ Restart Minecraft to switch your recipe viewer.",
+                    this.width / 2, this.height - 58, 0xFFFFD24A);
+                g.drawCenteredString(this.font,
+                    "§7Everything else applies immediately.",
+                    this.width / 2, this.height - 46, 0xFFAAAAAA);
+            } else {
+                g.drawCenteredString(this.font, "§7Changes apply immediately.",
+                    this.width / 2, this.height - 46, 0xFFAAAAAA);
+            }
             g.drawCenteredString(this.font, diagnostics(), this.width / 2, 38, 0xFF888888);
         }
     }

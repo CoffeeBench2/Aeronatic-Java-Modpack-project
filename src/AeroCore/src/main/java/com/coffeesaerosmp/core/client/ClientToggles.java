@@ -30,9 +30,21 @@ public final class ClientToggles {
 
     private ClientToggles() {}
 
-    /** One switch on the settings screen. */
+    /**
+     * One switch on the settings screen.
+     *
+     * <p>{@code onText}/{@code offText} exist because not every switch is an on/off: the recipe
+     * viewer picks between two mods, and "Recipe Viewer: OFF" would tell a player nothing about
+     * what they are actually getting. The 4-argument constructor keeps the plain ON/OFF default so
+     * every existing toggle is unchanged.
+     */
     public record Toggle(String label, String description, java.util.function.BooleanSupplier get,
-                         java.util.function.Consumer<Boolean> set) {}
+                         java.util.function.Consumer<Boolean> set, String onText, String offText) {
+        public Toggle(String label, String description, java.util.function.BooleanSupplier get,
+                      java.util.function.Consumer<Boolean> set) {
+            this(label, description, get, set, "§aON", "§cOFF");
+        }
+    }
 
     private static List<Toggle> cached;
 
@@ -48,7 +60,8 @@ public final class ClientToggles {
                     new Detector("Ragdolls",       ClientToggles::addRagdolls),
                     new Detector("Grand Teleport", ClientToggles::addGrandTeleport),
                     new Detector("Subtle Effects", ClientToggles::addSubtleEffects),
-                    new Detector("Sounds",         ClientToggles::addSounds)}) {
+                    new Detector("Sounds",         ClientToggles::addSounds),
+                    new Detector("Recipe Viewer",  ClientToggles::addRecipeViewer)}) {
                 int before = list.size();
                 try {
                     d.add().accept(list);
@@ -374,6 +387,34 @@ public final class ClientToggles {
         } catch (Throwable t) {
             LogUtils.getLogger().warn("[AeroCore] Subtle Effects toggle unavailable: {}", t.toString());
         }
+    }
+
+    /**
+     * Recipe viewer — EMI on, or EMI off so JEI takes the sidebar.
+     *
+     * <p>The pack ships BOTH. EMI claims the inventory sidebar when present, so "I want JEI" really
+     * means "turn EMI off". A mod cannot be unloaded at runtime, but {@code EmiConfig.enabled} is a
+     * public static boolean that EMI itself reads every frame — the same field its Toggle Visibility
+     * keybind flips — so writing it is exactly as valid as pressing the key, and takes effect
+     * immediately.
+     *
+     * <p>{@code writeConfig()} persists it to EMI's own config so the choice survives a restart
+     * rather than silently reverting, which is what made the earlier client toggles feel broken.
+     *
+     * <p>⚠ Turning EMI off also removes EMI Loot and EMI Enchanting, which JEI has no equivalent
+     * for. That is called out in the description rather than hidden, because losing loot-table
+     * previews is a surprise otherwise.
+     */
+    private static void addRecipeViewer(List<Toggle> out) {
+        if (!RecipeViewer.bothInstalled()) return;      // nothing to choose between
+        out.add(new Toggle(
+            "Recipe Viewer",
+            "EMI includes EMI Loot and EMI Enchanting; JEI has no equivalent for those. "
+                + "Takes effect after a RESTART — EMI replaces JEI's runtime during mod "
+                + "loading, so it cannot be swapped mid-session.",
+            () -> !RecipeViewer.preferJei(),
+            v  -> RecipeViewer.setPreferJei(!v),
+            "§bEMI", "§eJEI"));
     }
 
     /** Sounds — every sound is a {@code ConfiguredSound} with a public {@code enabled} boolean. */

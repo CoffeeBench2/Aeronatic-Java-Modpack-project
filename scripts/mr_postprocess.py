@@ -16,6 +16,7 @@ Two faults in the raw export, both previously fixed by hand for 1.8.1.1:
     hosts becomes a reference and its bytes are dropped.
 """
 import zipfile, json, hashlib, urllib.request, os, sys
+import re as _re
 
 SRC = sys.argv[1] if len(sys.argv) > 1 else r"D:\MC Project\untitled\Coffees Aero SMP-1.8.2.mrpack"
 OUT = sys.argv[2] if len(sys.argv) > 2 else r"D:\MC Project\Releases\CoffeesAeroSMP-1.8.2-MODRINTH.mrpack"
@@ -32,7 +33,27 @@ NO_PERMISSION = (
 # Stamp a LOWER pack version into the bundled Core config so the in-client updater fires
 # on first launch and pulls the removed mods down. Without this the client would think it
 # is already current and the pack would stay incomplete.
-BOOTSTRAP_VERSION = "1.8.1.1"
+def _bootstrap_version():
+    """One notch below the live pack version, derived — never pinned.
+
+    This was hardcoded to "1.8.1.1" and stayed there. The number only decides WHETHER the updater
+    fires (the delta itself is whatever is actually missing on disk), but stamping a version many
+    releases old means the client reports nonsense, and any future logic that trusts it is wrong.
+    Deriving it keeps the "fires on first launch" behaviour without the rot.
+    """
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    with open(os.path.join(root, "pack.toml"), encoding="utf-8") as fh:
+        m = _re.search(r'(?m)^version\s*=\s*"([^"]+)"', fh.read())
+    live = m.group(1) if m else "0.0.0"
+    parts = live.split(".")
+    for i in range(len(parts) - 1, -1, -1):
+        if parts[i].isdigit() and int(parts[i]) > 0:
+            parts[i] = str(int(parts[i]) - 1)
+            return ".".join(parts)
+    return "0.0.0"
+
+
+BOOTSTRAP_VERSION = _bootstrap_version()
 CORE_CFG = "overrides/config/coffeesaerosmp_core-client.toml"
 
 zin = zipfile.ZipFile(SRC)

@@ -23,6 +23,15 @@ neoForge {
     }
 }
 
+dependencies {
+    // JEI, compile-only. JemiPluginMixin injects into EMI's JEI plugin, and Mixin requires the
+    // handler's parameter types to MATCH the target method's descriptor exactly — declaring the
+    // argument as Object produced "Invalid descriptor ... Expected IRuntimeRegistration but found
+    // Object" and the mixin silently did not apply (2026-08-18). Never shipped: compileOnly, and
+    // JEI is already in the pack at runtime.
+    compileOnly fileTree(dir: 'libs', include: ['jei-*.jar'])
+}
+
 // CurseForge distribution: build with -PnoUpdater to EXCLUDE the in-client updater subsystem
 // from the jar entirely (CF policy forbids mods that fetch files from outside the pack; the CF
 // app is the updater on that channel). UpdaterBridge reflects on these classes and degrades to

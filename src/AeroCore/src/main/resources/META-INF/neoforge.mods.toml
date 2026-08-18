@@ -5,6 +5,11 @@ license = "All Rights Reserved (c) 2026 MrCoffeeBench"
 [[mixins]]
 config = "coffeesaerosmp_core.mixins.json"
 
+# Optional-mod compat, required=false: these target OTHER mods' classes by name. If a mod is
+# absent or renames something, this must degrade to a log warning rather than crash the client.
+[[mixins]]
+config = "coffeesaerosmp_core.compat.mixins.json"
+
 [[mods]]
 modId           = "coffeesaerosmp_core"
 version         = "${file.jarVersion}"
