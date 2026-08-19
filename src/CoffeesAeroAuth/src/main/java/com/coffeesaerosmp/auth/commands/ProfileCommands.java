@@ -7,6 +7,7 @@ import com.coffeesaerosmp.auth.util.TextUtil;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.coffeesaerosmp.auth.chat.ChatFilter;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 import net.minecraft.commands.CommandSourceStack;
@@ -229,6 +230,40 @@ public class ProfileCommands {
                 )
                 .then(Commands.literal("off")
                     .executes(ctx -> testingSet(ctx.getSource(), false, ""))
+                )
+            )
+            // Chat word filter. Edited live — the list is persisted to chat_filter.json and
+            // recompiled on every change, so nothing here needs a restart or a /reload.
+            .then(Commands.literal("filter")
+                .executes(ctx -> filterList(ctx.getSource()))
+                .then(Commands.literal("list")
+                    .executes(ctx -> filterList(ctx.getSource()))
+                )
+                // `add` on a word that is already listed CHANGES its severity — that is what
+                // "editing" a rule means here, since a rule is only a word plus an action.
+                .then(Commands.literal("add")
+                    .then(Commands.literal("block")
+                        .then(Commands.argument("word", StringArgumentType.word())
+                            .executes(ctx -> filterAdd(ctx.getSource(),
+                                StringArgumentType.getString(ctx, "word"), ChatFilter.Action.BLOCK)))
+                    )
+                    .then(Commands.literal("censor")
+                        .then(Commands.argument("word", StringArgumentType.word())
+                            .executes(ctx -> filterAdd(ctx.getSource(),
+                                StringArgumentType.getString(ctx, "word"), ChatFilter.Action.CENSOR)))
+                    )
+                )
+                .then(Commands.literal("remove")
+                    .then(Commands.argument("word", StringArgumentType.word())
+                        .executes(ctx -> filterRemove(ctx.getSource(),
+                            StringArgumentType.getString(ctx, "word"))))
+                )
+                // Dry run. The whole point of a filter is that you find out what it does BEFORE a
+                // player does, and the evasion-tolerant matching is not obvious by eye.
+                .then(Commands.literal("test")
+                    .then(Commands.argument("text", StringArgumentType.greedyString())
+                        .executes(ctx -> filterTest(ctx.getSource(),
+                            StringArgumentType.getString(ctx, "text"))))
                 )
             )
             .then(Commands.literal("clearips")
@@ -833,6 +868,82 @@ public class ProfileCommands {
         String msg = TextUtil.PREFIX + "§7Testing mode: " + (on ? "§e§lON" : "§aOFF") + extra
             + (on && !TestingMode.note().isBlank() ? " §f— " + TestingMode.note() : "");
         source.sendSuccess(() -> Component.literal(msg), false);
+        return 1;
+    }
+
+    // ── Chat filter ───────────────────────────────────────────────────────────
+
+    /** {@code authmod filter list} — every rule, BLOCK first. */
+    private static int filterList(CommandSourceStack source) {
+        var rules = ChatFilter.list();
+        if (rules.isEmpty()) {
+            source.sendSuccess(() -> Component.literal(TextUtil.PREFIX
+                + "§7The chat filter has no words. Add one with §f/authmod filter add censor <word>§7."), false);
+            return 1;
+        }
+        source.sendSuccess(() -> Component.literal(TextUtil.PREFIX
+            + "§7Chat filter — §f" + rules.size() + "§7 word(s):"), false);
+        StringBuilder block = new StringBuilder(), censor = new StringBuilder();
+        for (var e : rules) {
+            (e.getValue() == ChatFilter.Action.BLOCK ? block : censor).append(e.getKey()).append(", ");
+        }
+        if (block.length() > 0) {
+            String s = block.substring(0, block.length() - 2);
+            source.sendSuccess(() -> Component.literal("  §c✖ BLOCK  §7" + s), false);
+        }
+        if (censor.length() > 0) {
+            String s = censor.substring(0, censor.length() - 2);
+            source.sendSuccess(() -> Component.literal("  §e● CENSOR §7" + s), false);
+        }
+        return 1;
+    }
+
+    /** {@code authmod filter add block|censor <word>} — adds, or re-severities an existing word. */
+    private static int filterAdd(CommandSourceStack source, String word, ChatFilter.Action action) {
+        ChatFilter.AddResult res = ChatFilter.add(word, action);
+        if (res == null) {
+            source.sendFailure(Component.literal("'" + word + "' has no letters or digits to match on."));
+            return 0;
+        }
+        String verb = res.previous() == null ? "Added" : ("Changed §f" + res.previous() + "§a →");
+        source.sendSuccess(() -> Component.literal(TextUtil.PREFIX + "§a" + verb + " §f" + res.key()
+            + "§a as §f" + action + "§a. §7(" + ChatFilter.size() + " word(s) total.)"), true);
+        return 1;
+    }
+
+    /** {@code authmod filter remove <word>}. */
+    private static int filterRemove(CommandSourceStack source, String word) {
+        if (!ChatFilter.remove(word)) {
+            source.sendFailure(Component.literal("'" + word + "' is not in the filter."));
+            return 0;
+        }
+        source.sendSuccess(() -> Component.literal(TextUtil.PREFIX + "§aRemoved §f" + word
+            + "§a. §7(" + ChatFilter.size() + " word(s) left.)"), true);
+        return 1;
+    }
+
+    /**
+     * {@code authmod filter test <text>} — shows what the filter WOULD do, without saying it in chat.
+     *
+     * <p>Exists because the matching is deliberately evasion-tolerant, so whether a given sentence
+     * trips a rule is genuinely not obvious by eye — and the alternative way of finding out is to
+     * let a player discover it first.
+     */
+    private static int filterTest(CommandSourceStack source, String text) {
+        ChatFilter.Result r = ChatFilter.check(text);
+        if (r == null) {
+            source.sendSuccess(() -> Component.literal(TextUtil.PREFIX
+                + "§a✔ Clean §7— nothing in that would be filtered."), false);
+            return 1;
+        }
+        if (r.action() == ChatFilter.Action.BLOCK) {
+            source.sendSuccess(() -> Component.literal(TextUtil.PREFIX
+                + "§c✖ BLOCKED §7by §f" + r.word() + "§7 — the message would not be sent, and a HIGH "
+                + "watchdog alert would fire."), false);
+        } else {
+            source.sendSuccess(() -> Component.literal(TextUtil.PREFIX
+                + "§e● CENSORED §7by §f" + r.word() + "§7 — would send as: §f" + r.text()), false);
+        }
         return 1;
     }
 

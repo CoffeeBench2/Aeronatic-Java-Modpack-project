@@ -13,7 +13,8 @@
         "PlayerInfoPacketAccessor",
         "ServerPlayerPlotGuardMixin",
         "ServerPlayerTeleportGuardMixin",
-        "ContraptionColliderNpeFixMixin"
+        "ContraptionColliderNpeFixMixin",
+        "GameProfileCacheDisplayNameMixin"
     ],
     "client": [],
     "injectors": {

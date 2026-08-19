@@ -101,6 +101,8 @@ public class CoffeesAeroAuth {
                     if (DAILY_REWARDS != null) DAILY_REWARDS.onPlayerLeave(sp);
                     // Drop cached sidebar rows + advancement count so nothing leaks across sessions.
                     com.coffeesaerosmp.auth.sidebar.SidebarManager.onPlayerLogout(sp);
+                    com.coffeesaerosmp.auth.afk.AfkTracker.onPlayerLogout(sp);
+                    com.coffeesaerosmp.auth.events.ChatEvents.onPlayerLogout(sp);
                 }
             });
 
@@ -137,6 +139,51 @@ public class CoffeesAeroAuth {
         // Keeps the sidebar's advancement count current without rescanning every advancement.
         NeoForge.EVENT_BUS.addListener(
             com.coffeesaerosmp.auth.sidebar.SidebarManager::onAdvancementEarned);
+
+        // Idle timer — pauses playtime accrual while a player is AFK, so the playtime-derived
+        // level can't be farmed by standing still. Rolls sessionStartEpoch forward rather than
+        // accumulating a subtraction, so every consumer of playtime is corrected at once.
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.tick.ServerTickEvent.Post e) ->
+            com.coffeesaerosmp.auth.afk.AfkTracker.onServerTick(e.getServer()));
+        // Deliberate actions that count as activity. Movement and looking around are picked up by
+        // the tracker's own tick, so these are only the things a player can do while standing
+        // perfectly still. ⚠ Damage taken and items picked up are NOT here on purpose — an AFK
+        // player parked in a mob farm generates both continuously, which is the exact case this
+        // whole feature exists to catch.
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.ServerChatEvent e) ->
+            com.coffeesaerosmp.auth.afk.AfkTracker.touch(e.getPlayer()));
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.CommandEvent e) -> {
+            // Fires for the console and command blocks too, so the source must really be a player.
+            if (e.getParseResults().getContext().getSource().getEntity()
+                    instanceof net.minecraft.server.level.ServerPlayer sp) {
+                com.coffeesaerosmp.auth.afk.AfkTracker.touch(sp);
+            }
+        });
+        // BreakEvent is not a PlayerEvent, so it needs its own unwrap rather than onPlayerActivity.
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.level.BlockEvent.BreakEvent e) -> {
+            if (e.getPlayer() instanceof net.minecraft.server.level.ServerPlayer sp) {
+                com.coffeesaerosmp.auth.afk.AfkTracker.touch(sp);
+            }
+        });
+        NeoForge.EVENT_BUS.addListener(
+            (net.neoforged.neoforge.event.entity.player.PlayerInteractEvent.RightClickBlock e) ->
+                com.coffeesaerosmp.auth.afk.AfkTracker.onPlayerActivity(e));
+        NeoForge.EVENT_BUS.addListener(
+            (net.neoforged.neoforge.event.entity.player.PlayerInteractEvent.RightClickItem e) ->
+                com.coffeesaerosmp.auth.afk.AfkTracker.onPlayerActivity(e));
+        NeoForge.EVENT_BUS.addListener(
+            (net.neoforged.neoforge.event.entity.player.PlayerInteractEvent.EntityInteract e) ->
+                com.coffeesaerosmp.auth.afk.AfkTracker.onPlayerActivity(e));
+        NeoForge.EVENT_BUS.addListener(
+            (net.neoforged.neoforge.event.entity.player.AttackEntityEvent e) ->
+                com.coffeesaerosmp.auth.afk.AfkTracker.onPlayerActivity(e));
+        NeoForge.EVENT_BUS.addListener(
+            (net.neoforged.neoforge.event.entity.player.PlayerContainerEvent.Open e) ->
+                com.coffeesaerosmp.auth.afk.AfkTracker.onPlayerActivity(e));
+
+        // Periodic "the watchdog is watching" reminder + bark. Random interval, world chat only.
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.tick.ServerTickEvent.Post e) ->
+            com.coffeesaerosmp.auth.watchdog.WatchdogTaunts.onServerTick(e.getServer()));
 
         // Restart countdown boss bar — redraws itself; no-op when no countdown is running.
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.tick.ServerTickEvent.Post e) ->
@@ -220,6 +267,7 @@ public class CoffeesAeroAuth {
         // ── Core auth stack ───────────────────────────────────────────────────
         // Load before anyone can join, so the first player of the session sees the banner.
         com.coffeesaerosmp.auth.util.TestingMode.initialize(dataDir);
+        com.coffeesaerosmp.auth.chat.ChatFilter.initialize(dataDir);
 
         PROFILE_STORE = new ProfileStore(dataDir, DB_MANAGER);
         PROFILE_STORE.initialize();

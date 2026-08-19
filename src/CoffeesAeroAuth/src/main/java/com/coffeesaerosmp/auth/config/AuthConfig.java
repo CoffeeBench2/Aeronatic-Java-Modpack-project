@@ -70,6 +70,14 @@ public class AuthConfig {
     public static final ModConfigSpec.ConfigValue<String>  SERVER_DISPLAY_NAME;
     public static final ModConfigSpec.ConfigValue<String>  DISPLAY_RGB_NAMES;
     public static final ModConfigSpec.BooleanValue         SIDEBAR_ENABLED;
+    public static final ModConfigSpec.BooleanValue         AFK_ENABLED;
+    public static final ModConfigSpec.IntValue             AFK_TIMEOUT_MINUTES;
+    public static final ModConfigSpec.BooleanValue         AFK_ANNOUNCE;
+    public static final ModConfigSpec.BooleanValue         CHAT_FILTER_ENABLED;
+    public static final ModConfigSpec.BooleanValue         WATCHDOG_TAUNTS_ENABLED;
+    public static final ModConfigSpec.IntValue             WATCHDOG_TAUNT_MIN_MINUTES;
+    public static final ModConfigSpec.IntValue             WATCHDOG_TAUNT_MAX_MINUTES;
+    public static final ModConfigSpec.BooleanValue         RESOLVE_DISPLAY_NAMES;
     public static final ModConfigSpec.IntValue             WELCOME_INTERVAL_HOURS;
     public static final ModConfigSpec.BooleanValue         MASK_ADVANCEMENT_NAMES;
 
@@ -267,12 +275,72 @@ public class AuthConfig {
                      "Persisted in welcome_shown.json so relogs/restarts don't replay it. 0 = every join",
                      "(the old always-spam behaviour). First-join sequences always show regardless.")
             .defineInRange("welcomeIntervalHours", 10, 0, 720);
+        RESOLVE_DISPLAY_NAMES = b
+            .comment("Let name-based commands accept a player's /setname DISPLAY name.",
+                     "WHY: GameProfileArgument (what FTB Teams party invites, /ban and /whitelist use)",
+                     "resolves names through the GameProfileCache only — never the online player list —",
+                     "and that cache holds the REAL account name, written at login before NameMask runs.",
+                     "So a display name never matched. Worse, on an offline-mode backend the cache does",
+                     "not return 'not found': it FABRICATES a profile with a UUID derived from the name,",
+                     "so an invite silently went to a phantom account and the real player saw nothing.",
+                     "Only display names that DIFFER from the account name are intercepted; an exact",
+                     "username still resolves through vanilla untouched.")
+            .define("resolveDisplayNames", true);
         SIDEBAR_ENABLED = b
-            .comment("Show the right-hand status sidebar (name, level, playtime, clan, online, season).",
+            .comment("Show the right-hand status sidebar (name, level, playtime, deaths, advancements, clan, online, season).",
                      "Server-wide master switch — players hide it individually with /sidebar, which is",
                      "stored in their persisted NBT, not the database. The panel is never shown in the",
                      "auth lobby (the tab list already carries the lobby guidance there).")
             .define("sidebarEnabled", true);
+        AFK_ENABLED = b
+            .comment("Stop playtime accruing while a player is AFK.",
+                     "WHY: the sidebar level is derived from playtime alone, so without this an AFK",
+                     "farm levels a player up as fast as playing does. Implemented by rolling their",
+                     "session clock forward while idle, so idle time never enters the playtime figure",
+                     "in ANY of the places that show it (/profile, sidebar, Discord /leaderboard).",
+                     "Activity = moving, looking around, chat, commands, breaking, placing,",
+                     "right-clicking, attacking, opening a container. Taking damage and picking items",
+                     "up deliberately do NOT count — an AFK player in a mob farm does both nonstop.",
+                     "Turning this OFF does not retroactively restore time already excluded.")
+            .define("afkEnabled", true);
+        AFK_TIMEOUT_MINUTES = b
+            .comment("Minutes of no activity before a player counts as AFK.",
+                     "When it expires the WHOLE idle stretch is excluded, not just the part after the",
+                     "threshold — otherwise a twitch every few minutes buys a free window each time.")
+            .defineInRange("afkTimeoutMinutes", 5, 1, 120);
+        AFK_ANNOUNCE = b
+            .comment("Tell the other players in chat when someone goes AFK or comes back.",
+                     "Plain grey, no house prefix — it is ambient information ('don't wait for a",
+                     "reply'), so it is styled to read quieter than normal chat, not louder.",
+                     "The AFK player is not sent their own announcement; they get a private line",
+                     "about their playtime being paused instead.")
+            .define("afkAnnounce", true);
+        CHAT_FILTER_ENABLED = b
+            .comment("Screen public chat for filtered words.",
+                     "Two severities per word, edited in-game with /authmod filter and stored in",
+                     "chat_filter.json (no restart needed): CENSOR stars the word and lets the",
+                     "message through; BLOCK drops the message entirely and raises a HIGH watchdog",
+                     "alert. Both warn the sender and notify staff — BLOCK also keeps the original",
+                     "text OUT of chat, the Discord bridge and the console broadcast; only the alert",
+                     "carries it, because staff need to see what was actually said.",
+                     "Matching tolerates spacing, punctuation, repeated letters and leetspeak, but is",
+                     "anchored to word boundaries so 'ass' does not fire inside 'classic'.")
+            .define("chatFilterEnabled", true);
+        WATCHDOG_TAUNTS_ENABLED = b
+            .comment("Occasionally remind everyone in chat that the watchdog is monitoring, with a bark.",
+                     "Deterrence: the watchdog logs UUID switches, lookalike names, impossible",
+                     "movement and command velocity anyway, but a monitor nobody knows about deters",
+                     "nobody. Lobby players are excluded (they are still being onboarded), and",
+                     "nothing is sent when the world is empty.")
+            .define("watchdogTauntsEnabled", true);
+        WATCHDOG_TAUNT_MIN_MINUTES = b
+            .comment("Shortest gap (minutes) between watchdog reminders.")
+            .defineInRange("watchdogTauntMinMinutes", 25, 1, 1440);
+        WATCHDOG_TAUNT_MAX_MINUTES = b
+            .comment("Longest gap (minutes) between watchdog reminders. The gap is re-rolled",
+                     "uniformly in [min, max] after every broadcast — a FIXED schedule is something",
+                     "to plan around, which would remove the entire deterrent value.")
+            .defineInRange("watchdogTauntMaxMinutes", 55, 1, 1440);
         b.pop();
 
         b.comment("Watchdog — Security Monitoring").push("watchdog");

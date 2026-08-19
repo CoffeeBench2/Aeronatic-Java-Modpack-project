@@ -76,6 +76,18 @@ public final class Sounds {
     }
 
     /**
+     * The watchdog reminder: a bark, then a low growl under it.
+     *
+     * <p>The growl is pitched down and follows the bark rather than stacking on it, so the pair
+     * reads as one animal rather than as two unrelated blips. Loud enough to look up at, quiet
+     * enough that it does not become the reason someone turns sounds off.
+     */
+    public static void watchdog(ServerPlayer player) {
+        play(player, SoundEvents.WOLF_AMBIENT, 0.9f, 0.8f);
+        play(player, SoundEvents.WOLF_GROWL, 0.5f, 0.6f);
+    }
+
+    /**
      * The teleport as BYSTANDERS experience it — a positional enderman VWOOP plus portal particles
      * at a world position, so people nearby see and hear that someone left or arrived.
      *

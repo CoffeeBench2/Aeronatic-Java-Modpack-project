@@ -1,8 +1,13 @@
 package com.coffeesaerosmp.auth.events;
 
 import com.coffeesaerosmp.auth.CoffeesAeroAuth;
+import com.coffeesaerosmp.auth.chat.ChatFilter;
+import com.coffeesaerosmp.auth.config.AuthConfig;
 import com.coffeesaerosmp.auth.db.PlayerProfile;
+import com.coffeesaerosmp.auth.util.Sounds;
 import com.coffeesaerosmp.auth.util.TextUtil;
+import com.coffeesaerosmp.auth.watchdog.Severity;
+import com.coffeesaerosmp.auth.watchdog.WatchdogEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.event.ServerChatEvent;
@@ -35,11 +40,16 @@ public class ChatEvents {
 
         event.setCanceled(true);
 
+        // Word filter. Runs BEFORE anything is rebroadcast, bridged to Discord or written to the
+        // console — a blocked message must not reach any of the three.
+        String filtered = screen(player, profile, event.getRawText());
+        if (filtered == null) return;
+
         boolean premium    = profile.getAccountType() == PlayerProfile.AccountType.PREMIUM;
         String badge       = premium ? TextUtil.VERIFIED_BADGE : TextUtil.OFFLINE_BADGE;
         String nameColor   = premium ? "§f" : "§7";   // offline names greyish, premium white
         String displayName = profile.displayName != null ? profile.displayName : profile.username;
-        String rawText     = event.getRawText();
+        String rawText     = filtered;
 
         // Clan tag (FTB party) in front of the name — display layer only.
         String clanTag = com.coffeesaerosmp.auth.clan.ClanTags.tagFor(player);
@@ -82,5 +92,71 @@ public class ChatEvents {
                 (clanTag != null ? "[" + clanTag + "] " : "") + displayName, rawText,
                 player.getGameProfile().getName(), profile.skinUrl);
         }
+    }
+
+    /** Violations per player this session — resets on restart; enough to spot a spree in an alert. */
+    private static final java.util.Map<java.util.UUID, Integer> strikes =
+        new java.util.concurrent.ConcurrentHashMap<>();
+
+    /**
+     * Screens a message through {@link ChatFilter}.
+     *
+     * @return the text to publish (censored where needed), or null if the message must be dropped
+     */
+    private static String screen(ServerPlayer player, PlayerProfile profile, String raw) {
+        if (!AuthConfig.CHAT_FILTER_ENABLED.get()) return raw;
+        ChatFilter.Result r;
+        try {
+            r = ChatFilter.check(raw);
+        } catch (Throwable t) {
+            // A filter fault must never swallow chat. Fail OPEN: a missed word is recoverable,
+            // a server where nobody can talk is not.
+            CoffeesAeroAuth.LOGGER.warn("[ChatFilter] check failed, passing message through", t);
+            return raw;
+        }
+        if (r == null) return raw;
+
+        int strike = strikes.merge(player.getUUID(), 1, Integer::sum);
+        String who = profile.displayName != null ? profile.displayName : profile.username;
+
+        if (r.action() == ChatFilter.Action.BLOCK) {
+            player.sendSystemMessage(Component.literal(TextUtil.PREFIX
+                + "§c✖ Message blocked. §7That language is not allowed here, and staff have been "
+                + "notified. Repeat offences are actioned."));
+            Sounds.error(player);
+            alert(Severity.HIGH, "Chat: Blocked Term", "Message blocked, staff notified",
+                who, profile.username, r.word(), raw, strike);
+            // ⚠ The original text goes to the ALERT (staff need to see what was actually said) and
+            // nowhere else — not to chat, not to the Discord bridge, not to the console broadcast.
+            CoffeesAeroAuth.LOGGER.info("[ChatFilter] BLOCKED {} ({}) term='{}' strike={}",
+                who, profile.username, r.word(), strike);
+            return null;
+        }
+
+        player.sendSystemMessage(Component.literal(TextUtil.PREFIX
+            + "§eMind your language §7— that word was filtered."));
+        alert(Severity.LOW, "Chat: Censored Word", "Word starred out, message delivered",
+            who, profile.username, r.word(), raw, strike);
+        return r.text();
+    }
+
+    private static void alert(Severity sev, String title, String action,
+                              String display, String account, String word, String raw, int strike) {
+        if (CoffeesAeroAuth.WATCHDOG == null) return;
+        try {
+            CoffeesAeroAuth.WATCHDOG.alert(WatchdogEvent.of(sev, title, action,
+                "Player", display,
+                "Account", account == null ? "?" : account,
+                "Term", word,
+                "Message", raw.length() > 300 ? raw.substring(0, 300) + "…" : raw,
+                "Violations this session", String.valueOf(strike)));
+        } catch (Throwable t) {
+            CoffeesAeroAuth.LOGGER.warn("[ChatFilter] alert failed", t);
+        }
+    }
+
+    /** Forget a player's strike count when they disconnect. */
+    public static void onPlayerLogout(ServerPlayer player) {
+        strikes.remove(player.getUUID());
     }
 }
