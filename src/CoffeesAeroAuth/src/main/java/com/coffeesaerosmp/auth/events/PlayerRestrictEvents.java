@@ -33,9 +33,35 @@ public class PlayerRestrictEvents {
         // the open event) to avoid mid-openMenu reentrancy; the menu lives at most one tick.
         // NO items are moved — zero data-loss risk (unlike serializing/clearing the accessories
         // capability, which could eat a backpack on a bad restore). Ops (perm 4) are exempt.
-        if (player.containerMenu != player.inventoryMenu && lobbyLocked(player)) {
+        //
+        // 🔴 EXCEPT Easy NPC. Its dialog AND config screens are container menus (EasyNPCMenu), so
+        // this slammed them shut on the very next tick for every non-op — which silently made the
+        // greeter's dialog mode (aero_greeter_dialog, 1.7.33) IMPOSSIBLE: the one audience it exists
+        // for, brand-new players in the lobby, are exactly the people this closed it on. Found
+        // 2026-08-19 when an NPC could not be opened in the lobby. An Easy NPC menu holds no player
+        // items, so exempting it does not re-open the backpack hole this guard was built for.
+        if (player.containerMenu != player.inventoryMenu && lobbyLocked(player)
+                && !isEasyNpcMenu(player.containerMenu)) {
             player.closeContainer();
         }
+    }
+
+    /**
+     * True for any Easy NPC screen (dialog, config, trading).
+     *
+     * <p>Identified by the menu type's registry namespace, falling back to the class package for
+     * menus registered without a type. Deliberately no compile-time dependency on Easy NPC — the
+     * mod is a soft dependency everywhere else in this file too.
+     */
+    private static boolean isEasyNpcMenu(net.minecraft.world.inventory.AbstractContainerMenu menu) {
+        if (menu == null) return false;
+        try {
+            ResourceLocation key = BuiltInRegistries.MENU.getKey(menu.getType());
+            if (key != null) return "easy_npc".equals(key.getNamespace());
+        } catch (UnsupportedOperationException ignored) {
+            // getType() throws for menus built without a registered MenuType — fall through.
+        }
+        return menu.getClass().getName().startsWith("de.markusbordihn.easynpc.");
     }
 
     public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
