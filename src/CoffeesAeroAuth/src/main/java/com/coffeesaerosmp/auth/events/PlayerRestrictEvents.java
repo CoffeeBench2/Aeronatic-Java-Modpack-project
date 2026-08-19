@@ -66,22 +66,75 @@ public class PlayerRestrictEvents {
     }
 
     public static void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
-        // Spawn greeter: right-clicking a "aero_spawn_greeter"-tagged entity (a dressed armor stand
-        // placed by an admin) runs /spawn — works even inside the locked lobby, for everyone.
+        // Spawn greeter: right-clicking an "aero_spawn_greeter"-tagged entity (an armor stand or an
+        // Easy NPC placed by an admin) runs /spawn — works even inside the locked lobby, for everyone.
         if (event.getTarget().getTags().contains("aero_spawn_greeter")) {
-            event.setCanceled(true);
             if (event.getEntity() instanceof ServerPlayer sp && CoffeesAeroAuth.AUTH_MANAGER != null) {
+                // Dual-mode greeter. An Easy NPC ALSO tagged "aero_greeter_dialog" shows its own
+                // welcome dialog to a player who has never entered the world, and teleports everyone
+                // else instantly. Falling through — NOT cancelling — is what hands the click to Easy
+                // NPC: NeoForge fires this event before Entity.interact() -> HumanoidRaw.mobInteract(),
+                // so cancelling means Easy NPC never sees the click at all.
+                // Authenticated-only, so an unapproved player still gets handleSpawn's explicit
+                // "name must be approved" refusal instead of a dialog whose button just fails.
+                if (CoffeesAeroAuth.AUTH_MANAGER.isAuthenticated(sp.getUUID())
+                        && isFirstWorldEntry(sp)
+                        && wantsDialogGreeting(event.getTarget())) {
+                    return;
+                }
+                event.setCanceled(true);
                 CoffeesAeroAuth.AUTH_MANAGER.handleSpawn(sp);
+                return;
             }
+            // Not a player, or the manager isn't up yet: consume the click rather than letting the
+            // raw interaction (armor-stand equip screen, Easy NPC edit menu) through.
+            event.setCanceled(true);
             return;
         }
         // Let players interact with Easy NPC entities in the lobby (dialogs / spawn actions). Easy NPC
         // has its own owner/op edit-protection, so this exposes only dialogs, never editing.
-        net.minecraft.resources.ResourceLocation npcKey =
-            net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(event.getTarget().getType());
-        if (npcKey != null && "easy_npc".equals(npcKey.getNamespace())) return;
+        if (isEasyNpc(event.getTarget())) return;
         // Lobby decor (item frames, armor stands, etc.) is untouchable for everyone but ops.
         if (shouldBlock(event.getEntity()) || lobbyLocked(event.getEntity())) event.setCanceled(true);
+    }
+
+    /** True for any entity from the Easy NPC mod, whatever NPC variant it is. */
+    public static boolean isEasyNpc(net.minecraft.world.entity.Entity entity) {
+        ResourceLocation key = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType());
+        return key != null && "easy_npc".equals(key.getNamespace());
+    }
+
+    /**
+     * True while the player has never completed a world entry — the same condition
+     * {@link com.coffeesaerosmp.auth.auth.AuthManager#handleSpawn} calls {@code firstWorldEntry}.
+     *
+     * <p>Deliberately NOT {@code firstJoinComplete}: {@code completeApproval} sets that one while the
+     * player is still standing in the lobby, so it is already true on the first-ever greeter click and
+     * would send every brand-new player down the "returning player" path — the exact opposite of what
+     * the dialog greeting is for.
+     *
+     * <p>⚠ A Season rollover that re-arms the starter bonus ({@code seasonGrantRewards}) clears
+     * {@code startupBonusGiven}, so returning veterans see the welcome dialog again on their first
+     * entry of the new season. That is intended — it is a season welcome — but it IS a behaviour
+     * change at every rollover, not only for genuinely new players.
+     */
+    private static boolean isFirstWorldEntry(ServerPlayer player) {
+        if (CoffeesAeroAuth.PROFILE_STORE == null) return false;
+        com.coffeesaerosmp.auth.db.PlayerProfile profile =
+            CoffeesAeroAuth.PROFILE_STORE.get(player.getUUID());
+        return profile != null && !profile.startupBonusGiven;
+    }
+
+    /**
+     * True for an Easy NPC an admin opted into the dialog greeting with {@code aero_greeter_dialog}.
+     *
+     * <p>Restricted to Easy NPC on purpose. Falling through on an armor stand would open its equipment
+     * screen instead of doing nothing, and falling through on an NPC with no dialog configured would
+     * swallow the click and leave a new player with no way out of the lobby but the paper. Requiring a
+     * second, explicit tag means the fall-through only ever happens where a dialog is known to exist.
+     */
+    private static boolean wantsDialogGreeting(net.minecraft.world.entity.Entity target) {
+        return target.getTags().contains("aero_greeter_dialog") && isEasyNpc(target);
     }
 
     public static void onLeftClickBlock(PlayerInteractEvent.LeftClickBlock event) {
@@ -148,10 +201,9 @@ public class PlayerRestrictEvents {
                 || !(event.getEntity() instanceof net.minecraft.world.entity.Mob)) {
             return;
         }
-        // Easy NPC entities (namespace "easy_npc") ARE the lobby greeters/NPCs — never remove them.
-        net.minecraft.resources.ResourceLocation key =
-            net.minecraft.core.registries.BuiltInRegistries.ENTITY_TYPE.getKey(event.getEntity().getType());
-        if (key != null && "easy_npc".equals(key.getNamespace())) return;
+        // Easy NPC entities ARE the lobby greeters/NPCs — never remove them. They extend PathfinderMob,
+        // so without this exemption the purge below would delete the greeter on every chunk load.
+        if (isEasyNpc(event.getEntity())) return;
         event.setCanceled(true);
     }
 
@@ -180,6 +232,61 @@ public class PlayerRestrictEvents {
             if (com.coffeesaerosmp.auth.lobby.LobbyInventoryStash.isLobbyPaper(s)) { hasPaper = true; break; }
         }
         if (!hasPaper) sp.getInventory().add(com.coffeesaerosmp.auth.lobby.LobbyInventoryStash.makeLobbyPaper());
+    }
+
+    // ── Lobby command whitelist ────────────────────────────────────────────────
+    // The lobby has exactly ONE legitimate exit: /spawn (or the paper / the greeter, which both call
+    // handleSpawn). That path restores the lobby stash AND pays the first-world-entry rewards — the
+    // starter spurs and the Season veteran reward. ANY other teleport out of the lobby skips them
+    // silently: /home restored the stash but never granted the rewards, and a third-party teleport
+    // (grand-teleport, a waystone, a future mod) would skip the stash restore too, walking the player
+    // into the world holding nothing but the spawn paper.
+    //
+    // Closed by default: a blocklist would have to name every teleport command in a 250-mod pack, and
+    // would silently re-open the hole the next time one is added. Ops (perm 4) are exempt.
+
+    private static volatile String   allowedRaw   = null;
+    private static volatile java.util.Set<String> allowedCache = java.util.Set.of();
+
+    public static void onLobbyCommand(net.neoforged.neoforge.event.CommandEvent event) {
+        if (!(event.getParseResults().getContext().getSource().getEntity() instanceof ServerPlayer player)) return;
+        if (!lobbyLocked(player)) return;                    // not in the lobby, or an op
+        String root = commandRoot(event.getParseResults().getReader().getString());
+        if (root.isEmpty() || allowedLobbyCommands().contains(root)) return;
+        event.setCanceled(true);
+        player.sendSystemMessage(net.minecraft.network.chat.Component.literal(
+            com.coffeesaerosmp.auth.util.TextUtil.PREFIX
+            + "§7§o/" + root + "§7 doesn't work in the lobby. Type §a/spawn§7 to enter the world —"));
+        player.sendSystemMessage(net.minecraft.network.chat.Component.literal(
+            com.coffeesaerosmp.auth.util.TextUtil.PREFIX
+            + "§7that's what hands your inventory back and pays your arrival rewards."));
+    }
+
+    /** Root literal of a raw command string, lowercased, without the leading slash or a namespace. */
+    private static String commandRoot(String raw) {
+        String input = raw.trim();
+        if (input.startsWith("/")) input = input.substring(1);
+        int sp = input.indexOf(' ');
+        String root = (sp < 0 ? input : input.substring(0, sp)).toLowerCase(java.util.Locale.ROOT);
+        int colon = root.indexOf(':');
+        return colon >= 0 ? root.substring(colon + 1) : root;
+    }
+
+    /** Parsed view of {@code lobbyAllowedCommands}, rebuilt only when the config string changes. */
+    private static java.util.Set<String> allowedLobbyCommands() {
+        String raw = com.coffeesaerosmp.auth.config.AuthConfig.LOBBY_ALLOWED_COMMANDS.get();
+        if (!raw.equals(allowedRaw)) {
+            java.util.Set<String> parsed = new java.util.HashSet<>();
+            for (String part : raw.split(",")) {
+                String s = part.trim().toLowerCase(java.util.Locale.ROOT);
+                if (s.startsWith("/")) s = s.substring(1);
+                if (!s.isEmpty()) parsed.add(s);
+            }
+            parsed.add("spawn");            // never removable — it is the only way out of the lobby
+            allowedCache = java.util.Set.copyOf(parsed);
+            allowedRaw   = raw;
+        }
+        return allowedCache;
     }
 
     private static boolean lobbyLocked(net.minecraft.world.entity.player.Player player) {

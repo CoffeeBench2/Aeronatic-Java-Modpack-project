@@ -169,34 +169,37 @@ public class AuthCommands {
                 })
             )
             .then(Commands.literal("greeter")
+                // "dialog" is a literal, and Brigadier matches literals before the greedy text
+                // argument — so a greeter's floating text can never be the single word "dialog".
+                // Any other text, including text that starts with "dialog ", still works.
+                .then(Commands.literal("dialog")
+                    .executes(ctx -> toggleGreeterDialog(ctx.getSource().getPlayerOrException()))
+                )
                 .then(Commands.argument("text", StringArgumentType.greedyString())
-                    .executes(ctx -> {
-                        ServerPlayer player = ctx.getSource().getPlayerOrException();
-                        String text = StringArgumentType.getString(ctx, "text").replace('&', '§');
-                        net.minecraft.world.phys.AABB box = player.getBoundingBox().inflate(4.0);
-                        java.util.List<net.minecraft.world.entity.decoration.ArmorStand> stands =
-                            player.serverLevel().getEntitiesOfClass(
-                                net.minecraft.world.entity.decoration.ArmorStand.class, box);
-                        net.minecraft.world.entity.decoration.ArmorStand target = stands.stream()
-                            .min(java.util.Comparator.comparingDouble(s -> s.distanceToSqr(player))).orElse(null);
-                        if (target == null) {
-                            player.sendSystemMessage(Component.literal(
-                                "§c[Lobby] No armor stand within 4 blocks. Place your 'character' (an armor stand, dress it with a player head + armor) first, then run this next to it."));
-                            return 0;
-                        }
-                        target.addTag("aero_spawn_greeter");
-                        target.setCustomName(Component.literal(text));
-                        target.setCustomNameVisible(true);
-                        target.setInvulnerable(true);
-                        target.setNoGravity(true);
-                        player.sendSystemMessage(Component.literal(
-                            "§a[Lobby] Greeter set — players right-click it to §e/spawn§a. Floating text: §f" + text));
-                        return 1;
-                    })
+                    .executes(ctx -> setGreeter(ctx.getSource().getPlayerOrException(),
+                        StringArgumentType.getString(ctx, "text").replace('&', '§')))
                 )
             )
         );
 
+
+        // /sidebar — hide or show the right-hand status panel. Defaults to shown; the preference
+        // lives in the player's persisted NBT, so it survives relog and death without a DB column.
+        dispatcher.register(Commands.literal("sidebar")
+            .executes(ctx -> {
+                ServerPlayer player = ctx.getSource().getPlayerOrException();
+                if (!com.coffeesaerosmp.auth.config.AuthConfig.SIDEBAR_ENABLED.get()) {
+                    player.sendSystemMessage(Component.literal(
+                        "§8[§bAero§8] §7The status panel is disabled server-wide right now."));
+                    return 0;
+                }
+                boolean visible = com.coffeesaerosmp.auth.sidebar.SidebarManager.toggle(player);
+                player.sendSystemMessage(Component.literal(visible
+                    ? "§8[§bAero§8] §aStatus panel shown. §7Run §e/sidebar§7 again to hide it."
+                    : "§8[§bAero§8] §7Status panel hidden. §7Run §e/sidebar§7 again to bring it back."));
+                return 1;
+            })
+        );
 
         // /changename <newName> — one-time post-approval display name change (authenticated only)
         dispatcher.register(Commands.literal("changename")
@@ -260,5 +263,96 @@ public class AuthCommands {
             + "player should never have been able to reach that dimension. Investigate the routing.",
             action, player.getGameProfile().getName(), player.level().dimension().location());
         return false;
+    }
+
+    // ── Lobby greeter setup ───────────────────────────────────────────────────
+    // The greeter is whatever entity carries the "aero_spawn_greeter" tag; PlayerRestrictEvents
+    // .onEntityInteract turns a right-click on it into handleSpawn. An Easy NPC additionally tagged
+    // "aero_greeter_dialog" shows its own dialog to players who have never entered the world.
+
+    /**
+     * Nearest greeter candidate within 4 blocks: an Easy NPC if there is one, otherwise an armor
+     * stand. Easy NPC wins over a closer armor stand because it is the supported greeter now — armor
+     * stands stay accepted so lobbies built before Easy NPC keep working unchanged.
+     */
+    private static net.minecraft.world.entity.Entity findGreeterTarget(ServerPlayer player) {
+        net.minecraft.world.phys.AABB box = player.getBoundingBox().inflate(4.0);
+        return player.serverLevel().getEntities(player, box,
+                e -> com.coffeesaerosmp.auth.events.PlayerRestrictEvents.isEasyNpc(e)
+                  || e instanceof net.minecraft.world.entity.decoration.ArmorStand)
+            .stream()
+            .min(java.util.Comparator
+                .<net.minecraft.world.entity.Entity>comparingInt(
+                    e -> com.coffeesaerosmp.auth.events.PlayerRestrictEvents.isEasyNpc(e) ? 0 : 1)
+                .thenComparingDouble(e -> e.distanceToSqr(player)))
+            .orElse(null);
+    }
+
+    /** /lobby greeter &lt;text&gt; — tag the nearest NPC/armor stand as the spawn greeter and set the
+     *  floating text above it. */
+    private static int setGreeter(ServerPlayer player, String text) {
+        net.minecraft.world.entity.Entity target = findGreeterTarget(player);
+        if (target == null) {
+            player.sendSystemMessage(Component.literal(
+                "§c[Lobby] No Easy NPC or armor stand within 4 blocks. Spawn your character first "
+                + "(Easy NPC humanoid, skin type PLAYER_SKIN with your name), then run this beside it."));
+            return 0;
+        }
+        target.addTag("aero_spawn_greeter");
+        target.setCustomName(Component.literal(text));
+        target.setCustomNameVisible(true);
+        target.setInvulnerable(true);
+        // Armor stands need pinning by hand. Easy NPC is deliberately left alone — it manages its own
+        // pose, movement and persistence in its config screen, and forcing NoAI here would stop the
+        // NPC turning to face players for no gain.
+        if (target instanceof net.minecraft.world.entity.decoration.ArmorStand stand) {
+            stand.setNoGravity(true);
+        }
+        boolean easyNpc = com.coffeesaerosmp.auth.events.PlayerRestrictEvents.isEasyNpc(target);
+        player.sendSystemMessage(Component.literal(
+            "§a[Lobby] Greeter set on §f" + (easyNpc ? "an Easy NPC" : "an armor stand")
+            + "§a — players right-click it to §e/spawn§a. Floating text: §f" + text));
+        if (easyNpc) {
+            player.sendSystemMessage(Component.literal(
+                "§7Want new players to see the NPC's dialog first? Configure a dialog on it, then run "
+                + "§e/lobby greeter dialog§7."));
+        }
+        return 1;
+    }
+
+    /** /lobby greeter dialog — toggle the dialog greeting for players who have never entered the
+     *  world. Easy NPC only: an armor stand has no dialog to fall through to. */
+    private static int toggleGreeterDialog(ServerPlayer player) {
+        net.minecraft.world.entity.Entity target = findGreeterTarget(player);
+        if (target == null) {
+            player.sendSystemMessage(Component.literal(
+                "§c[Lobby] No Easy NPC or armor stand within 4 blocks."));
+            return 0;
+        }
+        if (!com.coffeesaerosmp.auth.events.PlayerRestrictEvents.isEasyNpc(target)) {
+            player.sendSystemMessage(Component.literal(
+                "§c[Lobby] Dialog mode needs an Easy NPC — an armor stand has no dialog to show. "
+                + "Replace the stand with an Easy NPC humanoid, then retry."));
+            return 0;
+        }
+        if (!target.getTags().contains("aero_spawn_greeter")) {
+            player.sendSystemMessage(Component.literal(
+                "§c[Lobby] That NPC isn't a greeter yet — run §e/lobby greeter <text>§c on it first."));
+            return 0;
+        }
+        if (target.getTags().contains("aero_greeter_dialog")) {
+            target.removeTag("aero_greeter_dialog");
+            player.sendSystemMessage(Component.literal(
+                "§6[Lobby] Dialog greeting §cOFF§6 — every player now gets an instant §e/spawn§6."));
+        } else {
+            target.addTag("aero_greeter_dialog");
+            player.sendSystemMessage(Component.literal(
+                "§a[Lobby] Dialog greeting §2ON§a — players who have never entered the world get the "
+                + "NPC's dialog; everyone else is teleported instantly."));
+            player.sendSystemMessage(Component.literal(
+                "§7Make sure the NPC actually has a dialog configured, and that its button runs the "
+                + "command §fspawn§7 with 'execute as user' enabled."));
+        }
+        return 1;
     }
 }

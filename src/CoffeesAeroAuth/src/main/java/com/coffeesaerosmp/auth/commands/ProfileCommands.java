@@ -302,6 +302,14 @@ public class ProfileCommands {
             .then(Commands.literal("obsidianreport")
                 .executes(ctx -> obsidianReport(ctx.getSource()))
             )
+            // Put an online player back through the lobby so their next /spawn re-runs the world-entry
+            // path (stash restore + starter bonus + veteran reward). The repair for anyone who left the
+            // lobby by a route that skipped those — /home did, until it was gated 2026-08-18.
+            .then(Commands.literal("tolobby")
+                .then(Commands.argument("player", EntityArgument.player())
+                    .executes(ctx -> adminToLobby(ctx.getSource(), EntityArgument.getPlayer(ctx, "player")))
+                )
+            )
             // ── Name approval queue ──────────────────────────────────────────
             .then(Commands.literal("queue")
                 .executes(ctx -> adminQueue(ctx.getSource()))
@@ -501,6 +509,30 @@ public class ProfileCommands {
             "§7HasPass:   §f" + (p.passwordHash != null) + "\n" +
             "§7FirstJoin: §f" + p.firstJoinComplete
         ), false);
+        return 1;
+    }
+
+    /** /authmod tolobby &lt;player&gt; — send an online player back through the lobby so their next
+     *  /spawn re-runs the world-entry path: stash restore, saved-position resume, starter bonus and
+     *  Season veteran reward. Use it on anyone who left the lobby by a route that skipped those.
+     *
+     *  <p>Nothing is granted here. Both grants are guarded by their own flags
+     *  ({@code startup_bonus_given}, the season claim stamp), so a player who already collected gets
+     *  nothing a second time and a player who was skipped gets exactly one payout.</p> */
+    private static int adminToLobby(CommandSourceStack source, ServerPlayer target) {
+        if (CoffeesAeroAuth.AUTH_MANAGER == null) {
+            source.sendFailure(Component.literal("§cAuth manager not ready."));
+            return 0;
+        }
+        if (!CoffeesAeroAuth.AUTH_MANAGER.sendToLobby(target)) {
+            source.sendFailure(Component.literal(
+                "§cCouldn't route " + target.getGameProfile().getName()
+                + " — no profile loaded, or they are already in the lobby."));
+            return 0;
+        }
+        source.sendSuccess(() -> Component.literal(
+            "§a" + target.getGameProfile().getName() + " sent to the lobby. "
+            + "§7Tell them to run §a/spawn§7 — that pays anything they are still owed."), true);
         return 1;
     }
 

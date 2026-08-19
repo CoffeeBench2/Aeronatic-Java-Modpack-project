@@ -314,6 +314,34 @@ public class AuthManager {
         }
     }
 
+    /**
+     * Admin recovery: put an ONLINE player back through the lobby so their next {@code /spawn} re-runs
+     * the full world-entry path — stash restore, saved-position resume, starter bonus, veteran reward.
+     *
+     * <p>Exists because those grants are paid ONLY by {@link #handleSpawn} from the lobby, and until
+     * 2026-08-18 {@code /home} let a player leave the lobby without them. Both are idempotent-by-flag
+     * ({@code startupBonusGiven} / the season claim stamp), so anything they were owed is still owed
+     * and a second trip pays it exactly once.
+     *
+     * <p>Reuses the normal join routing rather than teleporting directly: the deferred tick handler is
+     * what runs {@link com.coffeesaerosmp.auth.lobby.LobbyInventoryStash#stashAndClear} and snapshots
+     * their vitals, so whatever the player is carrying right now is persisted to disk before it is
+     * cleared and comes back on /spawn. A direct teleport would strand a full inventory in the lobby.
+     */
+    public boolean sendToLobby(ServerPlayer player) {
+        PlayerProfile profile = store.get(player.getUUID());
+        if (profile == null) return false;
+        if (player.level().dimension() == com.coffeesaerosmp.auth.lobby.PrivateRoomManager.LOBBY_DIMENSION) {
+            return false;                       // already there — a second stash pass buys nothing
+        }
+        routeToLobbyRoom(player.getUUID(), profile);
+        send(player, TextUtil.PREFIX + "§eYou've been sent back to the lobby.");
+        send(player, TextUtil.PREFIX + "§eType §a/spawn§e to return — your inventory and anything you're owed come with you.");
+        CoffeesAeroAuth.LOGGER.info("[Auth] {} routed back through the lobby by an admin (re-runs the /spawn entry path).",
+            player.getGameProfile().getName());
+        return true;
+    }
+
     /** Assigns a private-room slot (if needed) and queues the deferred teleport into it. */
     private void routeToLobbyRoom(UUID uuid, PlayerProfile profile) {
         if (profile.roomSlot < 0) {
@@ -1062,6 +1090,19 @@ public class AuthManager {
             send(player, TextUtil.PREFIX + "§cLog in before using /home.");
             return false;
         }
+        // /home is NOT a lobby exit. It teleported the player out while skipping the first-world-entry
+        // grants that only handleSpawn performs — the 200-spur starter bonus, the Season veteran reward
+        // and the firstJoinComplete flag — so a returning veteran arrived with an empty wallet and no
+        // reward and nothing in the log to say why (2026-08-18). PlayerRestrictEvents.onLobbyCommand
+        // already refuses the command in the lobby; this is the second gate, so a macro, an alias or a
+        // direct call can't reach the teleport either. Ops keep the old behaviour for testing.
+        if (player.level().dimension() == com.coffeesaerosmp.auth.lobby.PrivateRoomManager.LOBBY_DIMENSION
+                && !player.hasPermissions(4)) {
+            send(player, TextUtil.PREFIX + "§7You're in the lobby — §a/spawn§7 is the way into the world.");
+            send(player, TextUtil.PREFIX + "§7It gives your inventory back and pays your arrival rewards; §f/home§7 skips both.");
+            Sounds.error(player);
+            return false;
+        }
         net.minecraft.core.BlockPos bed = player.getRespawnPosition();
         if (bed == null) {
             send(player, TextUtil.PREFIX + "§cNo home set — sleep in a bed (or set a respawn anchor) first.");
@@ -1084,6 +1125,8 @@ public class AuthManager {
             send(player, TextUtil.PREFIX + "§cYour home dimension isn't available.");
             return false;
         }
+        // Only an op can still be here while in the lobby (the guard above turns everyone else away),
+        // but the restore stays: an op who /homes out must not carry the spawn paper into the world.
         boolean fromLobby = player.level().dimension()
             == com.coffeesaerosmp.auth.lobby.PrivateRoomManager.LOBBY_DIMENSION;
         player.teleportTo(level, bed.getX() + 0.5, bed.getY() + 1.0, bed.getZ() + 0.5,

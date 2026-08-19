@@ -97,9 +97,10 @@ public class CoffeesAeroAuth {
             });
         NeoForge.EVENT_BUS.addListener(
             (net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerLoggedOutEvent e) -> {
-                if (DAILY_REWARDS != null
-                        && e.getEntity() instanceof net.minecraft.server.level.ServerPlayer sp) {
-                    DAILY_REWARDS.onPlayerLeave(sp);
+                if (e.getEntity() instanceof net.minecraft.server.level.ServerPlayer sp) {
+                    if (DAILY_REWARDS != null) DAILY_REWARDS.onPlayerLeave(sp);
+                    // Drop cached sidebar rows + advancement count so nothing leaks across sessions.
+                    com.coffeesaerosmp.auth.sidebar.SidebarManager.onPlayerLogout(sp);
                 }
             });
 
@@ -122,12 +123,20 @@ public class CoffeesAeroAuth {
         NeoForge.EVENT_BUS.addListener(PlayerRestrictEvents::onEntityJoin);
         NeoForge.EVENT_BUS.addListener(PlayerRestrictEvents::onLobbyDeath);
         NeoForge.EVENT_BUS.addListener(PlayerRestrictEvents::onLobbyRespawn);
+        NeoForge.EVENT_BUS.addListener(PlayerRestrictEvents::onLobbyCommand);
 
 
 
         // Animated tab-list header/footer (airship + live pilot count + rotating tips).
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.tick.ServerTickEvent.Post e) ->
             com.coffeesaerosmp.auth.tablist.TabListManager.onServerTick(e.getServer()));
+
+        // Right-hand status sidebar (per-player packets; rebuilt 1/s, diff-only sends).
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.tick.ServerTickEvent.Post e) ->
+            com.coffeesaerosmp.auth.sidebar.SidebarManager.onServerTick(e.getServer()));
+        // Keeps the sidebar's advancement count current without rescanning every advancement.
+        NeoForge.EVENT_BUS.addListener(
+            com.coffeesaerosmp.auth.sidebar.SidebarManager::onAdvancementEarned);
 
         // Restart countdown boss bar — redraws itself; no-op when no countdown is running.
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.tick.ServerTickEvent.Post e) ->

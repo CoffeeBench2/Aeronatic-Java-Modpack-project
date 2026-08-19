@@ -59,6 +59,7 @@ public class AuthConfig {
     public static final ModConfigSpec.IntValue      LOBBY_FALL_CATCH_DROP;
     public static final ModConfigSpec.IntValue      LOBBY_FORCELOAD_RADIUS_CHUNKS;
     public static final ModConfigSpec.BooleanValue  LOBBY_PREPLACED_BUILD;
+    public static final ModConfigSpec.ConfigValue<String> LOBBY_ALLOWED_COMMANDS;
     public static final ModConfigSpec.IntValue      OVERWORLD_SPAWN_X;
     public static final ModConfigSpec.IntValue      OVERWORLD_SPAWN_Y;
     public static final ModConfigSpec.IntValue      OVERWORLD_SPAWN_Z;
@@ -68,6 +69,7 @@ public class AuthConfig {
     public static final ModConfigSpec.ConfigValue<String>  RESOURCE_PACK_HASH;
     public static final ModConfigSpec.ConfigValue<String>  SERVER_DISPLAY_NAME;
     public static final ModConfigSpec.ConfigValue<String>  DISPLAY_RGB_NAMES;
+    public static final ModConfigSpec.BooleanValue         SIDEBAR_ENABLED;
     public static final ModConfigSpec.IntValue             WELCOME_INTERVAL_HOURS;
     public static final ModConfigSpec.BooleanValue         MASK_ADVANCEMENT_NAMES;
 
@@ -265,6 +267,12 @@ public class AuthConfig {
                      "Persisted in welcome_shown.json so relogs/restarts don't replay it. 0 = every join",
                      "(the old always-spam behaviour). First-join sequences always show regardless.")
             .defineInRange("welcomeIntervalHours", 10, 0, 720);
+        SIDEBAR_ENABLED = b
+            .comment("Show the right-hand status sidebar (name, level, playtime, clan, online, season).",
+                     "Server-wide master switch — players hide it individually with /sidebar, which is",
+                     "stored in their persisted NBT, not the database. The panel is never shown in the",
+                     "auth lobby (the tab list already carries the lobby guidance there).")
+            .define("sidebarEnabled", true);
         b.pop();
 
         b.comment("Watchdog — Security Monitoring").push("watchdog");
@@ -628,6 +636,19 @@ public class AuthConfig {
         LOBBY_FALL_CATCH_DROP = b
             .comment("Blocks below the floor before a player who fell off the island is returned to spawn.")
             .defineInRange("lobbyFallCatchDrop", 15, 3, 200);
+        LOBBY_ALLOWED_COMMANDS = b
+            .comment("Commands a NON-OP player may run while inside the auth lobby (comma-separated, no",
+                     "leading slash). Everything else is refused with a pointer to /spawn. Ops are exempt.",
+                     "WHY A WHITELIST, NOT A BLOCKLIST: while a player is in the lobby their real inventory",
+                     "lives in the lobby stash, and /spawn is the ONE exit that restores it AND pays the",
+                     "first-world-entry rewards (starter spurs, Season veteran reward). Any teleport that",
+                     "leaves the lobby by another route silently skips those — /home did exactly that until",
+                     "2026-08-18. A blocklist would have to name every teleport command in the pack",
+                     "(grand-teleport, waystones, future mods); a whitelist is closed by default.",
+                     "A namespace prefix is stripped before matching, so 'home' also covers 'ftbessentials:home'.")
+            .define("lobbyAllowedCommands",
+                    "spawn,login,register,setname,changename,changepassword,logout,discord,profile,setbio,"
+                  + "skin,vote,help,msg,tell,w,r,whisper,me,mytrustedips,sidebar");
         LOBBY_FORCELOAD_RADIUS_CHUNKS = b
             .comment("Chunks (square radius) around the lobby anchor to permanently force-load. Cover the whole build.")
             .defineInRange("lobbyForceloadRadiusChunks", 8, 1, 32);

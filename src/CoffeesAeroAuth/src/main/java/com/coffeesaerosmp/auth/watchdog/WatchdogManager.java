@@ -459,21 +459,66 @@ public class WatchdogManager {
     }
 
     // ── Audit checksum ────────────────────────────────────────────────────────
+    //
+    // 🔴 2026-08-19: this fired "CRITICAL — Audit Log Tampered" every 60 seconds indefinitely, for
+    // both files, with nothing tampered. The old code treated a stale .checksum as tampering, called
+    // restoreFromBackup() which silently did nothing when no .bak existed, and then re-alerted on the
+    // very same unchanged mismatch a minute later — forever. It also printed a hardcoded "Backup
+    // restored" that was independent of whether any restore happened.
+    //
+    // Four guards now make a repeat impossible:
+    //   1. AuditLogger RE-SEEDS its baseline from disk on every detection, so one mismatch can only
+    //      ever be reported once. This alone removes the loop.
+    //   2. A startup desync (checksum behind the log, i.e. an unclean shutdown) is reported ONCE at
+    //      MEDIUM, not CRITICAL, and is described as what it is.
+    //   3. The CRITICAL alert is rate-limited per file, with suppressed hits counted and reported.
+    //   4. Nothing is ever restored automatically; the suspect file is copied aside, never over.
+
+    private static final long INTEGRITY_ALERT_COOLDOWN_MS = 60 * 60 * 1000L;
+    private final Map<String, Long>    lastIntegrityAlert  = new ConcurrentHashMap<>();
+    private final Map<String, Integer> integritySuppressed = new ConcurrentHashMap<>();
 
     private void runAuditCheck() {
-        if (!auditLog.verifyAndBackup()) {
-            auditLog.restoreFromBackup();
-            alert(WatchdogEvent.of(Severity.CRITICAL, "Audit Log Tampered",
-                "Backup restored — investigate immediately",
-                "File", "audit.log"));
-            dailyAnomalies.add("AUDIT LOG TAMPERED");
+        checkIntegrity(auditLog);
+        checkIntegrity(watchdogLog);
+    }
+
+    private void checkIntegrity(AuditLogger logger) {
+        String file = logger.fileName();
+
+        // Fires at most once per boot, and only when the stored checksum disagreed with the log.
+        if (logger.consumeStartupDesync()) {
+            alert(WatchdogEvent.of(Severity.MEDIUM, "Log Checksum Desync (startup)",
+                "Baseline re-synced from the file on disk — nothing was overwritten",
+                "File", file,
+                "Most likely cause", "Unclean shutdown — the log is appended BEFORE the checksum is written",
+                "Forensic copy", logger.startupSuspectCopy()));
+            dailyAnomalies.add(file + " checksum desync at startup");
         }
-        if (!watchdogLog.verifyAndBackup()) {
-            watchdogLog.restoreFromBackup();
-            alert(WatchdogEvent.of(Severity.CRITICAL, "Watchdog Log Tampered",
-                "Backup restored",
-                "File", "watchdog.log"));
+
+        AuditLogger.IntegrityResult result = logger.verifyAndBackup();
+        if (result != AuditLogger.IntegrityResult.MODIFIED) return;
+
+        // A genuine change under a running server. The baseline has already been re-seeded, so this
+        // reports the event once rather than latching.
+        long now = System.currentTimeMillis();
+        Long last = lastIntegrityAlert.get(file);
+        if (last != null && now - last < INTEGRITY_ALERT_COOLDOWN_MS) {
+            integritySuppressed.merge(file, 1, Integer::sum);
+            CoffeesAeroAuth.LOGGER.warn(
+                "[Watchdog] {} changed again within the alert cooldown ({} suppressed so far).",
+                file, integritySuppressed.get(file));
+            return;
         }
+        int suppressed = integritySuppressed.remove(file) == null ? 0 : 1;
+        lastIntegrityAlert.put(file, now);
+
+        alert(WatchdogEvent.of(Severity.CRITICAL, "Audit Log Modified While Running",
+            "Baseline re-synced; a copy was kept. NOTHING was restored or overwritten.",
+            "File", file,
+            "Meaning", "The file changed on disk while the server was tracking it — investigate",
+            "Repeats", suppressed > 0 ? "further changes were suppressed for 1h" : "first in the last hour"));
+        dailyAnomalies.add(file + " MODIFIED WHILE RUNNING");
     }
 
     // ── Alerts ────────────────────────────────────────────────────────────────
