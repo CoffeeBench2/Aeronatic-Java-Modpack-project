@@ -23,16 +23,66 @@ KEY_FILE = os.path.join(ROOT, ".cf-key")
 # (e.g. Vista / Supplementaries License, Balm & Sophisticated = All Rights Reserved), so we
 # reference the same version by explicit CF id instead. allowModDistribution=True verified.
 # Add an entry whenever CF flags a bundled ARR/restricted jar; keep versions in sync with the pack.
+#
+# 🔴 `allowModDistribution` IS NOT THE TEST. GlitchCore reports allowModDistribution=True and CF
+# moderation STILL rejected the pack for bundling it (2026-08-19). That flag only governs whether
+# the API hands out a download URL; the licence is enforced separately by human/automated review.
+# THE WORKING RULE: if CurseForge hosts a file with the EXACT same filename, REFERENCE it — never
+# ship the bytes. Our jars come from Modrinth, so they fingerprint differently from CF's copy of the
+# same version and the automatic pass cannot catch them. That is the entire reason this list exists.
+#
+# ⚠️ Finding these: CF's name search (`searchFilter`) MISSES projects — it did not surface Serene
+# Seasons, which is demonstrably on CF. Look them up by `slug` instead; slug lookup is exact and does
+# not depend on relevance ranking. Verify `isAvailable=True` before adding an entry.
 MANUAL_REFS = {
     "vista-neoforge-1.21.1-4.3.1.jar":            (1368607, 8072358),
     "balm-neoforge-1.21.1-21.0.59.jar":           (531761,  8252588),
     "sophisticatedbackpacks-1.21.1-3.25.64.1919.jar": (422301, 8272377),
     "sophisticatedcore-1.21.1-1.4.59.2032.jar":   (618298,  8272330),
+    # Named by CF moderation in the 1.9.4.1 rejection (2026-08-19).
+    "GlitchCore-neoforge-1.21.1-2.1.0.2.jar":     (955399,  8109792),
+    "SereneSeasons-neoforge-1.21.1-10.1.0.3.jar": (291874,  6182596),
+    # Same trap, found by sweeping every remaining bundled jar for an exact CF filename match.
+    # Moderation only reports the first offenders it hits, so fixing just the two it named would
+    # have bought another rejection round.
+    "FallingTree-1.21.1-1.21.1.11.jar":           (349559,  6835168),
+    "aeroworks-1.3.0.jar":                        (1522473, 8409091),
+    "connector-2.0.0-beta.14+1.21.1-full.jar":    (890127,  7634148),
+    "create_connected-1.1.16-mc1.21.1.jar":       (947914,  8046148),
+    "forgified-fabric-api-0.116.7+2.2.4+1.21.1.jar": (889079, 7658611),
+    "kotlinforforge-5.12.0-all.jar":              (351264,  8335665),
+    "kubejs-neoforge-2101.7.2-build.368.jar":     (238086,  8083208),
+    "rhino-2101.2.7-build.85.jar":                (416294,  8218748),
+    "sound-physics-remastered-neoforge-1.21.1-1.5.1.jar": (535489, 7032247),
     # Our own mods — now approved CF projects, so CF requires them REFERENCED not bundled
     # (modpack rejection 2026-07). Core = the -cf (no-updater) build build_cf injects.
-    "CoffeesAeroCore-1.3.15-cf.jar":               (1601629, 8497040),
     "CoffeesAeroSkins-1.1.0.jar":                  (1601639, 8486591),
 }
+
+# Same idea, but matched by PREFIX+SUFFIX instead of an exact filename.
+#
+# WHY: the Core's entry was pinned as "CoffeesAeroCore-1.3.15-cf.jar" and silently stopped matching
+# the moment the Core was rebuilt — the jar then stayed BUNDLED while Skins and Tweaks were
+# referenced, which is precisely the mix that got the pack rejected in 2026-07. An exact filename
+# cannot survive a version bump, so the Core is matched by shape.
+#
+# The referenced file is whatever CURSEFORGE actually hosts, which is NOT necessarily the Core the
+# build produced. CF has 1.3.26-cf (file 8670490, verified isAvailable=True / fileStatus=4 on
+# 2026-08-19); the local build is newer. Store-channel players therefore get the CF version — that
+# is the deliberate trade for not uploading a new Core each release. Bump the id below when a newer
+# Core is uploaded to project 1601629, or the store pack keeps shipping the old one.
+MANUAL_REF_PREFIXES = {
+    ("CoffeesAeroCore-", "-cf.jar"): (1601629, 8670490),   # CF hosts 1.3.26-cf
+}
+
+def manual_ref_for(basename):
+    """(projectID, fileID) for a bundled file we reference by hand, or None."""
+    if basename in MANUAL_REFS:
+        return MANUAL_REFS[basename]
+    for (pre, suf), ids in MANUAL_REF_PREFIXES.items():
+        if basename.startswith(pre) and basename.endswith(suf):
+            return ids
+    return None
 
 def die(m): sys.exit("ERROR: " + m)
 
@@ -247,8 +297,9 @@ def main():
     manual = 0
     for p, fp in list(fp_of.items()):
         base = os.path.basename(p)
-        if fp not in matched and base in MANUAL_REFS and os.path.exists(p):
-            pid, fid = MANUAL_REFS[base]
+        ids = manual_ref_for(base)
+        if fp not in matched and ids and os.path.exists(p):
+            pid, fid = ids
             if (pid, fid) not in existing:
                 manifest["files"].append({"projectID": pid, "fileID": fid, "required": True})
                 existing.add((pid, fid))
@@ -257,7 +308,7 @@ def main():
             print("manual CF reference (restricted, un-bundled):", base)
 
     still_bundled = [os.path.basename(p) for p in targets
-                     if fp_of[p] not in matched and os.path.basename(p) not in MANUAL_REFS]
+                     if fp_of[p] not in matched and not manual_ref_for(os.path.basename(p))]
     json.dump(manifest, open(manifest_path, "w"), indent=2)
 
     # packwiz curseforge export skips overrides/resourcepacks (.packwizignore excludes it), so
