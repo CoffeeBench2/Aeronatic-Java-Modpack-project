@@ -67,3 +67,8 @@ logs/
 # files. Anything not committed MUST be listed here.
 Releases/
 server-secrets/
+
+# Server-side deployables (KubeJS scripts, server datapacks, Easy NPC presets). These ARE committed,
+# so unlike the entries above they would not 404 — they would be worse: silently downloaded into
+# every player's instance, where a server datapack and a server_scripts file have no business being.
+server-assets/
