@@ -77,6 +77,16 @@ public class AuthConfig {
     public static final ModConfigSpec.BooleanValue         WATCHDOG_TAUNTS_ENABLED;
     public static final ModConfigSpec.IntValue             WATCHDOG_TAUNT_MIN_MINUTES;
     public static final ModConfigSpec.IntValue             WATCHDOG_TAUNT_MAX_MINUTES;
+    public static final ModConfigSpec.BooleanValue         STALL_WATCHDOG_ENABLED;
+    public static final ModConfigSpec.IntValue             STALL_WARN_SECONDS;
+    public static final ModConfigSpec.IntValue             STALL_KILL_SECONDS;
+    public static final ModConfigSpec.IntValue             STALL_SHUTDOWN_KILL_SECONDS;
+    public static final ModConfigSpec.BooleanValue         LAG_ATTRIBUTION_ENABLED;
+    public static final ModConfigSpec.IntValue             LAG_SAMPLE_AFTER_MS;
+    public static final ModConfigSpec.IntValue             LAG_SAMPLE_INTERVAL_MS;
+    public static final ModConfigSpec.IntValue             LAG_SPIKE_REPORT_MS;
+    public static final ModConfigSpec.IntValue             LAG_REPORT_COOLDOWN_MINUTES;
+    public static final ModConfigSpec.IntValue             LAG_CENSUS_MAX_ENTITIES;
     public static final ModConfigSpec.BooleanValue         RESOLVE_DISPLAY_NAMES;
     public static final ModConfigSpec.IntValue             WELCOME_INTERVAL_HOURS;
     public static final ModConfigSpec.BooleanValue         MASK_ADVANCEMENT_NAMES;
@@ -341,6 +351,70 @@ public class AuthConfig {
                      "uniformly in [min, max] after every broadcast — a FIXED schedule is something",
                      "to plan around, which would remove the entire deterrent value.")
             .defineInRange("watchdogTauntMaxMinutes", 55, 1, 1440);
+        STALL_WATCHDOG_ENABLED = b
+            .comment("Detect a HUNG server thread and restart the server if it does not recover.",
+                     "WHY: the panel already auto-restarts on a CRASH, but a stall is not a crash —",
+                     "the JVM stays alive, never exits, and the panel sees a healthy server while",
+                     "nobody can play. That is exactly what happened 2026-08-20 18:12 (tick loop",
+                     "stopped, spark timed out for 4.5 minutes, no restart) and 2026-08-21 00:00",
+                     "(shutdown wedged, log full of 'Server already shutting down').",
+                     "Writes a full thread dump to <world>/coffeesaeroauth/stalls/ naming the exact",
+                     "blocking call, alerts staff, then halts the JVM so the panel restarts it.")
+            .define("stallWatchdogEnabled", true);
+        STALL_WARN_SECONDS = b
+            .comment("Seconds without a tick before a thread dump is written and staff are alerted.",
+                     "No kill at this point — a stall that recovers on its own is logged as RECOVERED,",
+                     "which is the cheapest way to identify a slow operation without any downtime.",
+                     "Keep it above your worst legitimate pause (chunk generation, a big autosave).")
+            .defineInRange("stallWarnSeconds", 60, 10, 3600);
+        STALL_KILL_SECONDS = b
+            .comment("Seconds without a tick before the JVM is HALTED so the panel restarts it.",
+                     "Must be larger than stallWarnSeconds. 0 = never kill, alert only.",
+                     "Cost of a kill is bounded by SaveGuard: it banks player data every 60s and the",
+                     "world every 120s, so ~1-2 minutes of progress. Cost of NOT killing is the whole",
+                     "session plus indefinite downtime until somebody notices by hand.")
+            .defineInRange("stallKillSeconds", 240, 0, 7200);
+        STALL_SHUTDOWN_KILL_SECONDS = b
+            .comment("Seconds a SHUTDOWN may take before the JVM is halted. 0 = never.",
+                     "Tracked separately because ticks stop legitimately during shutdown, so the",
+                     "tick-stall rule cannot apply — it would fire on every clean stop. This is the",
+                     "rule that catches a wedged save (the 2026-08-21 00:00 failure).")
+            .defineInRange("stallShutdownKillSeconds", 300, 0, 7200);
+        LAG_ATTRIBUTION_ENABLED = b
+            .comment("Sample the server thread during slow ticks and post an ATTRIBUTED lag report",
+                     "to the watchdog Discord channel — which mod, which methods, which entities.",
+                     "WHY, given spark is installed: spark is the better profiler but needs someone",
+                     "awake to run /spark profiler and read a web report. Every lag event on this",
+                     "server so far happened overnight and the evidence was gone by morning.",
+                     "Reports go out at MEDIUM so they reach the watchdog channel without messaging",
+                     "every op in-game (HIGH+ does that). Players are handled by lagWarn* instead.")
+            .define("lagAttributionEnabled", true);
+        LAG_SAMPLE_AFTER_MS = b
+            .comment("Only sample once the CURRENT tick has already run this long (ms).",
+                     "This is the cost control. Thread.getStackTrace() on another thread needs a",
+                     "safepoint and is not free, so sampling unconditionally would itself become a",
+                     "lag source. Paid only while a tick is already over budget, the overhead is",
+                     "bounded and buys an attributed picture of a spike nobody witnessed.")
+            .defineInRange("lagSampleAfterMs", 100, 20, 5000);
+        LAG_SAMPLE_INTERVAL_MS = b
+            .comment("Milliseconds between samples while a tick is overrunning. Lower = sharper",
+                     "attribution and more overhead. 50ms (20/sec) is a deliberately safe default.")
+            .defineInRange("lagSampleIntervalMs", 50, 10, 1000);
+        LAG_SPIKE_REPORT_MS = b
+            .comment("A single tick this slow (ms) triggers a report. Note this pack routinely",
+                     "produces multi-second spikes during chunk loading, so keep it high enough that",
+                     "reports stay meaningful rather than constant.")
+            .defineInRange("lagSpikeReportMs", 500, 100, 60000);
+        LAG_REPORT_COOLDOWN_MINUTES = b
+            .comment("Minimum minutes between lag reports. Also gates the entity census, which is",
+                     "the expensive half — see lagCensusMaxEntities.")
+            .defineInRange("lagReportCooldownMinutes", 10, 1, 1440);
+        LAG_CENSUS_MAX_ENTITIES = b
+            .comment("Hard cap on entities walked during a census. The census runs INLINE on the",
+                     "server thread (the only safe way to read entities) so it must be bounded:",
+                     "diagnostics must never become the outage. A runaway world stops at this count",
+                     "and the report says so.")
+            .defineInRange("lagCensusMaxEntities", 20000, 1000, 500000);
         b.pop();
 
         b.comment("Watchdog — Security Monitoring").push("watchdog");

@@ -128,7 +128,30 @@ try:
     # Mods build_cf.py strips for CurseForge moderation but the SERVER still loads. The import
     # channel is unmoderated and no longer runs the updater, so these must ride along or the
     # profile is missing a side=BOTH mod the moment a player connects.
-    MUST_BUNDLE = ["Analog-Audio-"]
+    #
+    # 🔴 THE BOOT CHAIN BELOW IS NOT OPTIONAL, AND USED TO BE AN ASSUMPTION RATHER THAN A RULE.
+    # This module's docstring says these "stay bundled by the fingerprint pass" — that was never
+    # enforced anywhere, it just happened to be true because cf_fingerprint.py failed to match
+    # them. On 2026-08-19 the fingerprint pass learned to match 12 more CF-hosted jars, every one
+    # of these among them, and the 1.9.4.1 import zip shipped with its ENTIRE boot chain converted
+    # to CF references: 21 bundled jars -> 11, 39.2 MB -> 13.5 MB.
+    #
+    # Why that is fatal specifically for the IMPORT zip: it is handed to a player and imported
+    # directly, and the in-client updater only runs once the game reaches the title screen. A
+    # profile missing its language provider / Fabric-compat layer cannot reach the title screen,
+    # so it can never repair itself. A store install has CF resolving references for it; an import
+    # install does not get that guarantee.
+    #
+    # Keep this list in sync with anything the game needs at CLASSLOAD time, not just at play time.
+    MUST_BUNDLE = [
+        "Analog-Audio-",              # side=BOTH, stripped by build_cf for CF moderation
+        "connector-",                 # Fabric-compat layer; mods classload through it
+        "forgified-fabric-api-",      # matched pair with Connector — never ship one without the other
+        "kotlinforforge-",            # language provider
+        "kubejs-neoforge-",           # runs scripts during load
+        "rhino-",                     # KubeJS's script engine; useless apart
+        "GlitchCore-neoforge-",       # hard dep of the worldgen stack
+    ]
     for prefix in MUST_BUNDLE:
         import glob as _g2
         found = _g2.glob(os.path.join(OVERRIDES, "mods", prefix + "*.jar"))
@@ -202,8 +225,21 @@ try:
     for j in OURS:
         n = os.path.basename(j)
         print("  %-34s %s" % (n, "bundled" if n in bundled else "*** MISSING ***"))
-    print("  %-34s %s" % ("Analog Audio",
-          "not bundled - updater fetches it" if not any("analog" in b.lower() for b in bundled)
-          else "bundled"))
+
+    # Hard gate. The 1.9.4.1 import zip shipped with its whole boot chain referenced instead of
+    # bundled and NOTHING complained — the build printed a smaller size and looked fine. Size alone
+    # is not a signal (a legitimately smaller zip is normal once mods move to CF references), so
+    # assert the contents instead and refuse to produce an unbootable zip.
+    missing = [p for p in MUST_BUNDLE
+               if not any(b.lower().startswith(p.lower()) for b in bundled)]
+    print()
+    for p in MUST_BUNDLE:
+        hit = next((b for b in bundled if b.lower().startswith(p.lower())), None)
+        print("  MUST_BUNDLE %-26s %s" % (p, hit or "*** MISSING ***"))
+    if missing:
+        sys.exit("\nREFUSING TO SHIP: boot-critical jars are not bundled: %s\n"
+                 "cf_fingerprint.py has converted them to CF references. An imported profile "
+                 "cannot reach the title screen without these, and the in-client updater only "
+                 "runs after the title screen — so it can never repair itself." % ", ".join(missing))
 finally:
     shutil.rmtree(work, ignore_errors=True)

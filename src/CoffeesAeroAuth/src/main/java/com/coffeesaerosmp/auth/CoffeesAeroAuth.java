@@ -129,6 +129,19 @@ public class CoffeesAeroAuth {
 
 
 
+        // Tick heartbeat for the stall watchdog. Registered FIRST among the tick listeners and kept
+        // to a single volatile write: this is the one handler that must never itself be the reason
+        // a tick is slow, and it must run even if a later listener throws.
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.tick.ServerTickEvent.Post e) ->
+            com.coffeesaerosmp.auth.watchdog.StallWatchdog.onServerTick(e.getServer()));
+
+        // Lag attribution. Pre stamps the tick's start so the sampler thread can tell a tick is
+        // overrunning WHILE it overruns — the only moment its stack is worth capturing.
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.tick.ServerTickEvent.Pre e) ->
+            com.coffeesaerosmp.auth.watchdog.LagAttributor.onTickPre(e.getServer()));
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.tick.ServerTickEvent.Post e) ->
+            com.coffeesaerosmp.auth.watchdog.LagAttributor.onTickPost(e.getServer()));
+
         // Animated tab-list header/footer (airship + live pilot count + rotating tips).
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.tick.ServerTickEvent.Post e) ->
             com.coffeesaerosmp.auth.tablist.TabListManager.onServerTick(e.getServer()));
@@ -320,6 +333,11 @@ public class CoffeesAeroAuth {
         WATCHDOG = new WatchdogManager(event.getServer(), ipBans, trustedIps, auditLog, watchdogLog, WEBHOOK_QUEUE, dataDir);
         WATCHDOG.start(PROFILE_STORE);
 
+        // Hung-tick detector. Started AFTER WATCHDOG so its alerts have somewhere to go, and it
+        // watches from its own thread so a wedged tick loop cannot stop it from noticing.
+        com.coffeesaerosmp.auth.watchdog.StallWatchdog.start(event.getServer(), dataDir);
+        com.coffeesaerosmp.auth.watchdog.LagAttributor.start(event.getServer());
+
         // ── Private room + name approval ──────────────────────────────────────
         ROOM_MANAGER   = new PrivateRoomManager(event.getServer());
         APPROVAL_QUEUE = new NameApprovalQueue(PROFILE_STORE, WEBHOOK_QUEUE, DISCORD_REST, event.getServer(), ROOM_MANAGER);
@@ -365,6 +383,11 @@ public class CoffeesAeroAuth {
     }
 
     private static void onServerStopping(ServerStoppingEvent event) {
+        // FIRST LINE ON PURPOSE: from here on ticks stop legitimately, so the tick-stall rule must
+        // give way to the shutdown deadline. Everything below this point is part of the shutdown
+        // that is now being supervised — including the player-session close, which goes to MySQL in
+        // Helsinki and is a prime suspect for the 2026-08-21 00:00 wedge.
+        com.coffeesaerosmp.auth.watchdog.StallWatchdog.onServerStopping();
         // Close live sessions FIRST: playtime only accumulates in onPlayerLeave, so a panel
         // restart/stop with players online silently lost their whole session (playtime AND the
         // /spawn return-position). Idempotent — the natural PlayerLoggedOutEvent that follows
