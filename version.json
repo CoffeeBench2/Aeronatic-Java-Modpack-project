@@ -1,8 +1,8 @@
 {
-  "version": "1.9.4.2",
+  "version": "1.9.4.3",
   "url": "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/latest",
   "neoforge": "21.1.244",
   "minecraft": "1.21.1",
-  "notes": "1.9.4.2 - Analog Audio updated to 0.1.5-hotfix.1. This one is REQUIRED: the new build swaps the audio engine to AnalogLib and adds LampLib, which registers network channels the server checks on join. If you do not update you will be disconnected with a channel/version mismatch. The server is on the matching build.",
+  "notes": "1.9.4.3 - AeroCore 1.3.34. THIS IS THE LAST UPDATE THAT RESETS YOUR SETTINGS. From now on the updater leaves your keybinds, video/audio options, chosen shader and Xaero map settings alone - they were being re-downloaded with the pack every time. Back up options.txt before updating if you want to keep this run's keybinds. Also brings the EMI/JEI recipe-viewer switch.",
   "lodReset": "season1"
 }
