@@ -11,6 +11,7 @@ This checks the served version against what the pack should be, so "stale" is di
 Usage: py scripts/raw_preflight.py [expected-version]
 """
 import hashlib
+import os
 import json
 import re
 import sys
@@ -49,14 +50,33 @@ def main():
     print("integrity gate      : %s" % ("PASS" if gate else "MISMATCH"))
     print("analog 0.1.5 indexed: %s" % ("analog-audio-0-1-5" in index.decode("utf-8", "replace")))
 
+    # 🔴 Comparing the served pair against ITSELF is not enough. A stale edge serves a consistent
+    # OLD pack.toml + index.toml, so the gate passes — and when only the index changed between two
+    # commits (a config edit, say), the served version string is identical too. Both signals look
+    # green while the edge is a commit behind. The only reliable test is against the LOCAL index:
+    # if they differ, the CDN has not caught up, and a client updating now can fetch a stale index
+    # paired with a fresh file and fail with "hash mismatch after download".
+    here = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "index.toml")
+    local = None
+    if os.path.isfile(here):
+        local = hashlib.sha256(open(here, "rb").read()).hexdigest()
+        print("index local         : %s" % local[:20])
+        print("index matches local : %s" % (actual == local))
+
     if expected:
         fresh = version == expected and pack_version == expected
+        synced = local is None or actual == local
         print()
         print("expected            : %s" % expected)
-        print("STATUS              : %s" % (
-            "LIVE — edges are serving the new pack" if fresh and gate
-            else "STALE — CDN still on the old commit, wait and re-run"))
-        if not (fresh and gate):
+        if fresh and gate and synced:
+            print("STATUS              : LIVE — edges are serving the current commit")
+        elif fresh and gate and not synced:
+            print("STATUS              : STALE INDEX — version strings match but the served index is")
+            print("                      a commit behind. Do NOT tell players to update yet; they can")
+            print("                      hit 'hash mismatch after download'. Wait ~5 min, re-run.")
+        else:
+            print("STATUS              : STALE — CDN still on the old commit, wait and re-run")
+        if not (fresh and gate and synced):
             sys.exit(1)
 
 
