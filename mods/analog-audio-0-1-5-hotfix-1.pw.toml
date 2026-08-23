@@ -1,0 +1,13 @@
+name = "Analog Audio 0.1.5-hotfix.1 for NeoForge 1.21.1"
+filename = "Analog-Audio-0.1.5-hotfix.1.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/iMAVG2nH/versions/BshMjyFt/Analog-Audio-0.1.5-hotfix.1.jar"
+hash-format = "sha512"
+hash = "b53d0d09d0c6bb864b4ff5426599a029184583ebc8117d5c50fedbd54e949434970e8bf448ce492820f60adab2116effd1a46c7a082b82f53cf7dc3fbba6b909"
+
+[update]
+[update.modrinth]
+mod-id = "iMAVG2nH"
+version = "BshMjyFt"

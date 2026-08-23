@@ -36,8 +36,8 @@ hash = "75f4d501cbbe5c0db2e6af4c2cef30e82d00554a91c125036980bed3c50cb678"
 metafile = true
 
 [[files]]
-file = "mods/analog-audio-0-1-0.pw.toml"
-hash = "7d8a8fd750ca1f392eb7f46bc0ef64159d7ef0e00801ae88f2b9f7af51080fa2"
+file = "mods/analog-audio-0-1-5-hotfix-1.pw.toml"
+hash = "8d28e8c29d4d5ed7e3cfe103c24eddfcfbab349b1a472e9f1616e2d5f092ebd0"
 metafile = true
 
 [[files]]
