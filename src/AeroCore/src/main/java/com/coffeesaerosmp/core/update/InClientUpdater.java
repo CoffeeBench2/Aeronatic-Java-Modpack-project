@@ -128,10 +128,22 @@ public final class InClientUpdater {
 
             List<Target> plan = new ArrayList<>();
             Set<String>  managed = new LinkedHashSet<>();          // target paths this update controls
+            int preserved = 0;
             for (Scan s : scans) {
                 if (s == null) continue;                           // metafile with no filename
+                // Stays in `managed` even when skipped — dropping it here would put the file on the
+                // orphan list and DELETE the player's settings, which is worse than resetting them.
                 managed.add(s.managedRel());
-                if (s.target() != null) plan.add(s.target());
+                if (s.target() == null) continue;
+                if (isPlayerOwned(s.managedRel()) && Files.exists(gameDir.resolve(s.managedRel()))) {
+                    preserved++;
+                    continue;                                      // seed-only: never replace
+                }
+                plan.add(s.target());
+            }
+            if (preserved > 0) {
+                LOGGER.info("[Updater] preserved {} player-owned file(s) (keybinds/settings kept).",
+                            preserved);
             }
 
             // Orphans: files a previous in-client update installed that the pack no longer lists.
@@ -577,11 +589,48 @@ public final class InClientUpdater {
         try {
             for (String prev : Files.readAllLines(mf, StandardCharsets.UTF_8)) {
                 prev = prev.trim();
+                // Player-owned files are never orphaned. If the pack ever stops shipping options.txt,
+                // this loop would otherwise DELETE every player's keybinds on their next update —
+                // the file is in the old manifest, absent from the new managed set, and present on
+                // disk, which is exactly the removal condition.
+                if (isPlayerOwned(prev)) continue;
                 if (!prev.isEmpty() && !nowManaged.contains(prev) && Files.exists(gameDir.resolve(prev)))
                     out.add(prev);
             }
         } catch (IOException ignored) {}
         return out;
+    }
+
+    /**
+     * Files the pack SEEDS on a fresh install but must never touch again — the ones a player edits
+     * and expects to keep.
+     *
+     * <p>These are indexed like any other pack file, so before this existed every update re-downloaded
+     * them and silently reset keybinds, video/audio settings, the selected shader and both Xaero maps.
+     * Players reported it as "the update wiped my settings", which is exactly what it was.
+     *
+     * <p>⚠ Removing them from the packwiz index is NOT an alternative fix: the index is also what
+     * {@link #orphans} diffs against, so de-indexing turns a reset into a deletion. They must stay
+     * indexed (fresh installs still get sane defaults) and be skipped here instead.
+     *
+     * <p>Matched case-insensitively on the full managed-relative path, with {@code /} separators.
+     */
+    private static final Set<String> PLAYER_OWNED = Set.of(
+        "options.txt",                              // keybinds, video, audio, resource-pack order
+        "optionsof.txt",                            // OptiFine-style extras, if a player adds them
+        "optionsshaders.txt",
+        "servers.dat",                              // hand-added servers
+        "config/iris.properties",                   // selected shaderpack
+        "config/xaero/minimap/client.cfg",
+        "config/xaero/world-map/client.cfg",
+        "config/voicechat/voicechat-client.properties",
+        "config/sodium-options.json",
+        "config/sodium-extra-options.json"
+    );
+
+    private static boolean isPlayerOwned(String managedRel) {
+        if (managedRel == null) return false;
+        return PLAYER_OWNED.contains(managedRel.replace('\\', '/').toLowerCase(java.util.Locale.ROOT));
     }
 
     private static String rel(Path gameDir, Path target) {
