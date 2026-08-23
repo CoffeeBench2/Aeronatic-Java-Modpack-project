@@ -1,8 +1,8 @@
 {
-  "version": "1.9.4.1",
+  "version": "1.9.4.2",
   "url": "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/latest",
   "neoforge": "21.1.244",
   "minecraft": "1.21.1",
-  "notes": "1.9.4.1 - Hotfix. Updates JEI to 19.44.0.401, which ldlib2 requires. If you are stuck on the 'Mod ldlib2 only supports jei 19.39.0.368 or above' screen, grab the JEI jar from the release page and drop it in your mods folder manually - the updater cannot run from that screen. Otherwise just relaunch.",
+  "notes": "1.9.4.2 - Analog Audio updated to 0.1.5-hotfix.1. This one is REQUIRED: the new build swaps the audio engine to AnalogLib and adds LampLib, which registers network channels the server checks on join. If you do not update you will be disconnected with a channel/version mismatch. The server is on the matching build.",
   "lodReset": "season1"
 }
