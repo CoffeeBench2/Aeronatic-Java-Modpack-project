@@ -29,22 +29,31 @@ public final class WatchdogTaunts {
 
     private WatchdogTaunts() {}
 
+    /** The watchdog has a name and a face: Hector, a brown dog. He is not a metaphor. */
+    public static final String NAME = "Hector";
+
     /**
      * Deliberately written as statements of fact rather than threats. Every line describes
      * something the watchdog genuinely does, so nobody can call the bluff.
+     *
+     * <p>Named in third person now — a nameless "the watchdog" is a system, and systems are argued
+     * with. Hector is a brown dog who remembers things, and that is much harder to argue with.
      */
     private static final List<String> LINES = List.of(
-        "The watchdog is awake. Every block you break carries a timestamp.",
-        "Somewhere in a log file, your name is already written.",
-        "It sees the chunks you load. It sees the chests you open. Good dog.",
-        "Rule one: the watchdog is watching. Rule two: see rule one.",
-        "Play fair. This dog has a very long memory.",
-        "Every command you run is on the record.",
-        "Nothing personal — it simply remembers everything.",
-        "Cheat if you like. The logs are patient.",
-        "It knows your IP, your UUID and your last thousand actions. Sleep well.",
-        "No alarms today. Let's keep it that way.",
-        "The watchdog does not blink, and it does not bark twice."
+        "Hector is awake. Every block you break carries a timestamp.",
+        "Somewhere in a log file, your name is already written. Hector put it there.",
+        "He sees the chunks you load. He sees the chests you open. Good boy, Hector.",
+        "Rule one: Hector is watching. Rule two: see rule one.",
+        "Play fair. The brown dog has a very long memory.",
+        "Every command you run is on the record. Hector filed it.",
+        "Nothing personal — Hector simply remembers everything.",
+        "Cheat if you like. Hector's logs are patient.",
+        "He knows your IP, your UUID and your last thousand actions. Sleep well.",
+        "No alarms today. Hector approves. Let's keep it that way.",
+        "Hector does not blink, and he does not bark twice.",
+        "Hector has not moved in six hours. He is not asleep.",
+        "The brown dog tilted his head. Something in the logs did not add up.",
+        "Hector wags for clean sessions. He has not wagged all night."
     );
 
     private static long nextAt = 0L;
@@ -87,7 +96,9 @@ public final class WatchdogTaunts {
             .toList();
         if (audience.isEmpty()) return;      // never talk to an empty room
 
-        Component line = Component.literal("§8[§c🐾§8] §c§oWatchdog §7§o" + pick());
+        // §6 (gold) is the closest the legacy §-palette gets to brown — it has no brown code at all,
+        // the same limitation that pushed the sidebar header to true RGB in 1.7.37.
+        Component line = Component.literal("§8[§c🐾§8] §6§o" + NAME + " §7§o" + pick());
         for (ServerPlayer p : audience) {
             p.sendSystemMessage(line);
             Sounds.watchdog(p);

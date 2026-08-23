@@ -249,19 +249,21 @@ public final class LagAttributor {
      */
     private static String censusNow(MinecraftServer server) {
         try {
-            Map<String, Integer> byType  = new HashMap<>();
-            Map<String, Integer> byChunk = new HashMap<>();
+            Map<String, Integer> byType = new HashMap<>();
+            Map<ChunkKey, Integer> byChunk = new HashMap<>();
+            Map<ChunkKey, Map<String, Integer>> chunkTypes = new HashMap<>();
             int total = 0;
             int cap = AuthConfig.LAG_CENSUS_MAX_ENTITIES.get();
 
             outer:
             for (ServerLevel level : server.getAllLevels()) {
-                String dim = level.dimension().location().toString();
+                String dim = shortDim(level);
                 for (Entity e : level.getAllEntities()) {
                     String type = BuiltInRegistries.ENTITY_TYPE.getKey(e.getType()).toString();
                     byType.merge(type, 1, Integer::sum);
-                    byChunk.merge(dim + " " + e.chunkPosition().x + "," + e.chunkPosition().z,
-                                  1, Integer::sum);
+                    ChunkKey k = new ChunkKey(dim, e.chunkPosition().x, e.chunkPosition().z);
+                    byChunk.merge(k, 1, Integer::sum);
+                    chunkTypes.computeIfAbsent(k, x -> new HashMap<>()).merge(type, 1, Integer::sum);
                     if (++total >= cap) break outer;
                 }
             }
@@ -269,11 +271,78 @@ public final class LagAttributor {
             StringBuilder sb = new StringBuilder();
             sb.append(total).append(total >= cap ? "+ (capped)" : "").append(" entities. Top: ");
             sb.append(topN(byType, 4));
-            String hottest = topN(byChunk, 1);
-            if (!hottest.isEmpty()) sb.append(" | busiest chunk: ").append(hottest);
+
+            // The area briefing. A bare chunk coordinate is not actionable — it has to be multiplied
+            // by 16 by hand before anyone can fly to it. Report block coords you can paste into /tp,
+            // what is actually sitting in the worst chunk, and who is standing near it.
+            List<Map.Entry<ChunkKey, Integer>> hot = new ArrayList<>(byChunk.entrySet());
+            hot.sort(Comparator.<Map.Entry<ChunkKey, Integer>>comparingInt(Map.Entry::getValue).reversed());
+
+            if (!hot.isEmpty()) {
+                Map.Entry<ChunkKey, Integer> worst = hot.get(0);
+                ChunkKey k = worst.getKey();
+                sb.append("\n• Hotspot: ").append(k.dim())
+                  .append(" /tp ").append(k.blockX()).append(" ~ ").append(k.blockZ())
+                  .append("  (chunk ").append(k.cx()).append(',').append(k.cz()).append(')')
+                  .append(" — ").append(worst.getValue()).append(" entities");
+
+                Map<String, Integer> inChunk = chunkTypes.get(k);
+                if (inChunk != null && !inChunk.isEmpty()) {
+                    sb.append("\n• Mostly: ").append(topN(inChunk, 3));
+                }
+
+                String near = nearestPlayer(server, k);
+                if (near != null) sb.append("\n• Nearest player: ").append(near);
+
+                if (hot.size() > 1) {
+                    sb.append("\n• Also hot: ");
+                    for (int i = 1; i < Math.min(4, hot.size()); i++) {
+                        ChunkKey o = hot.get(i).getKey();
+                        if (i > 1) sb.append("; ");
+                        sb.append(o.dim()).append(' ').append(o.blockX()).append(',').append(o.blockZ())
+                          .append(" (").append(hot.get(i).getValue()).append(')');
+                    }
+                }
+            }
             return sb.toString();
         } catch (Throwable t) {
             return "census failed: " + t;
+        }
+    }
+
+    /** A chunk, kept as a value so the hotspot can be rendered as block coords rather than re-parsed. */
+    private record ChunkKey(String dim, int cx, int cz) {
+        int blockX() { return cx * 16 + 8; }
+        int blockZ() { return cz * 16 + 8; }
+    }
+
+    /** {@code minecraft:the_nether} reads as {@code the_nether} — the namespace is never in doubt here. */
+    private static String shortDim(ServerLevel level) {
+        String s = level.dimension().location().toString();
+        return s.startsWith("minecraft:") ? s.substring("minecraft:".length()) : s;
+    }
+
+    /**
+     * Nearest player to the hotspot, with distance. Usually the whole answer: a farm only lags while
+     * somebody is loading it, so the player standing 30 blocks away is the one to talk to.
+     */
+    private static String nearestPlayer(MinecraftServer server, ChunkKey k) {
+        try {
+            net.minecraft.server.level.ServerPlayer best = null;
+            double bestSq = Double.MAX_VALUE;
+            for (ServerLevel level : server.getAllLevels()) {
+                if (!shortDim(level).equals(k.dim())) continue;
+                for (net.minecraft.server.level.ServerPlayer p : level.players()) {
+                    double dx = p.getX() - k.blockX();
+                    double dz = p.getZ() - k.blockZ();
+                    double d2 = dx * dx + dz * dz;
+                    if (d2 < bestSq) { bestSq = d2; best = p; }
+                }
+            }
+            if (best == null) return null;
+            return best.getGameProfile().getName() + " (" + Math.round(Math.sqrt(bestSq)) + "m away)";
+        } catch (Throwable t) {
+            return null;
         }
     }
 

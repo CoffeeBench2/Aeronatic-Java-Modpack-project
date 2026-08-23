@@ -17,6 +17,13 @@ public final class AlertFormatter {
 
     private AlertFormatter() {}
 
+    /**
+     * Fields omitted from the batched LOW line — long free text that would blow the description
+     * budget and push other events out. These stay visible on the individual event embed.
+     */
+    private static final java.util.Set<String> SKIP_IN_BATCH =
+        java.util.Set.of("Message", "Entities", "Hot methods", "Action Taken");
+
     // ── Watchdog Alerts ───────────────────────────────────────────────────────
 
     public static String watchdogAlert(WatchdogEvent event) {
@@ -53,19 +60,55 @@ public final class AlertFormatter {
         return GSON.toJson(payload);
     }
 
-    /** Batches multiple LOW-severity JSON payloads into a single embed. */
+    /**
+     * Batches multiple LOW-severity JSON payloads into a single embed.
+     *
+     * <p>🔴 2026-08-23: this used to append <b>only the title</b> of each payload and silently drop
+     * every field, so a batch of censored-word alerts rendered as three identical
+     * {@code "LOW — Chat: Censored Word"} lines with no player, no term and no message. The data was
+     * always collected correctly by the caller — it was destroyed here. Staff could see that
+     * <i>something</i> was censored but never <b>who said it</b>, which is the only part that matters.
+     *
+     * <p>Each event now keeps its identifying fields on the same line. {@link #SKIP_IN_BATCH} drops
+     * the bulky ones (a full chat message is not batch material — it stays in the per-event embed),
+     * and the description is hard-capped because Discord rejects the whole payload over 4096 chars,
+     * which would lose the batch entirely rather than truncate it.
+     */
     public static String batchLow(List<String> payloads) {
-        // Re-extract titles from payloads and merge into one embed's description
         StringBuilder desc = new StringBuilder();
+        int dropped = 0;
         for (String p : payloads) {
             try {
                 JsonObject obj = JsonParser.parseString(p).getAsJsonObject();
                 JsonArray embeds = obj.getAsJsonArray("embeds");
-                if (embeds != null && embeds.size() > 0) {
-                    desc.append(embeds.get(0).getAsJsonObject().get("title").getAsString()).append("\n");
+                if (embeds == null || embeds.size() == 0) continue;
+                JsonObject e0 = embeds.get(0).getAsJsonObject();
+
+                StringBuilder line = new StringBuilder();
+                line.append(e0.get("title").getAsString());
+
+                JsonArray fields = e0.getAsJsonArray("fields");
+                if (fields != null) {
+                    StringBuilder detail = new StringBuilder();
+                    for (int i = 0; i < fields.size(); i++) {
+                        JsonObject f = fields.get(i).getAsJsonObject();
+                        String name = f.get("name").getAsString();
+                        if (SKIP_IN_BATCH.contains(name)) continue;
+                        String value = f.get("value").getAsString();
+                        if (value.isBlank() || "—".equals(value)) continue;
+                        if (value.length() > 60) value = value.substring(0, 60) + "…";
+                        detail.append(detail.length() == 0 ? " · " : " · ")
+                              .append("**").append(name).append(":** ").append(value);
+                    }
+                    line.append(detail);
                 }
+
+                // Cap before appending, so a batch is never rejected wholesale by Discord.
+                if (desc.length() + line.length() + 1 > 3800) { dropped++; continue; }
+                desc.append(line).append('\n');
             } catch (Exception ignored) {}
         }
+        if (dropped > 0) desc.append("… and ").append(dropped).append(" more (truncated)");
         JsonObject payload = new JsonObject();
         payload.addProperty("username", BOT_NAME);
         JsonArray embeds = new JsonArray();
