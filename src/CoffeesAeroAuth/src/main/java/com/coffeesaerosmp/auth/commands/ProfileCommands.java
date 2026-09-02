@@ -407,6 +407,11 @@ public class ProfileCommands {
             .then(Commands.literal("hide")
                 .executes(ctx -> toggleHidden(ctx.getSource()))
             )
+            // The TPS/MSPT bar is opt-OUT: ops see it without running anything. This only exists
+            // so an op who does not want it can turn it off for themselves.
+            .then(Commands.literal("hud")
+                .executes(ctx -> toggleTpsHud(ctx.getSource()))
+            )
         );
     }
 
@@ -590,6 +595,21 @@ public class ProfileCommands {
         player.sendSystemMessage(Component.literal(hidden
             ? "§7You are now §chidden§7 from the player list."
             : "§7You are now §avisible§7 in the player list."));
+        return 1;
+    }
+
+    private static int toggleTpsHud(CommandSourceStack source) {
+        ServerPlayer player;
+        try {
+            player = source.getPlayerOrException();
+        } catch (com.mojang.brigadier.exceptions.CommandSyntaxException e) {
+            source.sendFailure(Component.literal("§cOnly a player can use this."));
+            return 0;
+        }
+        boolean visible = com.coffeesaerosmp.auth.display.TpsHud.toggle(player);
+        player.sendSystemMessage(Component.literal(visible
+            ? "§7TPS bar §aon§7. Green under 30ms, yellow to 50ms, red above — 50ms is the tick budget."
+            : "§7TPS bar §coff§7 for you. §8/authmod hud to bring it back."));
         return 1;
     }
 

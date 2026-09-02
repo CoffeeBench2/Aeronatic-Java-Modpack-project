@@ -72,6 +72,7 @@ public class AuthConfig {
     public static final ModConfigSpec.ConfigValue<String>  STAFF_OWNER;
     public static final ModConfigSpec.ConfigValue<String>  STAFF_ADMIN;
     public static final ModConfigSpec.ConfigValue<String>  STAFF_MOD;
+    public static final ModConfigSpec.BooleanValue         TPS_HUD_ENABLED;
     public static final ModConfigSpec.BooleanValue         SIDEBAR_ENABLED;
     public static final ModConfigSpec.BooleanValue         AFK_ENABLED;
     public static final ModConfigSpec.IntValue             AFK_TIMEOUT_MINUTES;
@@ -301,6 +302,13 @@ public class AuthConfig {
         STAFF_MOD = b
             .comment("Comma-separated usernames shown with the [MOD] badge.")
             .define("staffMod", "");
+        TPS_HUD_ENABLED = b
+            .comment("Show ops a live TPS/MSPT boss bar at the top of the screen. No command needed:",
+                     "ops see it automatically and can turn it off for themselves with /authmod hud.",
+                     "MSPT here is real tick WORK time (Pre->Post), so it is comparable to spark.",
+                     "The interval between ticks - what the older LagMonitor measures - floors at",
+                     "~50ms whenever the server keeps up, and so can never match spark's MSPT.")
+            .define("tpsHudEnabled", true);
         WELCOME_INTERVAL_HOURS = b
             .comment("Hours between cosmetic welcome shows per player (title + welcome chat + skin tip).",
                      "Persisted in welcome_shown.json so relogs/restarts don't replay it. 0 = every join",

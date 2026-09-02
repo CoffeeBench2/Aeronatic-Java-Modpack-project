@@ -142,6 +142,18 @@ public class CoffeesAeroAuth {
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.tick.ServerTickEvent.Post e) ->
             com.coffeesaerosmp.auth.watchdog.LagAttributor.onTickPost(e.getServer()));
 
+        // True MSPT. Pre->Post is the tick's WORK time, which is what spark reports; the Post->Post
+        // interval LagMonitor uses floors at ~50ms whenever the server keeps up, so it can never
+        // agree with spark. Both are kept: interval drives TPS, work time drives MSPT.
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.tick.ServerTickEvent.Pre e) ->
+            com.coffeesaerosmp.auth.watchdog.TickStats.onTickPre());
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.tick.ServerTickEvent.Post e) ->
+            com.coffeesaerosmp.auth.watchdog.TickStats.onTickPost());
+
+        // Ops' live TPS/MSPT boss bar. Throttles itself to ~2 updates/sec.
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.tick.ServerTickEvent.Post e) ->
+            com.coffeesaerosmp.auth.display.TpsHud.onServerTick(e.getServer()));
+
         // Animated tab-list header/footer (airship + live pilot count + rotating tips).
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.tick.ServerTickEvent.Post e) ->
             com.coffeesaerosmp.auth.tablist.TabListManager.onServerTick(e.getServer()));
@@ -356,6 +368,7 @@ public class CoffeesAeroAuth {
         VOTE_REWARDS   = new com.coffeesaerosmp.auth.vote.VoteRewards(dataDir);
         com.coffeesaerosmp.auth.clan.ClanTags.initialize(dataDir);
         com.coffeesaerosmp.auth.display.HiddenOps.initialize(dataDir);
+        com.coffeesaerosmp.auth.display.TpsHud.initialize(dataDir);
         com.coffeesaerosmp.auth.commands.RtpCommand.initialize(dataDir);
         com.coffeesaerosmp.auth.commands.RtpAnchors.initialize(dataDir);
         com.coffeesaerosmp.auth.auth.WelcomeMessages.initialize(dataDir);
