@@ -355,6 +355,7 @@ public class CoffeesAeroAuth {
         DAILY_REWARDS  = new com.coffeesaerosmp.auth.daily.DailyRewardManager(dataDir);
         VOTE_REWARDS   = new com.coffeesaerosmp.auth.vote.VoteRewards(dataDir);
         com.coffeesaerosmp.auth.clan.ClanTags.initialize(dataDir);
+        com.coffeesaerosmp.auth.display.HiddenOps.initialize(dataDir);
         com.coffeesaerosmp.auth.commands.RtpCommand.initialize(dataDir);
         com.coffeesaerosmp.auth.commands.RtpAnchors.initialize(dataDir);
         com.coffeesaerosmp.auth.auth.WelcomeMessages.initialize(dataDir);

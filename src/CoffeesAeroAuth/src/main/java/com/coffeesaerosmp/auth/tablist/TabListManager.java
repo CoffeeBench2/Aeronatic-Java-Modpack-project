@@ -60,11 +60,16 @@ public final class TabListManager {
         // needs gameplay. Both packets are built once per cycle and picked per player — the packet
         // was already being sent per-connection, so this costs one extra Component build, not one
         // per player. Row counts are identical in both so the player list doesn't jump on /spawn.
-        ClientboundTabListPacket worldPacket =
-            new ClientboundTabListPacket(header(false), footer(server, false));
-        ClientboundTabListPacket lobbyPacket =
-            new ClientboundTabListPacket(header(true), footer(server, true));
-        for (ServerPlayer p : players) p.connection.send(inLobby(p) ? lobbyPacket : worldPacket);
+        int total = players.size();
+        int visible = total - com.coffeesaerosmp.auth.display.HiddenOps.hiddenCount(players);
+        ClientboundTabListPacket worldOp    = new ClientboundTabListPacket(header(false), footer(server, false, total));
+        ClientboundTabListPacket worldPlain = new ClientboundTabListPacket(header(false), footer(server, false, visible));
+        ClientboundTabListPacket lobbyOp    = new ClientboundTabListPacket(header(true),  footer(server, true,  total));
+        ClientboundTabListPacket lobbyPlain = new ClientboundTabListPacket(header(true),  footer(server, true,  visible));
+        for (ServerPlayer p : players) {
+            boolean op = p.hasPermissions(2);
+            p.connection.send(inLobby(p) ? (op ? lobbyOp : lobbyPlain) : (op ? worldOp : worldPlain));
+        }
         // Refresh RGB names AND staff badges from config every ~5s so edits apply live.
         if (frame % 10 == 0) {
             com.coffeesaerosmp.auth.util.RainbowText.setEnabledNames(
@@ -128,8 +133,10 @@ public final class TabListManager {
                 .append(styled != null ? styled : Component.literal(segOp.name()))
                 .append(Component.literal(segOp.suffix()));
 
-            plain.add(new net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket.Entry(
-                p.getUUID(), null, true, p.connection.latency(), p.gameMode.getGameModeForPlayer(), plainName, null));
+            if (!com.coffeesaerosmp.auth.display.HiddenOps.isHidden(p.getUUID())) {
+                plain.add(new net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket.Entry(
+                    p.getUUID(), null, true, p.connection.latency(), p.gameMode.getGameModeForPlayer(), plainName, null));
+            }
             opView.add(new net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket.Entry(
                 p.getUUID(), null, true, p.connection.latency(), p.gameMode.getGameModeForPlayer(), opName, null));
         }
@@ -181,15 +188,15 @@ public final class TabListManager {
             + "\n ");
     }
 
-    private static Component footer(MinecraftServer server, boolean lobby) {
+    private static Component footer(MinecraftServer server, boolean lobby, int count) {
         String[] tips = lobby ? TIPS_LOBBY : TIPS_WORLD;
         String tip = tips[(frame / 6) % tips.length];  // rotate roughly every 3s
         // In the lobby a pilot count is noise — the player can't see anyone and isn't in the world
         // yet. Lead with the exit instead.
         String line = lobby
             ? "§a✦ §e/spawn §6to enter the world §8• §7" + tip
-            : "§6⚙ §e" + server.getPlayerList().getPlayerCount() + " §6pilot"
-              + (server.getPlayerList().getPlayerCount() == 1 ? "" : "s") + " aloft §8• §7" + tip;
+            : "§6⚙ §e" + count + " §6pilot"
+              + (count == 1 ? "" : "s") + " aloft §8• §7" + tip;
         return Component.literal(
               "\n§8§m                                          §r"
             + "\n" + line
