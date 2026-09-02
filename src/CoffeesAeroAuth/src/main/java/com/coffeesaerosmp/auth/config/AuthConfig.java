@@ -69,6 +69,9 @@ public class AuthConfig {
     public static final ModConfigSpec.ConfigValue<String>  RESOURCE_PACK_HASH;
     public static final ModConfigSpec.ConfigValue<String>  SERVER_DISPLAY_NAME;
     public static final ModConfigSpec.ConfigValue<String>  DISPLAY_RGB_NAMES;
+    public static final ModConfigSpec.ConfigValue<String>  STAFF_OWNER;
+    public static final ModConfigSpec.ConfigValue<String>  STAFF_ADMIN;
+    public static final ModConfigSpec.ConfigValue<String>  STAFF_MOD;
     public static final ModConfigSpec.BooleanValue         SIDEBAR_ENABLED;
     public static final ModConfigSpec.BooleanValue         AFK_ENABLED;
     public static final ModConfigSpec.IntValue             AFK_TIMEOUT_MINUTES;
@@ -287,6 +290,17 @@ public class AuthConfig {
             .comment("Comma-separated usernames whose name renders as an animated RGB rainbow in chat + tab.",
                      "(A future /authmod namecolor command will manage this with more styles.)")
             .define("rgbNames", "MrCoffeeBench");
+        STAFF_OWNER = b
+            .comment("Comma-separated usernames shown with the [OWNER] badge.",
+                     "Rank is config-driven, NOT op level, so a moderator can be badged without",
+                     "being given command powers - and an op can go unbadged. Re-read live.")
+            .define("staffOwner", "MrCoffeeBench");
+        STAFF_ADMIN = b
+            .comment("Comma-separated usernames shown with the [ADMIN] badge.")
+            .define("staffAdmin", "");
+        STAFF_MOD = b
+            .comment("Comma-separated usernames shown with the [MOD] badge.")
+            .define("staffMod", "");
         WELCOME_INTERVAL_HOURS = b
             .comment("Hours between cosmetic welcome shows per player (title + welcome chat + skin tip).",
                      "Persisted in welcome_shown.json so relogs/restarts don't replay it. 0 = every join",
