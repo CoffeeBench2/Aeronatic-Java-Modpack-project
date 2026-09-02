@@ -401,6 +401,12 @@ public class ProfileCommands {
                     )
                 )
             )
+            // Toggles the CALLING player's own hidden state (see HiddenOps): filtered out of Tab,
+            // and their join line is swallowed by JoinMessageMixin. Op-only via the parent node's
+            // requires(2) above — same convention as every other subcommand in this tree.
+            .then(Commands.literal("hide")
+                .executes(ctx -> toggleHidden(ctx.getSource()))
+            )
         );
     }
 
@@ -563,6 +569,27 @@ public class ProfileCommands {
         profile.bio = bio;
         CoffeesAeroAuth.AUTH_MANAGER.getStore().save(profile);
         player.sendSystemMessage(TextUtil.success("Bio updated."));
+        return 1;
+    }
+
+    /**
+     * {@code /authmod hide} — toggles the CALLING player's own hidden state (see
+     * {@link com.coffeesaerosmp.auth.display.HiddenOps}). Hidden ops are filtered out of the Tab
+     * list and their join line is swallowed by {@code JoinMessageMixin}. Player-only — there is no
+     * "self" to hide from the console.
+     */
+    private static int toggleHidden(CommandSourceStack source) {
+        ServerPlayer player;
+        try {
+            player = source.getPlayerOrException();
+        } catch (com.mojang.brigadier.exceptions.CommandSyntaxException e) {
+            source.sendFailure(Component.literal("§cOnly a player can use this."));
+            return 0;
+        }
+        boolean hidden = com.coffeesaerosmp.auth.display.HiddenOps.toggle(player.getUUID());
+        player.sendSystemMessage(Component.literal(hidden
+            ? "§7You are now §chidden§7 from the player list."
+            : "§7You are now §avisible§7 in the player list."));
         return 1;
     }
 

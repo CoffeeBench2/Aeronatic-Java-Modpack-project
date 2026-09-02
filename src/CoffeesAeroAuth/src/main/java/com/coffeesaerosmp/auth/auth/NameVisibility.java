@@ -31,23 +31,26 @@ public final class NameVisibility {
         put(player, LOGIN);
     }
 
-    /** Verified/logged in: reveal with the proper badge — plus the clan tag when their FTB party
-     *  has one. Clan tags need a PER-PLAYER team (shared badge teams can't vary their prefix). */
+    /** Verified/logged in: reveal with badge + staff tag + clan tag. A per-player team is required
+     *  because a shared badge team cannot vary its prefix. */
     public static void reveal(ServerPlayer player, boolean premium) {
-        String tag = com.coffeesaerosmp.auth.clan.ClanTags.tagFor(player);
-        if (tag == null) {
+        MinecraftServer server = player.getServer();
+        if (server == null) return;
+
+        // composePrefix, NOT compose — a team prefix must EXCLUDE the name, because the client
+        // appends the scoreboard name after it. Including it would render the name twice.
+        String prefix = com.coffeesaerosmp.auth.display.PlayerDisplay.composePrefix(
+            com.coffeesaerosmp.auth.display.DisplayAdapter.partsFor(player));
+
+        if (prefix.isBlank()) {
             removePersonalTeam(player);
             put(player, premium ? VERIFIED : GUEST);
             return;
         }
-        MinecraftServer server = player.getServer();
-        if (server == null) return;
         ServerScoreboard sb = server.getScoreboard();
         PlayerTeam team = sb.getPlayerTeam(personalTeamName(player));
         if (team == null) team = sb.addPlayerTeam(personalTeamName(player));
-        team.setPlayerPrefix(Component.literal(
-            (premium ? "§6✈ " : "§8◈ ") + "§7["
-            + com.coffeesaerosmp.auth.clan.ClanTags.colorFor(player) + tag + "§7] "));
+        team.setPlayerPrefix(Component.literal(prefix));
         sb.addPlayerToTeam(player.getScoreboardName(), team);   // moves off any previous team
     }
 
