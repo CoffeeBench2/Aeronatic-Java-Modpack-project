@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Coffee's Aero SMP  |  server log4j2 override.
+
+  Drop this in the SERVER ROOT (next to server.jar) and add to the panel startup command:
+      -Dlog4j.configurationFile=log4j2.xml
+
+  WHY THIS EXISTS
+  Two loggers were writing to disk on the SERVER THREAD at high frequency:
+    * com.happysg.radar CannonMountPitch          656,216 lines ("PITCH.rotateCBC current=...")
+    * dev.ryanhcode.sable SubLevelHoldingChunkMap 261,766 lines
+
+  NeoForge writes DEBUG to debug.log regardless of what the console shows, so these were real
+  synchronous disk writes on the tick loop even though they never appeared in latest.log.
+
+  This raises those two loggers to WARN. Nothing else changes: INFO still reaches the console,
+  and genuine warnings and errors from those mods still appear.
+-->
+<Configuration status="WARN" packages="com.mojang.util">
+    <Appenders>
+        <Console name="SysOut" target="SYSTEM_OUT">
+            <PatternLayout pattern="[%d{HH:mm:ss}] [%t/%level] [%logger{1}]: %minecraftFormatting{%msg}{strip}%n"/>
+        </Console>
+
+        <RollingRandomAccessFile name="File" fileName="logs/latest.log"
+                                 filePattern="logs/%d{yyyy-MM-dd}-%i.log.gz">
+            <PatternLayout pattern="[%d{ddMMMyyyy HH:mm:ss.SSS}] [%t/%level] [%logger{1}/]: %minecraftFormatting{%msg}{strip}%n"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy/>
+                <OnStartupTriggeringPolicy/>
+                <SizeBasedTriggeringPolicy size="200MB"/>
+            </Policies>
+            <DefaultRolloverStrategy max="1000" fileIndex="min"/>
+        </RollingRandomAccessFile>
+    </Appenders>
+
+    <Loggers>
+        <!-- The two offenders. WARN means their real problems still get through. -->
+        <Logger level="WARN" name="com.happysg.radar"/>
+        <Logger level="WARN" name="dev.ryanhcode.sable.sublevel.storage"/>
+
+        <!-- Noisy but harmless third parties. -->
+        <Logger level="WARN" name="createstructuresarise"/>
+        <Logger level="INFO" name="com.zaxxer.hikari"/>
+
+        <Root level="info">
+            <AppenderRef ref="SysOut"/>
+            <AppenderRef ref="File"/>
+        </Root>
+    </Loggers>
+</Configuration>

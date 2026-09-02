@@ -15,6 +15,27 @@ downloaded into every player's instance.
 | `kubejs/` | `<server>/kubejs/server_scripts/` | `/kubejs reload server_scripts` — no restart |
 | `datapacks/aero-admin-flat/` | zip → `<server>/world/datapacks/` | **restart** (dimensions load at world load) |
 | `npc-presets/` | `<server>/config/easy_npc/preset/humanoid/` | `/easy_npc preset import_new …` |
+| `jvm/log4j2.xml` | `<server>/` (server root, next to `server.jar`) | **restart** + a JVM flag, see below |
+
+## `jvm/log4j2.xml`
+
+Two mods were logging to disk **on the server thread** at high frequency — 656,216 lines from
+`com.happysg.radar` `CannonMountPitch` and 261,766 from Sable's `SubLevelHoldingChunkMap`, measured
+across 116 hours of logs on 2026-09-01. 🔑 **NeoForge writes DEBUG to `debug.log` regardless of what
+the console shows**, so neither ever appeared in `latest.log` while every line was still a real
+synchronous disk write on the tick loop. This config raises just those two loggers to WARN; their
+genuine warnings and errors still come through.
+
+It does nothing on its own — the JVM must be told to use it:
+
+```
+-Dlog4j.configurationFile=log4j2.xml
+```
+
+🔴 **On Lagless that flag cannot be set by us.** `user_jvm_args.txt` is NOT read, and the JVM Flags
+panel variable did not apply either; the flags live in the admin-side startup command, so adding or
+changing one means a support ticket. It went live 2026-09-02 in the same ticket that fixed the heap.
+Verify with `grep -c rotateCBC logs/debug.log` — expect 0 after some uptime.
 
 Built zips live in `Releases/`, which is gitignored — they are reproducible from the sources here.
 
