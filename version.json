@@ -1,8 +1,8 @@
 {
-  "version": "1.9.4.3",
+  "version": "1.9.5.0",
   "url": "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/latest",
   "neoforge": "21.1.244",
   "minecraft": "1.21.1",
-  "notes": "1.9.4.3 - AeroCore 1.3.34. THIS IS THE LAST UPDATE THAT RESETS YOUR SETTINGS. From now on the updater leaves your keybinds, video/audio options, chosen shader and Xaero map settings alone - they were being re-downloaded with the pack every time. Back up options.txt before updating if you want to keep this run's keybinds. Also brings the EMI/JEI recipe-viewer switch.",
+  "notes": "1.9.5.0 - Sable 2.0.5 and Create: Aeronautics 1.3.2, plus AeroCore 1.3.34. Sable fixes two server crashes, including one that could end a session without saving. THIS IS THE LAST UPDATE THAT RESETS YOUR SETTINGS - from now on the updater leaves your keybinds, video/audio options, chosen shader and Xaero map settings alone, they were being re-downloaded with the pack every time. Back up options.txt before updating if you want to keep this run's keybinds. Carry On now needs LEFT CTRL + right-click to pick a block up, so sneaking around on a ship no longer grabs Typewriters and other blocks you were trying to use. Also brings the EMI/JEI recipe-viewer switch.",
   "lodReset": "season1"
 }
