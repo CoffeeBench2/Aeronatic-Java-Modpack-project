@@ -39,11 +39,19 @@ public abstract class JoinMessageMixin {
                 com.coffeesaerosmp.auth.display.DisplayAdapter.partsFor(player),
                 com.coffeesaerosmp.auth.display.PlayerDisplay.Surface.JOIN,
                 false);   // broadcast, so there is no viewer and no per-viewer reveal
-            // Keep the vanilla translatable so the sentence stays localised; only the NAME argument
-            // changes. Rebuilding the whole string would hardcode English.
+            // Keep the vanilla translatable so the sentence stays localised, and keep vanilla's
+            // YELLOW on the sentence — only the NAME argument changes. The name's own legacy §
+            // codes override the inherited yellow for that span, so the sentence still reads as
+            // vanilla while the name carries its badge, clan tag and colour.
+            //
+            // Deliberately always "multiplayer.player.joined", never the ".renamed" variant.
+            // Vanilla switches to .renamed when the account name differs from the last-known name
+            // and prints the OLD name alongside — on this server display names are masked, so that
+            // variant would announce exactly what NameMask exists to hide.
             list.broadcastSystemMessage(
                 Component.translatable("multiplayer.player.joined",
-                    Component.literal(seg.prefix() + seg.name())), overlay);
+                        Component.literal(seg.prefix() + seg.name()))
+                    .withStyle(net.minecraft.ChatFormatting.YELLOW), overlay);
             return;
         } catch (Exception e) {
             com.coffeesaerosmp.auth.CoffeesAeroAuth.LOGGER.warn(

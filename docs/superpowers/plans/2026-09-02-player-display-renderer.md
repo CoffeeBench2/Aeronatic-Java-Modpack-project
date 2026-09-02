@@ -700,8 +700,20 @@ Delete `sendStyledNames` and `sendAdminNameOverlay` entirely. Add:
             var segOp = com.coffeesaerosmp.auth.display.PlayerDisplay.segments(
                 parts, com.coffeesaerosmp.auth.display.PlayerDisplay.Surface.TAB, true);
 
+            // 🔑 NameStyles keys its lookups (owner seed, legacy rainbow config list) off the RAW
+            // account username and renders onto the RAW display text — NEVER parts.name(), which
+            // carries a "§f"/"§7" colour code on the front. Passing the coloured string would break
+            // the username-equality and config-list lookups outright, and re-embed that code inside
+            // the rendered Component, cancelling a custom /namecolor colour partway through.
+            var profile = com.coffeesaerosmp.auth.CoffeesAeroAuth.PROFILE_STORE != null
+                ? com.coffeesaerosmp.auth.CoffeesAeroAuth.PROFILE_STORE.get(p.getUUID()) : null;
+            String rawUsername = profile != null && profile.username != null
+                ? profile.username : p.getGameProfile().getName();
+            String rawDisplay = profile != null && profile.displayName != null
+                ? profile.displayName : rawUsername;
+
             Component styled = com.coffeesaerosmp.auth.util.NameStyles.nameComponent(
-                p.getUUID(), parts.name(), parts.name());
+                p.getUUID(), rawUsername, rawDisplay);
 
             Component plainName = Component.literal(segPlain.prefix())
                 .append(styled != null ? styled : Component.literal(segPlain.name()))
