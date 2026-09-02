@@ -154,6 +154,10 @@ public class CoffeesAeroAuth {
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.tick.ServerTickEvent.Post e) ->
             com.coffeesaerosmp.auth.display.TpsHud.onServerTick(e.getServer()));
 
+        // Ground-item clear with a countdown. Throttles itself to once per second.
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.tick.ServerTickEvent.Post e) ->
+            com.coffeesaerosmp.auth.world.ItemClearer.onServerTick(e.getServer()));
+
         // Animated tab-list header/footer (airship + live pilot count + rotating tips).
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.tick.ServerTickEvent.Post e) ->
             com.coffeesaerosmp.auth.tablist.TabListManager.onServerTick(e.getServer()));
@@ -369,6 +373,7 @@ public class CoffeesAeroAuth {
         com.coffeesaerosmp.auth.clan.ClanTags.initialize(dataDir);
         com.coffeesaerosmp.auth.display.HiddenOps.initialize(dataDir);
         com.coffeesaerosmp.auth.display.TpsHud.initialize(dataDir);
+        com.coffeesaerosmp.auth.world.ItemClearer.initialize();
         com.coffeesaerosmp.auth.commands.RtpCommand.initialize(dataDir);
         com.coffeesaerosmp.auth.commands.RtpAnchors.initialize(dataDir);
         com.coffeesaerosmp.auth.auth.WelcomeMessages.initialize(dataDir);

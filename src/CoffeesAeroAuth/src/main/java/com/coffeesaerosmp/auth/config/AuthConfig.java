@@ -73,6 +73,10 @@ public class AuthConfig {
     public static final ModConfigSpec.ConfigValue<String>  STAFF_ADMIN;
     public static final ModConfigSpec.ConfigValue<String>  STAFF_MOD;
     public static final ModConfigSpec.BooleanValue         TPS_HUD_ENABLED;
+    public static final ModConfigSpec.BooleanValue         ITEM_CLEAR_ENABLED;
+    public static final ModConfigSpec.IntValue             ITEM_CLEAR_INTERVAL_MINUTES;
+    public static final ModConfigSpec.ConfigValue<String>  ITEM_CLEAR_WARN_SECONDS;
+    public static final ModConfigSpec.BooleanValue         ITEM_CLEAR_KEEP_NAMED;
     public static final ModConfigSpec.BooleanValue         SIDEBAR_ENABLED;
     public static final ModConfigSpec.BooleanValue         AFK_ENABLED;
     public static final ModConfigSpec.IntValue             AFK_TIMEOUT_MINUTES;
@@ -309,6 +313,24 @@ public class AuthConfig {
                      "The interval between ticks - what the older LagMonitor measures - floors at",
                      "~50ms whenever the server keeps up, and so can never match spark's MSPT.")
             .define("tpsHudEnabled", true);
+        ITEM_CLEAR_ENABLED = b
+            .comment("Periodically clear items lying loose on the ground, with a countdown warning.",
+                     "ONLY dropped ItemEntities are touched. Create belts, chutes, depots, funnels and",
+                     "vaults keep their contents in BLOCK ENTITIES, so a clear cannot eat a running",
+                     "factory; chests, backpacks and player inventories are likewise untouched.")
+            .define("itemClearEnabled", true);
+        ITEM_CLEAR_INTERVAL_MINUTES = b
+            .comment("Minutes between clears.")
+            .defineInRange("itemClearIntervalMinutes", 30, 1, 1440);
+        ITEM_CLEAR_WARN_SECONDS = b
+            .comment("Seconds-before-clear at which to warn, comma separated, any order.",
+                     "Warnings fire on CROSSING a threshold, not on landing exactly on it, so a",
+                     "lagging tick loop that skips seconds still announces every step.")
+            .define("itemClearWarnSeconds", "300,120,60,30");
+        ITEM_CLEAR_KEEP_NAMED = b
+            .comment("Skip items with a custom name. A renamed item is nearly always a deliberate",
+                     "keepsake rather than litter, so this defaults ON.")
+            .define("itemClearKeepNamed", true);
         WELCOME_INTERVAL_HOURS = b
             .comment("Hours between cosmetic welcome shows per player (title + welcome chat + skin tip).",
                      "Persisted in welcome_shown.json so relogs/restarts don't replay it. 0 = every join",

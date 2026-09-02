@@ -154,6 +154,52 @@ public final class TabListManager {
 
         for (ServerPlayer viewer : players)
             viewer.connection.send(viewer.hasPermissions(2) ? opPkt : pkt);
+
+        syncHiddenOps(players);
+    }
+
+    /** UUIDs we have removed from non-op tab lists, so we know who to put back. */
+    private static final java.util.Set<java.util.UUID> REMOVED = new java.util.HashSet<>();
+
+    /**
+     * Actually hide hidden ops from the tab list.
+     *
+     * <p>🔑 Leaving a player out of an {@code UPDATE_DISPLAY_NAME} packet does NOT hide them — that
+     * action only edits an entry that already exists. Vanilla added every player to every client's
+     * list with {@code ADD_PLAYER} when they joined, and the entry survives until something sends
+     * {@link net.minecraft.network.protocol.game.ClientboundPlayerInfoRemovePacket}. Omission alone
+     * just means their row keeps its vanilla styling, which is exactly what it looked like.</p>
+     *
+     * <p>Re-adding needs the full initialising packet, not an update — the entry no longer exists on
+     * the client, so there is nothing for an update to edit.</p>
+     */
+    private static void syncHiddenOps(java.util.List<ServerPlayer> players) {
+        java.util.List<java.util.UUID> toRemove = new java.util.ArrayList<>();
+        java.util.List<ServerPlayer>   toRestore = new java.util.ArrayList<>();
+
+        for (ServerPlayer p : players) {
+            boolean hidden = com.coffeesaerosmp.auth.display.HiddenOps.isHidden(p.getUUID());
+            if (hidden) toRemove.add(p.getUUID());
+            else if (REMOVED.contains(p.getUUID())) toRestore.add(p);
+        }
+        // Anyone we had removed who is no longer online needs forgetting, or REMOVED grows forever.
+        REMOVED.removeIf(id -> players.stream().noneMatch(p -> p.getUUID().equals(id)));
+
+        if (!toRemove.isEmpty()) {
+            var removePkt = new net.minecraft.network.protocol.game.ClientboundPlayerInfoRemovePacket(toRemove);
+            for (ServerPlayer viewer : players) {
+                if (!viewer.hasPermissions(2)) viewer.connection.send(removePkt);
+            }
+            REMOVED.addAll(toRemove);
+        }
+        if (!toRestore.isEmpty()) {
+            var addPkt = net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket
+                .createPlayerInitializing(toRestore);
+            for (ServerPlayer viewer : players) {
+                if (!viewer.hasPermissions(2)) viewer.connection.send(addPkt);
+            }
+            toRestore.forEach(p -> REMOVED.remove(p.getUUID()));
+        }
     }
 
     /** True while the player is in the auth lobby dimension. */
