@@ -65,91 +65,87 @@ public final class TabListManager {
         ClientboundTabListPacket lobbyPacket =
             new ClientboundTabListPacket(header(true), footer(server, true));
         for (ServerPlayer p : players) p.connection.send(inLobby(p) ? lobbyPacket : worldPacket);
-        sendAdminNameOverlay(server, players);
-        // Refresh the RGB-name set from config every ~5s so edits apply live, then paint.
-        if (frame % 10 == 0)
+        // Refresh RGB names AND staff badges from config every ~5s so edits apply live.
+        if (frame % 10 == 0) {
             com.coffeesaerosmp.auth.util.RainbowText.setEnabledNames(
                 com.coffeesaerosmp.auth.config.AuthConfig.DISPLAY_RGB_NAMES.get());
-        sendStyledNames(server, players);
+            com.coffeesaerosmp.auth.display.DisplayAdapter.refreshStaff();
+        }
+        sendTabNames(server, players);
     }
 
     /**
-     * Styled tab-list names (/namecolor: colors, hex, formats, §k scramble, animated rainbow):
-     * for each online player with a style, send every viewer an UPDATE_DISPLAY_NAME entry with the
-     * styled {@link Component}. Runs on the same ~2/s cadence as the header, so rainbow/§k drift;
-     * static styles are idempotent re-sends. Ops get the real account name appended so this packet
-     * (sent AFTER the admin overlay) never hides the mask reveal. (Nametags above the head use the
-     * scoreboard team color and can't carry per-char styles — they keep the badge.)
+     * One per-viewer TAB name send. Replaces the two methods that used to race each other on
+     * UPDATE_DISPLAY_NAME every ~500ms — neither carried the clan tag, so the scoreboard team
+     * prefix that DID carry it was overwritten twice a second. Ops get the real-name reveal;
+     * everyone else does not, which is why this must be built per viewer.
      */
-    private static void sendStyledNames(MinecraftServer server, java.util.List<ServerPlayer> players) {
-        if (com.coffeesaerosmp.auth.CoffeesAeroAuth.AUTH_MANAGER == null) return;
-        var store = com.coffeesaerosmp.auth.CoffeesAeroAuth.AUTH_MANAGER.getStore();
+    private static void sendTabNames(MinecraftServer server, java.util.List<ServerPlayer> players) {
+        java.util.List<net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket.Entry> plain =
+            new java.util.ArrayList<>();
+        java.util.List<net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket.Entry> opView =
+            new java.util.ArrayList<>();
 
-        java.util.List<net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket.Entry> entries =
-            new java.util.ArrayList<>();
-        java.util.List<net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket.Entry> opEntries =
-            new java.util.ArrayList<>();
         for (ServerPlayer p : players) {
-            var profile = store.get(p.getUUID());
-            if (profile == null || profile.username == null) continue;
-            String display = profile.displayName != null ? profile.displayName : profile.username;
-            Component name = com.coffeesaerosmp.auth.util.NameStyles.nameComponent(
-                p.getUUID(), profile.username, display);
-            if (name == null) continue;
-            entries.add(new net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket.Entry(
-                p.getUUID(), null, true, p.connection.latency(), p.gameMode.getGameModeForPlayer(), name, null));
-            Component opName = profile.username.equals(display) ? name
-                : name.copy().append(Component.literal(" §8(" + profile.username + ")"));
-            opEntries.add(new net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket.Entry(
+            var parts = com.coffeesaerosmp.auth.display.DisplayAdapter.partsFor(p);
+
+            // NameStyles keys its lookups (owner seed, legacy rainbow config list) off the RAW
+            // account username and renders onto the RAW display text — never parts.name(), which
+            // is that same text with a "§f"/"§7" colour code already baked onto the front (see
+            // DisplayAdapter#partsFor). Feeding the coloured string in would (a) break the
+            // username-equality / config-list lookups outright, since neither compares against a
+            // string starting with a section sign, and (b) re-embed that colour code as a literal
+            // inside the rendered Component — the client applies embedded §-codes over whatever
+            // Style NameStyles.render() set, silently cancelling a custom /namecolor color from
+            // partway through the name onward. So the real profile is read here, exactly like the
+            // deleted sendStyledNames used to, purely to get the two PLAIN strings NameStyles needs.
+            var profile = com.coffeesaerosmp.auth.CoffeesAeroAuth.PROFILE_STORE != null
+                ? com.coffeesaerosmp.auth.CoffeesAeroAuth.PROFILE_STORE.get(p.getUUID()) : null;
+            String rawUsername = profile != null && profile.username != null
+                ? profile.username : p.getGameProfile().getName();
+            String rawDisplay = profile != null && profile.displayName != null
+                ? profile.displayName : rawUsername;
+
+            // Animated styles (rainbow, §k) are per-character and cannot live in a plain string,
+            // so NameStyles paints the NAME and PlayerDisplay supplies the surrounding decoration.
+            //
+            // Use segments(), NEVER String.replace to subtract the name. The display name is
+            // routinely a SUBSTRING of the account name — "Coffee" inside "MrCoffeeBench" — so
+            // replace() corrupts the op reveal to "(MrBench)", and a player whose name matches
+            // their own clan tag guts the tag entirely. Verified, not theoretical.
+            var segPlain = com.coffeesaerosmp.auth.display.PlayerDisplay.segments(
+                parts, com.coffeesaerosmp.auth.display.PlayerDisplay.Surface.TAB, false);
+            var segOp = com.coffeesaerosmp.auth.display.PlayerDisplay.segments(
+                parts, com.coffeesaerosmp.auth.display.PlayerDisplay.Surface.TAB, true);
+
+            Component styled = com.coffeesaerosmp.auth.util.NameStyles.nameComponent(
+                p.getUUID(), rawUsername, rawDisplay);
+
+            Component plainName = Component.literal(segPlain.prefix())
+                .append(styled != null ? styled : Component.literal(segPlain.name()))
+                .append(Component.literal(segPlain.suffix()));
+            Component opName = Component.literal(segOp.prefix())
+                .append(styled != null ? styled : Component.literal(segOp.name()))
+                .append(Component.literal(segOp.suffix()));
+
+            plain.add(new net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket.Entry(
+                p.getUUID(), null, true, p.connection.latency(), p.gameMode.getGameModeForPlayer(), plainName, null));
+            opView.add(new net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket.Entry(
                 p.getUUID(), null, true, p.connection.latency(), p.gameMode.getGameModeForPlayer(), opName, null));
         }
-        if (entries.isEmpty()) return;
+        if (opView.isEmpty()) return;
 
         var pkt = new net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket(
             java.util.EnumSet.of(net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket.Action.UPDATE_DISPLAY_NAME),
             java.util.List.of());
-        ((com.coffeesaerosmp.auth.mixin.PlayerInfoPacketAccessor) (Object) pkt).aeroauth$setEntries(entries);
+        ((com.coffeesaerosmp.auth.mixin.PlayerInfoPacketAccessor) (Object) pkt).aeroauth$setEntries(plain);
         var opPkt = new net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket(
             java.util.EnumSet.of(net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket.Action.UPDATE_DISPLAY_NAME),
             java.util.List.of());
-        ((com.coffeesaerosmp.auth.mixin.PlayerInfoPacketAccessor) (Object) opPkt).aeroauth$setEntries(opEntries);
+        ((com.coffeesaerosmp.auth.mixin.PlayerInfoPacketAccessor) (Object) opPkt).aeroauth$setEntries(opView);
+
         for (ServerPlayer viewer : players)
             viewer.connection.send(viewer.hasPermissions(2) ? opPkt : pkt);
-    }
-
-    /**
-     * Admin-only tab overlay: ops see "DisplayName §8(RealName)" for every masked player
-     * (regular players just see the display name from the NameMask profile swap). Sent on the same
-     * 2/s cadence as the header — UPDATE_DISPLAY_NAME entries are idempotent.
-     */
-    private static void sendAdminNameOverlay(MinecraftServer server,
-                                             java.util.List<ServerPlayer> players) {
-        if (com.coffeesaerosmp.auth.CoffeesAeroAuth.AUTH_MANAGER == null) return;
-        var store = com.coffeesaerosmp.auth.CoffeesAeroAuth.AUTH_MANAGER.getStore();
-
-        java.util.List<net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket.Entry> entries =
-            new java.util.ArrayList<>();
-        for (ServerPlayer p : players) {
-            var profile = store.get(p.getUUID());
-            if (profile == null || profile.username == null) continue;
-            String display = p.getGameProfile().getName();
-            if (profile.username.equals(display)) continue;   // not masked — nothing to reveal
-            boolean premium = profile.getAccountType()
-                == com.coffeesaerosmp.auth.db.PlayerProfile.AccountType.PREMIUM;
-            Component c = Component.literal(
-                (premium ? "§6✈ §f" : "§8◈ §7") + display + " §8(" + profile.username + ")");
-            entries.add(new net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket.Entry(
-                p.getUUID(), null, true, p.connection.latency(), p.gameMode.getGameModeForPlayer(), c, null));
-        }
-        if (entries.isEmpty()) return;
-
-        var pkt = new net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket(
-            java.util.EnumSet.of(net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket.Action.UPDATE_DISPLAY_NAME),
-            java.util.List.of());
-        ((com.coffeesaerosmp.auth.mixin.PlayerInfoPacketAccessor) (Object) pkt).aeroauth$setEntries(entries);
-        for (ServerPlayer viewer : players) {
-            if (viewer.hasPermissions(2)) viewer.connection.send(pkt);
-        }
     }
 
     /** True while the player is in the auth lobby dimension. */
