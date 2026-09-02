@@ -554,16 +554,23 @@ public final class DisplayAdapter {
 
     /** Builds the render parts for a player. Never throws — a display bug must not break login. */
     public static PlayerDisplay.Parts partsFor(ServerPlayer player) {
-        String username = player.getGameProfile().getName();
-        String display  = username;
-        String badge    = "";
+        String username  = player.getGameProfile().getName();
+        String display   = username;
+        String badge     = "";
+        // 🔑 The name MUST carry its own colour. Legacy § codes persist within a literal, so without
+        // one the name inherits the last code emitted by the decoration — §7 gray after a clan tag,
+        // or §8 near-black for a guest with no tag. Today's code already does this:
+        // TabListManager used (premium ? "§6✈ §f" : "§8◈ §7") and ChatEvents prepends nameColor.
+        String nameColor = "§f";
         try {
             PlayerProfile p = CoffeesAeroAuth.PROFILE_STORE != null
                 ? CoffeesAeroAuth.PROFILE_STORE.get(player.getUUID()) : null;
             if (p != null) {
                 if (p.username != null) username = p.username;
                 display = p.displayName != null ? p.displayName : username;
-                badge = p.getAccountType() == PlayerProfile.AccountType.PREMIUM ? "§6✈ " : "§8◈ ";
+                boolean premium = p.getAccountType() == PlayerProfile.AccountType.PREMIUM;
+                badge     = premium ? "§6✈ " : "§8◈ ";
+                nameColor = premium ? "§f"   : "§7";
             }
         } catch (Exception e) {
             CoffeesAeroAuth.LOGGER.warn("[Display] profile lookup failed for {}: {}",
@@ -579,7 +586,8 @@ public final class DisplayAdapter {
         }
 
         String realName = username.equals(display) ? null : username;
-        return new PlayerDisplay.Parts(badge, badges.badgeFor(username), clan, display, realName);
+        return new PlayerDisplay.Parts(badge, badges.badgeFor(username), clan,
+                                       nameColor + display, realName);
     }
 }
 ```
