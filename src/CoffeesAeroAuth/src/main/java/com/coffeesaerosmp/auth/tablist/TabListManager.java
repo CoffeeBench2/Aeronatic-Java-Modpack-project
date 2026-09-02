@@ -33,11 +33,12 @@ public final class TabListManager {
         "§e/vote§7 pays spurs and diamonds",
     };
 
-    /** Lobby tips — the player is stuck in their hangar, so every line points at the way out. */
+    /** Lobby tips — the player is in the SHARED lobby, so every line points at the way out.
+     *  🔑 Do NOT reintroduce "private hangar" here. The lobby is public and shared; the old copy
+     *  told players their space was private and grief-proof, which was simply untrue. */
     private static final String[] TIPS_LOBBY = {
         "Type §a/spawn§7 to enter the world",
         "Right-click the greeter to fly out",
-        "Your private hangar is grief-proof",
         "Your inventory is safe — it comes back on §a/spawn",
         "§e/skin§7 sets how you look before you fly",
     };
@@ -177,7 +178,7 @@ public final class TabListManager {
         if (com.coffeesaerosmp.auth.util.TestingMode.isActive()) {
             tagline = "\n§e§l⚙ TESTING PHASE §8— §7restarts expected";
         } else if (lobby) {
-            tagline = "\n§b⌂ §7§oyour private hangar §b⌂";
+            tagline = "\n§b⌂ §7§othe hangar §b⌂";
         } else {
             tagline = "\n§5✦ §7§oskies brewed daily §5✦";
         }
