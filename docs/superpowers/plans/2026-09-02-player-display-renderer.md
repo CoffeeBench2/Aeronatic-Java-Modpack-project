@@ -324,7 +324,7 @@ public final class PlayerDisplay {
 .\gradlew.bat test --tests "*PlayerDisplayTest*"
 ```
 
-Expected: **8 tests PASS**.
+Expected: **10 tests PASS**.
 
 If `emptyPartsDoNotProduceStrayWhitespace` fails, the badge already carries its trailing space and `name` must not be padded — do not add a separator in `append`.
 
