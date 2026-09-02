@@ -412,7 +412,32 @@ public class ProfileCommands {
             .then(Commands.literal("hud")
                 .executes(ctx -> toggleTpsHud(ctx.getSource()))
             )
+            // Read-only census of Sable sub-levels. Answers the 11.6% tickPlotContainer question
+            // with a number instead of a guess; see SableShips.
+            .then(Commands.literal("ships")
+                .executes(ctx -> shipCensus(ctx.getSource()))
+            )
         );
+    }
+
+    /**
+     * {@code /authmod ships} — how many Sable sub-levels are LIVE versus claimed.
+     *
+     * <p>{@code SubLevelContainer.tick()} walks every sub-level every tick, so the profile's 11.6%
+     * scales with the count, not with activity. This is the measurement that says whether that cost
+     * is real ships or abandoned hulls. It changes nothing — deletion stays a human decision.
+     */
+    private static int shipCensus(CommandSourceStack source) {
+        try {
+            var census = com.coffeesaerosmp.auth.world.SableShips.census(source.getServer());
+            for (String line : census.report()) {
+                source.sendSuccess(() -> Component.literal(line), false);
+            }
+            return 1;
+        } catch (Exception e) {
+            source.sendFailure(Component.literal("§cShip census failed: " + e));
+            return 0;
+        }
     }
 
     // ── Command handlers ──────────────────────────────────────────────────────
