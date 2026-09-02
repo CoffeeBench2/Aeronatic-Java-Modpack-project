@@ -34,31 +34,47 @@ public final class PlayerDisplay {
      * @param badge     account badge WITH its trailing space, e.g. {@code "§6✈ "}; may be empty
      * @param staffTag  staff badge WITH its trailing space, e.g. {@code "§c[ADMIN] "}; may be empty
      * @param clanTag   clan tag WITH its trailing space, e.g. {@code "§7[§9AERO§7] "}; may be empty
-     * @param name      the display name, already styled
+     * @param name      the display name, INCLUDING its own colour code (e.g. "§fCoffee") — without
+     *                  one it inherits the last code emitted by the decoration
      * @param realName  the account name when masked, else {@code null}
      */
     public record Parts(String badge, String staffTag, String clanTag, String name, String realName) {}
 
     private PlayerDisplay() {}
 
-    public static String compose(Parts p, Surface surface, boolean viewerIsOp) {
-        StringBuilder sb = new StringBuilder();
-        append(sb, p.badge());
-        append(sb, p.staffTag());
-        append(sb, p.clanTag());
-        sb.append(p.name() == null ? "" : p.name());
+    /**
+     * The composed name split at the NAME boundary, so a caller that must substitute a
+     * per-character animated Component for the name can do so without string surgery.
+     * Subtracting the name with {@code String.replace} is unsound: the display name is routinely
+     * a substring of the account name ("Coffee" inside "MrCoffeeBench"), may occur inside the
+     * clan tag, and may be null or empty.
+     */
+    public record Segments(String prefix, String name, String suffix) {
+        public String flat() { return prefix + name + suffix; }
+    }
 
-        // The real-name reveal is PER VIEWER, so it can only go on surfaces sent per viewer.
-        // NAMEPLATE is a team prefix shared by everyone who can see the player — putting it there
-        // would leak the account name to every player, which is the whole point of NameMask.
+    public static Segments segments(Parts p, Surface surface, boolean viewerIsOp) {
+        StringBuilder pre = new StringBuilder();
+        append(pre, p.badge());
+        append(pre, p.staffTag());
+        append(pre, p.clanTag());
+
+        // NAMEPLATE is a scoreboard team PREFIX — the client appends the scoreboard name after it,
+        // so including the name here would render it twice.
+        String name = surface == Surface.NAMEPLATE || p.name() == null ? "" : p.name();
+
+        String suffix = "";
         boolean perViewer = surface == Surface.TAB || surface == Surface.CHAT || surface == Surface.JOIN;
         if (perViewer && viewerIsOp && p.realName() != null && !p.realName().isBlank()
-            && !p.realName().equals(p.name())) {
-            sb.append(" §8(").append(p.realName()).append(')');
+            && !p.realName().equals(name)) {
+            suffix = " §8(" + p.realName() + ')';
         }
+        return new Segments(pre.toString(), name, suffix);
+    }
 
-        String out = sb.toString();
-        return surface == Surface.DISCORD ? stripCodes(out) : out;
+    public static String compose(Parts p, Surface surface, boolean viewerIsOp) {
+        String out = segments(p, surface, viewerIsOp).flat();
+        return surface == Surface.DISCORD ? stripCodes(out).trim() : out;
     }
 
     /**
@@ -70,15 +86,13 @@ public final class PlayerDisplay {
      * would not match and the name would render twice.</p>
      */
     public static String composePrefix(Parts p) {
-        StringBuilder sb = new StringBuilder();
-        append(sb, p.badge());
-        append(sb, p.staffTag());
-        append(sb, p.clanTag());
-        return sb.toString();
+        return segments(p, Surface.NAMEPLATE, false).prefix();
     }
 
     private static void append(StringBuilder sb, String part) {
-        if (part != null && !part.isEmpty()) sb.append(part);
+        if (part == null || part.isEmpty()) return;
+        sb.append(part);
+        if (!part.endsWith(" ")) sb.append(' ');   // convention enforced, not merely documented
     }
 
     /** Removes legacy § formatting codes. Used for Discord, which renders them literally. */
@@ -87,9 +101,9 @@ public final class PlayerDisplay {
         StringBuilder sb = new StringBuilder(in.length());
         for (int i = 0; i < in.length(); i++) {
             char c = in.charAt(i);
-            if (c == '§' && i + 1 < in.length()) { i++; continue; }
+            if (c == '§') { if (i + 1 < in.length()) i++; continue; }
             sb.append(c);
         }
-        return sb.toString().trim();
+        return sb.toString();
     }
 }
