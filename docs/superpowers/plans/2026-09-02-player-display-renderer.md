@@ -679,21 +679,28 @@ Delete `sendStyledNames` and `sendAdminNameOverlay` entirely. Add:
 
         for (ServerPlayer p : players) {
             var parts = com.coffeesaerosmp.auth.display.DisplayAdapter.partsFor(p);
-            String forPlayers = com.coffeesaerosmp.auth.display.PlayerDisplay.compose(
-                parts, com.coffeesaerosmp.auth.display.PlayerDisplay.Surface.TAB, false);
-            String forOps = com.coffeesaerosmp.auth.display.PlayerDisplay.compose(
-                parts, com.coffeesaerosmp.auth.display.PlayerDisplay.Surface.TAB, true);
 
             // Animated styles (rainbow, §k) are per-character and cannot live in a plain string,
             // so NameStyles paints the NAME and PlayerDisplay supplies the surrounding decoration.
+            //
+            // 🔑 Use segments(), NEVER String.replace to subtract the name. The display name is
+            // routinely a SUBSTRING of the account name — "Coffee" inside "MrCoffeeBench" — so
+            // replace() corrupts the op reveal to "(MrBench)", and a player whose name matches
+            // their own clan tag guts the tag entirely. Verified, not theoretical.
+            var segPlain = com.coffeesaerosmp.auth.display.PlayerDisplay.segments(
+                parts, com.coffeesaerosmp.auth.display.PlayerDisplay.Surface.TAB, false);
+            var segOp = com.coffeesaerosmp.auth.display.PlayerDisplay.segments(
+                parts, com.coffeesaerosmp.auth.display.PlayerDisplay.Surface.TAB, true);
+
             Component styled = com.coffeesaerosmp.auth.util.NameStyles.nameComponent(
                 p.getUUID(), parts.name(), parts.name());
-            Component plainName = styled != null
-                ? Component.literal(forPlayers.replace(parts.name(), "")).append(styled)
-                : Component.literal(forPlayers);
-            Component opName = styled != null
-                ? Component.literal(forOps.replace(parts.name(), "")).append(styled)
-                : Component.literal(forOps);
+
+            Component plainName = Component.literal(segPlain.prefix())
+                .append(styled != null ? styled : Component.literal(segPlain.name()))
+                .append(Component.literal(segPlain.suffix()));
+            Component opName = Component.literal(segOp.prefix())
+                .append(styled != null ? styled : Component.literal(segOp.name()))
+                .append(Component.literal(segOp.suffix()));
 
             plain.add(new net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket.Entry(
                 p.getUUID(), null, true, p.connection.latency(), p.gameMode.getGameModeForPlayer(), plainName, null));
@@ -887,47 +894,26 @@ git commit -m "feat: per-op hide toggle, persisted, filtered from the non-op TAB
 ### Task 8: Join message colour, and suppressing it for hidden ops
 
 **Files:**
-- Modify: `src/CoffeesAeroAuth/src/main/java/com/coffeesaerosmp/auth/mixin/PlayerDisplayNameMixin.java:28-34`
 - Create: `src/CoffeesAeroAuth/src/main/java/com/coffeesaerosmp/auth/mixin/JoinMessageMixin.java`
 - Modify: `src/CoffeesAeroAuth/src/main/resources/coffeesaeroauth.mixins.json` — register `JoinMessageMixin`
 
-🔑 **The vanilla join message is built from `Player.getDisplayName()`**, and a mixin on it already
-exists. That is why the join line is the *only* place the clan tag partially worked — the existing
-hook calls `PlayerTeam.formatNameForTeam`, which applies the team prefix. It shows plain yellow
-because the name itself carried no colour, not because the message is unstyled.
+🔴 **DO NOT MODIFY `PlayerDisplayNameMixin`.** An earlier draft of this plan routed
+`Player.getDisplayName()` through `PlayerDisplay`. That is wrong — `getDisplayName()` is called from
+three other places and prepending badges breaks all of them:
 
-- [ ] **Step 1: Route the display name through PlayerDisplay**
+| Call site | Breakage |
+|---|---|
+| `vote/VoteRewards.java:156` | `!displayName.equalsIgnoreCase(p.getDisplayName().getString())` — this excludes the voter from the light sound. With badges prepended it can never match, so the voter gets the wrong sound. |
+| `pvp/CombatGuard.java:119` | splices the name after `§c` mid-sentence; the badge's `§6` overrides the sentence colour. |
+| `daily/DailyRewardManager.java:137` | same splice pattern. |
 
-Replace the injector body in `PlayerDisplayNameMixin.java`:
+Changing it would also discard vanilla's `decorateDisplayNameComponent` — the click-to-`/tell`,
+hover tooltip and shift-click insertion that every name in chat carries.
 
-```java
-    @Inject(method = "getDisplayName", at = @At("RETURN"), cancellable = true, require = 0)
-    private void aeroauth$maskDisplayName(CallbackInfoReturnable<Component> cir) {
-        if (!((Object) this instanceof ServerPlayer sp)) return;   // client/other contexts untouched
-        try {
-            // JOIN surface: badge + staff tag + clan tag + display name. viewerIsOp is false because
-            // getDisplayName has no viewer — a per-viewer reveal cannot be expressed here.
-            String composed = com.coffeesaerosmp.auth.display.PlayerDisplay.compose(
-                com.coffeesaerosmp.auth.display.DisplayAdapter.partsFor(sp),
-                com.coffeesaerosmp.auth.display.PlayerDisplay.Surface.JOIN,
-                false);
-            if (!composed.isBlank()) {
-                cir.setReturnValue(Component.literal(composed));
-                return;
-            }
-        } catch (Exception ignored) {
-            // fall through to the original mask — a display bug must never break a join
-        }
-        String masked = NameMask.maskedNameFor(sp);
-        if (masked == null) return;   // no profile yet, or already showing the display name
-        cir.setReturnValue(PlayerTeam.formatNameForTeam(sp.getTeam(), Component.literal(masked)));
-    }
-```
+**So the join line is rebuilt in one place only: the mixin below.** That keeps the blast radius to
+exactly the message we want to change.
 
-⚠️ Do **not** wrap the result in `formatNameForTeam` any more — `PlayerDisplay` already supplies
-the badge and clan tag, and the team prefix would add them a second time.
-
-- [ ] **Step 2: Write the suppression mixin**
+- [ ] **Step 1: Write the join mixin**
 
 Vanilla broadcasts the join line inside `PlayerList#placeNewPlayer`. There is no cancellable event
 for it, so redirect the broadcast call.
@@ -946,11 +932,17 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
 /**
- * Suppresses the vanilla "X joined the game" line for ops who have hidden themselves.
+ * Owns the vanilla "X joined the game" line — both hiding it for ops who have hidden themselves,
+ * and rebuilding it so the player's name carries their badge, staff tag, clan tag and colour
+ * instead of rendering plain.
  *
  * <p>There is no cancellable event for it — {@code PlayerList#placeNewPlayer} calls
- * {@code broadcastSystemMessage} directly — so the call is redirected. {@code require = 0}: if the
- * target ever moves, an op's join is announced normally rather than the server failing to boot.</p>
+ * {@code broadcastSystemMessage} directly — so the call is redirected. Doing it HERE rather than in
+ * {@code Player.getDisplayName()} is deliberate: three other call sites read that method and
+ * prepending badges to it breaks vote-reward sound selection and two chat sentences.</p>
+ *
+ * <p>{@code require = 0}: if the target ever moves, joins are announced the vanilla way rather than
+ * the server failing to boot. Failure is therefore SILENT — verify it applied, do not assume.</p>
  */
 @Mixin(PlayerList.class)
 public abstract class JoinMessageMixin {
@@ -960,23 +952,40 @@ public abstract class JoinMessageMixin {
         at = @At(value = "INVOKE",
                  target = "Lnet/minecraft/server/players/PlayerList;broadcastSystemMessage(Lnet/minecraft/network/chat/Component;Z)V"),
         require = 0)
-    private void aeroauth$hideJoinForHiddenOps(PlayerList list, Component message, boolean overlay,
-                                               net.minecraft.network.Connection connection,
-                                               ServerPlayer player,
-                                               net.minecraft.server.network.CommonListenerCookie cookie) {
-        if (HiddenOps.isHidden(player.getUUID())) return;   // swallow the announcement
-        list.broadcastSystemMessage(message, overlay);
+    private void aeroauth$joinLine(PlayerList list, Component message, boolean overlay,
+                                   net.minecraft.network.Connection connection,
+                                   ServerPlayer player,
+                                   net.minecraft.server.network.CommonListenerCookie cookie) {
+        if (HiddenOps.isHidden(player.getUUID())) return;   // swallow the announcement entirely
+
+        try {
+            var seg = com.coffeesaerosmp.auth.display.PlayerDisplay.segments(
+                com.coffeesaerosmp.auth.display.DisplayAdapter.partsFor(player),
+                com.coffeesaerosmp.auth.display.PlayerDisplay.Surface.JOIN,
+                false);   // no viewer here — the line is broadcast, so no per-viewer reveal
+            // Keep the vanilla translatable so the sentence stays localised; only the NAME argument
+            // changes. Rebuilding the whole string would hardcode English.
+            list.broadcastSystemMessage(
+                Component.translatable("multiplayer.player.joined",
+                    Component.literal(seg.prefix() + seg.name())), overlay);
+            return;
+        } catch (Exception e) {
+            com.coffeesaerosmp.auth.CoffeesAeroAuth.LOGGER.warn(
+                "[Display] join line fell back to vanilla for {}: {}",
+                player.getGameProfile().getName(), e.getMessage());
+        }
+        list.broadcastSystemMessage(message, overlay);   // fallback: never lose the announcement
     }
 }
 ```
 
-- [ ] **Step 3: Register the mixin**
+- [ ] **Step 2: Register the mixin**
 
 Add `"JoinMessageMixin"` to the `server` array in
 `src/CoffeesAeroAuth/src/main/resources/coffeesaeroauth.mixins.json`, alongside the existing
 entries.
 
-- [ ] **Step 4: Build**
+- [ ] **Step 3: Build**
 
 ```
 .\gradlew.bat build -x test
@@ -984,7 +993,7 @@ entries.
 
 Expected: `BUILD SUCCESSFUL`.
 
-- [ ] **Step 5: Boot test and check the mixin applied**
+- [ ] **Step 4: Boot test and check the mixin applied**
 
 Deploy to the test server and boot. Because `require = 0` makes failure **silent**
 ([[mixin-object-param-fails-silently]] — this exact trap cost two rebuilds before), you must
@@ -995,7 +1004,7 @@ Search the log for `JoinMessageMixin`. A line reading
 likely the trailing `placeNewPlayer` parameters changed. Fix the signature before continuing; a
 silently-inert redirect looks identical to a working one until an op tries to hide.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
 git add src/CoffeesAeroAuth/src/main/java/com/coffeesaerosmp/auth/mixin/ src/CoffeesAeroAuth/src/main/resources/coffeesaeroauth.mixins.json
