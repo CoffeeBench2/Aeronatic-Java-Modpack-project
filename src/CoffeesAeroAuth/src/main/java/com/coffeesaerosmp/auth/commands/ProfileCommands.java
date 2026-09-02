@@ -300,6 +300,43 @@ public class ProfileCommands {
             .then(Commands.literal("anchors")
                 .executes(ctx -> anchorStatus(ctx.getSource()))
             )
+            // Lag picture over the last minute, including whether it is blocking or compute —
+            // the two need opposite fixes and the ratio is the only thing that separates them.
+            .then(Commands.literal("lag")
+                .executes(ctx -> lagStatus(ctx.getSource()))
+            )
+            // Force-load control. `clear` releases chunks whatever put them there — ours, a
+            // hand-run /forceload, or an older config — because a force-load persists in the save
+            // and a base inside one ticks 24/7 with nobody online.
+            .then(Commands.literal("forceload")
+                .executes(ctx -> forceloadStatus(ctx.getSource(), 50))
+                .then(Commands.literal("status")
+                    .executes(ctx -> forceloadStatus(ctx.getSource(), 50))
+                    .then(Commands.argument("radius", com.mojang.brigadier.arguments.IntegerArgumentType.integer(0, ForceloadManagerRef.MAX))
+                        .executes(ctx -> forceloadStatus(ctx.getSource(),
+                            com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "radius")))))
+                .then(Commands.literal("clear")
+                    .then(Commands.argument("radius", com.mojang.brigadier.arguments.IntegerArgumentType.integer(0, ForceloadManagerRef.MAX))
+                        .executes(ctx -> forceloadClear(ctx.getSource(),
+                            com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "radius")))))
+            )
+            // RPM cap. `status` proves the Create mixin actually applied (it is require=0, so a
+            // failure is silent); `scan` measures the blast radius BEFORE anyone enables destruction.
+            .then(Commands.literal("rpm")
+                .executes(ctx -> rpmStatus(ctx.getSource()))
+                .then(Commands.literal("status")
+                    .executes(ctx -> rpmStatus(ctx.getSource())))
+                .then(Commands.literal("scan")
+                    .executes(ctx -> rpmScan(ctx.getSource())))
+                // Live adjustment, no restart. The whole point of the cap is that it is a dial, and
+                // a dial you have to stop the server to turn is not much of a dial.
+                .then(Commands.literal("cap")
+                    .then(Commands.argument("world", com.mojang.brigadier.arguments.IntegerArgumentType.integer(1, 8192))
+                        .then(Commands.argument("sublevel", com.mojang.brigadier.arguments.IntegerArgumentType.integer(1, 8192))
+                            .executes(ctx -> rpmSetCap(ctx.getSource(),
+                                com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "world"),
+                                com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "sublevel"))))))
+            )
             // Exempt a player from the impossible-movement check for a few seconds. Exists so
             // server-side launchers (AeroKit's launch stick) can throw someone without the watchdog
             // zeroing the velocity mid-flight. KubeJS: server.runCommand('authmod movegrace ' + name + ' 5')
@@ -623,6 +660,189 @@ public class ProfileCommands {
             : "§aWARMING§7 — " + online + " online, cap " + cap;
         source.sendSuccess(() -> Component.literal(
             "§6[Anchors]§7 " + status + " · " + gate), false);
+        return 1;
+    }
+
+    /** Tiny indirection so the command tree can name the cap without a long qualified reference. */
+    private static final class ForceloadManagerRef {
+        static final int MAX = com.coffeesaerosmp.auth.lobby.ForceloadManager.MAX_CLEAR_RADIUS;
+    }
+
+    /** Where the spawn force-load is centred — the same coords initSpawnArea uses. */
+    private static int[] spawnCentre() {
+        return new int[]{
+            com.coffeesaerosmp.auth.config.AuthConfig.OVERWORLD_SPAWN_X.get(),
+            com.coffeesaerosmp.auth.config.AuthConfig.OVERWORLD_SPAWN_Z.get()
+        };
+    }
+
+    /** /authmod forceload [status] [radius] — what is held, and how much of it is near spawn. */
+    private static int forceloadStatus(CommandSourceStack source, int radius) {
+        var ow = source.getServer().overworld();
+        int[] c = spawnCentre();
+        var st = com.coffeesaerosmp.auth.lobby.ForceloadManager.status(ow, c[0], c[1], radius);
+        int cfg = com.coffeesaerosmp.auth.config.AuthConfig.SPAWN_FORCELOAD_RADIUS_CHUNKS.get();
+
+        source.sendSuccess(() -> Component.literal(
+            "§6[Forceload]§7 overworld holds §f" + st.total() + "§7 forced chunk(s); §f"
+            + st.nearby() + "§7 of them within §f" + radius + "§7 chunks of spawn ("
+            + c[0] + ", " + c[1] + ")."), false);
+        source.sendSuccess(() -> Component.literal(
+            "§7  Config §f spawnForceloadRadiusChunks = " + cfg + "§7 → "
+            + (cfg > 0 ? "we hold " + ((2*cfg+1)*(2*cfg+1)) + " chunk(s), blocks "
+                          + (-cfg*16) + ".." + (cfg*16+15) + " on each axis"
+                       : "§adisabled")), false);
+        if (cfg > 0) {
+            source.sendSuccess(() -> Component.literal(
+                "§e  Anything built inside that box ticks 24/7 with nobody online."), false);
+        }
+        return 1;
+    }
+
+    /** /authmod forceload clear &lt;radius&gt; — release forced chunks near spawn, whatever set them. */
+    private static int forceloadClear(CommandSourceStack source, int radius) {
+        var ow = source.getServer().overworld();
+        int[] c = spawnCentre();
+        int removed = com.coffeesaerosmp.auth.lobby.ForceloadManager.clearAround(ow, c[0], c[1], radius);
+        int left = ow.getForcedChunks().size();
+
+        source.sendSuccess(() -> Component.literal(
+            "§6[Forceload]§a Released §f" + removed + "§a forced chunk(s) within §f" + radius
+            + "§a chunks of spawn. §7(" + left + " still forced elsewhere in the overworld.)"), false);
+        source.sendSuccess(() -> Component.literal(
+            "§7  Nothing was deleted — the chunks stay on disk and simply stop ticking when no "
+            + "player is nearby."), false);
+        if (com.coffeesaerosmp.auth.config.AuthConfig.SPAWN_FORCELOAD_RADIUS_CHUNKS.get() > 0) {
+            source.sendSuccess(() -> Component.literal(
+                "§c  ⚠ spawnForceloadRadiusChunks is still > 0 — the mod will re-apply its ring on "
+                + "the next restart. Set it to 0 in the config to make this permanent."), false);
+        }
+        return 1;
+    }
+
+    /** /authmod lag — one line, from LagMonitor's own minute of history. Costs nothing to ask. */
+    private static int lagStatus(CommandSourceStack source) {
+        var s = com.coffeesaerosmp.auth.watchdog.LagMonitor.snapshot();
+        String colour = switch (s.kind()) {
+            case HEALTHY  -> "§a";
+            case COMPUTE  -> "§e";
+            case BLOCKING -> "§c";
+        };
+        source.sendSuccess(() -> Component.literal("§6[Lag]§7 " + colour + s.describe()), false);
+        if (s.kind() == com.coffeesaerosmp.auth.watchdog.LagMonitor.Kind.BLOCKING) {
+            source.sendSuccess(() -> Component.literal(
+                "§7  Blocking means the thread is parked, not busy — look at disk I/O, chunk saves "
+                + "or a sync load, NOT at entity counts."), false);
+        } else if (s.kind() == com.coffeesaerosmp.auth.watchdog.LagMonitor.Kind.COMPUTE) {
+            source.sendSuccess(() -> Component.literal(
+                "§7  Compute means every tick is doing too much — look at entity/block-entity "
+                + "counts and farms, NOT at disk."), false);
+        }
+        return 1;
+    }
+
+    /** /authmod rpm status — does the cap actually apply? require=0 means silence is ambiguous. */
+    private static int rpmStatus(CommandSourceStack source) {
+        boolean create = net.neoforged.fml.ModList.get().isLoaded("create");
+        boolean enabled = com.coffeesaerosmp.auth.config.AuthConfig.RPM_CAP_ENABLED.get();
+        boolean fired   = com.coffeesaerosmp.auth.kinetics.RpmCap.hasFired();
+        boolean sable   = com.coffeesaerosmp.auth.kinetics.RpmCap.sableWired();
+        int world = com.coffeesaerosmp.auth.config.AuthConfig.RPM_CAP_WORLD.get();
+        int ship  = com.coffeesaerosmp.auth.config.AuthConfig.RPM_CAP_SUBLEVEL.get();
+        boolean destroys = com.coffeesaerosmp.auth.config.AuthConfig.RPM_CAP_DESTROYS.get();
+
+        source.sendSuccess(() -> Component.literal("§6[RPM cap]§7 "
+            + (enabled ? "§aenabled" : "§7disabled") + "§7 · world §f" + world
+            + "§7 · sub-level §f" + ship), false);
+        source.sendSuccess(() -> Component.literal("§7  Create: "
+            + (create ? "§apresent" : "§cabsent")
+            + "§7 · mixin: " + (fired ? "§aapplied (has run)" : "§eno propagation seen yet")
+            + "§7 · Sable lookup: " + (sable ? "§awired" : "§cunavailable")), false);
+        source.sendSuccess(() -> Component.literal("§7  On overspeed: "
+            + (destroys ? "§cDESTROY the block §7(vanilla Create behaviour)"
+                        : "§arefuse to propagate §7(machine stops, nothing is broken)")), false);
+        if (!sable) {
+            source.sendSuccess(() -> Component.literal(
+                "§c  Warning: without the Sable lookup, ships get the WORLD cap too."), false);
+        }
+        if (!fired) {
+            source.sendSuccess(() -> Component.literal(
+                "§7  'No propagation seen yet' is normal until a kinetic network changes. If it "
+                + "still says this after machines have run, the injection did not apply."), false);
+        }
+        return 1;
+    }
+
+    /** /authmod rpm scan — how many loaded machines would this cap hit? Run BEFORE enabling destroy. */
+    private static int rpmScan(CommandSourceStack source) {
+        if (!net.neoforged.fml.ModList.get().isLoaded("create")) {
+            source.sendFailure(Component.literal("§cCreate is not loaded — nothing to scan."));
+            return 0;
+        }
+        var r = com.coffeesaerosmp.auth.kinetics.RpmScan.run(source.getServer());
+        int world = com.coffeesaerosmp.auth.config.AuthConfig.RPM_CAP_WORLD.get();
+
+        source.sendSuccess(() -> Component.literal(
+            "§6[RPM scan]§7 " + r.scannedChunks() + " loaded chunks · "
+            + r.kineticBlocks() + " kinetic blocks"), false);
+        source.sendSuccess(() -> Component.literal(
+            "§7  Above the world cap (" + world + " RPM): "
+            + (r.overWorldCap() == 0 ? "§a0" : "§c" + r.overWorldCap())
+            + "§7 · exempt on ships: §f" + r.onShips()), false);
+        for (String s : r.samples()) {
+            source.sendSuccess(() -> Component.literal("§7   • §f" + s), false);
+        }
+        if (r.overWorldCap() > 0) {
+            source.sendSuccess(() -> Component.literal(
+                "§e  These would be DESTROYED if rpmCapDestroys were true. With the default "
+                + "(false) they simply stop."), false);
+        }
+        source.sendSuccess(() -> Component.literal(
+            "§8  Only loaded chunks near online players were scanned — treat this as a floor, "
+            + "not a total."), false);
+        return 1;
+    }
+
+    /**
+     * {@code /authmod rpm cap <world> <sublevel>} — change the ceilings live, no restart.
+     *
+     * <p>Persists through the config spec so it survives a restart, and reports the blast radius
+     * itself: lowering a ceiling is the one direction that can affect existing machines, so the
+     * scan runs automatically rather than relying on someone remembering to run it first.
+     */
+    private static int rpmSetCap(CommandSourceStack source, int world, int sublevel) {
+        int oldWorld = com.coffeesaerosmp.auth.config.AuthConfig.RPM_CAP_WORLD.get();
+        int oldShip  = com.coffeesaerosmp.auth.config.AuthConfig.RPM_CAP_SUBLEVEL.get();
+
+        com.coffeesaerosmp.auth.config.AuthConfig.RPM_CAP_WORLD.set(world);
+        com.coffeesaerosmp.auth.config.AuthConfig.RPM_CAP_SUBLEVEL.set(sublevel);
+        com.coffeesaerosmp.auth.config.AuthConfig.RPM_CAP_WORLD.save();
+
+        source.sendSuccess(() -> Component.literal(
+            "§6[RPM cap]§7 world §f" + oldWorld + " §7→ §f" + world
+            + "§7 · sub-level §f" + oldShip + " §7→ §f" + sublevel), false);
+
+        boolean lowering = world < oldWorld || sublevel < oldShip;
+        if (!lowering) {
+            source.sendSuccess(() -> Component.literal(
+                "§a  Raising or unchanged — no existing machine can be affected."), false);
+            return 1;
+        }
+
+        // Lowering is the direction that matters. Show what it would hit, without being asked.
+        if (net.neoforged.fml.ModList.get().isLoaded("create")) {
+            var r = com.coffeesaerosmp.auth.kinetics.RpmScan.run(source.getServer());
+            source.sendSuccess(() -> Component.literal(
+                "§e  " + r.overWorldCap() + " loaded machine(s) are now above the world cap"
+                + "§7 (" + r.onShips() + " on ships, exempt)."), false);
+            for (String s : r.samples()) {
+                source.sendSuccess(() -> Component.literal("§7   • §f" + s), false);
+            }
+        }
+        boolean destroys = com.coffeesaerosmp.auth.config.AuthConfig.RPM_CAP_DESTROYS.get();
+        source.sendSuccess(() -> Component.literal(destroys
+            ? "§c  rpmCapDestroys is TRUE — those blocks will be DESTROYED on their next network update."
+            : "§a  rpmCapDestroys is false — those machines will simply stop. Nothing is destroyed."), false);
         return 1;
     }
 

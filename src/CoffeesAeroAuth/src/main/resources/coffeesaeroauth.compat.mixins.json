@@ -1,0 +1,14 @@
+{
+    "required": false,
+    "minVersion": "0.8",
+    "package": "com.coffeesaerosmp.auth.mixin",
+    "compatibilityLevel": "JAVA_21",
+    "mixins": [],
+    "server": [
+        "RotationPropagatorRpmCapMixin"
+    ],
+    "client": [],
+    "injectors": {
+        "defaultRequire": 0
+    }
+}

@@ -1,0 +1,12 @@
+{
+  "replace": false,
+  "values": [
+    { "id": "create_aeronautics_toolgun:magnetic_gun", "required": false },
+    { "id": "create_aeronautics_toolgun:creative_magnetic_gun", "required": false },
+    { "id": "create_aeronautics_toolgun:structure_tool", "required": false },
+    { "id": "create_aeronautics_toolgun:survival_structure_tool", "required": false },
+    { "id": "create_aeronautics_toolgun:portable_structure_container", "required": false },
+    { "id": "create_aeronautics_toolgun:disposable_vehicle_container", "required": false },
+    { "id": "create_aeronautics_toolgun:portable_structure_printer", "required": false }
+  ]
+}

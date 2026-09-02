@@ -168,11 +168,64 @@ public final class LagAttributor {
 
     // ── Sampler thread ────────────────────────────────────────────────────────
 
+    /** Floor between samples. A constant, so the loop can never spin even if config is unreadable. */
+    private static final long SAMPLE_FLOOR_MS = 50L;
+
+    /** At most one failure line per minute, however many failures there are. */
+    private static final long ERROR_LOG_INTERVAL_MS = 60_000L;
+
+    private static long lastErrorLogMs;
+    private static long suppressedErrors;
+
+    /**
+     * Reads a config int, falling back to {@code def} if the spec is not loaded.
+     *
+     * <p>🔴 NeoForge throws {@code IllegalStateException: Cannot get config value before config is
+     * loaded} whenever the SERVER spec is not currently bound — which includes the window around
+     * shutdown, while this daemon thread is still alive. Every read in this loop has to survive that.
+     */
+    private static int cfg(net.neoforged.neoforge.common.ModConfigSpec.IntValue value, int def) {
+        try { return value.get(); } catch (Throwable t) { return def; }
+    }
+
+    private static boolean cfg(net.neoforged.neoforge.common.ModConfigSpec.BooleanValue value, boolean def) {
+        try { return value.get(); } catch (Throwable t) { return def; }
+    }
+
+    /**
+     * Samples the server thread while a tick is overrunning.
+     *
+     * <h2>🔴 2026-09-01 — this loop wrote 3,869,731 log lines in TWELVE SECONDS</h2>
+     *
+     * The sleep used to be {@code Thread.sleep(Math.max(10, CONFIG.get()))} — the config read was
+     * <b>inside the sleep argument</b>. When that read threw (see {@link #cfg}), the sleep never
+     * happened, so the catch logged and the loop went straight round again. An unthrottled spin,
+     * rate-limited only by how fast the disk could accept log lines: measured at <b>~380,000 lines
+     * per second</b>, rotating four log files in twelve seconds and saturating disk I/O on a server
+     * whose tick loop was already short of headroom.
+     *
+     * <p>Three independent guards now, because any one of them alone would have prevented it:
+     * <ol>
+     *   <li>the sleep is a <b>constant</b> and happens first, so a config failure cannot skip it;</li>
+     *   <li>every config read goes through {@link #cfg} and falls back to a default;</li>
+     *   <li>the failure log is rate-limited to once a minute and reports how many it swallowed.</li>
+     * </ol>
+     *
+     * <p>The lesson worth keeping: <b>never put a call that can throw inside the argument of the
+     * only thing that throttles a loop.</b>
+     */
     private static void sampleLoop() {
         while (running) {
             try {
-                Thread.sleep(Math.max(10, AuthConfig.LAG_SAMPLE_INTERVAL_MS.get()));
-                if (!AuthConfig.LAG_ATTRIBUTION_ENABLED.get()) continue;
+                // (1) Constant sleep, first, unconditionally.
+                Thread.sleep(SAMPLE_FLOOR_MS);
+
+                // (2) Every read below tolerates an unloaded config.
+                int interval = cfg(AuthConfig.LAG_SAMPLE_INTERVAL_MS, 50);
+                if (interval > SAMPLE_FLOOR_MS) {
+                    Thread.sleep(interval - SAMPLE_FLOOR_MS);
+                }
+                if (!cfg(AuthConfig.LAG_ATTRIBUTION_ENABLED, true)) continue;
 
                 long start = tickStartNanos;
                 if (start == 0L) continue;                       // not inside a tick
@@ -180,7 +233,7 @@ public final class LagAttributor {
                 if (st == null) continue;
 
                 long runningMs = (System.nanoTime() - start) / 1_000_000L;
-                if (runningMs < AuthConfig.LAG_SAMPLE_AFTER_MS.get()) continue;  // tick is fine
+                if (runningMs < cfg(AuthConfig.LAG_SAMPLE_AFTER_MS, 100)) continue;  // tick is fine
 
                 StackTraceElement[] stack = st.getStackTrace();
                 if (stack.length == 0) continue;
@@ -188,11 +241,24 @@ public final class LagAttributor {
             } catch (InterruptedException ie) {
                 return;
             } catch (Throwable t) {
-                // A sampler that dies stops guarding silently. Never let it.
-                try { CoffeesAeroAuth.LOGGER.debug("[LagAttributor] sample failed: {}", t.toString()); }
-                catch (Throwable ignored) { }
+                // (3) A sampler that dies stops guarding silently — but one that logs every failure
+                // is worse than useless, as 2026-09-01 proved. Report at most once a minute.
+                noteFailure(t);
             }
         }
+    }
+
+    private static void noteFailure(Throwable t) {
+        try {
+            long now = System.currentTimeMillis();
+            suppressedErrors++;
+            if (now - lastErrorLogMs < ERROR_LOG_INTERVAL_MS) return;
+            lastErrorLogMs = now;
+            CoffeesAeroAuth.LOGGER.warn(
+                "[LagAttributor] sampler failing — {} failure(s) in the last minute. Latest: {}",
+                suppressedErrors, t.toString());
+            suppressedErrors = 0;
+        } catch (Throwable ignored) { }
     }
 
     private static void record(StackTraceElement[] stack) {

@@ -199,6 +199,23 @@ public class DiscordGateway {
                 String content = d.has("content") && !d.get("content").isJsonNull()
                     ? d.get("content").getAsString() : "";
 
+                // Banter: if this message @mentions US, say something back.
+                //
+                // Placed BEFORE the channel and role gates on purpose — it should work anywhere the bot
+                // can see, and it should not require the chat-bridge role. It is also deliberately
+                // ahead of the admin-console branch so that mentioning the bot in that channel gets a
+                // reply instead of being interpreted as a server command.
+                //
+                // Replies go straight out over REST rather than through the MC chat bridge: this is
+                // Discord-side chatter and has no business appearing in game.
+                if (mentionsSelf(d)) {
+                    String reply = BotBanter.replyTo(authorId, content);
+                    if (reply != null) {
+                        postBanter(chan, reply);
+                        return;
+                    }
+                }
+
                 // Feature B: admin console channel → run as server command (admin-role gated).
                 if (!adminChannelId.isBlank() && adminChannelId.equals(chan)) {
                     if (!hasRole(d, adminRoleId)) return;
@@ -219,6 +236,65 @@ public class DiscordGateway {
                 if (interactionHandler != null) interactionHandler.accept(d);
             }
         }
+    }
+
+    // ── Banter ────────────────────────────────────────────────────────────────
+
+    /** Lazily built so the constructor is untouched; DiscordRest is a thin wrapper over the token. */
+    private volatile DiscordRest banterRest;
+
+    /**
+     * True if this message @mentions the bot itself.
+     *
+     * <p>Reads the {@code mentions} array rather than substring-matching the raw content: Discord
+     * writes mentions as either {@code <@id>} or {@code <@!id>} depending on client and nickname
+     * state, and the array is already normalised. A role mention that happens to include the bot is
+     * intentionally NOT matched — {@code @everyone} should not make it start chatting.
+     */
+    private boolean mentionsSelf(JsonObject d) {
+        String self = applicationId;   // for a bot, application id == its user id
+        if (self == null || self.isBlank()) return false;
+        JsonElement m = d.get("mentions");
+        if (m == null || !m.isJsonArray()) return false;
+        for (JsonElement e : m.getAsJsonArray()) {
+            if (!e.isJsonObject()) continue;
+            JsonObject u = e.getAsJsonObject();
+            if (u.has("id") && self.equals(u.get("id").getAsString())) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Post a banter reply. Runs on the sender thread, never the server thread — small talk must not
+     * be able to add a millisecond to a tick.
+     */
+    private void postBanter(String channelId, String text) {
+        DiscordRest r = banterRest;
+        if (r == null) {
+            synchronized (this) {
+                if (banterRest == null) banterRest = new DiscordRest(botToken);
+                r = banterRest;
+            }
+        }
+        if (!r.isConfigured()) return;
+
+        JsonObject body = new JsonObject();
+        body.addProperty("content", text);
+        // Never let a reply ping anyone. The text is fixed, but this is one line of insurance against
+        // a future edit that interpolates user input into a response.
+        JsonObject allowed = new JsonObject();
+        allowed.add("parse", new JsonArray());
+        body.add("allowed_mentions", allowed);
+
+        final DiscordRest rest = r;
+        final String json = body.toString();
+        java.util.concurrent.ScheduledExecutorService s = sender;
+        if (s != null) s.execute(() -> {
+            try { rest.postMessage(channelId, json); }
+            catch (Exception e) {
+                CoffeesAeroAuth.LOGGER.warn("[Discord] banter post failed: {}", e.getMessage());
+            }
+        });
     }
 
     /** True if the message author carries {@code roleId}. Blank roleId = no gating (LOCAL TESTING ONLY). */

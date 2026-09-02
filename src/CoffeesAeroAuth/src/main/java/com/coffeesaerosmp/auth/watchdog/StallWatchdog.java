@@ -136,7 +136,16 @@ public final class StallWatchdog {
         while (running) {
             try {
                 Thread.sleep(1000L);
-                if (!AuthConfig.STALL_WATCHDOG_ENABLED.get()) { reported = false; continue; }
+                // 🔴 Tolerate an unloaded config. NeoForge throws "Cannot get config value before
+                // config is loaded" whenever the SERVER spec is unbound — including the window around
+                // shutdown, while this daemon thread is still running. That threw 4,206 times in the
+                // 2026-09-01 logs, and every one of those seconds the watchdog was NOT guarding.
+                // The 1s sleep above means this never span, unlike LagAttributor — but a watchdog
+                // that is silently blind is still a broken watchdog.
+                boolean enabled;
+                try { enabled = AuthConfig.STALL_WATCHDOG_ENABLED.get(); }
+                catch (Throwable t) { enabled = true; }          // fail SAFE: keep guarding
+                if (!enabled) { reported = false; continue; }
                 long now = System.currentTimeMillis();
 
                 if (shuttingDown) {

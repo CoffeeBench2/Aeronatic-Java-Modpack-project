@@ -43,6 +43,15 @@ dependencies {
     // classes are never linked if FTB Chunks is absent. Local jars (offline-friendly).
     compileOnly(files("libs/ftb-chunks.jar", "libs/ftb-library.jar", "libs/ftb-teams.jar"))
 
+    // Create, for the RPM cap mixin's handler signature (KineticBlockEntity).
+    // 🔑 compileOnly with the REAL type on purpose. A mixin handler parameter typed Object never
+    // matches the descriptor, and under require=0 — which an optional-mod mixin needs — that
+    // failure is SILENT: no crash, no feature. See RotationPropagatorRpmCapMixin.
+    // ponder/flywheel/Registrate are Create's own jar-in-jar libraries. They are needed only so
+    // javac can resolve KineticBlockEntity's supertypes (it implements ponder's VirtualBlockEntity);
+    // extract them from create's META-INF/jarjar/ if this ever needs refreshing.
+    compileOnly(files("libs/create.jar", "libs/ponder.jar", "libs/flywheel.jar", "libs/Registrate.jar"))
+
     // CoffeesAeroSkins API for the skins backend bridge (SkinsHook). compileOnly + ModList-guarded,
     // same pattern as FTB. Build CoffeesAeroSkins first (sibling project).
     compileOnly(files("../CoffeesAeroSkins/build/libs/CoffeesAeroSkins-1.0.1.jar"))

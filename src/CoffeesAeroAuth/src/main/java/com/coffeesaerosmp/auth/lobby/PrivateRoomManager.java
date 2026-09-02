@@ -182,11 +182,14 @@ public class PrivateRoomManager {
         int sy = AuthConfig.OVERWORLD_SPAWN_Y.get();
         int sz = AuthConfig.OVERWORLD_SPAWN_Z.get();
         ow.setDefaultSpawnPos(new BlockPos(sx, sy, sz), 0.0f);
+
+        // 🔴 RECONCILE, never blindly add. A force-load persists in the world save, so simply not
+        // adding one does not release a ring an older config already took. Reconciling is what makes
+        // spawnForceloadRadiusChunks=0 actually mean "off" — see ForceloadManager for why this
+        // matters so much on a Create pack (a base inside the ring ticks 24/7 with nobody online).
         int r = AuthConfig.SPAWN_FORCELOAD_RADIUS_CHUNKS.get();
-        int cx = sx >> 4, cz = sz >> 4, n = 0;
-        for (int x = cx - r; x <= cx + r; x++)
-            for (int z = cz - r; z <= cz + r; z++) { ow.setChunkForced(x, z, true); n++; }
-        CoffeesAeroAuth.LOGGER.info("[Spawn] Overworld spawn set to ({}, {}, {}) — force-loaded {} chunks.", sx, sy, sz, n);
+        int n = ForceloadManager.reconcile(ow, sx, sz, r);
+        CoffeesAeroAuth.LOGGER.info("[Spawn] Overworld spawn set to ({}, {}, {}) — {} chunk(s) force-loaded.", sx, sy, sz, n);
     }
 
     /** Places the shared lobby build once per server run (bundled template if present) and guarantees

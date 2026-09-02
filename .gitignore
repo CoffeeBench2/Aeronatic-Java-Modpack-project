@@ -59,3 +59,8 @@ private.key
 # Local staging + downloaded logs (server IPs, chat, auth events)
 Releases/
 *.log
+
+# Compile-only mod jars for mixin/API signatures. NEVER commit these — the repo is PUBLIC
+# and create.jar alone is 19 MB of somebody else's redistributed binary.
+# Refresh from overrides/mods/ and create's META-INF/jarjar/ when they need updating.
+src/*/libs/

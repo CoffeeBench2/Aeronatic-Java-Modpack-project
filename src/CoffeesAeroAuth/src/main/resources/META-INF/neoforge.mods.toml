@@ -18,6 +18,12 @@ Profiles are UUID-bound. Display names are globally unique and anti-spoof protec
 [[mixins]]
 config = "coffeesaeroauth.mixins.json"
 
+# Optional-mod compat mixins. Separate config with required=false so a missing or updated Create
+# leaves the server booting normally instead of dying on a failed injection. The cost of that
+# choice is that failure is silent, so /authmod rpm status reports whether it actually applied.
+[[mixins]]
+config = "coffeesaeroauth.compat.mixins.json"
+
 [[dependencies.coffees_aero_auth]]
     modId        = "neoforge"
     type         = "required"

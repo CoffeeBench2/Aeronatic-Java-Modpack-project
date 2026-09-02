@@ -73,6 +73,13 @@ public class AuthConfig {
     public static final ModConfigSpec.BooleanValue         AFK_ENABLED;
     public static final ModConfigSpec.IntValue             AFK_TIMEOUT_MINUTES;
     public static final ModConfigSpec.BooleanValue         AFK_ANNOUNCE;
+    public static final ModConfigSpec.BooleanValue         AFK_KICK_ENABLED;
+    public static final ModConfigSpec.IntValue             AFK_KICK_BAN_MINUTES;
+    public static final ModConfigSpec.BooleanValue         AFK_KICK_EXEMPT_OPS;
+    public static final ModConfigSpec.BooleanValue         RPM_CAP_ENABLED;
+    public static final ModConfigSpec.IntValue             RPM_CAP_WORLD;
+    public static final ModConfigSpec.IntValue             RPM_CAP_SUBLEVEL;
+    public static final ModConfigSpec.BooleanValue         RPM_CAP_DESTROYS;
     public static final ModConfigSpec.BooleanValue         CHAT_FILTER_ENABLED;
     public static final ModConfigSpec.BooleanValue         WATCHDOG_TAUNTS_ENABLED;
     public static final ModConfigSpec.IntValue             WATCHDOG_TAUNT_MIN_MINUTES;
@@ -325,6 +332,61 @@ public class AuthConfig {
                      "The AFK player is not sent their own announcement; they get a private line",
                      "about their playtime being paused instead.")
             .define("afkAnnounce", true);
+        AFK_KICK_ENABLED = b
+            .comment("Disconnect a player once they are marked AFK, and block re-entry briefly.",
+                     "A bare kick is not a deterrent — the client reconnects in three seconds and",
+                     "the farm carries on. Worse, every rejoin costs a full login round trip through",
+                     "the gate plus a profile load, so a kick that is instantly undone is MORE load",
+                     "than leaving the player standing there. The short ban below is what makes the",
+                     "kick actually free a slot.",
+                     "Uses vanilla's ban list, which is UUID-keyed and expires on its own.")
+            .define("afkKickEnabled", true);
+        AFK_KICK_BAN_MINUTES = b
+            .comment("How long an AFK-kicked player is blocked from rejoining, in minutes.",
+                     "0 = kick with no cooling-off period (they may rejoin immediately).")
+            .defineInRange("afkKickBanMinutes", 5, 0, 1440);
+        AFK_KICK_EXEMPT_OPS = b
+            .comment("Never AFK-kick ops (permission 2+).",
+                     "An admin parked in spectator watching a chunk, or idling while reading a log,",
+                     "is doing their job. Unauthenticated players in the lobby are always exempt",
+                     "regardless of this setting — they are mid-login, not idling in the world.")
+            .define("afkKickExemptOps", true);
+
+        RPM_CAP_ENABLED = b
+            .comment("Cap Create rotational speed, with a separate ceiling inside Sable sub-levels.",
+                     "Requires Create. Silently inactive if the mixin could not apply — check the",
+                     "boot log for '[RpmCap]' and use /authmod rpm status.",
+                     "NOTE: leaving this on costs nothing while rpmCapWorld == rpmCapSubLevel;",
+                     "the ship lookup is skipped entirely when both ceilings are the same.")
+            .define("rpmCapEnabled", true);
+        RPM_CAP_WORLD = b
+            .comment("Max RPM for kinetic blocks in the normal world. Default 256 = same as ships,",
+                     "i.e. NOTHING IS CAPPED and Create behaves exactly as it always has.",
+                     "Lower this (128 is the usual choice) to throttle ground machines while leaving",
+                     "ships fast. RPM is a direct multiplier on Create's per-tick work: a belt at 256",
+                     "moves twice the items of one at 128, and it all lands on the single-threaded",
+                     "tick loop.",
+                     "*** RUN '/authmod rpm scan' BEFORE LOWERING THIS. ***",
+                     "It reports how many loaded machines are already above the value you are about",
+                     "to set. Create's own maxRotationSpeed stays the ceiling; this may only lower it.")
+            .defineInRange("rpmCapWorld", 256, 1, 8192);
+        RPM_CAP_SUBLEVEL = b
+            .comment("Max RPM for kinetic blocks inside a Sable sub-level (an assembled ship).",
+                     "Capped by Create's own maxRotationSpeed, which is 256 by default.")
+            .defineInRange("rpmCapSubLevel", 256, 1, 8192);
+        RPM_CAP_DESTROYS = b
+            .comment("What happens when a network exceeds the cap.",
+                     "false (default, SAFE): the over-speed connection simply refuses to propagate.",
+                     "  The machine stops. Nothing is broken and nothing is lost.",
+                     "true (VANILLA CREATE): the block is DESTROYED, which is what Create itself does",
+                     "  at its own maxRotationSpeed.",
+                     "*** READ THIS BEFORE SETTING true ***",
+                     "Create destroys the block on overspeed. Turning this on retroactively DESTROYS",
+                     "every existing machine running between rpmCapWorld and Create's maxRotationSpeed",
+                     "the moment its network next updates. Run '/authmod rpm scan' first to see how",
+                     "many loaded blocks that is, and warn players, before you even consider it.")
+            .define("rpmCapDestroys", false);
+
         CHAT_FILTER_ENABLED = b
             .comment("Screen public chat for filtered words.",
                      "Two severities per word, edited in-game with /authmod filter and stored in",

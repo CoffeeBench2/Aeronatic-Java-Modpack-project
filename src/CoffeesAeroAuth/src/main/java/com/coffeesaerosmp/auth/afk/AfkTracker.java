@@ -145,6 +145,8 @@ public final class AfkTracker {
             s.excludedTo = now;
             TextUtil.msg(player, "§7You are now §8AFK§7 — playtime is paused. Move to resume.");
             announce(player, " is now AFK");
+            // Playtime is settled above, so the disconnect below cannot lose or double-count it.
+            AfkKick.consider(player);
             return;
         }
 

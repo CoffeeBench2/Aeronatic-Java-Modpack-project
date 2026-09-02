@@ -29,31 +29,31 @@ public final class WatchdogTaunts {
 
     private WatchdogTaunts() {}
 
-    /** The watchdog has a name and a face: Hector, a brown dog. He is not a metaphor. */
-    public static final String NAME = "Hector";
+    /** The watchdog has a name and a face: Victor, a brown dog. He is not a metaphor. */
+    public static final String NAME = "Victor";
 
     /**
      * Deliberately written as statements of fact rather than threats. Every line describes
      * something the watchdog genuinely does, so nobody can call the bluff.
      *
      * <p>Named in third person now — a nameless "the watchdog" is a system, and systems are argued
-     * with. Hector is a brown dog who remembers things, and that is much harder to argue with.
+     * with. Victor is a brown dog who remembers things, and that is much harder to argue with.
      */
     private static final List<String> LINES = List.of(
-        "Hector is awake. Every block you break carries a timestamp.",
-        "Somewhere in a log file, your name is already written. Hector put it there.",
-        "He sees the chunks you load. He sees the chests you open. Good boy, Hector.",
-        "Rule one: Hector is watching. Rule two: see rule one.",
+        "Victor is awake. Every block you break carries a timestamp.",
+        "Somewhere in a log file, your name is already written. Victor put it there.",
+        "He sees the chunks you load. He sees the chests you open. Good boy, Victor.",
+        "Rule one: Victor is watching. Rule two: see rule one.",
         "Play fair. The brown dog has a very long memory.",
-        "Every command you run is on the record. Hector filed it.",
-        "Nothing personal — Hector simply remembers everything.",
-        "Cheat if you like. Hector's logs are patient.",
+        "Every command you run is on the record. Victor filed it.",
+        "Nothing personal — Victor simply remembers everything.",
+        "Cheat if you like. Victor's logs are patient.",
         "He knows your IP, your UUID and your last thousand actions. Sleep well.",
-        "No alarms today. Hector approves. Let's keep it that way.",
-        "Hector does not blink, and he does not bark twice.",
-        "Hector has not moved in six hours. He is not asleep.",
+        "No alarms today. Victor approves. Let's keep it that way.",
+        "Victor does not blink, and he does not bark twice.",
+        "Victor has not moved in six hours. He is not asleep.",
         "The brown dog tilted his head. Something in the logs did not add up.",
-        "Hector wags for clean sessions. He has not wagged all night."
+        "Victor wags for clean sessions. He has not wagged all night."
     );
 
     private static long nextAt = 0L;
