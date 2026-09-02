@@ -55,10 +55,21 @@ dependencies {
     // CoffeesAeroSkins API for the skins backend bridge (SkinsHook). compileOnly + ModList-guarded,
     // same pattern as FTB. Build CoffeesAeroSkins first (sibling project).
     compileOnly(files("../CoffeesAeroSkins/build/libs/CoffeesAeroSkins-1.0.1.jar"))
+
+    // Unit tests for the PURE display core only. PlayerDisplay/StaffBadges import no Minecraft
+    // classes, so these run without a game. Anything needing a ServerPlayer is boot-tested instead.
+    testImplementation platform("org.junit:junit-bom:5.10.2")
+    testImplementation "org.junit.jupiter:junit-jupiter"
+    testRuntimeOnly "org.junit.platform:junit-platform-launcher"
 }
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+    testLogging { events "passed", "failed", "skipped" }
 }
 
 jar {
