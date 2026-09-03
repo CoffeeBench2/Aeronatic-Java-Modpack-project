@@ -1,0 +1,13 @@
+name = "MC VR API 3.0.12"
+filename = "vrapi-3.0.12-1.21.1-neoforge.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/B3INNxum/versions/9ziXlpbX/vrapi-3.0.12-1.21.1-neoforge.jar"
+hash-format = "sha512"
+hash = "9f51001dc46b5a48c580d23db6456a369fbcb2d8d3f8c892025905664c0baf580514b7a8b60b01fb2b611f4622716bba32fbff6d30d98d9ac99b6c97d6c1a59b"
+
+[update]
+[update.modrinth]
+mod-id = "B3INNxum"
+version = "9ziXlpbX"

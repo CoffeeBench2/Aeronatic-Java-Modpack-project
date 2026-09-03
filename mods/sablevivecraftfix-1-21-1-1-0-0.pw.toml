@@ -1,0 +1,13 @@
+name = "Sable Vivecraft Fix 1.0.0"
+filename = "sablevivecraftfix-1.21.1-1.0.0.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/n9pE8Wpa/versions/3rU8UJGj/sablevivecraftfix-1.21.1-1.0.0.jar"
+hash-format = "sha512"
+hash = "ab21b5e26d04b11f6c3a56e9b2134ba71c276ac0bad5b7d0d41dec1dea2cd20c4cebb62dc50c6eb0d2e21f478ab8c4913c18fa97e985916d933b052069163143"
+
+[update]
+[update.modrinth]
+mod-id = "n9pE8Wpa"
+version = "3rU8UJGj"

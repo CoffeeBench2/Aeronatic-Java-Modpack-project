@@ -1,0 +1,13 @@
+name = "Customizable Player Models 1.21v0.6.27a-neoforge"
+filename = "CustomPlayerModels-1.21-0.6.27a.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/h1E7sQNL/versions/YXfPij2E/CustomPlayerModels-1.21-0.6.27a.jar"
+hash-format = "sha512"
+hash = "5af1150d16bfc3adfa942bf606a8e4d829cdcc15d3ec46eb98cdb03bd85db81ceac4b85274b4207a928497d78a4f53afeab1cf5b43ac73219d20147948fea38b"
+
+[update]
+[update.modrinth]
+mod-id = "h1E7sQNL"
+version = "YXfPij2E"
