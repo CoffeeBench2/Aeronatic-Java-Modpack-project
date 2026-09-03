@@ -33,7 +33,17 @@ public class AeroTitleScreen extends Screen {
 
     private static final ResourceLocation LOGO =
         ResourceLocation.fromNamespaceAndPath("coffeesaerosmp_core", "textures/gui/title_logo.png");
-    private static final int LOGO_W = 1405, LOGO_H = 752;   // Season 2 art
+    /**
+     * Native size of the Season 2 title art. MUST match the PNG exactly — it is both the blit source
+     * rectangle and the divisor for the scale below, so a stale value crops the art AND scales it
+     * wrong at the same time. Re-measure on every art change; the 2026-09-03 banner went 1405x752
+     * (1.87:1) to 1280x490 (2.61:1), which is a different shape, not just a different size.
+     *
+     * <p>The art is edge-to-edge with zero transparent padding (verified: the alpha bounding box is
+     * the full canvas), so centering the canvas centers what the player actually sees. If a future
+     * version is exported with padding, trim it rather than compensating with offsets here.
+     */
+    private static final int LOGO_W = 1280, LOGO_H = 490;   // Season 2 art
 
     /** 16px pixel-art Discord mark for the invite tile. Native size — blitted 1:1 so it stays crisp. */
     private static final ResourceLocation DISCORD_ICON =
@@ -235,9 +245,17 @@ public class AeroTitleScreen extends Screen {
         tickUpdateButton();                                    // before the draw, so the label is current
         super.render(graphics, mouseX, mouseY, partialTick);   // background (ours) + widgets
 
-        // Pack logo, top-center. Height capped at 26% of the screen: the airship in the art starts
-        // around 40% down, so the logo (ending ~30%) always clears it.
-        int logoH = (int) (this.height * 0.26);
+        // Pack logo, top-center. Sized by HEIGHT, because the airship in the background art starts
+        // around 40% down and the logo must always clear it: 4% top margin + 30% height puts the
+        // bottom edge at 34% on every window shape, ultrawide included.
+        //
+        // 🔑 The cap is 30%, not the old 26%, because the Season 2 banner is a much wider shape
+        // (2.61:1 against the old 1.87:1). Height-driven sizing means a wider logo renders SMALLER
+        // in height terms for the same visual weight, so reusing 26% would have shrunk the title on
+        // screen even though the image got bigger. At 30% it lands at ~44% of screen width on 16:9,
+        // which reads as a banner instead of a stamp, and the 80% width guard below still never
+        // trips (checked at 4:3, 16:9, 16:10 and 21:9).
+        int logoH = (int) (this.height * 0.30);
         int logoW = logoH * LOGO_W / LOGO_H;
         if (logoW > (int) (this.width * 0.8)) {
             logoW = (int) (this.width * 0.8);

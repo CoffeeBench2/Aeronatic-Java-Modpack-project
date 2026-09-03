@@ -1,8 +1,8 @@
 {
-  "version": "1.9.5.0",
+  "version": "1.10.0",
   "url": "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/latest",
   "neoforge": "21.1.244",
   "minecraft": "1.21.1",
-  "notes": "1.9.5.0 - Sable 2.0.5 and Create: Aeronautics 1.3.2, plus AeroCore 1.3.34. Sable fixes two server crashes, including one that could end a session without saving. THIS IS THE LAST UPDATE THAT RESETS YOUR SETTINGS - from now on the updater leaves your keybinds, video/audio options, chosen shader and Xaero map settings alone, they were being re-downloaded with the pack every time. Back up options.txt before updating if you want to keep this run's keybinds. Carry On now needs LEFT CTRL + right-click to pick a block up, so sneaking around on a ship no longer grabs Typewriters and other blocks you were trying to use. Also brings the EMI/JEI recipe-viewer switch.",
+  "notes": "1.10.0 - VR SUPPORT, and the biggest mod pass of Season 2. You can now play the whole server in VR: Vivecraft, MC VR API and the Sable and Create compatibility fixes all ship in the pack, so VR and desktop players share the same world and see each other properly. Customizable Player Models is in too, so you can build your own look. New Season 2 title screen. Sable 2.0.5 and Create: Aeronautics 1.3.2 land together, with Drive-By-Wire for ship controls, ragdolls, and SSRD plus Distant Horizons 3.2.0 for much better distant terrain. Create gets LazyTick and Threaded Trains for smoother contraptions and trains, plus Aeroworks 1.5.0 and Cobblestone 1.5.0. Sodium 0.8.13, ImmediatelyFast, Dynamic FPS, Continuity and Longer Chat History all moved to proper NeoForge builds instead of Fabric ones, which should mean fewer oddities. Zoomify is replaced by Just Zoom. THIS IS THE LAST UPDATE THAT RESETS YOUR SETTINGS - from now on the updater leaves your keybinds, video/audio options, chosen shader and Xaero map settings alone. Back up options.txt before updating if you want to keep this run's keybinds. Carry On needs LEFT CTRL + right-click to pick a block up, so sneaking on a ship no longer grabs Typewriters. Also brings the EMI/JEI recipe-viewer switch.",
   "lodReset": "season1"
 }

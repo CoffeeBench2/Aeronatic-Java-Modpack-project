@@ -129,8 +129,22 @@ public final class InClientUpdater {
             List<Target> plan = new ArrayList<>();
             Set<String>  managed = new LinkedHashSet<>();          // target paths this update controls
             int preserved = 0;
+            // Potato mode disables mods by renaming them to *.aerodisabled. Left alone, this loop
+            // would see mods/DistantHorizons-*.jar missing and re-download it, silently un-potatoing
+            // the client on the next update — the exact failure the potato mrpack avoids by shipping
+            // the -cf Core with no updater at all. Instead the download is REDIRECTED onto the
+            // disabled name, so a disabled mod still tracks pack updates and switching back to
+            // Normal restores the current version rather than a stale one.
+            boolean potato = com.coffeesaerosmp.core.mode.ClientMode.current(gameDir)
+                == com.coffeesaerosmp.core.mode.ClientMode.Mode.POTATO;
+            int modeDisabled = 0;
+
             for (Scan s : scans) {
                 if (s == null) continue;                           // metafile with no filename
+                if (potato && com.coffeesaerosmp.core.mode.ClientMode.isPotatoExcluded(s.managedRel())) {
+                    s = redirectToDisabled(gameDir, s);
+                    modeDisabled++;
+                }
                 // Stays in `managed` even when skipped — dropping it here would put the file on the
                 // orphan list and DELETE the player's settings, which is worse than resetting them.
                 managed.add(s.managedRel());
@@ -144,6 +158,10 @@ public final class InClientUpdater {
             if (preserved > 0) {
                 LOGGER.info("[Updater] preserved {} player-owned file(s) (keybinds/settings kept).",
                             preserved);
+            }
+            if (modeDisabled > 0) {
+                LOGGER.info("[Updater] Potato mode: {} mod(s) kept disabled (updated in place as {}).",
+                            modeDisabled, com.coffeesaerosmp.core.mode.ClientMode.DISABLED_SUFFIX);
             }
 
             // Orphans: files a previous in-client update installed that the pack no longer lists.
@@ -204,6 +222,26 @@ public final class InClientUpdater {
 
     /** One index entry resolved: the path it manages, and a download Target when it is out of date. */
     private record Scan(String managedRel, Target target) {}
+
+    /**
+     * Rewrites a scan so its file lands on {@code <name>.aerodisabled} instead of {@code <name>.jar}.
+     *
+     * <p>Used only while the client is in Potato mode. The managed path is rewritten too, not just
+     * the download target — that is what keeps the manifest honest, so when the pack bumps a
+     * disabled mod's version the PREVIOUS disabled jar is picked up as an orphan and removed. Track
+     * only the download and a potato client accumulates one dead copy of Distant Horizons per
+     * release.
+     */
+    private static Scan redirectToDisabled(Path gameDir, Scan s) {
+        String rel = s.managedRel() + com.coffeesaerosmp.core.mode.ClientMode.DISABLED_SUFFIX;
+        Target t = s.target();
+        if (t != null) {
+            Path off = t.target().resolveSibling(
+                t.target().getFileName() + com.coffeesaerosmp.core.mode.ClientMode.DISABLED_SUFFIX);
+            t = new Target(t.url(), off, t.hash(), t.hashFormat());
+        }
+        return new Scan(rel, t);
+    }
 
     /** Runs on the scan pool — fetches the metafile if needed and hashes the local file. */
     private static Scan scanOne(String[] f, Path gameDir, String base, String idxHashFmt) throws Exception {
@@ -499,8 +537,15 @@ public final class InClientUpdater {
         try (Stream<Path> s = Files.list(mods)) {
             for (Path jar : (Iterable<Path>) s::iterator) {
                 String name = jar.getFileName().toString();
-                if (!name.toLowerCase(Locale.ROOT).endsWith(".jar")) continue;
-                String low = name.toLowerCase(Locale.ROOT);
+                // Also match Potato-disabled copies. A mod the pack has DROPPED must be retired
+                // whether or not the player currently has it switched off, otherwise switching back
+                // to Normal quietly reinstates content the server no longer has.
+                String bare = name.endsWith(com.coffeesaerosmp.core.mode.ClientMode.DISABLED_SUFFIX)
+                    ? name.substring(0, name.length()
+                        - com.coffeesaerosmp.core.mode.ClientMode.DISABLED_SUFFIX.length())
+                    : name;
+                if (!bare.toLowerCase(Locale.ROOT).endsWith(".jar")) continue;
+                String low = bare.toLowerCase(Locale.ROOT);
                 for (String prefix : RETIRED_MOD_PREFIXES) {
                     if (low.startsWith(prefix)) {
                         out.add("mods/" + name);

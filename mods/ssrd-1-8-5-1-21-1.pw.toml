@@ -1,0 +1,13 @@
+name = "SSRD 1.8.5"
+filename = "SSRD-1.8.5-1.21.1.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/fJ183v3D/versions/OSM1jkMg/SSRD-1.8.5-1.21.1.jar"
+hash-format = "sha512"
+hash = "7f238068131477ffb628949d3528f8e933cde2ab05f2c20ff9786e9a0b538bb8e866a9b6dda7460899016fa41f23910013ee476cc876d1a4bbef0661436a1430"
+
+[update]
+[update.modrinth]
+mod-id = "fJ183v3D"
+version = "OSM1jkMg"
