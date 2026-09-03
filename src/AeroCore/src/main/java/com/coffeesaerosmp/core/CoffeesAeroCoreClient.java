@@ -56,6 +56,13 @@ public class CoffeesAeroCoreClient {
                 // token baked in at build time, which is correct for that channel because CF
                 // players receive a new jar precisely when the pack updates.
                 com.coffeesaerosmp.core.client.DhLodReset.applyBakedIfNoVersionCheck(gameDir);
+                // Remove mods the pack has dropped. This MUST run from here and not from the
+                // updater: the updater's own retired list executes from the Core the player
+                // already had, so a newly-added name never takes effect on the run that installs
+                // it. Worse, a dropped mod that collides with its replacement stops the client
+                // booting, so there is no later run to fix it. Sweeping from the mod constructor
+                // means the list that runs is the one inside the jar they just received.
+                com.coffeesaerosmp.core.cleanup.StaleMods.sweep(gameDir);
             }
         });
         NeoForge.EVENT_BUS.addListener((ScreenEvent.Init.Post e) -> {

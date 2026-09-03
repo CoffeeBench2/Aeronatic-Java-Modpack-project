@@ -1,8 +1,8 @@
 {
-  "version": "1.10.3",
+  "version": "1.10.4",
   "url": "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/latest",
-  "neoforge": "21.1.248",
+  "neoforge": "21.1.249",
   "minecraft": "1.21.1",
-  "notes": "1.10.3 - IMPORTANT: this update needs NeoForge 21.1.248 (up from 21.1.244). The Forgified Fabric API update in 1.10.0 pulled in modules that require it. If your game will not start with \"requires neoforge 21.1.248 or above\", reinstall the pack in your launcher rather than using Update Now - the updater cannot change the loader version. Also fixes leftover Fabric jars: LongerChatHistory, More Armor Trims, Dynamic FPS and Continuity all moved to NeoForge builds, and the old Fabric copies are now removed properly instead of sitting alongside them and failing to load. Parachute, Grand Teleport, Camera Overhaul, Zoomify and Simulated Coasters are removed. Everything else from 1.10.x is unchanged: VR support, Customizable Player Models, the Season 2 title screen, the Normal/Potato Mode button, Sable 2.0.5 and Create: Aeronautics 1.3.2.",
+  "notes": "1.10.4 - NEEDS NEOFORGE 21.1.249. If the game will not start with \"requires neoforge 21.1.248 or above\", update NeoForge in your launcher; the in-client updater moves mod files and cannot change the loader. FIXES THE LEFTOVER MODS: removed mods (Simulated Coasters, Parachute, Grand Teleport, Camera Overhaul, Zoomify) and the old Fabric copies of LongerChatHistory, More Armor Trims, Dynamic FPS and Continuity were not actually being deleted from your mods folder. They are now cleaned up automatically on the launch after you get this update. If your game currently will not start at all, reinstall the pack - nothing can self-repair a client that cannot boot. Everything else is unchanged: VR support, Customizable Player Models, the Season 2 title screen, the Normal/Potato Mode button, Sable 2.0.5 and Create: Aeronautics 1.3.2.",
   "lodReset": "season1"
 }
