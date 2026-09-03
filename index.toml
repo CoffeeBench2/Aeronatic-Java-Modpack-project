@@ -157,7 +157,7 @@ metafile = true
 
 [[files]]
 file = "mods/coffeesaerocore.pw.toml"
-hash = "01b1da958b72dff1a6e6bd17ef683937b6b7b43993f33878f182843af671d93e"
+hash = "7bd01c0d40b1015e6da64167b5e9cdd511da767c76b302c1cd55ee08e356a5bd"
 metafile = true
 
 [[files]]
@@ -1248,7 +1248,7 @@ hash = "bd36e7f82365844df8435c0e8077b903aa085ed750a7c37b62582442f45afe56"
 
 [[files]]
 file = "overrides/config/coffeesaerosmp_core-client.toml"
-hash = "f667d6e0c6453bdb7f35afee4fdade9ee7ed21686ff352f6ff1a5143395df474"
+hash = "3d029db997a242cdb0df23abf7c9db1e730fe2515ce6ee8470b18458139b461b"
 
 [[files]]
 file = "overrides/config/entity_texture_features.json"

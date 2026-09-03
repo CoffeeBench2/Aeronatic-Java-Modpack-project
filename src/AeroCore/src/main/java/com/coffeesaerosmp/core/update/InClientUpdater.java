@@ -491,7 +491,23 @@ public final class InClientUpdater {
         "waystones", "waystonessable", "balm-", "balm_",
         "createdeliveryrequired", "create aeronautics gyroscope",
         // dropped in 1.8.5
-        "railwaysuntold");
+        "railwaysuntold",
+        // dropped in 1.10.x
+        "zoomify", "simulatedcoasters", "create_parachute", "grand-teleport", "cameraoverhaul",
+        // replaced by an older build on purpose, so modKey() sees the same mod and keeps both
+        "justzoom_neoforge_2.1.0",
+        // 🔴 LOADER SWAPS — the case that actually broke clients on 2026-09-03.
+        // When a mod moves from its Fabric build to its NeoForge build the FILENAME changes in a
+        // way modKey() does not normalise ("longerchathistory-fabric" vs "longerchathistory-
+        // neoforge" are different keys), so duplicateModJars() never fires. Orphan tracking does
+        // not save it either, because an mrpack or CurseForge import writes no manifest at all.
+        // Both jars therefore survive side by side and FML refuses to load the Fabric one:
+        // "File mods\LongerChatHistory-fabric-1.7.jar is a Fabric mod and cannot be loaded".
+        // These are matched by a prefix that CANNOT also match their NeoForge replacement.
+        "longerchathistory-fabric",
+        "more_armor_trims-1.",                       // new build is more_armor_trims-neoforge-
+        "dynamic-fps-3.11.4+minecraft-1.21.0-fabric",
+        "continuity-3.0.0+1.21.jar");                // new build is continuity-3.0.0+1.21.neoforge
 
     /**
      * Loose files, outside {@code mods/}, that the pack once installed and no longer wants.
