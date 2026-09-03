@@ -662,8 +662,12 @@ public class ProfileCommands {
             return 0;
         }
         boolean hidden = com.coffeesaerosmp.auth.display.HiddenOps.toggle(player.getUUID());
+        // Spell out the op carve-out. Without it the first thing an op does is check TAB, still see
+        // themselves and every other op, and conclude the command did nothing (2026-09-03).
         player.sendSystemMessage(Component.literal(hidden
-            ? "§7You are now §chidden§7 from the player list."
+            ? "§7You are now §chidden§7 — gone from the player list, the pilot count,\n"
+            + "§7join/leave messages and the public Discord feed.\n"
+            + "§8Other ops still see you in TAB, marked §8[§7H§8]§8. Admin channels still log you."
             : "§7You are now §avisible§7 in the player list."));
         return 1;
     }

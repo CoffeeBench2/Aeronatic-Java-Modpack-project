@@ -53,8 +53,14 @@ public final class TabListManager {
         // Push the live count to the bot presence every cycle (coalesced + rate-limited inside the
         // gateway, so this is nearly free). Event-driven pushes missed offline-auth joins and any
         // change while the gateway was reconnecting — tick-driven self-heals all drift.
+        // The bot status is a PUBLIC surface, so it must show the same count the tab footer shows a
+        // non-op. Sending players.size() here let a hidden op be counted in Discord while being
+        // absent from every in-game list — "3 pilots aboard" next to a two-name tab list is exactly
+        // the tell the hide exists to remove. hiddenCount() is 0 for an empty list, so this is safe
+        // above the isEmpty() return.
         if (com.coffeesaerosmp.auth.CoffeesAeroAuth.DISCORD_BRIDGE != null)
-            com.coffeesaerosmp.auth.CoffeesAeroAuth.DISCORD_BRIDGE.updatePlayerCount(players.size());
+            com.coffeesaerosmp.auth.CoffeesAeroAuth.DISCORD_BRIDGE.updatePlayerCount(
+                players.size() - com.coffeesaerosmp.auth.display.HiddenOps.hiddenCount(players));
 
         if (players.isEmpty()) return;
         // Two styles: the lobby is an auth waiting room and needs "here is how you leave", the world
@@ -130,11 +136,17 @@ public final class TabListManager {
             Component plainName = Component.literal(segPlain.prefix())
                 .append(styled != null ? styled : Component.literal(segPlain.name()))
                 .append(Component.literal(segPlain.suffix()));
-            Component opName = Component.literal(segOp.prefix())
+            // Ops keep seeing hidden ops on purpose — an admin who cannot see another admin come and
+            // go is worse than no hide at all. But until now the op view rendered them IDENTICALLY to
+            // everyone else, so the only way to tell the hide had taken was to go find a non-op and
+            // ask. That is indistinguishable from a broken feature, and was reported as one
+            // (2026-09-03). The marker is op-view only: it is built into opName, never plainName.
+            boolean isHidden = com.coffeesaerosmp.auth.display.HiddenOps.isHidden(p.getUUID());
+            Component opName = Component.literal((isHidden ? "§8[§7H§8] " : "") + segOp.prefix())
                 .append(styled != null ? styled : Component.literal(segOp.name()))
                 .append(Component.literal(segOp.suffix()));
 
-            if (!com.coffeesaerosmp.auth.display.HiddenOps.isHidden(p.getUUID())) {
+            if (!isHidden) {
                 plain.add(new net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket.Entry(
                     p.getUUID(), null, true, p.connection.latency(), p.gameMode.getGameModeForPlayer(), plainName, null));
             }

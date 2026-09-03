@@ -82,7 +82,7 @@ public class DiscordBridge {
         }
         // Public copy (2026-07-11 request) — display names only, celebratory tone.
         String pub = AuthConfig.DISCORD_WEBHOOK_PUBLIC.get();
-        if (AuthConfig.DISCORD_PUBLIC_JOINLEAVE.get() && !pub.isBlank()) {
+        if (AuthConfig.DISCORD_PUBLIC_JOINLEAVE.get() && !pub.isBlank() && !isHidden(player)) {
             String name = displayNameOf(player);
             publish(pub, isFirstEver
                 ? AlertFormatter.publicEmbed("🌟 **" + name + "** just made their first flight on "
@@ -98,10 +98,27 @@ public class DiscordBridge {
                 com.coffeesaerosmp.auth.watchdog.Severity.LOW);
         }
         String pub = AuthConfig.DISCORD_WEBHOOK_PUBLIC.get();
-        if (AuthConfig.DISCORD_PUBLIC_JOINLEAVE.get() && !pub.isBlank()) {
+        if (AuthConfig.DISCORD_PUBLIC_JOINLEAVE.get() && !pub.isBlank() && !isHidden(player)) {
             publish(pub, AlertFormatter.publicEmbed(
                 "🛬 **" + displayNameOf(player) + "** left the server", 0x99AAB5));
         }
+    }
+
+    /**
+     * True when this player has hidden themselves with {@code /authmod hide}.
+     *
+     * <p>🔑 Hiding is a PRESENCE toggle, and Discord is a presence surface. Before this check the
+     * hide only ever touched the in-game TAB list, so a hidden op still announced themselves to the
+     * whole community feed on join — the single most visible place they were trying not to be.
+     *
+     * <p>Deliberately gates the PUBLIC feed only. The watchdog webhook keeps posting, because that
+     * channel exists so admins see everything (same reasoning as the real-name copy in
+     * {@link #onPlayerJoin}), and an admin who cannot see another admin come and go is worse than
+     * no hide at all. Chat is also deliberately NOT gated: hiding presence is not a mute, and a
+     * hidden op who chooses to talk has chosen to be seen.
+     */
+    private static boolean isHidden(ServerPlayer player) {
+        return com.coffeesaerosmp.auth.display.HiddenOps.isHidden(player.getUUID());
     }
 
     /** Display name for PUBLIC posts — never the real account name. */
@@ -116,6 +133,7 @@ public class DiscordBridge {
 
     public void onPlayerDeath(ServerPlayer player, String deathMessage) {
         if (!AuthConfig.DISCORD_PUBLIC_DEATHS.get()) return;
+        if (isHidden(player)) return;   // a death message names them, and names their coords' worth of context
         String url = AuthConfig.DISCORD_WEBHOOK_PUBLIC.get();
         if (url.isBlank()) return;
         publish(url, AlertFormatter.publicEmbed("💀 " + deathMessage, 0x808080));
@@ -155,6 +173,9 @@ public class DiscordBridge {
     public void onAdvancement(ServerPlayer player, String title, String description, String frame) {
         // Public feed (display names only — never real names in public) when enabled; else watchdog.
         boolean pub = AuthConfig.DISCORD_PUBLIC_ACHIEVEMENTS.get();
+        // Hidden + public feed = announcing the presence they just hid. Hidden + watchdog is fine:
+        // that channel is admins-only and is meant to keep seeing them.
+        if (pub && isHidden(player)) return;
         String url = pub ? AuthConfig.DISCORD_WEBHOOK_PUBLIC.get() : AuthConfig.DISCORD_WEBHOOK_WATCHDOG.get();
         if (url.isBlank()) return;
         // Always the DISPLAY name (2026-07-12 fix) — the old getGameProfile().getName() only equals

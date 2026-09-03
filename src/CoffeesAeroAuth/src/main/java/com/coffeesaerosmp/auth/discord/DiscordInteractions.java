@@ -143,7 +143,9 @@ public class DiscordInteractions {
         }
         long sessionMs = java.lang.management.ManagementFactory.getRuntimeMXBean().getUptime();
         long sh = sessionMs / 3_600_000, sm = (sessionMs % 3_600_000) / 60_000;
-        int online = server.getPlayerList().getPlayerCount();
+        // Public slash command — hidden ops must not be counted (see HiddenOps / TabListManager).
+        int online = server.getPlayerList().getPlayerCount()
+            - com.coffeesaerosmp.auth.display.HiddenOps.hiddenCount(server.getPlayerList().getPlayers());
         String desc = "🛫 **" + com.coffeesaerosmp.auth.config.AuthConfig.SERVER_DISPLAY_NAME.get()
             + "** has been flying since **" + pretty + "**"
             + (days >= 0 ? " — **" + days + " day" + (days == 1 ? "" : "s") + "** and counting!" : "!")

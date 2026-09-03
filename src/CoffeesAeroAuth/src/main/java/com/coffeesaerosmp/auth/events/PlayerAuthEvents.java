@@ -17,6 +17,29 @@ public class PlayerAuthEvents {
 
         boolean isOffline = !UUIDUtil.isPremiumUUID(player.getUUID());
 
+        // Offline accounts pick their own username, and nothing upstream validates it: the gate signs
+        // whatever name the client sent, and an offline-mode backend derives a UUID from that string
+        // rather than rejecting it. So a player literally called ' reached the auth lobby (2026-09-03).
+        //
+        // 🔑 This MUST run before AuthManager.onPlayerJoin, or the junk name is already a registered
+        // profile row and a claimed display name by the time anyone notices. Rejecting here means
+        // nothing is written — PROFILE_STORE has not been touched yet on this path.
+        //
+        // Premium accounts are exempt on purpose: their name is Mojang-verified, and a handful of
+        // legacy accounts predate the current charset rule. Kicking one of those would be our bug,
+        // not theirs. Offline is where the free-text hole actually is.
+        if (isOffline && !com.coffeesaerosmp.auth.profile.DisplayNameManager.isValidName(
+                player.getGameProfile().getName())) {
+            CoffeesAeroAuth.LOGGER.warn("[Auth] Refused invalid offline username {} from {}.",
+                "'" + player.getGameProfile().getName() + "'", NetUtil.getPlayerIP(player));
+            player.connection.disconnect(Component.literal(
+                "§cThat username cannot be used on this server.\n\n"
+                + "§7Minecraft usernames must be §f3–16 characters§7 and use only\n"
+                + "§7letters, numbers and underscores §8(a–z A–Z 0–9 _)§7.\n\n"
+                + "§7Change your name in your launcher's profile and reconnect."));
+            return;
+        }
+
         // Detect first-ever join BEFORE auth manager processes the player
         // (auth manager sets firstJoinComplete=true for premium players during onPlayerJoin)
         boolean isFirstJoin = CoffeesAeroAuth.PROFILE_STORE != null
