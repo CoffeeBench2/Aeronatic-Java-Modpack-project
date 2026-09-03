@@ -3,11 +3,14 @@ package com.coffeesaerosmp.auth.world;
 import com.coffeesaerosmp.auth.CoffeesAeroAuth;
 import com.coffeesaerosmp.auth.config.AuthConfig;
 import com.coffeesaerosmp.auth.util.TextUtil;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.item.ItemEntity;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -85,16 +88,42 @@ public final class ItemClearer {
         return cleared;
     }
 
-    /** Clears ground items in every loaded level. Returns how many entities were removed. */
+    /**
+     * Clears ground items in every loaded level. Returns how many entities were removed.
+     *
+     * <h3>🔴 Never use an AABB query for "everything"</h3>
+     * This originally called {@code level.getEntitiesOfClass(ItemEntity.class, AABB.INFINITE, …)}
+     * and silently matched <b>nothing</b> — every run reported "No dropped items needed clearing",
+     * which reads exactly like a tidy server. The arithmetic:
+     *
+     * <pre>
+     *   Mth.floor(-Infinity):  (int)-Infinity        = Integer.MIN_VALUE
+     *                          value &lt; (double)i     = true  -&gt; i - 1
+     *                          Integer.MIN_VALUE - 1 = Integer.MAX_VALUE   (int overflow)
+     *   posToSectionCoord(-Inf) = MAX_VALUE &gt;&gt; 4 = 134217727
+     *   posToSectionCoord(+Inf) = MAX_VALUE &gt;&gt; 4 = 134217727   (same value)
+     * </pre>
+     *
+     * So {@code EntitySectionStorage.forEachAccessibleNonEmptySection} looped
+     * {@code for (l1 = 134217727; l1 <= 134217727; l1++)} — one iteration, over a section
+     * coordinate no entity can occupy. Both ends of an infinite box land on the same impossible
+     * number, so the query is not "slow" or "clamped", it is empty.
+     *
+     * <p>{@link ServerLevel#getAllEntities()} walks the level's entity storage directly with no
+     * coordinate maths at all, which is what "every item in the world" actually means.
+     */
     public static int clearNow(MinecraftServer server) {
         final boolean keepNamed = AuthConfig.ITEM_CLEAR_KEEP_NAMED.get();
         int removed = 0;
         for (ServerLevel level : server.getAllLevels()) {
             // Snapshot first: discarding while iterating the live entity view is how you get a
             // ConcurrentModificationException on the tick loop.
-            List<ItemEntity> items = level.getEntitiesOfClass(ItemEntity.class,
-                net.minecraft.world.phys.AABB.INFINITE, e -> e.isAlive()
-                    && !(keepNamed && e.getItem().has(net.minecraft.core.component.DataComponents.CUSTOM_NAME)));
+            List<ItemEntity> items = new ArrayList<>();
+            for (Entity e : level.getAllEntities()) {
+                if (!(e instanceof ItemEntity item) || !item.isAlive()) continue;
+                if (keepNamed && item.getItem().has(DataComponents.CUSTOM_NAME)) continue;
+                items.add(item);
+            }
             for (ItemEntity e : items) {
                 e.discard();
                 removed++;
