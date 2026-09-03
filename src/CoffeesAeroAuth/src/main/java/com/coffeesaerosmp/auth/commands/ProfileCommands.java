@@ -417,7 +417,52 @@ public class ProfileCommands {
             .then(Commands.literal("ships")
                 .executes(ctx -> shipCensus(ctx.getSource()))
             )
+            // Status for the ground-item clear, plus a manual trigger. The clear itself is on a
+            // timer in ItemClearer and needs no command to run — this exists so an admin can see
+            // when the next one lands and pull it forward before a big build session.
+            .then(Commands.literal("itemclear")
+                .executes(ctx -> itemClearStatus(ctx.getSource()))
+                .then(Commands.literal("now")
+                    .executes(ctx -> itemClearNow(ctx.getSource())))
+            )
         );
+    }
+
+    /** {@code /authmod itemclear} — is it on, how often, and how long until the next one. */
+    private static int itemClearStatus(CommandSourceStack source) {
+        if (!com.coffeesaerosmp.auth.config.AuthConfig.ITEM_CLEAR_ENABLED.get()) {
+            source.sendSuccess(() -> Component.literal(
+                "§7Ground-item clearing is §cdisabled§7 (itemClearEnabled in the server config)."), false);
+            return 1;
+        }
+        int secs = com.coffeesaerosmp.auth.world.ItemClearer.secondsUntilClear();
+        int mins = com.coffeesaerosmp.auth.config.AuthConfig.ITEM_CLEAR_INTERVAL_MINUTES.get();
+        String warns = com.coffeesaerosmp.auth.config.AuthConfig.ITEM_CLEAR_WARN_SECONDS.get();
+        boolean keepNamed = com.coffeesaerosmp.auth.config.AuthConfig.ITEM_CLEAR_KEEP_NAMED.get();
+
+        source.sendSuccess(() -> Component.literal("§6Ground-item clear"), false);
+        source.sendSuccess(() -> Component.literal("§7Every §f" + mins + "§7 min · next in §f"
+            + (secs < 0 ? "unknown" : com.coffeesaerosmp.auth.world.ClearSchedule.humanTime(secs))), false);
+        source.sendSuccess(() -> Component.literal("§7Warns at §f" + warns
+            + "§7 s · named items " + (keepNamed ? "§akept" : "§ccleared")), false);
+        source.sendSuccess(() -> Component.literal(
+            "§8Only loose dropped items. Belts, chutes, vaults and chests are untouched."), false);
+        return 1;
+    }
+
+    /** {@code /authmod itemclear now} — run the clear immediately and restart the countdown. */
+    private static int itemClearNow(CommandSourceStack source) {
+        try {
+            // No confirmation step: this is op-gated, it only removes loose ItemEntities, and the
+            // scheduled clear does exactly the same thing unattended every few minutes anyway.
+            int cleared = com.coffeesaerosmp.auth.world.ItemClearer.runNow(source.getServer());
+            CoffeesAeroAuth.LOGGER.info("[ItemClear] Manual clear by {} removed {} item(s).",
+                source.getTextName(), cleared);
+            return 1;
+        } catch (Exception e) {
+            source.sendFailure(Component.literal("§cItem clear failed: " + e));
+            return 0;
+        }
     }
 
     /**

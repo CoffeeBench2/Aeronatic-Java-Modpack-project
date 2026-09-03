@@ -61,17 +61,28 @@ public final class ItemClearer {
 
             previousRemaining = remaining;
 
-            if (remaining <= 0) {
-                int cleared = clearNow(server);
-                broadcast(server, ClearSchedule.cleared(cleared));
-                CoffeesAeroAuth.LOGGER.info("[ItemClear] Removed {} ground item(s).", cleared);
-                nextClearAtMs = now + AuthConfig.ITEM_CLEAR_INTERVAL_MINUTES.get() * 60_000L;
-                previousRemaining = Integer.MAX_VALUE;
-            }
+            if (remaining <= 0) runNow(server);
         } catch (Exception e) {
             // A janitor must never be able to take the tick loop down.
             CoffeesAeroAuth.LOGGER.warn("[ItemClear] skipped: {}", e.toString());
         }
+    }
+
+    /**
+     * Clears, announces the result, and restarts the countdown. Returns how many were removed.
+     *
+     * <p>The scheduled clear and {@code /authmod itemclear now} both run THIS, so a manual clear
+     * cannot drift from the automatic one. It also resets the timer, which is the behaviour an
+     * admin expects: clearing by hand should not leave a scheduled clear seconds away.</p>
+     */
+    public static int runNow(MinecraftServer server) {
+        int cleared = clearNow(server);
+        broadcast(server, ClearSchedule.cleared(cleared));
+        CoffeesAeroAuth.LOGGER.info("[ItemClear] Removed {} ground item(s).", cleared);
+        nextClearAtMs = System.currentTimeMillis()
+            + AuthConfig.ITEM_CLEAR_INTERVAL_MINUTES.get() * 60_000L;
+        previousRemaining = Integer.MAX_VALUE;
+        return cleared;
     }
 
     /** Clears ground items in every loaded level. Returns how many entities were removed. */
