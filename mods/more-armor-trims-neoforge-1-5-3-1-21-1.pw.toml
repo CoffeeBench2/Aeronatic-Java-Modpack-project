@@ -1,0 +1,13 @@
+name = "More Armor Trims 1.5.3-1.21.1"
+filename = "more_armor_trims-neoforge-1.5.3-1.21.1.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/FGNYBAJ6/versions/OzLL4h40/more_armor_trims-neoforge-1.5.3-1.21.1.jar"
+hash-format = "sha512"
+hash = "04370973874ca71646c6d1f1d1da19f5bd5148640e5268502e123fa531f8ef6a748c2539380fb15a5c15ac04b7eaf67075964e2503092fcc30cc0a2ddfe264b3"
+
+[update]
+[update.modrinth]
+mod-id = "FGNYBAJ6"
+version = "OzLL4h40"

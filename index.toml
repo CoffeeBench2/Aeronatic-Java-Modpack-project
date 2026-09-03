@@ -157,7 +157,7 @@ metafile = true
 
 [[files]]
 file = "mods/coffeesaerocore.pw.toml"
-hash = "90e4b016dcd83b1d1fe0ea65a7f33360b81ceab8cd619afc3e9cb250a74b910e"
+hash = "01b1da958b72dff1a6e6bd17ef683937b6b7b43993f33878f182843af671d93e"
 metafile = true
 
 [[files]]
@@ -841,8 +841,8 @@ hash = "c1cda29a99e3a1371e6103ece3fc722c27baf12c4788c967f8324ac0c5fe3aa9"
 metafile = true
 
 [[files]]
-file = "mods/more-armor-trims-1-5-3-1-21.pw.toml"
-hash = "3661e71539625447e4dcedda42621f854325b2539ed4124d27df188d30c3b587"
+file = "mods/more-armor-trims-neoforge-1-5-3-1-21-1.pw.toml"
+hash = "d9c51fdab95c09843c3c8dbf6cab1c5d13f7493dce18886a842de3de20bebd49"
 metafile = true
 
 [[files]]
@@ -1248,7 +1248,7 @@ hash = "bd36e7f82365844df8435c0e8077b903aa085ed750a7c37b62582442f45afe56"
 
 [[files]]
 file = "overrides/config/coffeesaerosmp_core-client.toml"
-hash = "d91f9d68bcbcf3476f6edf58e2ad8f1c3946fc0bdeeca3e6b523d32dd8ee5430"
+hash = "f667d6e0c6453bdb7f35afee4fdade9ee7ed21686ff352f6ff1a5143395df474"
 
 [[files]]
 file = "overrides/config/entity_texture_features.json"
