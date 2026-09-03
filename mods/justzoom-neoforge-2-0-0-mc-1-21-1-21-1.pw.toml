@@ -1,0 +1,13 @@
+name = "Just Zoom 2.0.0-1.21-1.21.1-neoforge"
+filename = "justzoom_neoforge_2.0.0_MC_1.21-1.21.1.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/iAiqcykM/versions/L0TEgHcN/justzoom_neoforge_2.0.0_MC_1.21-1.21.1.jar"
+hash-format = "sha512"
+hash = "6d7882fb165608bb31bc1aaf74f61f290cd2fdc015e6e07fa9d864613716c7ca88f4c0cda48e440ad55eecb835f9ccd400761f4d3c27b591856fa73b2f2bd1bf"
+
+[update]
+[update.modrinth]
+mod-id = "iAiqcykM"
+version = "L0TEgHcN"

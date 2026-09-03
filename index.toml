@@ -101,11 +101,6 @@ hash = "99f59ff4df1fa7bd0b4c5335d7d543cd4bfe4d95b37755999656077af6beb449"
 metafile = true
 
 [[files]]
-file = "mods/cameraoverhaul-v2-0-4-neoforge-clothfix.pw.toml"
-hash = "cdde4150f9977c4efd329f6c04e93893db0a255c52f941f4edb17f2bf096a274"
-metafile = true
-
-[[files]]
 file = "mods/carryon-neoforge-1-21-1-2-2-6-13.pw.toml"
 hash = "5d28428d1274a7b5f68d47df5e93f613ef50f1a647c6e6834303f10c12d3778f"
 metafile = true
@@ -162,7 +157,7 @@ metafile = true
 
 [[files]]
 file = "mods/coffeesaerocore.pw.toml"
-hash = "5c63b6a7212b8d2091c08286b654ce58b769ff975e9ee10f55945cb6e11c9261"
+hash = "90e4b016dcd83b1d1fe0ea65a7f33360b81ceab8cd619afc3e9cb250a74b910e"
 metafile = true
 
 [[files]]
@@ -303,11 +298,6 @@ metafile = true
 [[files]]
 file = "mods/create-new-age-1-2-0-neoforge-mc1-21-1.pw.toml"
 hash = "d5c6f89838a3438a3e48f4dbc4f8d9169416af214f8892473a51c49ee59016d3"
-metafile = true
-
-[[files]]
-file = "mods/create-parachute-1-0-4a.pw.toml"
-hash = "9a906ad40588552edfe983f12bc2bfa925d47709d6cdbc1e639adbb80200bc69"
 metafile = true
 
 [[files]]
@@ -701,11 +691,6 @@ hash = "9f5f41ecfea4f22a88a2244f954ffc3a5d676482fd2e7f61401dbe438765adae"
 metafile = true
 
 [[files]]
-file = "mods/grand-teleport-1-21-1-build252.pw.toml"
-hash = "be39904715b02f2e1aa378f4813ede8c5fee4abd8c7e41f81ffef27edfe55ca8"
-metafile = true
-
-[[files]]
 file = "mods/handcrafted-neoforge-1-21-1-4-0-3.pw.toml"
 hash = "075aed46f333fc6f52842ede00ca8d08cf44def8388589354f47d41f0b7375ac"
 metafile = true
@@ -781,8 +766,8 @@ hash = "deef103113f2cdc5da105029173b41303f938cbce02e9e19d1a7a5262eb5b6ca"
 metafile = true
 
 [[files]]
-file = "mods/justzoom-neoforge-2-1-0-mc-1-21-1.pw.toml"
-hash = "5a6a20711d894cee261be7c8c041d8b84725c23168ddf4e9ecd69fd7fc0084e8"
+file = "mods/justzoom-neoforge-2-0-0-mc-1-21-1-21-1.pw.toml"
+hash = "27cd4501214d224c753c44f83dd8ede070fd5f170e64e1375082c408084bef6c"
 metafile = true
 
 [[files]]
@@ -1263,7 +1248,7 @@ hash = "bd36e7f82365844df8435c0e8077b903aa085ed750a7c37b62582442f45afe56"
 
 [[files]]
 file = "overrides/config/coffeesaerosmp_core-client.toml"
-hash = "0a2304cf8c70870f08473d79084c109068868d1b2df3cc3675c0b9e61cdd9848"
+hash = "d91f9d68bcbcf3476f6edf58e2ad8f1c3946fc0bdeeca3e6b523d32dd8ee5430"
 
 [[files]]
 file = "overrides/config/entity_texture_features.json"
