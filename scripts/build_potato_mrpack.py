@@ -53,7 +53,8 @@ EXTRA_MODS_DIR = os.path.join(RELEASES, "potato-extra-mods")
 # Jar prefixes dropped in EVERY potato tier. Prefix match, not exact filenames: a version bump in
 # the main pack must not silently stop matching, because that fails open — the heavy mod would ship.
 BASE_EXCLUDE = [
-    "CameraOverhaul-",                  # camera tilt/roll
+    # CameraOverhaul was dropped from the pack entirely on 2026-09-03, so it no longer needs
+    # excluding. Kept in step with ClientMode.POTATO_EXCLUDE.
     "punchy-",                          # hit shake / punch effects
     "DistantHorizons-",                 # LOD renderer — the single biggest low-end cost
     "sound-physics-remastered-",        # raytraced audio (CPU)

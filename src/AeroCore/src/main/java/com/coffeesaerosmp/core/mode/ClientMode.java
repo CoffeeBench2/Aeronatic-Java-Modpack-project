@@ -67,7 +67,8 @@ public final class ClientMode {
      * which is not something a running client can do to itself.
      */
     public static final List<String> POTATO_EXCLUDE = List.of(
-        "CameraOverhaul-",              // camera tilt/roll
+        // CameraOverhaul was dropped from the pack on 2026-09-03; its entry is gone rather than
+        // left as a harmless no-op, so this list keeps meaning "mods that exist and get disabled".
         "punchy-",                      // hit shake / punch effects
         "DistantHorizons-",             // LOD renderer — the single biggest low-end cost
         "sound-physics-remastered-",    // raytraced audio (CPU)
