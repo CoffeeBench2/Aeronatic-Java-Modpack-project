@@ -1,15 +1,15 @@
 name = "Coffees Aero SMP"
-version = "1.10.2"
+version = "1.10.3"
 pack-format = "packwiz:1.1.0"
 
 [index]
 file = "index.toml"
 hash-format = "sha256"
-hash = "f148055dbf4e384d9da1f7693ba0942d5c1ca1613f8a8e40f8c754a747e49eb8"
+hash = "27e30b6ca3e8ca40f6ce3c72e6e1da6d9b77ec698aeff30439b315cd184374f3"
 
 [versions]
 minecraft = "1.21.1"
-neoforge = "21.1.244"
+neoforge = "21.1.248"
 
 [options]
 acceptable-game-versions = ["1.21", "1.21.1", "1.21.2", "1.21.3", "1.21.4"]
