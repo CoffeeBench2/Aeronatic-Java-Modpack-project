@@ -14,6 +14,32 @@
       "removed": []
     },
     {
+      "version": "1.10",
+      "date": "September 2026",
+      "title": "Head for the Skies",
+      "added": [
+        "Play the whole server in VR — strap in, grab the wheel, and fly your airship by hand",
+        "Desktop and VR pilots share the same skies and see each other properly",
+        "Make yourself look like anything with Customizable Player Models",
+        "Take the helm with Drive-By-Wire and steer your ship from the cockpit",
+        "A brand new Season 2 title screen to greet you",
+        "Distant terrain looks far better, and sub-levels render much further out",
+        "Trains and contraptions run smoother than they did last season",
+        "Ragdolls, because falling off an airship deserved a better send-off",
+        "New Mode button in Aero Settings — flip to Potato on a weaker PC and back again whenever you like"
+      ],
+      "fixed": [
+        "Your keybinds, video settings, shader choice and map waypoints survive updates now",
+        "Mods we removed actually get removed instead of lingering in your folder",
+        "Update Now can update NeoForge too, so an update can no longer leave you unable to start",
+        "Zooming, chat history and connected textures all run properly on NeoForge now"
+      ],
+      "removed": [
+        "Simulated Coasters, Parachute, Grand Teleport and Camera Overhaul have left the pack",
+        "Zoomify makes way for Just Zoom — same idea, better behaved"
+      ]
+    },
+    {
       "version": "1.9.3",
       "date": "August 2026",
       "title": "Guns, Gears & Guardrails",

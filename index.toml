@@ -1244,7 +1244,7 @@ hash = "ff15da34b5f6f825dcc32399ab150c2462393031a41c8ea6938d6dd61b11fb04"
 
 [[files]]
 file = "overrides/config/coffees_aero_announcements.json"
-hash = "bd36e7f82365844df8435c0e8077b903aa085ed750a7c37b62582442f45afe56"
+hash = "cae9871e472a2255db31908ff3b700ca3c00fbfb3129286ebfb39e45b15252c2"
 
 [[files]]
 file = "overrides/config/coffeesaerosmp_core-client.toml"
