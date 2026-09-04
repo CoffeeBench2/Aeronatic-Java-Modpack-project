@@ -25,6 +25,8 @@ public final class VersionCheck {
 
     private static volatile State  state         = State.UNKNOWN;
     private static volatile String latestVersion = "";
+    /** NeoForge version the pack now requires, from version.json. Blank when the field is absent. */
+    private static volatile String latestNeoForge = "";
     private static volatile String downloadUrl   = "";
     private static volatile boolean started       = false;
 
@@ -85,6 +87,7 @@ public final class VersionCheck {
 
             JsonObject o = JsonParser.parseString(resp.body()).getAsJsonObject();
             latestVersion = o.has("version") ? o.get("version").getAsString() : "";
+            latestNeoForge = o.has("neoforge") ? o.get("neoforge").getAsString() : "";
             downloadUrl   = o.has("url")     ? o.get("url").getAsString()     : "";
 
             String local = AeroConfig.PACK_VERSION.get();
@@ -104,6 +107,7 @@ public final class VersionCheck {
 
     public static boolean isOutdated()    { return state == State.OUTDATED; }
     public static String  latestVersion() { return latestVersion; }
+    public static String  latestNeoForge() { return latestNeoForge; }
 
     public static String downloadUrl() {
         return (downloadUrl == null || downloadUrl.isBlank()) ? AeroConfig.UPDATE_URL.get() : downloadUrl;

@@ -206,6 +206,16 @@ public final class InClientUpdater {
             }
 
             writeManifest(gameDir, managed);
+
+            // NeoForge, if the pack now needs a newer one than we are running. This is the one
+            // part of an update the file-moving applier cannot do, because the loader is not a file
+            // in the game directory — it is a version string in the launcher's own instance
+            // metadata. LoaderUpdater edits that (and installs the loader first where the launcher
+            // will not do it itself). Deliberately AFTER the mods are staged and never fatal: a
+            // player who ends up on new mods with an old loader gets a clear error and can fix it
+            // by hand, whereas failing the whole update here would leave them on neither.
+            stageLoaderUpdate(gameDir);
+
             phase = "Applying… the game will close.";
             willClose = true;
             launchApplier(gameDir, staging, removals);
@@ -264,6 +274,36 @@ public final class InClientUpdater {
         Path target = gameDir.resolve(rel);
         Target t = matches(target, hash, idxHashFmt) ? null : new Target(base + file, target, hash, idxHashFmt);
         return new Scan(rel(gameDir, target), t);
+    }
+
+    /** Set when a NeoForge change was staged, so the finished screen can say so. */
+    public static volatile String loaderNote = null;
+
+    /**
+     * Plans and stages the NeoForge change. Swallows everything: this is a best-effort extra on top
+     * of a mod update that has already succeeded, and no failure here should cost the player that.
+     */
+    private static void stageLoaderUpdate(Path gameDir) {
+        loaderNote = null;
+        try {
+            String want = com.coffeesaerosmp.core.version.VersionCheck.latestNeoForge();
+            String have = LoaderUpdater.running();
+            if (!LoaderUpdater.isNewer(have, want)) return;
+
+            phase = "Updating NeoForge…";
+            LoaderUpdater.Plan plan = LoaderUpdater.detect(gameDir, want);
+            if (plan.actionable() && LoaderUpdater.stage(gameDir, plan)) {
+                loaderNote = "NeoForge " + have + " → " + want + " via " + plan.launcher().label;
+                LOGGER.info("[Updater] staged NeoForge {} -> {} ({})", have, want, plan.launcher().label);
+            } else {
+                loaderNote = "Update NeoForge to " + want + " yourself — "
+                    + (plan.note().isBlank() ? plan.launcher().label + " could not be updated automatically"
+                                             : plan.note());
+                LOGGER.warn("[Updater] cannot auto-update NeoForge: {}", plan.note());
+            }
+        } catch (Throwable t) {
+            LOGGER.warn("[Updater] loader update skipped: {}", t.toString());
+        }
     }
 
     // ── Applier hand-off ────────────────────────────────────────────────────────

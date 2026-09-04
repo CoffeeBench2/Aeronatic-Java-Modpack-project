@@ -173,6 +173,11 @@ public class UpdatingScreen extends Screen {
             } else {
                 msg = "Already up to date."; col = OK;
             }
+            // A NeoForge change is the one thing the player may still have to act on, so it rides
+            // with the finished message rather than being buried in the log.
+            if (InClientUpdater.loaderNote != null) {
+                msg = msg + "  " + InClientUpdater.loaderNote + ".";
+            }
             java.util.List<String> lines = wrap(msg, CARD_W - 44);
             int my = active ? y0 + 88 : y0 + 60;                     // below the bar, or higher if no bar
             g.fill(x0 + 14, my - 3, x0 + 16, my + lines.size() * 11, col);   // accent bar, sized to the text

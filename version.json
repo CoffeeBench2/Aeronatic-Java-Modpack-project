@@ -1,8 +1,8 @@
 {
-  "version": "1.10.7",
+  "version": "1.10.8",
   "url": "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/latest",
   "neoforge": "21.1.249",
   "minecraft": "1.21.1",
-  "notes": "1.10.7 - fully removes the Amazing Mace 3D resource pack (1.10.6 deleted the file but left it in the pack index, so the updater kept re-downloading it). Also carries the 1.10.6 fix for the Modrinth install failing with \"integrated_villages requires integrated_api\". Still needs NeoForge 21.1.249. Everything else from 1.10.5 is unchanged: new Season 2 title art, VR support, Customizable Player Models, the Normal/Potato Mode button, Sable 2.0.5 and Create: Aeronautics 1.3.2.",
+  "notes": "1.10.8 - the updater can now update NeoForge too. If the pack needs a newer NeoForge than you are running, Update Now handles it instead of leaving you with a game that will not start. Prism and MultiMC are updated automatically. The Minecraft launcher gets NeoForge installed automatically. CurseForge and Modrinth App show you exactly which setting to change - those two store the loader in a way that cannot be edited safely from outside. Everything else from 1.10.x is unchanged.",
   "lodReset": "season1"
 }
