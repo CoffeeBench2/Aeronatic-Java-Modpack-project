@@ -23,6 +23,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RELEASES = r"D:\MC Project\Releases"
 OVERRIDES = os.path.join(ROOT, "overrides")
 KEY_FILE = os.path.join(ROOT, ".cf-key")
+KEY = open(KEY_FILE).read().strip() if os.path.isfile(KEY_FILE) else ""
 
 def _pack_version():
     t = open(os.path.join(ROOT, "pack.toml"), encoding="utf-8").read()
@@ -33,6 +34,9 @@ def _pack_version():
 # Derived, never pinned. This was hardcoded to "1.8.4" and quietly kept building an import zip
 # five pack versions stale, which is what left CurseForge players unable to update (2026-08-17).
 VERSION = _pack_version()
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from cf_fingerprint import cf_fingerprint  # single implementation, shared with the fingerprint pass
 
 # Stamped to MATCH live, not behind it. The old build stamped a fake older version so the
 # in-client updater would fire on first launch; that made a CF importer sync a several-hundred-
@@ -225,6 +229,85 @@ try:
     for j in OURS:
         n = os.path.basename(j)
         print("  %-34s %s" % (n, "bundled" if n in bundled else "*** MISSING ***"))
+
+    # ── COVERAGE GATE ─────────────────────────────────────────────────────────
+    # Every mod in the pack must arrive somehow: bundled here, or downloaded by CurseForge from a
+    # reference. Nothing may silently vanish, and nothing may arrive twice.
+    #
+    # Counting is not proof. "239 references, 246 mods, 20 bundled" looks healthy and says nothing
+    # about whether any PARTICULAR mod is covered, because the reference list also contains
+    # resourcepacks. Check each mod individually.
+    # Compare by CF FINGERPRINT, never by filename. CurseForge stores a file under the name the
+    # author uploaded, which routinely differs from the name in the pack for the very same bytes --
+    # "Terralith_1.21.x_v2.6.2.jar" vs "Terralith_1.21.1_v2.6.2_Neoforge.jar", and several mods whose
+    # CF name uses spaces where ours uses hyphens. A name comparison reports those as uncovered; if
+    # you then "fix" it by bundling them, CurseForge still downloads its own copy and the instance
+    # ends up with the mod twice, which is a much worse failure than the one you were chasing.
+    fps = {}
+    for f in sorted(os.listdir(os.path.join(OVERRIDES, "mods"))):
+        if f.endswith(".jar") and f not in bundled:
+            fps[cf_fingerprint(os.path.join(OVERRIDES, "mods", f))] = f
+    try:
+        ids = [f["fileID"] for f in manifest["files"]]
+        seen = set()
+        fid_fp = {}
+        for i in range(0, len(ids), 200):
+            req = urllib.request.Request(
+                "https://api.curseforge.com/v1/mods/files",
+                data=json.dumps({"fileIds": ids[i:i + 200]}).encode(),
+                headers={"x-api-key": KEY, "Content-Type": "application/json",
+                         "Accept": "application/json"},
+                method="POST")
+            for f in json.load(urllib.request.urlopen(req, timeout=90)).get("data", []):
+                seen.add(f.get("fileFingerprint"))
+                fid_fp[f["id"]] = f.get("fileFingerprint")
+    except Exception as e:
+        sys.exit("REFUSING TO SHIP: could not resolve CF references (%s). "
+                 "Without this the zip cannot be proven complete." % e)
+
+    # Anything we bundled must NOT also be referenced, or CurseForge downloads its own copy
+    # alongside ours. Today that survives only because CF happens to store GlitchCore under the same
+    # filename, so the download overwrites the bundled jar -- a coincidence, not a design. If CF ever
+    # renames it the instance gets the mod twice and will not boot. Drop the reference instead.
+    bfp = {cf_fingerprint(os.path.join(mods_dir, b)): b for b in bundled}
+    before = len(manifest["files"])
+    keep, dropped = [], []
+    for entry in manifest["files"]:
+        fp = fid_fp.get(entry["fileID"])
+        if fp in bfp:
+            dropped.append(bfp[fp])
+        else:
+            keep.append(entry)
+    if dropped:
+        manifest["files"] = keep
+        print()
+        print("dedup: dropped %d reference(s) already bundled:" % len(dropped))
+        for d in dropped:
+            print("   -", d)
+        with zipfile.ZipFile(OUT, "a", zipfile.ZIP_DEFLATED) as _z:
+            pass
+        with open(os.path.join(work, "manifest.json"), "w", encoding="utf-8") as fh:
+            json.dump(manifest, fh, indent=2)
+        rezip = True
+    else:
+        rezip = False
+
+    uncovered = sorted(n for fp, n in fps.items() if fp not in seen)
+    if uncovered or rezip:
+        print()
+        if uncovered:
+            print("coverage gate: %d mod(s) are in NEITHER column -- bundling them:" % len(uncovered))
+        for f in uncovered:
+            print("   +", f)
+            shutil.copy2(os.path.join(OVERRIDES, "mods", f), os.path.join(mods_dir, f))
+        # Rebuild the zip so the additions are actually in it.
+        with zipfile.ZipFile(OUT, "w", zipfile.ZIP_DEFLATED) as z:
+            for root, _, files in os.walk(work):
+                for f in files:
+                    full = os.path.join(root, f)
+                    z.write(full, os.path.relpath(full, work).replace("\\", "/"))
+        bundled = sorted(os.listdir(mods_dir))
+        print("re-zipped: %d bundled, %.1f MB" % (len(bundled), os.path.getsize(OUT) / 1024 / 1024))
 
     # Hard gate. The 1.9.4.1 import zip shipped with its whole boot chain referenced instead of
     # bundled and NOTHING complained — the build printed a smaller size and looked fine. Size alone
