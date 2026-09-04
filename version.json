@@ -1,8 +1,8 @@
 {
-  "version": "1.10.8",
+  "version": "1.10.9",
   "url": "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/latest",
   "neoforge": "21.1.249",
   "minecraft": "1.21.1",
-  "notes": "1.10.8 - the updater can now update NeoForge too. If the pack needs a newer NeoForge than you are running, Update Now handles it instead of leaving you with a game that will not start. Prism and MultiMC are updated automatically. The Minecraft launcher gets NeoForge installed automatically. CurseForge and Modrinth App show you exactly which setting to change - those two store the loader in a way that cannot be edited safely from outside. Everything else from 1.10.x is unchanged.",
+  "notes": "1.10.9 - safety fix for the new NeoForge updater. On the Minecraft Launcher it could retarget OTHER modpack profiles at our loader version, including packs for a different Minecraft version. It now only touches the profile it is actually updating. If you use Prism, MultiMC, CurseForge or the Modrinth App you were never affected. Everything else from 1.10.x is unchanged.",
   "lodReset": "season1"
 }

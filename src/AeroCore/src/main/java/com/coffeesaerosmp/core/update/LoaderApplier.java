@@ -62,7 +62,7 @@ public final class LoaderApplier {
 
             boolean ok = switch (launcher) {
                 case "PRISM"      -> patchPrism(meta, to);
-                case "VANILLA"    -> patchVanilla(meta, to);
+                case "VANILLA"    -> patchVanilla(meta, from, to);
                 default           -> false;
             };
             System.out.println(ok
@@ -96,15 +96,23 @@ public final class LoaderApplier {
     }
 
     /**
-     * Vanilla launcher: profiles reference a version id like {@code neoforge-21.1.244}. Only ids
-     * that already look like NeoForge are rewritten, so a player's other profiles are left alone.
+     * Vanilla launcher: profiles reference a version id like {@code neoforge-21.1.244}.
+     *
+     * <p>🔑 Rewrites ONLY profiles pointing at the exact version we are upgrading FROM. An earlier
+     * version matched any {@code neoforge-*} id and replaced them all, which quietly retargeted an
+     * unrelated 1.20.1 modpack profile at a 1.21.1 loader — caught in testing against a profile file
+     * containing three profiles. The launcher is shared across every instance a player owns, so the
+     * blast radius of a careless match here is all of them, not just ours.
      */
-    private static boolean patchVanilla(Path meta, String to) throws IOException {
+    private static boolean patchVanilla(Path meta, String from, String to) throws IOException {
+        if (from == null || from.isBlank()) return false;
         String s = read(meta);
-        Matcher m = Pattern.compile("(\"lastVersionId\"\\s*:\\s*\")(neoforge-[^\"]*)(\")").matcher(s);
+        Pattern p = Pattern.compile("(\"lastVersionId\"\\s*:\\s*\")neoforge-"
+            + Pattern.quote(from) + "(\")");
+        Matcher m = p.matcher(s);
         if (!m.find()) return false;
         backup(meta);
-        write(meta, m.replaceAll("$1neoforge-" + Matcher.quoteReplacement(to) + "$3"));
+        write(meta, m.replaceAll("$1neoforge-" + Matcher.quoteReplacement(to) + "$2"));
         return true;
     }
 
