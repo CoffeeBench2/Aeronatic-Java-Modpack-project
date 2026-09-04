@@ -1,8 +1,8 @@
 {
-  "version": "1.10.5",
+  "version": "1.10.6",
   "url": "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/latest",
   "neoforge": "21.1.249",
   "minecraft": "1.21.1",
-  "notes": "1.10.5 - new Season 2 title screen artwork (AERO SHIP), sized down so it sits better on the menu. Still needs NeoForge 21.1.249 - if the game will not start with \"requires neoforge 21.1.248 or above\", update NeoForge in your launcher; the in-client updater moves mod files and cannot change the loader. Carries everything from 1.10.4: removed mods (Simulated Coasters, Parachute, Grand Teleport, Camera Overhaul, Zoomify) and the old Fabric copies of LongerChatHistory, More Armor Trims, Dynamic FPS and Continuity are now cleaned out of your mods folder properly. VR support, Customizable Player Models, the Normal/Potato Mode button, Sable 2.0.5 and Create: Aeronautics 1.3.2.",
+  "notes": "1.10.6 - fixes the Modrinth install failing with \"integrated_villages requires integrated_api\". Also removes the Amazing Mace 3D resource pack. Still needs NeoForge 21.1.249. Carries everything from 1.10.5: the new Season 2 title art, VR support, Customizable Player Models, the Normal/Potato Mode button, Sable 2.0.5 and Create: Aeronautics 1.3.2, and the cleanup that finally removes dropped mods from your mods folder.",
   "lodReset": "season1"
 }

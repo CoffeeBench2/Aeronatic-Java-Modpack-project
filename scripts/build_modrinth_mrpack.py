@@ -99,6 +99,64 @@ for h, path in h2p.items():
         continue
     bundled.append(path)
 
+# 🔴 DEPENDENCY SWEEP OVER THE DROPPED SET. Dropping a mod that a KEPT mod requires kills the
+# client at mod loading, and the "updater backfills it on first launch" safety net does NOT apply:
+# the client never reaches the title screen, so the updater never runs. This exact pair --
+# integrated_villages requiring integrated_api -- broke the pack on 2026-07-22 and again on
+# 2026-09-04. Anything left depending on a dropped mod is dropped too, transitively, and the
+# build FAILS if that still cannot be resolved.
+def _meta(jar):
+    ids, deps = set(), []
+    try:
+        z = zipfile.ZipFile(jar)
+    except Exception:
+        return ids, deps
+    with z:
+        names = set(z.namelist())
+        for t in ("META-INF/neoforge.mods.toml", "META-INF/mods.toml"):
+            if t not in names:
+                continue
+            txt = z.read(t).decode("utf-8", "ignore")
+            for blk in re.split(r"\n(?=\s*\[\[)", txt):
+                head = blk.strip().split("\n")[0]
+                m = re.search(r'^\s*modId\s*=\s*"([^"]+)"', blk, re.M)
+                if not m:
+                    continue
+                if head.startswith("[[mods]]"):
+                    ids.add(m.group(1))
+                elif "dependencies." in head:
+                    ty = re.search(r'^\s*type\s*=\s*"([^"]+)"', blk, re.M)
+                    ma = re.search(r"^\s*mandatory\s*=\s*(true|false)", blk, re.M)
+                    kind = ty.group(1).lower() if ty else (
+                        "required" if (ma and ma.group(1) == "true") else "optional")
+                    if kind == "required":
+                        deps.append(m.group(1))
+    return ids, deps
+
+
+MODS_DIR = os.path.join(OVERRIDES, "mods")
+_all_jars = {f: os.path.join(MODS_DIR, f) for f in os.listdir(MODS_DIR) if f.endswith(".jar")}
+_provides = {f: _meta(p)[0] for f, p in _all_jars.items()}
+_requires = {f: _meta(p)[1] for f, p in _all_jars.items()}
+
+for _ in range(10):                                  # transitive closure
+    gone_ids = {i for f in dropped for i in _provides.get(f, set())}
+    newly = [f for f in _all_jars
+             if f not in dropped and any(d in gone_ids for d in _requires.get(f, []))]
+    if not newly:
+        break
+    for f in newly:
+        print(f"  dependency sweep: also dropping {f} (needs a dropped mod)")
+        dropped.append(f)
+        files[:] = [x for x in files if os.path.basename(x["path"]) != f]
+        bundled[:] = [b for b in bundled if os.path.basename(b) != f]
+
+gone_ids = {i for f in dropped for i in _provides.get(f, set())}
+still = [(f, d) for f in _all_jars if f not in dropped
+         for d in _requires.get(f, []) if d in gone_ids]
+if still:
+    sys.exit("ERROR: dangling required deps after sweep: " + str(still))
+
 index = {
     "formatVersion": 1, "game": "minecraft", "versionId": VERSION,
     "name": "Coffees Aero SMP",

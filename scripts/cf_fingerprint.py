@@ -86,6 +86,14 @@ def manual_ref_for(basename):
 
 def die(m): sys.exit("ERROR: " + m)
 
+
+def _pack_version():
+    """Live pack version, read from pack.toml — the only safe way to pick which zip to process."""
+    import re
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    t = open(os.path.join(root, "pack.toml"), encoding="utf-8").read()
+    return re.search(r'(?m)^version\s*=\s*"([^"]+)"', t).group(1)
+
 # --- CF murmur2 (seed=1) over whitespace-stripped bytes -----------------------
 def cf_fingerprint(path):
     with open(path, "rb") as f:
@@ -213,9 +221,14 @@ def main():
     if not os.path.isfile(KEY_FILE): die(".cf-key not found")
     key = open(KEY_FILE).read().strip()
 
-    zips = [f for f in os.listdir(RELEASES) if f.endswith("-CURSEFORGE.zip")]
-    if not zips: die("no *-CURSEFORGE.zip in Releases — run build_cf.py first")
-    src = os.path.join(RELEASES, sorted(zips)[-1])
+    # 🔴 Take the zip for the CURRENT pack version, never "the last one alphabetically".
+    # sorted() on these filenames is a STRING sort, so "1.9.4.2" sorts above "1.10.5" and this
+    # silently fingerprinted a months-old build (observed 2026-09-04: it processed 1.9.4.2 while
+    # the pack was on 1.10.5, and would have shipped that to CurseForge).
+    want = os.path.join(RELEASES, f"CoffeesAeroSMP-{_pack_version()}-CURSEFORGE.zip")
+    if not os.path.isfile(want):
+        die(f"{os.path.basename(want)} not found — run build_cf.py first")
+    src = want
     print("Post-processing:", src)
 
     # Extract on the same drive as Releases (D:, lots of free space) — C:'s temp fills up fast with
