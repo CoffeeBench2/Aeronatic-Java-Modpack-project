@@ -80,6 +80,19 @@ public class ProfileStore implements CredentialStore {
         return new GetOrCreateResult(fresh, true);
     }
 
+    /**
+     * True when the profile table itself is reachable, so a null from {@link #get} really does mean
+     * "no such player" rather than "could not look".
+     *
+     * <p>Callers that make a decision out of a player's ABSENCE need this. {@link #get} falls back to
+     * the flat file when the DB is down, which covers most returning players but not one who has no
+     * local file — they come back null and look brand new. Anything that would refuse or reset a
+     * player on that basis must check here first and stand down while the DB is unavailable.
+     */
+    public boolean isBacked() {
+        return db.isAvailable();
+    }
+
     public PlayerProfile get(UUID uuid) {
         PlayerProfile cached = cache.get(uuid);
         if (cached != null) return cached;

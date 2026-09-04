@@ -28,10 +28,36 @@ public class PlayerAuthEvents {
         // Premium accounts are exempt on purpose: their name is Mojang-verified, and a handful of
         // legacy accounts predate the current charset rule. Kicking one of those would be our bug,
         // not theirs. Offline is where the free-text hole actually is.
-        if (isOffline && !com.coffeesaerosmp.auth.profile.DisplayNameManager.isValidName(
-                player.getGameProfile().getName())) {
-            CoffeesAeroAuth.LOGGER.warn("[Auth] Refused invalid offline username {} from {}.",
-                "'" + player.getGameProfile().getName() + "'", NetUtil.getPlayerIP(player));
+        //
+        // 🔑 So are players who ALREADY have a profile. The rule arrived after they did, and the
+        // first build applied it to everyone — which locked established players out of their own
+        // accounts for a name the server had been happily accepting for months. A validation rule
+        // may refuse a new registration; it may not retroactively evict someone who is already in.
+        //
+        // One lookup, shared with the first-join detection below, so the grandfather check costs
+        // nothing extra on the join path.
+        PlayerProfile existing = CoffeesAeroAuth.PROFILE_STORE != null
+            ? CoffeesAeroAuth.PROFILE_STORE.get(player.getUUID())
+            : null;
+        // We are refusing a player based on the ABSENCE of a record, so the record source has to be
+        // trustworthy. With the DB down, get() falls back to the flat file — which covers most
+        // returning players, but one without a local file reads back null and looks brand new. Fail
+        // open there: letting an odd name through until MySQL returns is a far smaller problem than
+        // locking out established players every time the DB blinks.
+        boolean canTellNewFromOld = CoffeesAeroAuth.PROFILE_STORE != null
+            && CoffeesAeroAuth.PROFILE_STORE.isBacked();
+        String name = player.getGameProfile().getName();
+        boolean badName = !com.coffeesaerosmp.auth.profile.DisplayNameManager.isValidName(name);
+
+        if (isOffline && badName && !canTellNewFromOld) {
+            CoffeesAeroAuth.LOGGER.warn(
+                "[Auth] Allowing invalid offline username '{}' from {} — profile DB unavailable, "
+                + "cannot tell a new registration from an existing player.",
+                name, NetUtil.getPlayerIP(player));
+        }
+        if (isOffline && badName && canTellNewFromOld && existing == null) {
+            CoffeesAeroAuth.LOGGER.warn("[Auth] Refused NEW registration with invalid offline "
+                + "username {} from {}.", "'" + name + "'", NetUtil.getPlayerIP(player));
             player.connection.disconnect(Component.literal(
                 "§cThat username cannot be used on this server.\n\n"
                 + "§7Minecraft usernames must be §f3–16 characters§7 and use only\n"
@@ -41,9 +67,15 @@ public class PlayerAuthEvents {
         }
 
         // Detect first-ever join BEFORE auth manager processes the player
-        // (auth manager sets firstJoinComplete=true for premium players during onPlayerJoin)
-        boolean isFirstJoin = CoffeesAeroAuth.PROFILE_STORE != null
-            && CoffeesAeroAuth.PROFILE_STORE.get(player.getUUID()) == null;
+        // (auth manager sets firstJoinComplete=true for premium players during onPlayerJoin).
+        // Same lookup as the grandfather check above — deliberately not repeated, because a cache
+        // miss here means a real query on the join path.
+        //
+        // Note this does NOT use canTellNewFromOld. That stricter gate exists to avoid REFUSING a
+        // player on a maybe; first-join has the opposite failure mode — gate it on the DB and a new
+        // player who joins during an outage silently loses their welcome for good, because the
+        // profile written for them is already marked complete by the time it could fire again.
+        boolean isFirstJoin = CoffeesAeroAuth.PROFILE_STORE != null && existing == null;
 
         // Auth IP ban check — 30s cooldown after too many failed login attempts.
         // Must run before watchdog so it shows the right message (not the generic IP ban message).
