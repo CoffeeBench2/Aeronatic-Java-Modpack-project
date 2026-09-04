@@ -29,9 +29,17 @@ MODS_INDEX = os.path.join(ROOT, "mods")
 RELEASES = r"D:\MC Project\Releases"
 
 # Kept in step with build_mrpack.py -- read from pack.toml so it cannot drift.
-VERSION = re.search(r'^version\s*=\s*"(.+?)"',
-                    open(os.path.join(ROOT, "pack.toml"), encoding="utf-8").read(),
-                    re.M).group(1)
+#
+# 🔴 The LOADER version is read from pack.toml too, and must never be hardcoded here. It was, and
+# on 2026-09-04 this file shipped a slim pack declaring neoforge 21.1.244 while pack.toml,
+# version.json and build_mrpack.py had all moved to 21.1.249 -- a sixth place the version lives,
+# missed by version_preflight.py because that script only checks the pack version, not the loader.
+# A launcher reading this manifest would have installed a NeoForge too old for Forgified Fabric
+# API and the client would not have started.
+_PACK = open(os.path.join(ROOT, "pack.toml"), encoding="utf-8").read()
+VERSION = re.search(r'^version\s*=\s*"(.+?)"', _PACK, re.M).group(1)
+MINECRAFT = re.search(r'^minecraft\s*=\s*"(.+?)"', _PACK, re.M).group(1)
+NEOFORGE = re.search(r'^neoforge\s*=\s*"(.+?)"', _PACK, re.M).group(1)
 OUT = os.path.join(RELEASES, f"CoffeesAeroSMP-{VERSION}-SLIM.mrpack")
 
 
@@ -97,7 +105,7 @@ index = {
     "name": "Coffees Aero SMP",
     "summary": "Testing build - mods referenced from Modrinth, not bundled.",
     "files": files,
-    "dependencies": {"minecraft": "1.21.1", "neoforge": "21.1.244"},
+    "dependencies": {"minecraft": MINECRAFT, "neoforge": NEOFORGE},
 }
 
 skip_mods = {f["path"].split("/", 1)[1] for f in files}
