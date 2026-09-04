@@ -43,7 +43,7 @@ public class AeroTitleScreen extends Screen {
      * the full canvas), so centering the canvas centers what the player actually sees. If a future
      * version is exported with padding, trim it rather than compensating with offsets here.
      */
-    private static final int LOGO_W = 1280, LOGO_H = 490;   // Season 2 art
+    private static final int LOGO_W = 2048, LOGO_H = 672;   // Season 2 art (AERO SHIP)
 
     /** 16px pixel-art Discord mark for the invite tile. Native size — blitted 1:1 so it stays crisp. */
     private static final ResourceLocation DISCORD_ICON =
@@ -249,13 +249,14 @@ public class AeroTitleScreen extends Screen {
         // around 40% down and the logo must always clear it: 4% top margin + 30% height puts the
         // bottom edge at 34% on every window shape, ultrawide included.
         //
-        // 🔑 The cap is 30%, not the old 26%, because the Season 2 banner is a much wider shape
-        // (2.61:1 against the old 1.87:1). Height-driven sizing means a wider logo renders SMALLER
-        // in height terms for the same visual weight, so reusing 26% would have shrunk the title on
-        // screen even though the image got bigger. At 30% it lands at ~44% of screen width on 16:9,
-        // which reads as a banner instead of a stamp, and the 80% width guard below still never
-        // trips (checked at 4:3, 16:9, 16:10 and 21:9).
-        int logoH = (int) (this.height * 0.30);
+        // 🔑 The cap tracks the ART'S ASPECT, not a fixed number. Sizing is height-driven, so a
+        // wider logo at the same cap renders WIDER on screen: the 3.05:1 AERO SHIP art at the
+        // previous 0.30 cap came out ~51% of screen width against the old art's ~44%, which read as
+        // too big. 0.21 is a deliberate 30% reduction from that (329px -> 228px on a 640x360
+        // window), landing at ~36% width on 16:9. Bottom edge sits at 25%, so it still clears the
+        // background airship at ~40% with room to spare, and the 80% width guard below never trips
+        // (checked at 4:3, 16:9, 16:10 and 21:9). Re-derive this whenever the art changes shape.
+        int logoH = (int) (this.height * 0.21);
         int logoW = logoH * LOGO_W / LOGO_H;
         if (logoW > (int) (this.width * 0.8)) {
             logoW = (int) (this.width * 0.8);
