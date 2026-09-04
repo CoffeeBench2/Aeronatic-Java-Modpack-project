@@ -157,7 +157,7 @@ metafile = true
 
 [[files]]
 file = "mods/coffeesaerocore.pw.toml"
-hash = "75eb3cbfca000cc533c793a299d6be278f3d5be63d6e8d4e4db3e5c90a1c2533"
+hash = "9f1f9e9a532c0918d9ea7ea0b9b08ce5800740f256c428b31f3f5bc3a1158041"
 metafile = true
 
 [[files]]
@@ -1248,7 +1248,7 @@ hash = "bd36e7f82365844df8435c0e8077b903aa085ed750a7c37b62582442f45afe56"
 
 [[files]]
 file = "overrides/config/coffeesaerosmp_core-client.toml"
-hash = "d3dc3d1e59b83162092d057820ac5945bde6ad4ea228ce5b8204fb4f26160a88"
+hash = "8f67277c775859515c5941cadc5e4c245525f59d62bd0846904f985798a0b626"
 
 [[files]]
 file = "overrides/config/entity_texture_features.json"
@@ -1337,11 +1337,6 @@ hash = "6e021d45c48931bb84e306a4a9644a6b84d81b46272774e37bab3f0eccbae532"
 [[files]]
 file = "overrides/options.txt"
 hash = "7fd3d5d4a129feb424d74c3324ea8e6b0134f8668aab1a66ca9644b847e41259"
-
-[[files]]
-file = "resourcepacks/amazing-mace-3d.pw.toml"
-hash = "ad5edf4a02cecd3cca4bc4cd91283f5b2dcdb8e0b43327958f960ce821a04d56"
-metafile = true
 
 [[files]]
 file = "resourcepacks/armory-conglomery-v2.pw.toml"
