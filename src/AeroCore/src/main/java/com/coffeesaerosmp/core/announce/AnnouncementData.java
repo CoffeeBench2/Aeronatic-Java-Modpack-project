@@ -39,9 +39,27 @@ import java.util.List;
  */
 public final class AnnouncementData {
 
+    /**
+     * One release on the News screen.
+     *
+     * <p>Only {@code version}/{@code date}/{@code title} and the three lists are required — every
+     * field added for the 1.10.9 News redesign ({@code tag}, {@code body}, {@code banner},
+     * {@code images}, {@code linkLabel}/{@code linkUrl}) defaults to empty, so a document written
+     * for the old schema still parses and still renders. That matters because the file is fetched
+     * live from GitHub and an older client can be reading a newer document at any time.
+     */
     public record Entry(String version, String date, String title,
-                        List<String> added, List<String> fixed, List<String> removed) {
-        public boolean isEmpty() { return added.isEmpty() && fixed.isEmpty() && removed.isEmpty(); }
+                        List<String> added, List<String> fixed, List<String> removed,
+                        String tag, String body, String banner, List<String> images,
+                        String linkLabel, String linkUrl) {
+
+        public boolean isEmpty() {
+            return added.isEmpty() && fixed.isEmpty() && removed.isEmpty()
+                && body.isBlank() && banner.isBlank() && images.isEmpty();
+        }
+
+        public boolean hasMedia() { return !banner.isBlank() || !images.isEmpty(); }
+        public boolean hasLink()  { return !linkLabel.isBlank() && !linkUrl.isBlank(); }
     }
 
     private static final Logger LOGGER = LoggerFactory.getLogger("CoffeesAeroCore-Announce");
@@ -144,9 +162,14 @@ public final class AnnouncementData {
             JsonArray arr = root.getAsJsonArray("entries");
             if (arr != null) for (JsonElement el : arr) {
                 JsonObject o = el.getAsJsonObject();
+                JsonObject link = o.has("link") && o.get("link").isJsonObject()
+                    ? o.getAsJsonObject("link") : null;
                 out.add(new Entry(
                     str(o, "version"), str(o, "date"), str(o, "title"),
-                    list(o, "added"), list(o, "fixed"), list(o, "removed")));
+                    list(o, "added"), list(o, "fixed"), list(o, "removed"),
+                    str(o, "tag"), str(o, "body"), str(o, "banner"), list(o, "images"),
+                    link == null ? "" : str(link, "label"),
+                    link == null ? "" : str(link, "url")));
             }
         } catch (Exception e) {
             LOGGER.warn("[Announce] parse failed: {}", e.getMessage());

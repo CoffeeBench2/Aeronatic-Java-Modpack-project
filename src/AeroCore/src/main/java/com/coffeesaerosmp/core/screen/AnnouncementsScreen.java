@@ -2,347 +2,331 @@ package com.coffeesaerosmp.core.screen;
 
 import com.coffeesaerosmp.core.announce.AnnouncementData;
 import com.coffeesaerosmp.core.announce.AnnouncementState;
+import com.coffeesaerosmp.core.announce.NewsImages;
 import com.coffeesaerosmp.core.client.AeroButton;
+import com.coffeesaerosmp.core.client.EarlyAssets;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import com.mojang.math.Axis;
 import net.minecraft.Util;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.ConfirmLinkScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
-import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
 import org.joml.Matrix4f;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
- * Main-menu "Announcements" screen — the pack changelog on an ornate pixel-art scroll (art baked into
- * Core, no resourcepack needed). Opening: the corner cogs crank the parchment open while the ink fades
- * in; closing (button or Esc) cranks it shut. The parchment is sized to the CONTENT (never a
- * screen-tall empty scroll), centred, and its middle is tiled from a clean band of the art so repeats
- * are seam-free. Reads bundled data only — no network.
+ * The News screen: one card per release, scrolling, with pictures.
  *
- * <p>Rendering notes (1.21.1): the pack ships Veil (jar-in-jar inside ldlib2) which wraps the shader
- * pipeline, and under it {@code GuiGraphics.blit(ResourceLocation,…)} — the IMMEDIATE Tesselator
- * path — can silently draw nothing until a window resize rebinds targets, while batched text always
- * renders. So ALL our textures go through {@link #blitTex}: quads submitted to the same batched
- * {@code RenderType.text} pipeline the font uses (proven working in this pack), full-bright, then
- * flushed. Never call {@code GuiGraphics.flush()} here: it force-enables depth-test for the rest of
- * the frame.</p>
+ * <p>Replaces the pixel-art scroll. That design sized the parchment to its content and inset the text
+ * column by 18% a side, which left roughly 200px to write in — fine for four bullet points, and the
+ * reason longer entries stopped reading properly once releases got bigger. This lays the same data
+ * out as cards in a column up to 420px wide, so a real paragraph fits, and it matches the update
+ * screens rather than being the one ornate outlier in the menu.
+ *
+ * <p><b>Veil rendering trap, inherited and still load-bearing.</b> The pack ships Veil (jar-in-jar
+ * inside ldlib2), and under it {@code GuiGraphics.blit(ResourceLocation,…)} — the immediate
+ * Tesselator path — can silently draw nothing until a window resize rebinds targets, while batched
+ * text always renders. So every texture here goes through {@link #blitTex}, which submits quads to
+ * the same batched {@code RenderType.text} pipeline the font uses. Do not "simplify" it back to
+ * {@code blit}. Never call {@code GuiGraphics.flush()} either: it force-enables depth test for the
+ * rest of the frame.
+ *
+ * <p>Pictures come from {@link NewsImages}, which returns null until an image is ready. Layout is
+ * measured every frame from what is actually loaded, so a card grows when its picture arrives rather
+ * than reserving a hole that may never fill.
  */
 public class AnnouncementsScreen extends Screen {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger("CoffeesAeroCore-Announce");
+    // Palette — same brass-on-dark-oak language as the update screens.
+    private static final int CARD_BG     = 0xF0191109;
+    private static final int EDGE        = 0xFFC9973B;
+    private static final int EDGE_SOFT   = 0x55C9973B;
+    private static final int INNER       = 0x22FFFFFF;
+    private static final int TEXT        = 0xFFF2E8D5;
+    private static final int TEXT_DIM    = 0xFF9A8F7E;
+    private static final int TITLE       = 0xFFFFD24A;
+    private static final int C_ADDED     = 0xFF57F287;
+    private static final int C_FIXED     = 0xFFFFC44A;
+    private static final int C_REMOVED   = 0xFFED6A5E;
+    private static final int LINK        = 0xFF6EC7FF;
 
-    private static final ResourceLocation SCROLL =
-        ResourceLocation.fromNamespaceAndPath("coffeesaerosmp_core", "textures/gui/scroll.png");
-    private static final ResourceLocation COG =
-        ResourceLocation.fromNamespaceAndPath("coffeesaerosmp_core", "textures/gui/cogwheel.png");
-    // UnifrakturMaguntia (OFL, bundled as font/ancient.ttf + font/ancient.json) — blackletter
-    // "old manuscript" face for the scroll heading. Body stays on the default font for readability.
-    private static final ResourceLocation ANCIENT_FONT =
-        ResourceLocation.fromNamespaceAndPath("coffeesaerosmp_core", "ancient");
-
-    // scroll.png layout (measured): 535x572 — top roller rows 0..112, bottom roller rows 458..572.
-    // The parchment between the rollers splits into a top curl cap (112..152), a CLEAN repeatable
-    // band (160..410 — no curl shading, so tiling never shows seams), and a bottom curl cap
-    // (418..458). cogwheel.png is 279x280.
-    private static final int TEX_W = 535, TEX_H = 572, S_TOP = 112, S_BOT = 114;
-    private static final int CAP_TOP_V = 112, CAP_TOP_H = 40, TILE_V = 160, TILE_SRC_H = 250,
-                             CAP_BOT_V = 418, CAP_BOT_H = 40;
-    private static final int COG_W = 112, COG_H = 112;
-
-    private static final float UNROLL_MS = 620f;
-
-    // Ink palette on cream parchment.
-    private static final int C_HEADER  = 0xFF6E3B12;
-    private static final int C_ADDED   = 0xFF2E6A26;
-    private static final int C_FIXED   = 0xFF8A5410;
-    private static final int C_REMOVED = 0xFF8A2A20;
-    private static final int C_TEXT    = 0xFF473722;
-    private static final int C_INK     = 0xFF4A2E12;
-    private static final int GOLD      = 0x00F0C05A;   // rgb only; alpha applied per-use
+    private static final int PAD = 12;          // inside a card
+    private static final int GAP = 10;          // between cards
+    private static final int LINE = 11;         // text line height
 
     private final Screen parent;
 
-    private record Line(String text, int color, int indent) {}
-    private final List<Line> lines = new ArrayList<>();
+    private List<AnnouncementData.Entry> entries = List.of();
+    private int colX, colW, viewTop, viewBottom;
+    private int scroll = 0, contentH = 0;
 
-    // Geometry (set in init).
-    private int sx, scrollW, topH, botH, topMargin, midFull, tileH, capT, capB, titleY;
-    private int viewLeft, viewRight, viewTop, viewBottom;
-
-    private int scroll = 0, contentHeight = 0;
-    private long openedAt = 0, closeAt = 0;
-    private boolean closing = false, openSoundDone = false, loggedGeometry = false;
-    private AeroButton closeBtn;
+    /** Link hitboxes rebuilt each frame, so a click can be matched to whatever was drawn. */
+    private record Hit(int x, int y, int w, int h, String url) {}
+    private final List<Hit> hits = new ArrayList<>();
 
     public AnnouncementsScreen(Screen parent) {
-        super(Component.literal("Announcements"));
+        super(Component.literal("News"));
         this.parent = parent;
     }
 
     @Override
     protected void init() {
         AnnouncementState.markLatestSeen();
-        // init() re-runs on window resize — keep animation state instead of replaying it.
-        if (openedAt == 0) openedAt = Util.getMillis();
-        if (!openSoundDone) { playPage(); openSoundDone = true; }
+        entries = AnnouncementData.entries();
 
-        scrollW = Math.min(320, this.width - 40);
-        sx      = (this.width - scrollW) / 2;
-        float sc = scrollW / (float) TEX_W;
-        topH    = Math.round(S_TOP * sc);
-        botH    = Math.round(S_BOT * sc);
-        capT    = Math.round(CAP_TOP_H * sc);
-        capB    = Math.round(CAP_BOT_H * sc);
-        tileH   = Math.max(8, Math.round(TILE_SRC_H * sc));   // natural (unstretched) tile height
+        colW = Math.min(420, this.width - 60);
+        colX = (this.width - colW) / 2;
+        viewTop = 52;
+        viewBottom = this.height - 40;
 
-        int inset = Math.round(scrollW * 0.18f);
-        viewLeft  = sx + inset;
-        viewRight = sx + scrollW - inset;
-        buildLines(viewRight - viewLeft - 12);   // -12: wrapped continuation indents stay inside too
-
-        // Parchment sized to CONTENT (title block + changelog + padding), capped to the window and
-        // centred vertically — never a screen-tall scroll of empty parchment. Overflow scrolls.
-        int titleBlock = 26;
-        int minMid = capT + capB + 40;
-        int needed = capT + 6 + titleBlock + contentHeight + 10 + capB;
-        int avail  = this.height - 40 - topH - botH;   // leave room for the Close button below
-        midFull    = Mth.clamp(needed, minMid, Math.max(minMid, avail));
-        topMargin  = Math.max(8, (this.height - 24 - (topH + midFull + botH)) / 2);
-
-        titleY     = topMargin + topH + capT + 4;
-        viewTop    = titleY + titleBlock - 4;
-        viewBottom = topMargin + topH + midFull - capB - 6;
-
-        int cbY = Math.min(this.height - 24, topMargin + topH + midFull + botH + 4);
-        closeBtn = AeroButton.aero(Component.literal("Close"), b -> beginClose())
-            .bounds(this.width / 2 - 60, cbY, 120, 20).build();
-        this.addRenderableWidget(closeBtn);
-
-        loggedGeometry = false;   // re-log once per (re)layout so resize states are diagnosable
+        this.addRenderableWidget(AeroButton.aero(Component.literal("Close"),
+            b -> this.minecraft.setScreen(parent))
+            .bounds(this.width / 2 - 70, this.height - 30, 140, 20).build());
     }
 
-    /**
-     * The window was resized while we're open. The parent (title screen) isn't the active screen, so
-     * vanilla never resizes IT — but we render its background every frame. Without this it would keep
-     * its old dimensions and paint into one stale-sized corner of the new window.
-     */
+    /** Our own background — overriding this keeps vanilla's menu blur pass away. */
     @Override
-    public void resize(Minecraft mc, int w, int h) {
-        if (parent != null) parent.resize(mc, w, h);
-        super.resize(mc, w, h);
-    }
-
-    private void playPage() {
-        try {
-            this.minecraft.getSoundManager().play(
-                SimpleSoundInstance.forUI(SoundEvents.BOOK_PAGE_TURN, 0.9f));
-        } catch (Throwable ignored) {}   // sound is garnish — never let it break the screen
-    }
-
-    private void beginClose() {
-        if (!closing) { closing = true; closeAt = Util.getMillis(); playPage(); }
-    }
-
-    /** Esc rolls the scroll up first; Esc again skips the animation. */
-    @Override
-    public void onClose() {
-        if (closing) this.minecraft.setScreen(parent);
-        else beginClose();
-    }
-
-    private void buildLines(int wrapWidth) {
-        lines.clear();
-        List<AnnouncementData.Entry> entries = AnnouncementData.entries();
-        if (entries.isEmpty())
-            lines.add(new Line("No announcements yet — check back after the next update!", C_TEXT, 0));
-        boolean first = true;
-        for (AnnouncementData.Entry e : entries) {
-            if (!first) lines.add(new Line("", C_TEXT, 0));
-            first = false;
-            // Entries whose version doesn't start with a digit are TEASERS ("Coming Soon…"):
-            // no "v" prefix and the additions read as "On the horizon" instead of "Added".
-            boolean teaser = !e.version().isEmpty() && !Character.isDigit(e.version().charAt(0));
-            String head = (teaser ? e.version() : "v" + e.version())
-                + (e.date().isBlank() ? "" : "   " + e.date());
-            lines.add(new Line(head, C_HEADER, 0));
-            if (!e.title().isBlank()) lines.add(new Line(e.title(), C_TEXT, 0));
-            section(wrapWidth, teaser ? "✈ On the horizon" : "＋ Added", e.added(), teaser ? C_HEADER : C_ADDED);
-            section(wrapWidth, "✔ Fixed",   e.fixed(),   C_FIXED);
-            section(wrapWidth, "－ Removed", e.removed(), C_REMOVED);
-        }
-        contentHeight = lines.size() * 11;
-    }
-
-    private void section(int wrapWidth, String label, List<String> items, int color) {
-        if (items.isEmpty()) return;
-        lines.add(new Line(label, color, 0));
-        for (String item : items) {
-            List<FormattedCharSequence> wrapped = this.font.split(Component.literal("• " + item), wrapWidth - 8);
-            boolean firstWrap = true;
-            for (var seq : wrapped) {
-                lines.add(new Line(seqToString(seq), C_TEXT, firstWrap ? 6 : 12));
-                firstWrap = false;
-            }
-        }
-    }
-
-    private static String seqToString(FormattedCharSequence seq) {
-        StringBuilder sb = new StringBuilder();
-        seq.accept((idx, style, cp) -> { sb.appendCodePoint(cp); return true; });
-        return sb.toString();
-    }
-
-    private static float easeOut(float p) { p = Mth.clamp(p, 0f, 1f); float i = 1f - p; return 1f - i * i * i; }
-    private static float easeIn(float p)  { p = Mth.clamp(p, 0f, 1f); return p * p * p; }
-
-    @Override
-    public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        long now = Util.getMillis();
-        float unroll;
-        if (!closing) {
-            unroll = easeOut((now - openedAt) / UNROLL_MS);
-        } else {
-            float ct = now - closeAt;
-            if (ct > UNROLL_MS + 60) { this.minecraft.setScreen(parent); return; }
-            unroll = 1f - easeIn(ct / UNROLL_MS);
-        }
-        int dstMid = Math.round(midFull * unroll);
-        closeBtn.visible = !closing && unroll >= 1f;
-
-        // CRITICAL ORDER (root cause of the invisible-scroll bug): in 1.21.1, Screen.render()
-        // ITSELF calls renderBackground() before drawing widgets. super.render must therefore run
-        // FIRST — background + Close button — and everything we paint comes AFTER, on top. Calling
-        // super.render at the end repaints the fullscreen opaque backdrop OVER the whole scroll.
-        super.render(g, mouseX, mouseY, partialTick);
-
-        int topY = topMargin, midY = topMargin + topH, botY = midY + dstMid;
-
-        if (!loggedGeometry) {
-            loggedGeometry = true;
-            LOGGER.info("[Announce r5/polish] layout {}x{} scroll sx={} w={} topY={} midFull={} view=({},{})..({},{}) lines={}",
-                this.width, this.height, sx, scrollW, topY, midFull, viewLeft, viewTop, viewRight, viewBottom, lines.size());
-        }
-
-        // ── Soft drop shadow, then a golden glow behind the scroll (grows with the unroll) ──
-        g.fill(sx + 5, topY + 6, sx + scrollW + 5, botY + botH + 6, 0x3C000000);
-        int glowA = (int) (unroll * 40);
-        if (glowA > 4) {
-            g.fill(sx - 14, topY - 10, sx + scrollW + 14, botY + botH + 10, (glowA / 3 << 24) | GOLD);
-            g.fill(sx - 8,  topY - 6,  sx + scrollW + 8,  botY + botH + 6,  (glowA / 2 << 24) | GOLD);
-            g.fill(sx - 4,  topY - 3,  sx + scrollW + 4,  botY + botH + 3,  (glowA     << 24) | GOLD);
-        }
-
-        // Fallback panel: keeps the ink readable even if the texture quads ever fail to draw.
-        g.fill(sx, topY, sx + scrollW, topY + topH, 0xFF8A5A20);
-        if (dstMid > 0) g.fill(sx + 6, midY, sx + scrollW - 6, botY, 0xFFEBD9A4);
-        g.fill(sx, botY, sx + scrollW, botY + botH, 0xFF8A5A20);
-
-        // ── Cogwheels cranking the rollers (pack's own cog, behind the scroll) ──
-        // Rotation is mechanically tied to how far the scroll has opened, plus a slow idle drift.
-        float crank = dstMid * 2.2f + (now % 360000L) / 90f;
-        int cogSz = Math.round(topH * 1.05f);
-        drawCog(g, sx + 4,           topY + topH / 2, cogSz,  crank);
-        drawCog(g, sx + scrollW - 4, topY + topH / 2, cogSz, -crank);
-        drawCog(g, sx + 4,           botY + botH / 2, cogSz, -crank);
-        drawCog(g, sx + scrollW - 4, botY + botH / 2, cogSz,  crank);
-
-        // ── The scroll: rollers + curl caps + a CLEAN tiled band between (crisp, seam-free) ──
-        if (dstMid > 0) {
-            int innerH = dstMid - capT - capB;
-            if (innerH <= 0) {   // still unrolling through the caps: squeeze the two curls together
-                int t = Math.max(1, Math.round(dstMid * (capT / (float) (capT + capB))));
-                blitTex(g, SCROLL, sx, midY, scrollW, t, 0, CAP_TOP_V, TEX_W, CAP_TOP_H, TEX_W, TEX_H);
-                if (dstMid - t > 0)
-                    blitTex(g, SCROLL, sx, midY + t, scrollW, dstMid - t, 0, CAP_BOT_V, TEX_W, CAP_BOT_H, TEX_W, TEX_H);
-            } else {
-                blitTex(g, SCROLL, sx, midY, scrollW, capT, 0, CAP_TOP_V, TEX_W, CAP_TOP_H, TEX_W, TEX_H);
-                int drawn = 0;
-                while (drawn < innerH) {
-                    int seg = Math.min(tileH, innerH - drawn);
-                    int srcH = Math.max(1, Math.round(TILE_SRC_H * (seg / (float) tileH)));
-                    blitTex(g, SCROLL, sx, midY + capT + drawn, scrollW, seg, 0, TILE_V, TEX_W, srcH, TEX_W, TEX_H);
-                    drawn += seg;
-                }
-                blitTex(g, SCROLL, sx, botY - capB, scrollW, capB, 0, CAP_BOT_V, TEX_W, CAP_BOT_H, TEX_W, TEX_H);
-            }
-        }
-        blitTex(g, SCROLL, sx, topY, scrollW, topH, 0, 0, TEX_W, S_TOP, TEX_W, TEX_H);
-        blitTex(g, SCROLL, sx, botY, scrollW, botH, 0, TEX_H - S_BOT, TEX_W, S_BOT, TEX_W, TEX_H);
-
-        // Depth shading on the open parchment: faint light at the top edge, soft shade near the
-        // unrolling edge — sells the "curved paper" illusion without touching the pixel art.
-        if (dstMid > capT + capB + 16) {
-            g.fillGradient(sx + 6, midY + capT, sx + scrollW - 6, midY + capT + 10, 0x14FFFFFF, 0x00FFFFFF);
-            g.fillGradient(sx + 6, botY - capB - 22, sx + scrollW - 6, botY - capB, 0x00000000, 0x1E000000);
-        }
-
-        // ── Ink: title + changelog, clipped to the parchment, fading in near the unrolling edge ──
-        if (dstMid > capT + 20) {
-            if (botY - capB > titleY + 12) {
-                drawInkTitle(g, "Coffees Aeronautics SMP", this.width / 2, titleY);
-                // Two tiny cogs slowly turning beside the heading — the machine that drives the scroll.
-                int miniR = 7;
-                drawCog(g, viewLeft + 2,  titleY + 4, miniR * 2,  crank * 0.5f);
-                drawCog(g, viewRight - 2, titleY + 4, miniR * 2, -crank * 0.5f);
-            }
-
-            int limit = Math.min(botY - capB - 2, viewBottom);
-            g.enableScissor(viewLeft - 4, viewTop - 1, viewRight + 16, limit + 10);
-            int y = viewTop - scroll;
-            for (Line ln : lines) {
-                if (y > viewTop - 12 && y < limit + 11 && !ln.text().isEmpty()) {
-                    float fade = Mth.clamp((limit - (y + 9)) / 10f, 0f, 1f);   // soft reveal at the edge
-                    int a = (int) (fade * 255);
-                    if (a > 8)
-                        g.drawString(this.font, ln.text(), viewLeft + ln.indent(), y,
-                            (a << 24) | (ln.color() & 0xFFFFFF), false);
-                }
-                y += 11;
-            }
-            g.disableScissor();
-        }
-
-        // ── Sparkles drifting around the open scroll ──
-        if (unroll > 0.5f) drawSparkles(g, now, topY, botY + botH, (int) (unroll * 255));
-
-        // Scrollbar (inside the parchment, only when fully open).
-        if (!closing && unroll >= 1f) {
-            int viewH = viewBottom - viewTop;
-            if (contentHeight > viewH) {
-                int barH = Math.max(20, viewH * viewH / contentHeight);
-                int barY = viewTop + (viewH - barH) * scroll / Math.max(1, contentHeight - viewH);
-                g.fill(viewRight + 6, barY, viewRight + 9, barY + barH, 0xB06E4A22);
-            }
-        }
-    }
-
-    /** The pack cogwheel, rotating about its center. */
-    private void drawCog(GuiGraphics g, int cx, int cy, int size, float angleDeg) {
+    public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partial) {
+        float sc = Math.max(this.width / (float) EarlyAssets.BG_W, this.height / (float) EarlyAssets.BG_H);
+        int dw = (int) (EarlyAssets.BG_W * sc), dh = (int) (EarlyAssets.BG_H * sc);
         g.pose().pushPose();
-        g.pose().translate(cx, cy, 0);
-        g.pose().mulPose(Axis.ZP.rotationDegrees(angleDeg));
-        blitTex(g, COG, -size / 2, -size / 2, size, size, 0, 0, COG_W, COG_H, COG_W, COG_H);
+        g.pose().translate((this.width - dw) / 2.0F, (this.height - dh) / 2.0F, 0);
+        g.pose().scale(sc, sc, 1.0F);
+        blitTex(g, EarlyAssets.BG, 0, 0, EarlyAssets.BG_W, EarlyAssets.BG_H,
+            0, 0, EarlyAssets.BG_W, EarlyAssets.BG_H, EarlyAssets.BG_W, EarlyAssets.BG_H);
         g.pose().popPose();
+        g.fill(0, 0, this.width, this.height, 0xC0000000);
+    }
+
+    @Override
+    public void render(GuiGraphics g, int mouseX, int mouseY, float partial) {
+        super.render(g, mouseX, mouseY, partial);
+        hits.clear();
+
+        g.drawString(this.font, Component.literal("News").withStyle(s -> s.withColor(0xC9973B).withBold(true)),
+            colX, 24, 0xFFFFFF, false);
+        String sub = entries.isEmpty() ? "Nothing to report yet."
+            : entries.size() + (entries.size() == 1 ? " entry" : " entries");
+        g.drawString(this.font, sub, colX + this.font.width("News") + 8, 24, TEXT_DIM, false);
+
+        // Clip to the viewport so cards cannot paint over the header or the Close button.
+        g.enableScissor(0, viewTop, this.width, viewBottom);
+        int y = viewTop + 4 - scroll;
+        for (AnnouncementData.Entry e : entries) {
+            int h = card(g, e, colX, y, colW, mouseX, mouseY);
+            y += h + GAP;
+        }
+        g.disableScissor();
+        contentH = (y + scroll) - (viewTop + 4);
+
+        // Scrollbar, only when there is somewhere to scroll to.
+        int overflow = contentH - (viewBottom - viewTop);
+        if (overflow > 0) {
+            int trackX = colX + colW + 6, trackH = viewBottom - viewTop;
+            int thumbH = Math.max(20, (int) (trackH * (trackH / (float) contentH)));
+            int thumbY = viewTop + (int) ((trackH - thumbH) * (scroll / (float) overflow));
+            g.fill(trackX, viewTop, trackX + 3, viewBottom, 0x40FFFFFF);
+            g.fill(trackX, thumbY, trackX + 3, thumbY + thumbH, EDGE);
+        }
     }
 
     /**
-     * Textured GUI quad through the BATCHED {@code RenderType.text} pipeline (the one the font uses)
-     * instead of {@code GuiGraphics.blit}'s immediate Tesselator path — see the class javadoc for why.
-     * Draws the (uPx,vPx)..(uPx+uwPx,vPx+vhPx) region of the texture scaled into (x,y,w,h), then
-     * flushes so painter's order is preserved against the surrounding fills/text.
+     * Draws one card and returns its height.
+     *
+     * <p>The frame has to be painted before the content but its height is only known after the
+     * content has been laid out, so this runs {@link #body} twice: once with {@code draw=false} to
+     * measure, then the frame, then again to paint. One implementation, measured and painted by the
+     * same code — the moment those are two methods they drift, and a card whose measured height
+     * disagrees with its painted height makes scrolling subtly wrong in a way that is miserable to
+     * chase. (It was two methods for about ten minutes. It had already drifted.)
      */
+    private int card(GuiGraphics g, AnnouncementData.Entry e, int x, int y, int w,
+                     int mouseX, int mouseY) {
+        int h = body(g, e, x, y, w, mouseX, mouseY, false) + PAD - 4;
+
+        g.fill(x + 2, y + 2, x + w + 2, y + h + 2, 0x40000000);
+        g.fill(x, y, x + w, y + h, CARD_BG);
+        g.fill(x, y, x + w, y + 1, EDGE);
+        g.fill(x, y + h - 1, x + w, y + h, EDGE_SOFT);
+        g.fill(x, y, x + 1, y + h, EDGE_SOFT);
+        g.fill(x + w - 1, y, x + w, y + h, EDGE_SOFT);
+        g.fill(x + 1, y + 1, x + w - 1, y + 2, INNER);
+        // Accent stripe keyed to the tag, so releases are scannable at a glance.
+        g.fill(x, y, x + 2, y + h, tagColor(e.tag().toUpperCase(Locale.ROOT)));
+
+        body(g, e, x, y, w, mouseX, mouseY, true);
+        return h;
+    }
+
+    /**
+     * Lays out a card's contents, drawing only when asked. Every branch advances {@code cy} whether
+     * or not it draws, so the measure and paint passes cannot disagree.
+     */
+    private int body(GuiGraphics g, AnnouncementData.Entry e, int x, int y, int w,
+                     int mouseX, int mouseY, boolean draw) {
+        int cy = y + PAD, innerX = x + PAD, innerW = w - PAD * 2;
+
+        String tag = e.tag().isBlank() ? "" : e.tag().toUpperCase(Locale.ROOT);
+        int tx = innerX;
+        if (!tag.isBlank()) {
+            int tw = this.font.width(tag) + 8;
+            if (draw) {
+                g.fill(tx, cy - 1, tx + tw, cy + 10, (tagColor(tag) & 0x00FFFFFF) | 0x33000000);
+                g.fill(tx, cy - 1, tx + 2, cy + 10, tagColor(tag));
+                g.drawString(this.font, tag, tx + 5, cy + 1, tagColor(tag), false);
+            }
+            tx += tw + 6;
+        }
+        if (draw) {
+            String vd = e.version() + (e.date().isBlank() ? "" : "  ·  " + e.date());
+            g.drawString(this.font, vd, tx, cy + 1, TEXT_DIM, false);
+        }
+        cy += 14;
+
+        if (!e.title().isBlank()) {
+            for (FormattedCharSequence l : this.font.split(Component.literal(e.title()), innerW)) {
+                if (draw) g.drawString(this.font, l, innerX, cy, TITLE, false);
+                cy += LINE + 1;
+            }
+            cy += 2;
+        }
+
+        cy += picture(g, e.banner(), innerX, cy, innerW, 150, draw);
+
+        if (!e.body().isBlank()) {
+            for (FormattedCharSequence l : this.font.split(Component.literal(e.body()), innerW)) {
+                if (draw) g.drawString(this.font, l, innerX, cy, TEXT, false);
+                cy += LINE;
+            }
+            cy += 4;
+        }
+
+        cy += section(g, "Added",   e.added(),   C_ADDED,   innerX, cy, innerW, draw);
+        cy += section(g, "Fixed",   e.fixed(),   C_FIXED,   innerX, cy, innerW, draw);
+        cy += section(g, "Removed", e.removed(), C_REMOVED, innerX, cy, innerW, draw);
+
+        if (!e.images().isEmpty()) {
+            int thumbW = Math.min(120, (innerW - 12) / 3);
+            int gx = innerX, rowH = 0;
+            for (String url : e.images()) {
+                if (gx + thumbW > innerX + innerW) { gx = innerX; cy += rowH + 4; rowH = 0; }
+                rowH = Math.max(rowH, picture(g, url, gx, cy, thumbW, 90, draw));
+                gx += thumbW + 4;
+            }
+            cy += rowH;
+        }
+
+        if (e.hasLink()) {
+            String label = "→ " + e.linkLabel();
+            int lw = this.font.width(label);
+            boolean hot = mouseX >= innerX && mouseX <= innerX + lw && mouseY >= cy && mouseY <= cy + 9
+                && mouseY >= viewTop && mouseY <= viewBottom;
+            if (draw) {
+                g.drawString(this.font, label, innerX, cy, hot ? 0xFFFFFFFF : LINK, false);
+                if (hot) g.fill(innerX, cy + 9, innerX + lw, cy + 10, LINK);
+                hits.add(new Hit(innerX, cy, lw, 10, e.linkUrl()));
+            }
+            cy += LINE + 2;
+        }
+
+        return cy - y;
+    }
+
+    /** A heading plus bullets. Returns the height used, 0 when the list is empty. */
+    private int section(GuiGraphics g, String heading, List<String> items, int colour,
+                        int x, int y, int w, boolean draw) {
+        if (items.isEmpty()) return 0;
+        int cy = y;
+        if (draw) {
+            g.drawString(this.font, heading, x, cy, colour, false);
+            g.fill(x, cy + 9, x + w, cy + 10, (colour & 0x00FFFFFF) | 0x33000000);
+        }
+        cy += LINE + 3;
+        for (String it : items) {
+            boolean first = true;
+            // Bullets hang: the marker sits in the gutter and wrapped lines align under the text,
+            // which is what makes a long entry scannable instead of a wall.
+            for (FormattedCharSequence l : this.font.split(Component.literal(it), w - 10)) {
+                if (draw) {
+                    if (first) g.fill(x + 1, cy + 3, x + 4, cy + 6, colour);
+                    g.drawString(this.font, l, x + 10, cy, TEXT, false);
+                }
+                cy += LINE;
+                first = false;
+            }
+        }
+        return (cy - y) + 4;
+    }
+
+    /**
+     * Draws a picture scaled to fit {@code maxW} x {@code maxH} with its aspect kept, and returns the
+     * height it used. While the image is still downloading a slim placeholder holds its place; once
+     * it has definitively failed, nothing is reserved at all.
+     */
+    private int picture(GuiGraphics g, String url, int x, int y, int maxW, int maxH, boolean draw) {
+        if (url == null || url.isBlank()) return 0;
+        NewsImages.Tex tex = NewsImages.get(url);
+        if (tex == null) {
+            if (NewsImages.failed(url)) return 0;
+            if (draw) {
+                g.fill(x, y, x + maxW, y + 18, 0x30FFFFFF);
+                g.drawString(this.font, "loading picture…", x + 6, y + 5, TEXT_DIM, false);
+            }
+            return 22;
+        }
+        float scale = Math.min(maxW / (float) tex.width(), maxH / (float) tex.height());
+        int dw = Math.max(1, Math.round(tex.width() * scale));
+        int dh = Math.max(1, Math.round(tex.height() * scale));
+        if (draw) {
+            g.fill(x - 1, y - 1, x + dw + 1, y + dh + 1, EDGE_SOFT);
+            blitTex(g, tex.id(), x, y, dw, dh, 0, 0, tex.width(), tex.height(), tex.width(), tex.height());
+        }
+        return dh + 6;
+    }
+
+    private static int tagColor(String tag) {
+        return switch (tag) {
+            case "MAJOR"  -> 0xFFFFD24A;
+            case "HOTFIX" -> 0xFFED6A5E;
+            case "SOON"   -> 0xFF9B8CFF;
+            case "UPDATE" -> 0xFF57F287;
+            default        -> EDGE;
+        };
+    }
+
+    @Override
+    public boolean mouseScrolled(double mx, double my, double dx, double dy) {
+        int overflow = Math.max(0, contentH - (viewBottom - viewTop));
+        scroll = Mth.clamp(scroll - (int) (dy * 18), 0, overflow);
+        return true;
+    }
+
+    @Override
+    public boolean mouseClicked(double mx, double my, int button) {
+        if (button == 0) {
+            for (Hit h : hits) {
+                if (mx >= h.x() && mx <= h.x() + h.w() && my >= h.y() && my <= h.y() + h.h()
+                        && my >= viewTop && my <= viewBottom) {
+                    // Vanilla's confirm screen — never open a URL from a remote document silently.
+                    this.minecraft.setScreen(new ConfirmLinkScreen(
+                        ok -> { if (ok) Util.getPlatform().openUri(h.url()); this.minecraft.setScreen(this); },
+                        h.url(), true));
+                    return true;
+                }
+            }
+        }
+        return super.mouseClicked(mx, my, button);
+    }
+
+    /** See the class note: batched text pipeline, because Veil can swallow immediate blits. */
     private void blitTex(GuiGraphics g, ResourceLocation tex, int x, int y, int w, int h,
                          int uPx, int vPx, int uwPx, int vhPx, int texW, int texH) {
         float u0 = uPx / (float) texW, v0 = vPx / (float) texH;
@@ -350,7 +334,7 @@ public class AnnouncementsScreen extends Screen {
         Matrix4f m = g.pose().last().pose();
         MultiBufferSource.BufferSource buffers = this.minecraft.renderBuffers().bufferSource();
         VertexConsumer vc = buffers.getBuffer(RenderType.text(tex));
-        int light = 0xF000F0;   // full-bright GUI light
+        int light = 0xF000F0;
         vc.addVertex(m, x,     y,     0).setColor(-1).setUv(u0, v0).setLight(light);
         vc.addVertex(m, x,     y + h, 0).setColor(-1).setUv(u0, v1).setLight(light);
         vc.addVertex(m, x + w, y + h, 0).setColor(-1).setUv(u1, v1).setLight(light);
@@ -358,52 +342,8 @@ public class AnnouncementsScreen extends Screen {
         buffers.endBatch();
     }
 
-    /** Golden twinkles drifting up past the scroll — deterministic, no allocation. */
-    private void drawSparkles(GuiGraphics g, long now, int top, int bottom, int maxA) {
-        int span = Math.max(1, bottom - top - 12);
-        for (int i = 0; i < 12; i++) {
-            float phase = i * 0.7f;
-            float tw = 0.5f + 0.5f * Mth.sin(now / 320f + phase * 4.1f);        // twinkle
-            int a = (int) (maxA * tw * 0.7f);
-            if (a < 12) continue;
-            boolean left = (i & 1) == 0;
-            int px = left ? sx - 9 - (i % 4) * 8 : sx + scrollW + 9 + (i % 4) * 8;
-            float rise = ((now / (2200f + i * 130f)) + phase) % 1.0f;           // slow upward drift
-            int py = bottom - 8 - (int) (rise * span);
-            px += Math.round(Mth.sin(now / 900f + phase * 2.3f) * 3);           // gentle sway
-            int c = (a << 24) | GOLD;
-            if (i % 3 == 0) {                                                    // big 4-armed star
-                g.fill(px - 3, py, px + 4, py + 1, c);
-                g.fill(px, py - 3, px + 1, py + 4, c);
-                g.fill(px - 1, py - 1, px + 2, py + 2, (Math.min(255, a + 60) << 24) | GOLD);
-            } else {                                                             // small twinkle
-                g.fill(px - 1, py, px + 2, py + 1, c);
-                g.fill(px, py - 1, px + 1, py + 2, c);
-            }
-        }
-    }
-
-    /** Old-manuscript ink heading in the blackletter face, with a thin flourish rule. */
-    private void drawInkTitle(GuiGraphics g, String text, int cx, int y) {
-        Component styled = Component.literal(text).withStyle(s -> s.withFont(ANCIENT_FONT));
-        int tw = this.font.width(styled);
-        g.fill(cx - tw / 2 - 8, y + 12, cx + tw / 2 + 8, y + 13, 0x886E4A22);
-        g.drawString(this.font, styled, cx - tw / 2, y, C_INK, false);
-    }
-
     @Override
-    public boolean mouseScrolled(double mx, double my, double dx, double dy) {
-        int max = Math.max(0, contentHeight - (viewBottom - viewTop));
-        scroll = Mth.clamp(scroll - (int) (dy * 18), 0, max);
-        return true;
-    }
-
-    @Override
-    public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        // Parent draws the airship art cover-scaled (its override skips vanilla's menu-blur pass).
-        if (parent != null) parent.renderBackground(g, mouseX, mouseY, partialTick);
-        g.fill(0, 0, this.width, this.height, 0x66000000);
-    }
+    public void onClose() { this.minecraft.setScreen(parent); }
 
     @Override
     public boolean isPauseScreen() { return false; }

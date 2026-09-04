@@ -19,19 +19,47 @@ will pick it up on its own.
   "version": "1.10",
   "date": "September 2026",
   "title": "Head for the Skies",
+  "tag": "MAJOR",
+  "banner": "https://raw.githubusercontent.com/.../banner.png",
+  "body": "A paragraph in plain prose. Use it to say what the release is about.",
   "added":   ["...", "..."],
   "fixed":   ["...", "..."],
-  "removed": ["..."]
+  "removed": ["..."],
+  "images":  ["https://.../shot1.png", "https://.../shot2.png"],
+  "link":    { "label": "Full changelog on GitHub", "url": "https://..." }
 }
 ```
 
-Entries live in `"entries"`, **newest first**. `added` / `fixed` / `removed` can each be `[]` and
-that section just won't render. Nothing else is required.
+Entries live in `"entries"`, **newest first**. Only `version`, `date` and `title` really matter —
+everything else can be left out and that part simply will not render. An entry written before the
+1.10.9 redesign still works exactly as it did.
 
 **Keep "On the horizon" pinned at the top.** It has an empty `date` and is the teaser for what is
 coming; new releases go directly underneath it.
 
----
+### The newer fields
+
+| Field | What it does |
+|---|---|
+| `tag` | Coloured badge and the card's accent stripe. `MAJOR` gold · `UPDATE` green · `HOTFIX` red · `SOON` violet. Anything else falls back to brass. |
+| `banner` | A wide picture under the title, full card width, aspect kept, capped at 150px tall. |
+| `body` | A prose paragraph. Use it for the one thing you would say out loud about the release; leave the detail to the bullets. |
+| `images` | A row of thumbnails at the bottom of the card. They wrap. Three across looks right. |
+| `link` | A clickable line at the bottom. Opens through Minecraft's own "are you sure" prompt. |
+
+### About the pictures
+
+Anything reachable over **https** works. The easy option is to commit the image into this repo and
+point at its `raw.githubusercontent.com` URL — the same place the news file itself comes from, so if
+one loads the other will.
+
+- **PNG.** Nothing else is decoded.
+- **Under 4 MB and under 2048px** a side, or it is skipped.
+- Downloaded once, then cached on disk forever in `.aero-update/newscache/`. Players see them
+  instantly on every later visit, and offline.
+- A picture that fails to load costs you nothing — the card renders without it. It never blocks
+  the text.
+- Wide images suit `banner` (roughly 3:1 reads best). Anything squarer is happier in `images`.
 
 ## How to write the lines
 
