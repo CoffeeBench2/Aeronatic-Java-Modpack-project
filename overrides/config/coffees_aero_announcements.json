@@ -11,7 +11,9 @@
         "…and a few more secrets we're keeping rolled up for now"
       ],
       "fixed": [],
-      "removed": []
+      "removed": [],
+      "tag": "SOON",
+      "body": "A few things we're still building. No dates promised — they land when they're good enough to land."
     },
     {
       "version": "1.10",
@@ -37,7 +39,14 @@
       "removed": [
         "Simulated Coasters, Parachute, Grand Teleport and Camera Overhaul have left the pack",
         "Zoomify makes way for Just Zoom — same idea, better behaved"
-      ]
+      ],
+      "tag": "MAJOR",
+      "banner": "https://raw.githubusercontent.com/CoffeeBench2/Aeronatic-Java-Modpack-project/main/src/AeroCore/src/main/resources/assets/coffeesaerosmp_core/textures/gui/title_logo.png",
+      "body": "The biggest update of Season 2. You can fly the whole server in VR now — and if that isn't your thing, nothing changes for you except that everything runs a little better. There's also a new Mode button in Aero Settings for anyone on a weaker PC.",
+      "link": {
+        "label": "Full changelog on GitHub",
+        "url": "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases"
+      }
     },
     {
       "version": "1.9.3",
@@ -56,7 +65,8 @@
       ],
       "removed": [
         "A handful of experimental extras that were causing crashes — the skies are steadier for it"
-      ]
+      ],
+      "tag": "UPDATE"
     },
     {
       "version": "1.8.2",
@@ -76,7 +86,8 @@
         "Kitchen items that were rendering wrong now look right",
         "Steadier server performance, and the world loads noticeably faster than before"
       ],
-      "removed": []
+      "removed": [],
+      "tag": "UPDATE"
     },
     {
       "version": "1.8.1",
@@ -98,7 +109,8 @@
         "Storms and tornadoes — they were eating your frames (and your chests). Calmer skies for now",
         "Wildfire and a few woodland critters — trimmed for performance while we tune the server",
         "The animal animation packs — some critters looked broken with them; they'll return polished"
-      ]
+      ],
+      "tag": "UPDATE"
     },
     {
       "version": "1.8.0",
@@ -118,7 +130,8 @@
         "Smoother, steadier flying and airship physics",
         "Using shaders? Type /flywheel backend off for glowing Create lasers"
       ],
-      "removed": []
+      "removed": [],
+      "tag": "UPDATE"
     }
   ]
 }
