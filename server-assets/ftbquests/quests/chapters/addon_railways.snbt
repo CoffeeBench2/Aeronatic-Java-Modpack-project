@@ -1,0 +1,136 @@
+{
+	id: "90AD5C0DEE16F092"
+	group: "4E2FA1B674D143B0"
+	order_index: 113
+	filename: "addon_railways"
+	title: "Steam 'n' Rails"
+	icon: "railways:buffer"
+	subtitle: [
+		"Everything Create's trains were missing."
+	]
+	default_quest_shape: ""
+	default_hide_dependency_lines: false
+	quests: [
+		{
+			title: "Meet Steam 'n' Rails"
+			x: 0.0d
+			y: 0.0d
+			description: [
+				"Buffers cap a line so a train has something to stop against."
+				""
+				"Bring 8 Andesite Alloy."
+			]
+			id: "2B7FC74B8C6B33BC"
+			tasks: [
+				{
+					id: "A22AC02B3B3FC52B"
+					type: "item"
+					item: "create:andesite_alloy"
+					count: 8L
+				}
+			]
+			rewards: [
+				{
+					id: "FFFA94D4AA3EF0C8"
+					type: "item"
+					item: "railways:buffer"
+					count: 2
+				}
+				{
+					id: "7BA1F889FC306F80"
+					type: "item"
+					item: "railways:big_buffer"
+					count: 1
+				}
+				{
+					id: "E467A418C9ACBFCE"
+					type: "xp"
+					xp: 10
+				}
+			]
+			shape: "square"
+		}
+		{
+			title: "Steam 'n' Rails, Continued"
+			x: 0.0d
+			y: 2.0d
+			description: [
+				"A bench cart, for the parts of a railway that carry people."
+				""
+				"Bring 6 Brass Ingots."
+			]
+			id: "0560CC52C2A5A659"
+			tasks: [
+				{
+					id: "C8B7C0D5BFBF43D4"
+					type: "item"
+					item: "create:brass_ingot"
+					count: 6L
+				}
+			]
+			rewards: [
+				{
+					id: "CC6754E929A39204"
+					type: "item"
+					item: "railways:benchcart"
+					count: 1
+				}
+				{
+					id: "C74E08D81DB91FEA"
+					type: "item"
+					item: "railways:buffer_wide"
+					count: 2
+				}
+				{
+					id: "9CF3E3840D03453B"
+					type: "xp"
+					xp: 15
+				}
+			]
+			dependencies: [
+				"2B7FC74B8C6B33BC"
+			]
+		}
+		{
+			title: "Steam 'n' Rails: Kitted Out"
+			x: 0.0d
+			y: 4.0d
+			description: [
+				"Narrow and mono buffers, for the lines that are not standard gauge."
+				""
+				"Bring 12 Iron Ingots."
+			]
+			id: "59571DCDF4AF698E"
+			tasks: [
+				{
+					id: "8E68F07F9991BF93"
+					type: "item"
+					item: "minecraft:iron_ingot"
+					count: 12L
+				}
+			]
+			rewards: [
+				{
+					id: "9DAACC723493887F"
+					type: "item"
+					item: "railways:buffer_narrow"
+					count: 2
+				}
+				{
+					id: "FFB8642C43E98185"
+					type: "item"
+					item: "railways:buffer_mono"
+					count: 2
+				}
+				{
+					id: "7D02FF24EFDF882C"
+					type: "xp"
+					xp: 20
+				}
+			]
+			dependencies: [
+				"0560CC52C2A5A659"
+			]
+		}
+	]
+}

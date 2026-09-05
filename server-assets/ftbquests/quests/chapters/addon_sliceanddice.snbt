@@ -1,0 +1,136 @@
+{
+	id: "E58B24B6A2DF69DA"
+	group: "4E2FA1B674D143B0"
+	order_index: 133
+	filename: "addon_sliceanddice"
+	title: "Slice & Dice"
+	icon: "sliceanddice:slicer"
+	subtitle: [
+		"Farming automation that fits on a contraption."
+	]
+	default_quest_shape: ""
+	default_hide_dependency_lines: false
+	quests: [
+		{
+			title: "Meet Slice & Dice"
+			x: 0.0d
+			y: 0.0d
+			description: [
+				"A slicer harvests. A sprinkler waters. Together, that is a farm."
+				""
+				"Bring 8 Andesite Alloy."
+			]
+			id: "B5BE2D2D688FB039"
+			tasks: [
+				{
+					id: "1234DA000B9A4231"
+					type: "item"
+					item: "create:andesite_alloy"
+					count: 8L
+				}
+			]
+			rewards: [
+				{
+					id: "018A249070EC12FC"
+					type: "item"
+					item: "sliceanddice:slicer"
+					count: 1
+				}
+				{
+					id: "88AC9565AF6611C9"
+					type: "item"
+					item: "sliceanddice:sprinkler"
+					count: 1
+				}
+				{
+					id: "69E875AC47D67CC8"
+					type: "xp"
+					xp: 10
+				}
+			]
+			shape: "square"
+		}
+		{
+			title: "Slice & Dice, Continued"
+			x: 0.0d
+			y: 2.0d
+			description: [
+				"Fertiliser, in solid and liquid form."
+				""
+				"Bring 6 Brass Ingots."
+			]
+			id: "8CEACAA1B1276420"
+			tasks: [
+				{
+					id: "408A5C6426814154"
+					type: "item"
+					item: "create:brass_ingot"
+					count: 6L
+				}
+			]
+			rewards: [
+				{
+					id: "1EEEFBA115D91F5D"
+					type: "item"
+					item: "sliceanddice:fertilizer"
+					count: 8
+				}
+				{
+					id: "0B95B3F37BAF1568"
+					type: "item"
+					item: "sliceanddice:fertilizer_bucket"
+					count: 1
+				}
+				{
+					id: "3DD001409E277175"
+					type: "xp"
+					xp: 15
+				}
+			]
+			dependencies: [
+				"B5BE2D2D688FB039"
+			]
+		}
+		{
+			title: "Slice & Dice: Kitted Out"
+			x: 0.0d
+			y: 4.0d
+			description: [
+				"More sprinklers, and something to grow with them."
+				""
+				"Bring 12 Iron Ingots."
+			]
+			id: "454EA839B5A368E1"
+			tasks: [
+				{
+					id: "A7310E1C2BB2EB5F"
+					type: "item"
+					item: "minecraft:iron_ingot"
+					count: 12L
+				}
+			]
+			rewards: [
+				{
+					id: "5722A0C63754854A"
+					type: "item"
+					item: "sliceanddice:sprinkler"
+					count: 2
+				}
+				{
+					id: "24E4C6EA0F3936F0"
+					type: "item"
+					item: "minecraft:wheat"
+					count: 16
+				}
+				{
+					id: "74C4D72376B061C1"
+					type: "xp"
+					xp: 20
+				}
+			]
+			dependencies: [
+				"8CEACAA1B1276420"
+			]
+		}
+	]
+}

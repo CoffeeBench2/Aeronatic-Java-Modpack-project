@@ -1,0 +1,136 @@
+{
+	id: "1D17C028E51C952D"
+	group: "4E2FA1B674D143B0"
+	order_index: 107
+	filename: "addon_create_connected"
+	title: "Create: Connected"
+	icon: "create_connected:brass_gearbox"
+	subtitle: [
+		"The quality-of-life parts Create almost has."
+	]
+	default_quest_shape: ""
+	default_hide_dependency_lines: false
+	quests: [
+		{
+			title: "Meet Create: Connected"
+			x: 0.0d
+			y: 0.0d
+			description: [
+				"Cross connectors route rotation through a junction. A crank wheel starts it by hand."
+				""
+				"Bring 8 Andesite Alloy."
+			]
+			id: "E6A7929942FFD63C"
+			tasks: [
+				{
+					id: "1895281184D31A58"
+					type: "item"
+					item: "create:andesite_alloy"
+					count: 8L
+				}
+			]
+			rewards: [
+				{
+					id: "68FB07A2F81166D1"
+					type: "item"
+					item: "create_connected:cross_connector"
+					count: 4
+				}
+				{
+					id: "AAAB1F41F30BCBB6"
+					type: "item"
+					item: "create_connected:crank_wheel"
+					count: 1
+				}
+				{
+					id: "7CCC3762D9124476"
+					type: "xp"
+					xp: 10
+				}
+			]
+			shape: "square"
+		}
+		{
+			title: "Create: Connected, Continued"
+			x: 0.0d
+			y: 2.0d
+			description: [
+				"A brass gearbox, and a clutch that disengages on its own at speed."
+				""
+				"Bring 6 Brass Ingots."
+			]
+			id: "6A921EB6A3DAB47D"
+			tasks: [
+				{
+					id: "FA7832D9AF200147"
+					type: "item"
+					item: "create:brass_ingot"
+					count: 6L
+				}
+			]
+			rewards: [
+				{
+					id: "E720F6B612CC0CB1"
+					type: "item"
+					item: "create_connected:brass_gearbox"
+					count: 1
+				}
+				{
+					id: "715C68C5750FAFFB"
+					type: "item"
+					item: "create_connected:centrifugal_clutch"
+					count: 1
+				}
+				{
+					id: "0E16EE04B19F6E97"
+					type: "xp"
+					xp: 15
+				}
+			]
+			dependencies: [
+				"E6A7929942FFD63C"
+			]
+		}
+		{
+			title: "Create: Connected: Kitted Out"
+			x: 0.0d
+			y: 4.0d
+			description: [
+				"A brake stops a line dead. Control chips make it conditional."
+				""
+				"Bring 12 Iron Ingots."
+			]
+			id: "59E5851CFA55EBD8"
+			tasks: [
+				{
+					id: "F1D0460DE5E9B9D6"
+					type: "item"
+					item: "minecraft:iron_ingot"
+					count: 12L
+				}
+			]
+			rewards: [
+				{
+					id: "BCF2BD7D98FC197A"
+					type: "item"
+					item: "create_connected:brake"
+					count: 1
+				}
+				{
+					id: "ED19C5B1917F3EDF"
+					type: "item"
+					item: "create_connected:control_chip"
+					count: 2
+				}
+				{
+					id: "EA3EFC3C65F7B62B"
+					type: "xp"
+					xp: 20
+				}
+			]
+			dependencies: [
+				"6A921EB6A3DAB47D"
+			]
+		}
+	]
+}

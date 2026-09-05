@@ -1,0 +1,136 @@
+{
+	id: "CCC85989D738D861"
+	group: "4E2FA1B674D143B0"
+	order_index: 103
+	filename: "addon_offroad"
+	title: "Create: Offroad"
+	icon: "offroad:tire"
+	subtitle: [
+		"Wheels, for when flying is overkill."
+	]
+	default_quest_shape: ""
+	default_hide_dependency_lines: false
+	quests: [
+		{
+			title: "Meet Create: Offroad"
+			x: 0.0d
+			y: 0.0d
+			description: [
+				"A tire and the mount that holds it. Bolt them to a contraption and drive."
+				""
+				"Bring 8 Andesite Alloy."
+			]
+			id: "21F7BC3489F7C69E"
+			tasks: [
+				{
+					id: "E87CDB1DEEEFC456"
+					type: "item"
+					item: "create:andesite_alloy"
+					count: 8L
+				}
+			]
+			rewards: [
+				{
+					id: "DB1BF2C5AB730FED"
+					type: "item"
+					item: "offroad:tire"
+					count: 2
+				}
+				{
+					id: "47E900F877B71C3D"
+					type: "item"
+					item: "offroad:wheel_mount"
+					count: 2
+				}
+				{
+					id: "5E99D5C5EED233E6"
+					type: "xp"
+					xp: 10
+				}
+			]
+			shape: "square"
+		}
+		{
+			title: "Create: Offroad, Continued"
+			x: 0.0d
+			y: 2.0d
+			description: [
+				"Small tires turn tighter. Large ones climb better."
+				""
+				"Bring 6 Brass Ingots."
+			]
+			id: "0A962E30093A0ECA"
+			tasks: [
+				{
+					id: "18FF0C4557507151"
+					type: "item"
+					item: "create:brass_ingot"
+					count: 6L
+				}
+			]
+			rewards: [
+				{
+					id: "56F170D7182837AB"
+					type: "item"
+					item: "offroad:small_tire"
+					count: 2
+				}
+				{
+					id: "0BF3E9627BA129C6"
+					type: "item"
+					item: "offroad:large_tire"
+					count: 1
+				}
+				{
+					id: "664477EAF1E51F11"
+					type: "xp"
+					xp: 15
+				}
+			]
+			dependencies: [
+				"21F7BC3489F7C69E"
+			]
+		}
+		{
+			title: "Create: Offroad: Kitted Out"
+			x: 0.0d
+			y: 4.0d
+			description: [
+				"A borehead bearing spins a cutting wheel. This is how you tunnel."
+				""
+				"Bring 12 Iron Ingots."
+			]
+			id: "99044DCD41B0E381"
+			tasks: [
+				{
+					id: "0103DE7DFA5048AC"
+					type: "item"
+					item: "minecraft:iron_ingot"
+					count: 12L
+				}
+			]
+			rewards: [
+				{
+					id: "7295DC81E4003B87"
+					type: "item"
+					item: "offroad:borehead_bearing"
+					count: 1
+				}
+				{
+					id: "689C83616A5EDA52"
+					type: "item"
+					item: "offroad:rockcutting_wheel"
+					count: 1
+				}
+				{
+					id: "A8EB90763B56210C"
+					type: "xp"
+					xp: 20
+				}
+			]
+			dependencies: [
+				"0A962E30093A0ECA"
+			]
+		}
+	]
+}

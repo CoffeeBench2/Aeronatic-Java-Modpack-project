@@ -1,0 +1,136 @@
+{
+	id: "05E357A17BC920E3"
+	group: "4E2FA1B674D143B0"
+	order_index: 101
+	filename: "addon_aeroworks"
+	title: "Aeroworks"
+	icon: "aeroworks:control_desk"
+	subtitle: [
+		"Cockpit furniture that actually does something."
+	]
+	default_quest_shape: ""
+	default_hide_dependency_lines: false
+	quests: [
+		{
+			title: "Meet Aeroworks"
+			x: 0.0d
+			y: 0.0d
+			description: [
+				"A stand to mount controls on, so a cockpit stops being a wall of levers."
+				""
+				"Bring 8 Andesite Alloy."
+			]
+			id: "74F9A11FDFE9CCCD"
+			tasks: [
+				{
+					id: "F3D52D86CD384EF3"
+					type: "item"
+					item: "create:andesite_alloy"
+					count: 8L
+				}
+			]
+			rewards: [
+				{
+					id: "E6E78F168A849DA0"
+					type: "item"
+					item: "aeroworks:control_stand"
+					count: 1
+				}
+				{
+					id: "F09B0C295F0AB385"
+					type: "item"
+					item: "aeroworks:copper_lever_module"
+					count: 2
+				}
+				{
+					id: "C64E077D6C07DC9A"
+					type: "xp"
+					xp: 10
+				}
+			]
+			shape: "square"
+		}
+		{
+			title: "Aeroworks, Continued"
+			x: 0.0d
+			y: 2.0d
+			description: [
+				"The desk is the flat version. Modules clip into either."
+				""
+				"Bring 6 Brass Ingots."
+			]
+			id: "06E73BF408419E8D"
+			tasks: [
+				{
+					id: "0DB17BE345408FCA"
+					type: "item"
+					item: "create:brass_ingot"
+					count: 6L
+				}
+			]
+			rewards: [
+				{
+					id: "4712EA3F66416CEF"
+					type: "item"
+					item: "aeroworks:control_desk"
+					count: 1
+				}
+				{
+					id: "3D262910CC5C7146"
+					type: "item"
+					item: "aeroworks:copper_button_module"
+					count: 2
+				}
+				{
+					id: "1D070C4F589BEE46"
+					type: "xp"
+					xp: 15
+				}
+			]
+			dependencies: [
+				"74F9A11FDFE9CCCD"
+			]
+		}
+		{
+			title: "Aeroworks: Kitted Out"
+			x: 0.0d
+			y: 4.0d
+			description: [
+				"A yoke and a throttle quadrant. Now it feels like a cockpit."
+				""
+				"Bring 12 Iron Ingots."
+			]
+			id: "7070E2189F73E534"
+			tasks: [
+				{
+					id: "793009E3D3EA9BC1"
+					type: "item"
+					item: "minecraft:iron_ingot"
+					count: 12L
+				}
+			]
+			rewards: [
+				{
+					id: "85275C9036875254"
+					type: "item"
+					item: "aeroworks:copper_yoke_module"
+					count: 1
+				}
+				{
+					id: "00618A612CBA2441"
+					type: "item"
+					item: "aeroworks:copper_throttle_quadrant_module"
+					count: 1
+				}
+				{
+					id: "43AF531B42D9C63D"
+					type: "xp"
+					xp: 20
+				}
+			]
+			dependencies: [
+				"06E73BF408419E8D"
+			]
+		}
+	]
+}

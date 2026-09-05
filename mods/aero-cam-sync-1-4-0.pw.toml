@@ -1,6 +1,6 @@
 name = "Aeronautics Camera Sync 1.4.0"
 filename = "aero_cam_sync-1.4.0.jar"
-side = "both"
+side = "client"
 
 [download]
 url = "https://cdn.modrinth.com/data/ZGxtWu73/versions/UbgVQ0qd/aero_cam_sync-1.4.0.jar"

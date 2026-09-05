@@ -1,0 +1,136 @@
+{
+	id: "45F5E9DA0F1884AA"
+	group: "4E2FA1B674D143B0"
+	order_index: 122
+	filename: "addon_copycats"
+	title: "Copycats+"
+	icon: "copycats:copycat_block"
+	subtitle: [
+		"Make any shape look like any block."
+	]
+	default_quest_shape: ""
+	default_hide_dependency_lines: false
+	quests: [
+		{
+			title: "Meet Copycats+"
+			x: 0.0d
+			y: 0.0d
+			description: [
+				"The plain block and the base it is made from. Start here."
+				""
+				"Bring 8 Andesite Alloy."
+			]
+			id: "E75175609925ABB6"
+			tasks: [
+				{
+					id: "7C1953EF90F370EB"
+					type: "item"
+					item: "create:andesite_alloy"
+					count: 8L
+				}
+			]
+			rewards: [
+				{
+					id: "7EF3D3F970E547CB"
+					type: "item"
+					item: "copycats:copycat_block"
+					count: 8
+				}
+				{
+					id: "E9405D9699A9B8F5"
+					type: "item"
+					item: "copycats:copycat_base"
+					count: 8
+				}
+				{
+					id: "35F7F70B1F9389C6"
+					type: "xp"
+					xp: 10
+				}
+			]
+			shape: "square"
+		}
+		{
+			title: "Copycats+, Continued"
+			x: 0.0d
+			y: 2.0d
+			description: [
+				"Beams and boards. Structure that wears whatever texture you give it."
+				""
+				"Bring 6 Brass Ingots."
+			]
+			id: "A3BD0E768AC9A59E"
+			tasks: [
+				{
+					id: "C60198615A9E1358"
+					type: "item"
+					item: "create:brass_ingot"
+					count: 6L
+				}
+			]
+			rewards: [
+				{
+					id: "0ED0609E7E99BF54"
+					type: "item"
+					item: "copycats:copycat_beam"
+					count: 4
+				}
+				{
+					id: "7A04B979C7EFFF4D"
+					type: "item"
+					item: "copycats:copycat_board"
+					count: 4
+				}
+				{
+					id: "7BD3AB3DD88BC45A"
+					type: "xp"
+					xp: 15
+				}
+			]
+			dependencies: [
+				"E75175609925ABB6"
+			]
+		}
+		{
+			title: "Copycats+: Kitted Out"
+			x: 0.0d
+			y: 4.0d
+			description: [
+				"Catwalks and ladders, so the industrial parts match the build."
+				""
+				"Bring 12 Iron Ingots."
+			]
+			id: "62073A1BD321A21C"
+			tasks: [
+				{
+					id: "30026A38539CEAE6"
+					type: "item"
+					item: "minecraft:iron_ingot"
+					count: 12L
+				}
+			]
+			rewards: [
+				{
+					id: "1BB2E3A1EA6D5C85"
+					type: "item"
+					item: "copycats:copycat_catwalk"
+					count: 4
+				}
+				{
+					id: "6C00DA84F54F7837"
+					type: "item"
+					item: "copycats:copycat_ladder"
+					count: 4
+				}
+				{
+					id: "F944CDDC48F0D82F"
+					type: "xp"
+					xp: 20
+				}
+			]
+			dependencies: [
+				"A3BD0E768AC9A59E"
+			]
+		}
+	]
+}

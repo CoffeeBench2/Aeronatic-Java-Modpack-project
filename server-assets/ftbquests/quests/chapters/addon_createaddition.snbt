@@ -1,0 +1,136 @@
+{
+	id: "297D0D2F5AFC434B"
+	group: "4E2FA1B674D143B0"
+	order_index: 106
+	filename: "addon_createaddition"
+	title: "Crafts & Additions"
+	icon: "createaddition:capacitor"
+	subtitle: [
+		"Rotation becomes electricity, and back again."
+	]
+	default_quest_shape: ""
+	default_hide_dependency_lines: false
+	quests: [
+		{
+			title: "Meet Crafts & Additions"
+			x: 0.0d
+			y: 0.0d
+			description: [
+				"Wire and rods. Everything electrical here starts with these two."
+				""
+				"Bring 8 Andesite Alloy."
+			]
+			id: "5BAB40A9EF8529CD"
+			tasks: [
+				{
+					id: "302A19A156559365"
+					type: "item"
+					item: "create:andesite_alloy"
+					count: 8L
+				}
+			]
+			rewards: [
+				{
+					id: "9C98ADC5EA21081C"
+					type: "item"
+					item: "createaddition:copper_wire"
+					count: 8
+				}
+				{
+					id: "3B23A2C4740123A0"
+					type: "item"
+					item: "createaddition:brass_rod"
+					count: 4
+				}
+				{
+					id: "20CA7078D96F0676"
+					type: "xp"
+					xp: 10
+				}
+			]
+			shape: "square"
+		}
+		{
+			title: "Crafts & Additions, Continued"
+			x: 0.0d
+			y: 2.0d
+			description: [
+				"A capacitor stores a little. Connectors move it between machines."
+				""
+				"Bring 6 Brass Ingots."
+			]
+			id: "53167B911286BD62"
+			tasks: [
+				{
+					id: "B3DD4B5A6FE4F890"
+					type: "item"
+					item: "create:brass_ingot"
+					count: 6L
+				}
+			]
+			rewards: [
+				{
+					id: "0B8718E88B07BE4F"
+					type: "item"
+					item: "createaddition:capacitor"
+					count: 1
+				}
+				{
+					id: "52EE6EF352D24D1B"
+					type: "item"
+					item: "createaddition:connector"
+					count: 2
+				}
+				{
+					id: "6E2BF103D56D0DE8"
+					type: "xp"
+					xp: 15
+				}
+			]
+			dependencies: [
+				"5BAB40A9EF8529CD"
+			]
+		}
+		{
+			title: "Crafts & Additions: Kitted Out"
+			x: 0.0d
+			y: 4.0d
+			description: [
+				"An alternator turns rotation into power; an accumulator holds it."
+				""
+				"Bring 12 Iron Ingots."
+			]
+			id: "AA12D9331C0F20F3"
+			tasks: [
+				{
+					id: "CE3CE1570737CD82"
+					type: "item"
+					item: "minecraft:iron_ingot"
+					count: 12L
+				}
+			]
+			rewards: [
+				{
+					id: "11448813FED4185D"
+					type: "item"
+					item: "createaddition:accumulator"
+					count: 1
+				}
+				{
+					id: "658B748BF56A99B7"
+					type: "item"
+					item: "createaddition:alternator"
+					count: 1
+				}
+				{
+					id: "9AD3C46E911A2EBF"
+					type: "xp"
+					xp: 20
+				}
+			]
+			dependencies: [
+				"53167B911286BD62"
+			]
+		}
+	]
+}

@@ -1,0 +1,136 @@
+{
+	id: "27104CE39AA3CF7E"
+	group: "4E2FA1B674D143B0"
+	order_index: 118
+	filename: "addon_createadditionallogistics"
+	title: "Additional Logistics"
+	icon: "createadditionallogistics:network_monitor"
+	subtitle: [
+		"Lazy shafts, and a view of the whole network."
+	]
+	default_quest_shape: ""
+	default_hide_dependency_lines: false
+	quests: [
+		{
+			title: "Meet Additional Logistics"
+			x: 0.0d
+			y: 0.0d
+			description: [
+				"Lazy parts only tick when something changes. Free performance."
+				""
+				"Bring 8 Andesite Alloy."
+			]
+			id: "F6AF492F39707D31"
+			tasks: [
+				{
+					id: "2D1A50BF58CFA439"
+					type: "item"
+					item: "create:andesite_alloy"
+					count: 8L
+				}
+			]
+			rewards: [
+				{
+					id: "D37FDBF6C5330E49"
+					type: "item"
+					item: "createadditionallogistics:lazy_shaft"
+					count: 4
+				}
+				{
+					id: "9E538BE79F6AD3C8"
+					type: "item"
+					item: "createadditionallogistics:lazy_cogwheel"
+					count: 4
+				}
+				{
+					id: "8886632C9C15CFB4"
+					type: "xp"
+					xp: 10
+				}
+			]
+			shape: "square"
+		}
+		{
+			title: "Additional Logistics, Continued"
+			x: 0.0d
+			y: 2.0d
+			description: [
+				"A flexible shaft bends around a corner without a gearbox."
+				""
+				"Bring 6 Brass Ingots."
+			]
+			id: "0B6B2B90A3D97930"
+			tasks: [
+				{
+					id: "8BC4FD595C5D341F"
+					type: "item"
+					item: "create:brass_ingot"
+					count: 6L
+				}
+			]
+			rewards: [
+				{
+					id: "C48C19D318D1FC5C"
+					type: "item"
+					item: "createadditionallogistics:flexible_shaft"
+					count: 2
+				}
+				{
+					id: "5E4A656C91764666"
+					type: "item"
+					item: "createadditionallogistics:lazy_large_cogwheel"
+					count: 2
+				}
+				{
+					id: "89D483689B781E39"
+					type: "xp"
+					xp: 15
+				}
+			]
+			dependencies: [
+				"F6AF492F39707D31"
+			]
+		}
+		{
+			title: "Additional Logistics: Kitted Out"
+			x: 0.0d
+			y: 4.0d
+			description: [
+				"A network monitor shows every train and station at once."
+				""
+				"Bring 12 Iron Ingots."
+			]
+			id: "CA635124F2CE12E8"
+			tasks: [
+				{
+					id: "B2248EABC633F4C7"
+					type: "item"
+					item: "minecraft:iron_ingot"
+					count: 12L
+				}
+			]
+			rewards: [
+				{
+					id: "5A81C5CFD9E7009E"
+					type: "item"
+					item: "createadditionallogistics:network_monitor"
+					count: 1
+				}
+				{
+					id: "64FE23CFE254BA65"
+					type: "item"
+					item: "createadditionallogistics:cash_register"
+					count: 1
+				}
+				{
+					id: "65FF08DA9AD7299D"
+					type: "xp"
+					xp: 20
+				}
+			]
+			dependencies: [
+				"0B6B2B90A3D97930"
+			]
+		}
+	]
+}

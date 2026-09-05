@@ -1,0 +1,136 @@
+{
+	id: "0B09A45C6899F5E4"
+	group: "4E2FA1B674D143B0"
+	order_index: 121
+	filename: "addon_bits_n_bobs"
+	title: "Bits 'n' Bobs"
+	icon: "bits_n_bobs:lightbulb"
+	subtitle: [
+		"Small parts that fill in Create's gaps."
+	]
+	default_quest_shape: ""
+	default_hide_dependency_lines: false
+	quests: [
+		{
+			title: "Meet Bits 'n' Bobs"
+			x: 0.0d
+			y: 0.0d
+			description: [
+				"Bulbs and lamps. Lighting that suits the aesthetic."
+				""
+				"Bring 8 Andesite Alloy."
+			]
+			id: "C29417E334C64F94"
+			tasks: [
+				{
+					id: "C3A6C7256D662F36"
+					type: "item"
+					item: "create:andesite_alloy"
+					count: 8L
+				}
+			]
+			rewards: [
+				{
+					id: "95A656FEB9CDA35A"
+					type: "item"
+					item: "bits_n_bobs:lightbulb"
+					count: 4
+				}
+				{
+					id: "B99F7E9384A849F0"
+					type: "item"
+					item: "bits_n_bobs:brass_lamp"
+					count: 2
+				}
+				{
+					id: "1DF18B1B471799DD"
+					type: "xp"
+					xp: 10
+				}
+			]
+			shape: "square"
+		}
+		{
+			title: "Bits 'n' Bobs, Continued"
+			x: 0.0d
+			y: 2.0d
+			description: [
+				"Chain rope and a pulley, for lifts that are not rope pulleys."
+				""
+				"Bring 6 Brass Ingots."
+			]
+			id: "2B553959A4BFC0E8"
+			tasks: [
+				{
+					id: "F42820A633917DCB"
+					type: "item"
+					item: "create:brass_ingot"
+					count: 6L
+				}
+			]
+			rewards: [
+				{
+					id: "9275FFE22FEFE94E"
+					type: "item"
+					item: "bits_n_bobs:chain_rope"
+					count: 4
+				}
+				{
+					id: "890620C2B21CF588"
+					type: "item"
+					item: "bits_n_bobs:chain_pulley"
+					count: 1
+				}
+				{
+					id: "57986501C95ED14C"
+					type: "xp"
+					xp: 15
+				}
+			]
+			dependencies: [
+				"C29417E334C64F94"
+			]
+		}
+		{
+			title: "Bits 'n' Bobs: Kitted Out"
+			x: 0.0d
+			y: 4.0d
+			description: [
+				"Flanged cogs and girder struts. Structural, and they look the part."
+				""
+				"Bring 12 Iron Ingots."
+			]
+			id: "7AC2409A50857CB7"
+			tasks: [
+				{
+					id: "BEB7AA8B4B9F95CA"
+					type: "item"
+					item: "minecraft:iron_ingot"
+					count: 12L
+				}
+			]
+			rewards: [
+				{
+					id: "0DAB954162BF313E"
+					type: "item"
+					item: "bits_n_bobs:small_flanged_cogwheel"
+					count: 4
+				}
+				{
+					id: "00C7B28202562DAB"
+					type: "item"
+					item: "bits_n_bobs:girder_strut"
+					count: 8
+				}
+				{
+					id: "5441A2B61E2C197E"
+					type: "xp"
+					xp: 20
+				}
+			]
+			dependencies: [
+				"2B553959A4BFC0E8"
+			]
+		}
+	]
+}

@@ -1,0 +1,136 @@
+{
+	id: "510AD418F3DEB6DF"
+	group: "4E2FA1B674D143B0"
+	order_index: 109
+	filename: "addon_create_new_age"
+	title: "Create: New Age"
+	icon: "create_new_age:basic_motor"
+	subtitle: [
+		"Proper electricity, with wires that care about voltage."
+	]
+	default_quest_shape: ""
+	default_hide_dependency_lines: false
+	quests: [
+		{
+			title: "Meet Create: New Age"
+			x: 0.0d
+			y: 0.0d
+			description: [
+				"Wire and connectors. Runs are limited, so plan the layout."
+				""
+				"Bring 8 Andesite Alloy."
+			]
+			id: "C3F95E6F992E2F2F"
+			tasks: [
+				{
+					id: "BD682FE2E41ABDC8"
+					type: "item"
+					item: "create:andesite_alloy"
+					count: 8L
+				}
+			]
+			rewards: [
+				{
+					id: "486BF5ED0E00B3E7"
+					type: "item"
+					item: "create_new_age:copper_wire"
+					count: 8
+				}
+				{
+					id: "32270340C24EF48D"
+					type: "item"
+					item: "create_new_age:electrical_connector"
+					count: 4
+				}
+				{
+					id: "67CBD16B8464A7B6"
+					type: "xp"
+					xp: 10
+				}
+			]
+			shape: "square"
+		}
+		{
+			title: "Create: New Age, Continued"
+			x: 0.0d
+			y: 2.0d
+			description: [
+				"Blank circuits print into copper ones. These gate everything above."
+				""
+				"Bring 6 Brass Ingots."
+			]
+			id: "360FC77D90179F21"
+			tasks: [
+				{
+					id: "C6002372BFB65E36"
+					type: "item"
+					item: "create:brass_ingot"
+					count: 6L
+				}
+			]
+			rewards: [
+				{
+					id: "5D8CB752FC5DC226"
+					type: "item"
+					item: "create_new_age:blank_circuit"
+					count: 4
+				}
+				{
+					id: "493DEEDAD8B84641"
+					type: "item"
+					item: "create_new_age:copper_circuit"
+					count: 2
+				}
+				{
+					id: "5608B51410B5B749"
+					type: "xp"
+					xp: 15
+				}
+			]
+			dependencies: [
+				"C3F95E6F992E2F2F"
+			]
+		}
+		{
+			title: "Create: New Age: Kitted Out"
+			x: 0.0d
+			y: 4.0d
+			description: [
+				"A motor to spend power, and an energiser to make it."
+				""
+				"Bring 12 Iron Ingots."
+			]
+			id: "5CFC41474024A8D7"
+			tasks: [
+				{
+					id: "A18A1F744946CE8C"
+					type: "item"
+					item: "minecraft:iron_ingot"
+					count: 12L
+				}
+			]
+			rewards: [
+				{
+					id: "1F09699F392FD666"
+					type: "item"
+					item: "create_new_age:basic_motor"
+					count: 1
+				}
+				{
+					id: "7B1DED719D8E8ABB"
+					type: "item"
+					item: "create_new_age:basic_energiser"
+					count: 1
+				}
+				{
+					id: "991DDD6B7D056B10"
+					type: "xp"
+					xp: 20
+				}
+			]
+			dependencies: [
+				"360FC77D90179F21"
+			]
+		}
+	]
+}

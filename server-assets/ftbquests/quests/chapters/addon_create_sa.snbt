@@ -1,0 +1,136 @@
+{
+	id: "01F57A0FB1A81BA6"
+	group: "4E2FA1B674D143B0"
+	order_index: 116
+	filename: "addon_create_sa"
+	title: "Stuff & Additions"
+	icon: "create_sa:brass_pickaxe"
+	subtitle: [
+		"Tools, armour and gadgets, in Create's own materials."
+	]
+	default_quest_shape: ""
+	default_hide_dependency_lines: false
+	quests: [
+		{
+			title: "Meet Stuff & Additions"
+			x: 0.0d
+			y: 0.0d
+			description: [
+				"Brass tools. Not stronger than iron — they just belong here."
+				""
+				"Bring 8 Andesite Alloy."
+			]
+			id: "5B0693B697FD42AC"
+			tasks: [
+				{
+					id: "86509DBA21EBDD6E"
+					type: "item"
+					item: "create:andesite_alloy"
+					count: 8L
+				}
+			]
+			rewards: [
+				{
+					id: "9F974988E21902DE"
+					type: "item"
+					item: "create_sa:brass_pickaxe"
+					count: 1
+				}
+				{
+					id: "9F9A04A52A0E2AC1"
+					type: "item"
+					item: "create_sa:brass_axe"
+					count: 1
+				}
+				{
+					id: "EF7FC77B47AD2A91"
+					type: "xp"
+					xp: 10
+				}
+			]
+			shape: "square"
+		}
+		{
+			title: "Stuff & Additions, Continued"
+			x: 0.0d
+			y: 2.0d
+			description: [
+				"Brass armour to match. Cosmetic more than practical, and that is fine."
+				""
+				"Bring 6 Brass Ingots."
+			]
+			id: "7784A4BD8FD41388"
+			tasks: [
+				{
+					id: "9E032CA75FFBD4FE"
+					type: "item"
+					item: "create:brass_ingot"
+					count: 6L
+				}
+			]
+			rewards: [
+				{
+					id: "6E970C0DC18FFA75"
+					type: "item"
+					item: "create_sa:brass_helmet"
+					count: 1
+				}
+				{
+					id: "CF4406EA5447810D"
+					type: "item"
+					item: "create_sa:brass_chestplate"
+					count: 1
+				}
+				{
+					id: "E4897AA7015270D6"
+					type: "xp"
+					xp: 15
+				}
+			]
+			dependencies: [
+				"5B0693B697FD42AC"
+			]
+		}
+		{
+			title: "Stuff & Additions: Kitted Out"
+			x: 0.0d
+			y: 4.0d
+			description: [
+				"A block picker, and a brass cube for the recipes that ask for one."
+				""
+				"Bring 12 Iron Ingots."
+			]
+			id: "39AAACCA688BA141"
+			tasks: [
+				{
+					id: "73B654C21BBA1B53"
+					type: "item"
+					item: "minecraft:iron_ingot"
+					count: 12L
+				}
+			]
+			rewards: [
+				{
+					id: "79B362C53A3FB4F3"
+					type: "item"
+					item: "create_sa:block_picker"
+					count: 1
+				}
+				{
+					id: "4C36E44B38CA5003"
+					type: "item"
+					item: "create_sa:brass_cube"
+					count: 2
+				}
+				{
+					id: "56C75FE9E37C4AC9"
+					type: "xp"
+					xp: 20
+				}
+			]
+			dependencies: [
+				"7784A4BD8FD41388"
+			]
+		}
+	]
+}

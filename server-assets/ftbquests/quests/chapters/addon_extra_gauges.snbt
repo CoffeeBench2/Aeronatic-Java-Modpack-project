@@ -1,0 +1,136 @@
+{
+	id: "EF7D533FBC8E8286"
+	group: "4E2FA1B674D143B0"
+	order_index: 130
+	filename: "addon_extra_gauges"
+	title: "Extra Gauges"
+	icon: "extra_gauges:integer_gauge"
+	subtitle: [
+		"Readouts and logic for display boards."
+	]
+	default_quest_shape: ""
+	default_hide_dependency_lines: false
+	quests: [
+		{
+			title: "Meet Extra Gauges"
+			x: 0.0d
+			y: 0.0d
+			description: [
+				"Integer and string gauges. Put a number or a word on a board."
+				""
+				"Bring 8 Andesite Alloy."
+			]
+			id: "B133710311F10287"
+			tasks: [
+				{
+					id: "3D15DE343194E2BD"
+					type: "item"
+					item: "create:andesite_alloy"
+					count: 8L
+				}
+			]
+			rewards: [
+				{
+					id: "5B80A1E8CD83B5CA"
+					type: "item"
+					item: "extra_gauges:integer_gauge"
+					count: 2
+				}
+				{
+					id: "C47796DAE2080B3A"
+					type: "item"
+					item: "extra_gauges:string_gauge"
+					count: 2
+				}
+				{
+					id: "2C9FC9B0AAAB9779"
+					type: "xp"
+					xp: 10
+				}
+			]
+			shape: "square"
+		}
+		{
+			title: "Extra Gauges, Continued"
+			x: 0.0d
+			y: 2.0d
+			description: [
+				"Comparator and logic gauges, for boards that decide things."
+				""
+				"Bring 6 Brass Ingots."
+			]
+			id: "59A136DEA08A0D0B"
+			tasks: [
+				{
+					id: "C758DBF382D8E3A8"
+					type: "item"
+					item: "create:brass_ingot"
+					count: 6L
+				}
+			]
+			rewards: [
+				{
+					id: "D994B3963C6BE85A"
+					type: "item"
+					item: "extra_gauges:comparator_gauge"
+					count: 2
+				}
+				{
+					id: "10A20B5411BEE28C"
+					type: "item"
+					item: "extra_gauges:logic_gauge"
+					count: 2
+				}
+				{
+					id: "5CA354FB722EAE28"
+					type: "xp"
+					xp: 15
+				}
+			]
+			dependencies: [
+				"B133710311F10287"
+			]
+		}
+		{
+			title: "Extra Gauges: Kitted Out"
+			x: 0.0d
+			y: 4.0d
+			description: [
+				"A linked lever and a redstone port, to wire it into the rest."
+				""
+				"Bring 12 Iron Ingots."
+			]
+			id: "4426DC9AAD556FD5"
+			tasks: [
+				{
+					id: "79E1E015B65B7814"
+					type: "item"
+					item: "minecraft:iron_ingot"
+					count: 12L
+				}
+			]
+			rewards: [
+				{
+					id: "EB0B567EE993CE66"
+					type: "item"
+					item: "extra_gauges:linked_lever"
+					count: 2
+				}
+				{
+					id: "FA6B38F4734A6998"
+					type: "item"
+					item: "extra_gauges:redstone_port"
+					count: 2
+				}
+				{
+					id: "AD5D6AB56DC4FBB8"
+					type: "xp"
+					xp: 20
+				}
+			]
+			dependencies: [
+				"59A136DEA08A0D0B"
+			]
+		}
+	]
+}

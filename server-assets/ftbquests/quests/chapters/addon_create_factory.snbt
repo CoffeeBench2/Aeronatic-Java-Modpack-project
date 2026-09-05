@@ -1,0 +1,136 @@
+{
+	id: "D55A8576C665F2F8"
+	group: "4E2FA1B674D143B0"
+	order_index: 117
+	filename: "addon_create_factory"
+	title: "Create: Factory"
+	icon: "create_factory:caramel_roll"
+	subtitle: [
+		"Food processing, industrialised."
+	]
+	default_quest_shape: ""
+	default_hide_dependency_lines: false
+	quests: [
+		{
+			title: "Meet Create: Factory"
+			x: 0.0d
+			y: 0.0d
+			description: [
+				"Paste and nectar. The two things most recipes here start from."
+				""
+				"Bring 8 Andesite Alloy."
+			]
+			id: "2DCBDE9449A707AE"
+			tasks: [
+				{
+					id: "15A5EA78516CC3D9"
+					type: "item"
+					item: "create:andesite_alloy"
+					count: 8L
+				}
+			]
+			rewards: [
+				{
+					id: "A0F92791A45E0F57"
+					type: "item"
+					item: "create_factory:cake_paste"
+					count: 4
+				}
+				{
+					id: "B62704E578CC5946"
+					type: "item"
+					item: "create_factory:nectar_bucket"
+					count: 1
+				}
+				{
+					id: "0CAF1B74A2B6476C"
+					type: "xp"
+					xp: 10
+				}
+			]
+			shape: "square"
+		}
+		{
+			title: "Create: Factory, Continued"
+			x: 0.0d
+			y: 2.0d
+			description: [
+				"Rolls, because a factory should feed the people running it."
+				""
+				"Bring 6 Brass Ingots."
+			]
+			id: "84574297A17AD808"
+			tasks: [
+				{
+					id: "B62530C7B6BF6F34"
+					type: "item"
+					item: "create:brass_ingot"
+					count: 6L
+				}
+			]
+			rewards: [
+				{
+					id: "795EBABBBA74AC4C"
+					type: "item"
+					item: "create_factory:caramel_roll"
+					count: 4
+				}
+				{
+					id: "5708C3E271D4DE67"
+					type: "item"
+					item: "create_factory:chocolate_roll"
+					count: 4
+				}
+				{
+					id: "22A2A3FBB0C21E48"
+					type: "xp"
+					xp: 15
+				}
+			]
+			dependencies: [
+				"2DCBDE9449A707AE"
+			]
+		}
+		{
+			title: "Create: Factory: Kitted Out"
+			x: 0.0d
+			y: 4.0d
+			description: [
+				"Waffles and jam. Yes, this is a whole tech tree."
+				""
+				"Bring 12 Iron Ingots."
+			]
+			id: "4363131E68CD8E38"
+			tasks: [
+				{
+					id: "39482971ADCEB703"
+					type: "item"
+					item: "minecraft:iron_ingot"
+					count: 12L
+				}
+			]
+			rewards: [
+				{
+					id: "8370053D51F328A2"
+					type: "item"
+					item: "create_factory:honey_waffle"
+					count: 4
+				}
+				{
+					id: "DEE096F8E8A929EE"
+					type: "item"
+					item: "create_factory:glow_berries_jam_bucket"
+					count: 1
+				}
+				{
+					id: "4E6DAA4205A6C1A7"
+					type: "xp"
+					xp: 20
+				}
+			]
+			dependencies: [
+				"84574297A17AD808"
+			]
+		}
+	]
+}

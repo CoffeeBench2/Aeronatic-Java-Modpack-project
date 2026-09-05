@@ -1,0 +1,136 @@
+{
+	id: "D134A1BBDE6B8D5E"
+	group: "4E2FA1B674D143B0"
+	order_index: 129
+	filename: "addon_create_hypertube"
+	title: "Create: Hypertube"
+	icon: "create_hypertube:hypertube"
+	subtitle: [
+		"Get across the base without walking."
+	]
+	default_quest_shape: ""
+	default_hide_dependency_lines: false
+	quests: [
+		{
+			title: "Meet Create: Hypertube"
+			x: 0.0d
+			y: 0.0d
+			description: [
+				"Tube and an entrance. Step in, come out somewhere else."
+				""
+				"Bring 8 Andesite Alloy."
+			]
+			id: "3013E620415BAC51"
+			tasks: [
+				{
+					id: "CE6469ACE26FADC5"
+					type: "item"
+					item: "create:andesite_alloy"
+					count: 8L
+				}
+			]
+			rewards: [
+				{
+					id: "24CA56714A44B2CE"
+					type: "item"
+					item: "create_hypertube:hypertube"
+					count: 8
+				}
+				{
+					id: "4A0B9AD48006C514"
+					type: "item"
+					item: "create_hypertube:hypertube_entrance"
+					count: 2
+				}
+				{
+					id: "84CC76956650923F"
+					type: "xp"
+					xp: 10
+				}
+			]
+			shape: "square"
+		}
+		{
+			title: "Create: Hypertube, Continued"
+			x: 0.0d
+			y: 2.0d
+			description: [
+				"Junctions branch. Funnels feed items in without a player."
+				""
+				"Bring 6 Brass Ingots."
+			]
+			id: "F61EC7B03250986C"
+			tasks: [
+				{
+					id: "2DC7186AB2BEE9A9"
+					type: "item"
+					item: "create:brass_ingot"
+					count: 6L
+				}
+			]
+			rewards: [
+				{
+					id: "5F5530AD0BDB9A74"
+					type: "item"
+					item: "create_hypertube:hypertube_junction"
+					count: 2
+				}
+				{
+					id: "59B315904354A306"
+					type: "item"
+					item: "create_hypertube:hypertube_funnel"
+					count: 2
+				}
+				{
+					id: "CE0976BB8F254FA3"
+					type: "xp"
+					xp: 15
+				}
+			]
+			dependencies: [
+				"3013E620415BAC51"
+			]
+		}
+		{
+			title: "Create: Hypertube: Kitted Out"
+			x: 0.0d
+			y: 4.0d
+			description: [
+				"An accelerator for distance, and a scanner to see what is inside."
+				""
+				"Bring 12 Iron Ingots."
+			]
+			id: "2963AE4C26E95A2E"
+			tasks: [
+				{
+					id: "008A39958D79DFC7"
+					type: "item"
+					item: "minecraft:iron_ingot"
+					count: 12L
+				}
+			]
+			rewards: [
+				{
+					id: "1CA14C51D1FE6BD9"
+					type: "item"
+					item: "create_hypertube:hypertube_accelerator"
+					count: 1
+				}
+				{
+					id: "BF547C003BF73A16"
+					type: "item"
+					item: "create_hypertube:tube_scanner_attachment"
+					count: 1
+				}
+				{
+					id: "B79E70F517C0B46B"
+					type: "xp"
+					xp: 20
+				}
+			]
+			dependencies: [
+				"F61EC7B03250986C"
+			]
+		}
+	]
+}

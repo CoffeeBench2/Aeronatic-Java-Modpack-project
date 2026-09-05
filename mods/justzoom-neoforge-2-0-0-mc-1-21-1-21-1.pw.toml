@@ -1,6 +1,6 @@
 name = "Just Zoom 2.0.0-1.21-1.21.1-neoforge"
 filename = "justzoom_neoforge_2.0.0_MC_1.21-1.21.1.jar"
-side = "both"
+side = "client"
 
 [download]
 url = "https://cdn.modrinth.com/data/iAiqcykM/versions/L0TEgHcN/justzoom_neoforge_2.0.0_MC_1.21-1.21.1.jar"

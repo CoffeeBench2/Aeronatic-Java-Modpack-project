@@ -1,0 +1,136 @@
+{
+	id: "EB3328FF4C392598"
+	group: "4E2FA1B674D143B0"
+	order_index: 125
+	filename: "addon_dndesires"
+	title: "Dreams n' Desires"
+	icon: "dndesires:cog_crank"
+	subtitle: [
+		"More kinetics, and some genuinely odd machines."
+	]
+	default_quest_shape: ""
+	default_hide_dependency_lines: false
+	quests: [
+		{
+			title: "Meet Dreams n' Desires"
+			x: 0.0d
+			y: 0.0d
+			description: [
+				"A crank that takes a cog directly. Hand power, less fiddly."
+				""
+				"Bring 8 Andesite Alloy."
+			]
+			id: "3D388A8372EBEB06"
+			tasks: [
+				{
+					id: "7220364B7E8B94E2"
+					type: "item"
+					item: "create:andesite_alloy"
+					count: 8L
+				}
+			]
+			rewards: [
+				{
+					id: "8A9E88E5FA1A52B2"
+					type: "item"
+					item: "dndesires:cog_crank"
+					count: 1
+				}
+				{
+					id: "87ADA9536A0C61C4"
+					type: "item"
+					item: "dndesires:coal_piece"
+					count: 8
+				}
+				{
+					id: "7F17D471CE7381F6"
+					type: "xp"
+					xp: 10
+				}
+			]
+			shape: "square"
+		}
+		{
+			title: "Dreams n' Desires, Continued"
+			x: 0.0d
+			y: 2.0d
+			description: [
+				"A gauge and a hatch, so tanks stop being guesswork."
+				""
+				"Bring 6 Brass Ingots."
+			]
+			id: "B3DBA3ACC3127862"
+			tasks: [
+				{
+					id: "0358721281B6C125"
+					type: "item"
+					item: "create:brass_ingot"
+					count: 6L
+				}
+			]
+			rewards: [
+				{
+					id: "D837FC4E5D31E8B3"
+					type: "item"
+					item: "dndesires:fluid_gauge"
+					count: 1
+				}
+				{
+					id: "C8B50771A3E912EF"
+					type: "item"
+					item: "dndesires:fluid_hatch"
+					count: 2
+				}
+				{
+					id: "E1F9C4688432B90A"
+					type: "xp"
+					xp: 15
+				}
+			]
+			dependencies: [
+				"3D388A8372EBEB06"
+			]
+		}
+		{
+			title: "Dreams n' Desires: Kitted Out"
+			x: 0.0d
+			y: 4.0d
+			description: [
+				"A burner and asphalt. Industrial groundwork."
+				""
+				"Bring 12 Iron Ingots."
+			]
+			id: "3338DB0D04991F67"
+			tasks: [
+				{
+					id: "BA967006A1CD6D4E"
+					type: "item"
+					item: "minecraft:iron_ingot"
+					count: 12L
+				}
+			]
+			rewards: [
+				{
+					id: "8E57D789953D07C5"
+					type: "item"
+					item: "dndesires:burner"
+					count: 1
+				}
+				{
+					id: "FFEEA6DFC10A6A67"
+					type: "item"
+					item: "dndesires:asphalt"
+					count: 8
+				}
+				{
+					id: "CE3F17551A34EB78"
+					type: "xp"
+					xp: 20
+				}
+			]
+			dependencies: [
+				"B3DBA3ACC3127862"
+			]
+		}
+	]
+}

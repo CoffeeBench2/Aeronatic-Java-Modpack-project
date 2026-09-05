@@ -1,0 +1,9 @@
+[
+"create_aeronautics_toolgun:magnetic_gun",
+"create_aeronautics_toolgun:creative_magnetic_gun",
+"create_aeronautics_toolgun:structure_tool",
+"create_aeronautics_toolgun:survival_structure_tool",
+"create_aeronautics_toolgun:portable_structure_container",
+"create_aeronautics_toolgun:disposable_vehicle_container",
+"create_aeronautics_toolgun:portable_structure_printer"
+]

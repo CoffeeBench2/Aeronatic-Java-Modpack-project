@@ -1,0 +1,136 @@
+{
+	id: "0D245B57DC4A9A89"
+	group: "4E2FA1B674D143B0"
+	order_index: 124
+	filename: "addon_create_enchantment_industry"
+	title: "Enchantment Industry"
+	icon: "create_enchantment_industry:blaze_enchanter"
+	subtitle: [
+		"Automate the enchanting table."
+	]
+	default_quest_shape: ""
+	default_hide_dependency_lines: false
+	quests: [
+		{
+			title: "Meet Enchantment Industry"
+			x: 0.0d
+			y: 0.0d
+			description: [
+				"Liquid experience. Yes, really — it pipes like any other fluid."
+				""
+				"Bring 8 Andesite Alloy."
+			]
+			id: "E43AAA8E2C28D7EC"
+			tasks: [
+				{
+					id: "F994B8B77173D8AC"
+					type: "item"
+					item: "create:andesite_alloy"
+					count: 8L
+				}
+			]
+			rewards: [
+				{
+					id: "7C2CAA2E7078117B"
+					type: "item"
+					item: "create_enchantment_industry:experience_bucket"
+					count: 1
+				}
+				{
+					id: "B39008ED2EDDBCE1"
+					type: "item"
+					item: "create_enchantment_industry:brass_bookshelf"
+					count: 2
+				}
+				{
+					id: "ED0BC28ACF1B93EE"
+					type: "xp"
+					xp: 10
+				}
+			]
+			shape: "square"
+		}
+		{
+			title: "Enchantment Industry, Continued"
+			x: 0.0d
+			y: 2.0d
+			description: [
+				"A blaze enchanter applies a template instead of a random roll."
+				""
+				"Bring 6 Brass Ingots."
+			]
+			id: "7C88167DCE1F8CD5"
+			tasks: [
+				{
+					id: "D2B24AFCB6F6F768"
+					type: "item"
+					item: "create:brass_ingot"
+					count: 6L
+				}
+			]
+			rewards: [
+				{
+					id: "406492A870F1D552"
+					type: "item"
+					item: "create_enchantment_industry:blaze_enchanter"
+					count: 1
+				}
+				{
+					id: "FFA977E7C1C87862"
+					type: "item"
+					item: "create_enchantment_industry:enchanting_template"
+					count: 1
+				}
+				{
+					id: "FB99E224C95651F0"
+					type: "xp"
+					xp: 15
+				}
+			]
+			dependencies: [
+				"E43AAA8E2C28D7EC"
+			]
+		}
+		{
+			title: "Enchantment Industry: Kitted Out"
+			x: 0.0d
+			y: 4.0d
+			description: [
+				"The forger repairs and combines. The bag carries the mess."
+				""
+				"Bring 12 Iron Ingots."
+			]
+			id: "E74B94102A07BCA0"
+			tasks: [
+				{
+					id: "2B49D46B74D91723"
+					type: "item"
+					item: "minecraft:iron_ingot"
+					count: 12L
+				}
+			]
+			rewards: [
+				{
+					id: "AF1046C0496D8517"
+					type: "item"
+					item: "create_enchantment_industry:blaze_forger"
+					count: 1
+				}
+				{
+					id: "7BC0464ECF250D3B"
+					type: "item"
+					item: "create_enchantment_industry:ender_woven_bag"
+					count: 1
+				}
+				{
+					id: "32BD8C41BCD60309"
+					type: "xp"
+					xp: 20
+				}
+			]
+			dependencies: [
+				"7C88167DCE1F8CD5"
+			]
+		}
+	]
+}

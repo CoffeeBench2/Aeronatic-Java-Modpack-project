@@ -1,0 +1,136 @@
+{
+	id: "5FF1B2C7C55FB03A"
+	group: "4E2FA1B674D143B0"
+	order_index: 127
+	filename: "addon_create_aquatic_ambitions"
+	title: "Aquatic Ambitions"
+	icon: "create_aquatic_ambitions:prismarine_alloy"
+	subtitle: [
+		"Ocean materials and conduits."
+	]
+	default_quest_shape: ""
+	default_hide_dependency_lines: false
+	quests: [
+		{
+			title: "Meet Aquatic Ambitions"
+			x: 0.0d
+			y: 0.0d
+			description: [
+				"Shards and shells, from things that did not want to give them up."
+				""
+				"Bring 8 Andesite Alloy."
+			]
+			id: "1BA7BA8347816535"
+			tasks: [
+				{
+					id: "79DBD8467BB7B3C8"
+					type: "item"
+					item: "create:andesite_alloy"
+					count: 8L
+				}
+			]
+			rewards: [
+				{
+					id: "E93F135BA49A1564"
+					type: "item"
+					item: "create_aquatic_ambitions:nautilus_shard"
+					count: 4
+				}
+				{
+					id: "D70829A17B2BAC45"
+					type: "item"
+					item: "create_aquatic_ambitions:spiky_shell"
+					count: 4
+				}
+				{
+					id: "E478EE460DC3AAA3"
+					type: "xp"
+					xp: 10
+				}
+			]
+			shape: "square"
+		}
+		{
+			title: "Aquatic Ambitions, Continued"
+			x: 0.0d
+			y: 2.0d
+			description: [
+				"Prismarine alloy and rods. Underwater building material."
+				""
+				"Bring 6 Brass Ingots."
+			]
+			id: "8A9051279B4C7DBB"
+			tasks: [
+				{
+					id: "E187999B800F50F5"
+					type: "item"
+					item: "create:brass_ingot"
+					count: 6L
+				}
+			]
+			rewards: [
+				{
+					id: "84A8B2D9822F7BF0"
+					type: "item"
+					item: "create_aquatic_ambitions:prismarine_alloy"
+					count: 4
+				}
+				{
+					id: "09252910F2594646"
+					type: "item"
+					item: "create_aquatic_ambitions:prismarine_alloy_rod"
+					count: 4
+				}
+				{
+					id: "82B7CB83088279DE"
+					type: "xp"
+					xp: 15
+				}
+			]
+			dependencies: [
+				"1BA7BA8347816535"
+			]
+		}
+		{
+			title: "Aquatic Ambitions: Kitted Out"
+			x: 0.0d
+			y: 4.0d
+			description: [
+				"A mechanical conduit, and powder to keep it fed."
+				""
+				"Bring 12 Iron Ingots."
+			]
+			id: "CBED187C988F2D79"
+			tasks: [
+				{
+					id: "56ED747FC45577E5"
+					type: "item"
+					item: "minecraft:iron_ingot"
+					count: 12L
+				}
+			]
+			rewards: [
+				{
+					id: "8EA14A4A5B645262"
+					type: "item"
+					item: "create_aquatic_ambitions:mechanical_conduit"
+					count: 1
+				}
+				{
+					id: "BA06CAD07B3050F2"
+					type: "item"
+					item: "create_aquatic_ambitions:calcium_rich_powder"
+					count: 8
+				}
+				{
+					id: "FC1007F0FCC8B40F"
+					type: "xp"
+					xp: 20
+				}
+			]
+			dependencies: [
+				"8A9051279B4C7DBB"
+			]
+		}
+	]
+}

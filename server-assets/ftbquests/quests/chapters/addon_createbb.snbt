@@ -1,0 +1,136 @@
+{
+	id: "EF8BB141C8CF3922"
+	group: "4E2FA1B674D143B0"
+	order_index: 126
+	filename: "addon_createbb"
+	title: "Create: Broken Bad"
+	icon: "createbb:brass_call_bell"
+	subtitle: [
+		"Chemistry. Handle with more care than usual."
+	]
+	default_quest_shape: ""
+	default_hide_dependency_lines: false
+	quests: [
+		{
+			title: "Meet Create: Broken Bad"
+			x: 0.0d
+			y: 0.0d
+			description: [
+				"Crushed ores. The starting point for every reaction here."
+				""
+				"Bring 8 Andesite Alloy."
+			]
+			id: "F020BB511F1245AA"
+			tasks: [
+				{
+					id: "C32E037486ACFEDB"
+					type: "item"
+					item: "create:andesite_alloy"
+					count: 8L
+				}
+			]
+			rewards: [
+				{
+					id: "14D4E518F4350802"
+					type: "item"
+					item: "createbb:crushed_copper"
+					count: 8
+				}
+				{
+					id: "54BE76B81F1501F0"
+					type: "item"
+					item: "createbb:crushed_zinc"
+					count: 8
+				}
+				{
+					id: "2E57B2A29529DF60"
+					type: "xp"
+					xp: 10
+				}
+			]
+			shape: "square"
+		}
+		{
+			title: "Create: Broken Bad, Continued"
+			x: 0.0d
+			y: 2.0d
+			description: [
+				"Matches, and a bell for the front of a shop."
+				""
+				"Bring 6 Brass Ingots."
+			]
+			id: "3C2C407FA29F08D7"
+			tasks: [
+				{
+					id: "4918D0889C98D3EA"
+					type: "item"
+					item: "create:brass_ingot"
+					count: 6L
+				}
+			]
+			rewards: [
+				{
+					id: "66E58F2E877BC4C2"
+					type: "item"
+					item: "createbb:match"
+					count: 8
+				}
+				{
+					id: "CB014A9C6EB11CCF"
+					type: "item"
+					item: "createbb:brass_call_bell"
+					count: 1
+				}
+				{
+					id: "28F1036913EEB93D"
+					type: "xp"
+					xp: 15
+				}
+			]
+			dependencies: [
+				"F020BB511F1245AA"
+			]
+		}
+		{
+			title: "Create: Broken Bad: Kitted Out"
+			x: 0.0d
+			y: 4.0d
+			description: [
+				"Iodine and seeds. What you do next is between you and the server rules."
+				""
+				"Bring 12 Iron Ingots."
+			]
+			id: "EB7564FBE8EA2F2E"
+			tasks: [
+				{
+					id: "564B5F51E0B92A2C"
+					type: "item"
+					item: "minecraft:iron_ingot"
+					count: 12L
+				}
+			]
+			rewards: [
+				{
+					id: "E6FB352BCDE6257A"
+					type: "item"
+					item: "createbb:iodine"
+					count: 4
+				}
+				{
+					id: "FBB960E26D30F416"
+					type: "item"
+					item: "createbb:ephedra_seeds"
+					count: 4
+				}
+				{
+					id: "93E1BC6BC8F757F8"
+					type: "xp"
+					xp: 20
+				}
+			]
+			dependencies: [
+				"3C2C407FA29F08D7"
+			]
+		}
+	]
+}

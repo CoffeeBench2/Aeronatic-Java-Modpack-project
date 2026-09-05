@@ -1,0 +1,136 @@
+{
+	id: "6C8D2AE777E4233C"
+	group: "4E2FA1B674D143B0"
+	order_index: 108
+	filename: "addon_createdieselgenerators"
+	title: "Diesel Generators"
+	icon: "createdieselgenerators:canister"
+	subtitle: [
+		"Oil, refining, and engines that drink it."
+	]
+	default_quest_shape: ""
+	default_hide_dependency_lines: false
+	quests: [
+		{
+			title: "Meet Diesel Generators"
+			x: 0.0d
+			y: 0.0d
+			description: [
+				"Canisters carry fuel. The burner is where it goes."
+				""
+				"Bring 8 Andesite Alloy."
+			]
+			id: "C691968C3A11C69B"
+			tasks: [
+				{
+					id: "A7B6F917BD6C4168"
+					type: "item"
+					item: "create:andesite_alloy"
+					count: 8L
+				}
+			]
+			rewards: [
+				{
+					id: "F18F8CB57F00F1CD"
+					type: "item"
+					item: "createdieselgenerators:canister"
+					count: 2
+				}
+				{
+					id: "C3AC22BC4FE7A4F8"
+					type: "item"
+					item: "createdieselgenerators:burner"
+					count: 1
+				}
+				{
+					id: "BC8F132589E43C80"
+					type: "xp"
+					xp: 10
+				}
+			]
+			shape: "square"
+		}
+		{
+			title: "Diesel Generators, Continued"
+			x: 0.0d
+			y: 2.0d
+			description: [
+				"Chipped wood ferments into something you can burn. Asphalt is the by-product."
+				""
+				"Bring 6 Brass Ingots."
+			]
+			id: "7F57E57A5DEE61EB"
+			tasks: [
+				{
+					id: "AB8A67AC2DB367B0"
+					type: "item"
+					item: "create:brass_ingot"
+					count: 6L
+				}
+			]
+			rewards: [
+				{
+					id: "257DF0F5121CD087"
+					type: "item"
+					item: "createdieselgenerators:chip_wood_block"
+					count: 4
+				}
+				{
+					id: "35C2B449130CE9C8"
+					type: "item"
+					item: "createdieselgenerators:asphalt_block"
+					count: 4
+				}
+				{
+					id: "83B0C0F1F83C004E"
+					type: "xp"
+					xp: 15
+				}
+			]
+			dependencies: [
+				"C691968C3A11C69B"
+			]
+		}
+		{
+			title: "Diesel Generators: Kitted Out"
+			x: 0.0d
+			y: 4.0d
+			description: [
+				"A distillation controller splits crude into the useful parts."
+				""
+				"Bring 12 Iron Ingots."
+			]
+			id: "B6A94C93390754B8"
+			tasks: [
+				{
+					id: "9A6E910B3C66281E"
+					type: "item"
+					item: "minecraft:iron_ingot"
+					count: 12L
+				}
+			]
+			rewards: [
+				{
+					id: "8DCCD6DB4CD5C88A"
+					type: "item"
+					item: "createdieselgenerators:distillation_controller"
+					count: 1
+				}
+				{
+					id: "CC657FDCFEB282C7"
+					type: "item"
+					item: "createdieselgenerators:basin_lid"
+					count: 1
+				}
+				{
+					id: "EF3B6D20E3F125F6"
+					type: "xp"
+					xp: 20
+				}
+			]
+			dependencies: [
+				"7F57E57A5DEE61EB"
+			]
+		}
+	]
+}

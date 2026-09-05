@@ -1,0 +1,136 @@
+{
+	id: "8C5AA767EACDD4CA"
+	group: "4E2FA1B674D143B0"
+	order_index: 111
+	filename: "addon_powergrid"
+	title: "Create: Power Grid"
+	icon: "powergrid:battery"
+	subtitle: [
+		"Real circuits. Voltage, current, and consequences."
+	]
+	default_quest_shape: ""
+	default_hide_dependency_lines: false
+	quests: [
+		{
+			title: "Meet Create: Power Grid"
+			x: 0.0d
+			y: 0.0d
+			description: [
+				"A board and capacitors. Everything here is built on these."
+				""
+				"Bring 8 Andesite Alloy."
+			]
+			id: "E3F3EA3895D86B33"
+			tasks: [
+				{
+					id: "509771750405C8FA"
+					type: "item"
+					item: "create:andesite_alloy"
+					count: 8L
+				}
+			]
+			rewards: [
+				{
+					id: "6079894FDE840E79"
+					type: "item"
+					item: "powergrid:circuit_board"
+					count: 2
+				}
+				{
+					id: "23EF9B2BD70A39AE"
+					type: "item"
+					item: "powergrid:capacitor"
+					count: 4
+				}
+				{
+					id: "6171A00CF7E22A06"
+					type: "xp"
+					xp: 10
+				}
+			]
+			shape: "square"
+		}
+		{
+			title: "Create: Power Grid, Continued"
+			x: 0.0d
+			y: 2.0d
+			description: [
+				"A battery to store charge, and a bell for when something goes wrong."
+				""
+				"Bring 6 Brass Ingots."
+			]
+			id: "A7B1EB980D4158C4"
+			tasks: [
+				{
+					id: "174360C8F8D69BD2"
+					type: "item"
+					item: "create:brass_ingot"
+					count: 6L
+				}
+			]
+			rewards: [
+				{
+					id: "0BF762A48A2B4190"
+					type: "item"
+					item: "powergrid:battery"
+					count: 1
+				}
+				{
+					id: "38003D4E16409687"
+					type: "item"
+					item: "powergrid:alarm_bell"
+					count: 1
+				}
+				{
+					id: "587F52A00A2171E8"
+					type: "xp"
+					xp: 15
+				}
+			]
+			dependencies: [
+				"E3F3EA3895D86B33"
+			]
+		}
+		{
+			title: "Create: Power Grid: Kitted Out"
+			x: 0.0d
+			y: 4.0d
+			description: [
+				"A carbon pile resists on purpose. The heater turns that into warmth."
+				""
+				"Bring 12 Iron Ingots."
+			]
+			id: "01F33E647619CA27"
+			tasks: [
+				{
+					id: "EA2D49A6C6CD2A8A"
+					type: "item"
+					item: "minecraft:iron_ingot"
+					count: 12L
+				}
+			]
+			rewards: [
+				{
+					id: "9C4DAF7AFD10C584"
+					type: "item"
+					item: "powergrid:carbon_pile"
+					count: 1
+				}
+				{
+					id: "229C636B4737BB37"
+					type: "item"
+					item: "powergrid:basin_heater"
+					count: 1
+				}
+				{
+					id: "64937BD0B973F933"
+					type: "xp"
+					xp: 20
+				}
+			]
+			dependencies: [
+				"A7B1EB980D4158C4"
+			]
+		}
+	]
+}

@@ -1,0 +1,136 @@
+{
+	id: "25376B0C22EF2C17"
+	group: "4E2FA1B674D143B0"
+	order_index: 112
+	filename: "addon_numismatics"
+	title: "Create: Numismatics"
+	icon: "numismatics:spur"
+	subtitle: [
+		"Money, so trade stops being a chest of diamonds."
+	]
+	default_quest_shape: ""
+	default_hide_dependency_lines: false
+	quests: [
+		{
+			title: "Meet Create: Numismatics"
+			x: 0.0d
+			y: 0.0d
+			description: [
+				"Spurs and cogs are the small coins. Everything else converts up from these."
+				""
+				"Bring 8 Andesite Alloy."
+			]
+			id: "A0DA2DC4432D67B4"
+			tasks: [
+				{
+					id: "11D2CF911B71220F"
+					type: "item"
+					item: "create:andesite_alloy"
+					count: 8L
+				}
+			]
+			rewards: [
+				{
+					id: "B966227463EDAC16"
+					type: "item"
+					item: "numismatics:spur"
+					count: 16
+				}
+				{
+					id: "69E3B92B31E0437A"
+					type: "item"
+					item: "numismatics:cog"
+					count: 8
+				}
+				{
+					id: "2AD9D50F6F09CC00"
+					type: "xp"
+					xp: 10
+				}
+			]
+			shape: "square"
+		}
+		{
+			title: "Create: Numismatics, Continued"
+			x: 0.0d
+			y: 2.0d
+			description: [
+				"A vendor sells for you. A depositor takes payment straight into an account."
+				""
+				"Bring 6 Brass Ingots."
+			]
+			id: "09FAE45C50696076"
+			tasks: [
+				{
+					id: "2D4E4A1B7712457D"
+					type: "item"
+					item: "create:brass_ingot"
+					count: 6L
+				}
+			]
+			rewards: [
+				{
+					id: "1C6DCB4AAF93D3E5"
+					type: "item"
+					item: "numismatics:vendor"
+					count: 1
+				}
+				{
+					id: "279AA84DFF624750"
+					type: "item"
+					item: "numismatics:brass_depositor"
+					count: 1
+				}
+				{
+					id: "AD91209D4B57FA4E"
+					type: "xp"
+					xp: 15
+				}
+			]
+			dependencies: [
+				"A0DA2DC4432D67B4"
+			]
+		}
+		{
+			title: "Create: Numismatics: Kitted Out"
+			x: 0.0d
+			y: 4.0d
+			description: [
+				"A bank terminal, and the guide that explains the rest."
+				""
+				"Bring 12 Iron Ingots."
+			]
+			id: "8226C1CB7B64A79F"
+			tasks: [
+				{
+					id: "CCA130EE080F3C0F"
+					type: "item"
+					item: "minecraft:iron_ingot"
+					count: 12L
+				}
+			]
+			rewards: [
+				{
+					id: "500291FBF45D8A0A"
+					type: "item"
+					item: "numismatics:bank_terminal"
+					count: 1
+				}
+				{
+					id: "71CB3308F9A6B3D5"
+					type: "item"
+					item: "numismatics:banking_guide"
+					count: 1
+				}
+				{
+					id: "7AC0BEDC4DF0F42A"
+					type: "xp"
+					xp: 20
+				}
+			]
+			dependencies: [
+				"09FAE45C50696076"
+			]
+		}
+	]
+}

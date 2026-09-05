@@ -1,6 +1,6 @@
 name = "1.6.0.12 for NeoForge 1.21.1"
 filename = "JustEnoughResources-NeoForge-1.21.1-1.6.0.12.jar"
-side = "both"
+side = "client"
 
 [download]
 url = "https://cdn.modrinth.com/data/uEfK2CXF/versions/XOsqpm0l/JustEnoughResources-NeoForge-1.21.1-1.6.0.12.jar"

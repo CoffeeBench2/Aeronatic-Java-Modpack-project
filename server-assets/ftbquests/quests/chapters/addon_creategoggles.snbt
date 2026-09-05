@@ -1,0 +1,136 @@
+{
+	id: "497C2A60B1BC729C"
+	group: "4E2FA1B674D143B0"
+	order_index: 128
+	filename: "addon_creategoggles"
+	title: "Create: Goggles"
+	icon: "creategoggles:goggle_iron_helmet"
+	subtitle: [
+		"Goggles on a helmet, so you stop having to choose."
+	]
+	default_quest_shape: ""
+	default_hide_dependency_lines: false
+	quests: [
+		{
+			title: "Meet Create: Goggles"
+			x: 0.0d
+			y: 0.0d
+			description: [
+				"Leather and iron. Armour and goggle readouts at the same time."
+				""
+				"Bring 8 Andesite Alloy."
+			]
+			id: "D8C47B7D86CE2541"
+			tasks: [
+				{
+					id: "B0AE288405490326"
+					type: "item"
+					item: "create:andesite_alloy"
+					count: 8L
+				}
+			]
+			rewards: [
+				{
+					id: "DFE064C80DBC1482"
+					type: "item"
+					item: "creategoggles:goggle_leather_helmet"
+					count: 1
+				}
+				{
+					id: "E294CFC841E9A13B"
+					type: "item"
+					item: "creategoggles:goggle_iron_helmet"
+					count: 1
+				}
+				{
+					id: "D2183A3187BA3CA0"
+					type: "xp"
+					xp: 10
+				}
+			]
+			shape: "square"
+		}
+		{
+			title: "Create: Goggles, Continued"
+			x: 0.0d
+			y: 2.0d
+			description: [
+				"Backtanks in more metals, holding more air."
+				""
+				"Bring 6 Brass Ingots."
+			]
+			id: "36A01EB864113E56"
+			tasks: [
+				{
+					id: "8DCAF24EC8F2B8C1"
+					type: "item"
+					item: "create:brass_ingot"
+					count: 6L
+				}
+			]
+			rewards: [
+				{
+					id: "6E8015A4F9EAF830"
+					type: "item"
+					item: "creategoggles:iron_backtank"
+					count: 1
+				}
+				{
+					id: "1F59304DE5467078"
+					type: "item"
+					item: "creategoggles:golden_backtank"
+					count: 1
+				}
+				{
+					id: "D648AA4203037C1E"
+					type: "xp"
+					xp: 15
+				}
+			]
+			dependencies: [
+				"D8C47B7D86CE2541"
+			]
+		}
+		{
+			title: "Create: Goggles: Kitted Out"
+			x: 0.0d
+			y: 4.0d
+			description: [
+				"Diving variants, for the parts of the build that are underwater."
+				""
+				"Bring 12 Iron Ingots."
+			]
+			id: "D0AA980053EA6FB8"
+			tasks: [
+				{
+					id: "93F67BFF7F6AFDCD"
+					type: "item"
+					item: "minecraft:iron_ingot"
+					count: 12L
+				}
+			]
+			rewards: [
+				{
+					id: "97B74813E1CBAFEC"
+					type: "item"
+					item: "creategoggles:goggle_diving_helmet"
+					count: 1
+				}
+				{
+					id: "674466AAC0BA56EC"
+					type: "item"
+					item: "creategoggles:goggle_turtle_helmet"
+					count: 1
+				}
+				{
+					id: "8BADF085BF5341F6"
+					type: "xp"
+					xp: 20
+				}
+			]
+			dependencies: [
+				"36A01EB864113E56"
+			]
+		}
+	]
+}

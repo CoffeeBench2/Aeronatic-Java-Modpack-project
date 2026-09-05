@@ -19,7 +19,10 @@ import os
 import hashlib
 
 ROOT = "server-assets/ftbquests"
-VALID = set(json.load(open("scripts/_questgen/valid_ids.json")))
+# Every item id every jar in overrides/mods declares, keyed by namespace. Extracted from the jars
+# themselves, so this cannot drift from what the pack actually ships.
+_vocab = json.load(open("scripts/_questgen/vocab.json"))
+VALID = {i for ids in _vocab.values() for i in ids}
 
 # Vanilla ids used below.
 #
@@ -53,7 +56,12 @@ def qid(*parts):
     return h
 
 
+RESTRICTED = set(json.load(open("scripts/_questgen/restricted.json")))
+
+
 def check(item):
+    if item in RESTRICTED:
+        raise SystemExit(f"REFUSING TO BUILD: {item!r} is on the toolgun_restricted list")
     if item not in VALID:
         raise SystemExit(f"REFUSING TO BUILD: unknown item id {item!r} — not in any pack jar")
     return item
@@ -112,6 +120,7 @@ class Chapter:
         self.subtitle = subtitle
         self.quests = []
         self.last = None
+        self.group = ""
 
     def q(self, key, title, x, y, tasks, rewards, desc, deps=None, shape="", optional=False):
         i = qid("quest", self.key, key)
@@ -137,7 +146,7 @@ class Chapter:
     def render(self):
         return snbt({
             "id": qid("chapter", self.key),
-            "group": "",
+            "group": self.group,
             "order_index": self.order,
             "filename": self.key,
             "title": self.title,
@@ -427,6 +436,40 @@ c.q("claim6", "Airspace", 0, 11,
     [task("claim6", "create:steam_engine", Long(4))],
     [r_item("claim6", "aeroclaims:claim_block", 4), r_xp("claim6", 60)],
     ["The last of the claim blocks. Build something worth defending."], [i6], shape="diamond")
+
+
+
+def build_addons():
+    """One chapter per Create addon, three quests each, from scripts/_questgen/addons.json.
+
+    Tasks only ever ask for common materials the main line already taught you to make. Rewards are
+    what introduce the mod. That inversion is what makes these unbreakable: no quest can be gated
+    behind an addon recipe nobody verified, and a mod's own progression is left intact."""
+    spec = json.load(open("scripts/_questgen/addons.json", encoding="utf-8"))
+    gates = spec["gates"]
+    grp = qid("group", "addons")
+    titles = ["Meet {}", "{}, Continued", "{}: Kitted Out"]
+    for order, a in enumerate(spec["addons"]):
+        ch = Chapter("addon_" + a["key"], a["title"], a["icon"], 100 + order, a["blurb"])
+        ch.group = grp
+        prev = None
+        for i, q in enumerate(a["quests"]):
+            gate_item, gate_n, gate_name = gates[i % len(gates)]
+            rw = [r_item(f'{a["key"]}{i}{k}', it, n) for k, (it, n) in enumerate(q["rewards"])]
+            rw.append(r_xp(f'{a["key"]}{i}', 10 + i * 5))
+            prev = ch.q(
+                f'{a["key"]}_{i}', titles[i].format(a["title"]), 0, i * 2,
+                [task(f'{a["key"]}{i}', gate_item, Long(gate_n))],
+                rw,
+                [q["desc"], "", f"Bring {gate_n} {gate_name}."],
+                [prev] if prev else None,
+                shape="square" if i == 0 else "")
+        chapters.append(ch)
+        ADDON_GROUP[0] = grp
+
+
+ADDON_GROUP = [""]
+build_addons()
 
 
 def main():

@@ -1,0 +1,136 @@
+{
+	id: "C673E0A6C19BE78C"
+	group: "4E2FA1B674D143B0"
+	order_index: 100
+	filename: "addon_drivebywire"
+	title: "Drive By Wire"
+	icon: "drivebywire:controller_hub"
+	subtitle: [
+		"Wire a cockpit to the thing it is meant to fly."
+	]
+	default_quest_shape: ""
+	default_hide_dependency_lines: false
+	quests: [
+		{
+			title: "Meet Drive By Wire"
+			x: 0.0d
+			y: 0.0d
+			description: [
+				"Linked controllers let you steer a contraption from a seat instead of standing on it."
+				""
+				"Bring 8 Andesite Alloy."
+			]
+			id: "0E7CC5E3081AE228"
+			tasks: [
+				{
+					id: "ACD23FF6760FE34C"
+					type: "item"
+					item: "create:andesite_alloy"
+					count: 8L
+				}
+			]
+			rewards: [
+				{
+					id: "B867238A11444C18"
+					type: "item"
+					item: "drivebywire:controller_hub"
+					count: 1
+				}
+				{
+					id: "A2388C307BC5D21A"
+					type: "item"
+					item: "drivebywire:wire"
+					count: 8
+				}
+				{
+					id: "7D436A5EB40834BA"
+					type: "xp"
+					xp: 10
+				}
+			]
+			shape: "square"
+		}
+		{
+			title: "Drive By Wire, Continued"
+			x: 0.0d
+			y: 2.0d
+			description: [
+				"Wire runs from the hub to whatever it controls. Cutters undo your mistakes."
+				""
+				"Bring 6 Brass Ingots."
+			]
+			id: "18D3405FB965EEBA"
+			tasks: [
+				{
+					id: "4CECFB3AEC540699"
+					type: "item"
+					item: "create:brass_ingot"
+					count: 6L
+				}
+			]
+			rewards: [
+				{
+					id: "A9B7A0D94FA0CE91"
+					type: "item"
+					item: "drivebywire:wire_cutter"
+					count: 1
+				}
+				{
+					id: "D2834BBDEA5CC11C"
+					type: "item"
+					item: "drivebywire:wire"
+					count: 8
+				}
+				{
+					id: "0F7677FDCA16D630"
+					type: "xp"
+					xp: 15
+				}
+			]
+			dependencies: [
+				"0E7CC5E3081AE228"
+			]
+		}
+		{
+			title: "Drive By Wire: Kitted Out"
+			x: 0.0d
+			y: 4.0d
+			description: [
+				"The tweaked hub does the same job with more channels."
+				""
+				"Bring 12 Iron Ingots."
+			]
+			id: "8AFEDD3B33FBE998"
+			tasks: [
+				{
+					id: "F5545C5785021E90"
+					type: "item"
+					item: "minecraft:iron_ingot"
+					count: 12L
+				}
+			]
+			rewards: [
+				{
+					id: "FED1473DCE0F446B"
+					type: "item"
+					item: "drivebywire:tweaked_controller_hub"
+					count: 1
+				}
+				{
+					id: "4416802E1DAE4709"
+					type: "item"
+					item: "drivebywire:backup_block"
+					count: 2
+				}
+				{
+					id: "E087E8B84E63486B"
+					type: "xp"
+					xp: 20
+				}
+			]
+			dependencies: [
+				"18D3405FB965EEBA"
+			]
+		}
+	]
+}

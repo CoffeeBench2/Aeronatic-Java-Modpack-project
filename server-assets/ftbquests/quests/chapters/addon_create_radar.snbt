@@ -1,0 +1,136 @@
+{
+	id: "4697B77A50D51634"
+	group: "4E2FA1B674D143B0"
+	order_index: 114
+	filename: "addon_create_radar"
+	title: "Create: Radars"
+	icon: "create_radar:binoculars"
+	subtitle: [
+		"See further than you can build."
+	]
+	default_quest_shape: ""
+	default_hide_dependency_lines: false
+	quests: [
+		{
+			title: "Meet Create: Radars"
+			x: 0.0d
+			y: 0.0d
+			description: [
+				"Binoculars first. The data link carries what a radar sees to somewhere useful."
+				""
+				"Bring 8 Andesite Alloy."
+			]
+			id: "3E32401086B8CCE8"
+			tasks: [
+				{
+					id: "B77B8F8D6D43EB6D"
+					type: "item"
+					item: "create:andesite_alloy"
+					count: 8L
+				}
+			]
+			rewards: [
+				{
+					id: "31D5D927DCFAF49C"
+					type: "item"
+					item: "create_radar:binoculars"
+					count: 1
+				}
+				{
+					id: "4F0B031B9E2E39E9"
+					type: "item"
+					item: "create_radar:data_link"
+					count: 2
+				}
+				{
+					id: "566BCF78CD027F77"
+					type: "xp"
+					xp: 10
+				}
+			]
+			shape: "square"
+		}
+		{
+			title: "Create: Radars, Continued"
+			x: 0.0d
+			y: 2.0d
+			description: [
+				"Plates and a bearing make a dish that actually sweeps."
+				""
+				"Bring 6 Brass Ingots."
+			]
+			id: "A867AEF24D927CBF"
+			tasks: [
+				{
+					id: "3C1F326E01AC913E"
+					type: "item"
+					item: "create:brass_ingot"
+					count: 6L
+				}
+			]
+			rewards: [
+				{
+					id: "588A8DCAD5F6FA8D"
+					type: "item"
+					item: "create_radar:radar_plate_block"
+					count: 2
+				}
+				{
+					id: "BB740E17E4301BDB"
+					type: "item"
+					item: "create_radar:radar_bearing"
+					count: 1
+				}
+				{
+					id: "B733488CF60559D7"
+					type: "xp"
+					xp: 15
+				}
+			]
+			dependencies: [
+				"3E32401086B8CCE8"
+			]
+		}
+		{
+			title: "Create: Radars: Kitted Out"
+			x: 0.0d
+			y: 4.0d
+			description: [
+				"A monitor to read it, and a filter so it only reports what matters."
+				""
+				"Bring 12 Iron Ingots."
+			]
+			id: "49903A4F6BA1A71E"
+			tasks: [
+				{
+					id: "32CE587E41962471"
+					type: "item"
+					item: "minecraft:iron_ingot"
+					count: 12L
+				}
+			]
+			rewards: [
+				{
+					id: "0A9AD26C798D9FD1"
+					type: "item"
+					item: "create_radar:monitor"
+					count: 1
+				}
+				{
+					id: "9674BFB41042D919"
+					type: "item"
+					item: "create_radar:ident_filter_item"
+					count: 1
+				}
+				{
+					id: "8ED26A0D5CD9EA2C"
+					type: "xp"
+					xp: 20
+				}
+			]
+			dependencies: [
+				"A867AEF24D927CBF"
+			]
+		}
+	]
+}

@@ -1,0 +1,136 @@
+{
+	id: "B8006BAF70A32282"
+	group: "4E2FA1B674D143B0"
+	order_index: 105
+	filename: "addon_tracks"
+	title: "Create Tracks"
+	icon: "tracks:track_mount"
+	subtitle: [
+		"Caterpillar tracks. Slower than wheels, stops for nothing."
+	]
+	default_quest_shape: ""
+	default_hide_dependency_lines: false
+	quests: [
+		{
+			title: "Meet Create Tracks"
+			x: 0.0d
+			y: 0.0d
+			description: [
+				"Mounts hold the track. The key adjusts how hard the suspension pushes back."
+				""
+				"Bring 8 Andesite Alloy."
+			]
+			id: "B86B2AB9205B3B3D"
+			tasks: [
+				{
+					id: "E2D4FDDEA5AE7FAF"
+					type: "item"
+					item: "create:andesite_alloy"
+					count: 8L
+				}
+			]
+			rewards: [
+				{
+					id: "6826F7CB26C7037B"
+					type: "item"
+					item: "tracks:track_mount"
+					count: 2
+				}
+				{
+					id: "16AC8A424F39D74C"
+					type: "item"
+					item: "tracks:suspension_key"
+					count: 2
+				}
+				{
+					id: "B259DC43FC80758A"
+					type: "xp"
+					xp: 10
+				}
+			]
+			shape: "square"
+		}
+		{
+			title: "Create Tracks, Continued"
+			x: 0.0d
+			y: 2.0d
+			description: [
+				"Small drive wheels and short track sections — enough for a light crawler."
+				""
+				"Bring 6 Brass Ingots."
+			]
+			id: "F452D442280662D2"
+			tasks: [
+				{
+					id: "AEE61AE70F3359D5"
+					type: "item"
+					item: "create:brass_ingot"
+					count: 6L
+				}
+			]
+			rewards: [
+				{
+					id: "1486F467964AD31A"
+					type: "item"
+					item: "tracks:small_track_drive_wheel"
+					count: 2
+				}
+				{
+					id: "BF8FCBEEBF9C43D2"
+					type: "item"
+					item: "tracks:small_suspension_track"
+					count: 2
+				}
+				{
+					id: "391E79ACB6BAC6BD"
+					type: "xp"
+					xp: 15
+				}
+			]
+			dependencies: [
+				"B86B2AB9205B3B3D"
+			]
+		}
+		{
+			title: "Create Tracks: Kitted Out"
+			x: 0.0d
+			y: 4.0d
+			description: [
+				"Full-size drive wheel and track. Heavy, slow, unstoppable."
+				""
+				"Bring 12 Iron Ingots."
+			]
+			id: "136DC4A434C4107E"
+			tasks: [
+				{
+					id: "FDEFBBE25C3796C3"
+					type: "item"
+					item: "minecraft:iron_ingot"
+					count: 12L
+				}
+			]
+			rewards: [
+				{
+					id: "5870FB7D4BF93546"
+					type: "item"
+					item: "tracks:track_drive_wheel"
+					count: 1
+				}
+				{
+					id: "69A5B970644C03EE"
+					type: "item"
+					item: "tracks:suspension_track"
+					count: 2
+				}
+				{
+					id: "8E17B5ED274FD21C"
+					type: "xp"
+					xp: 20
+				}
+			]
+			dependencies: [
+				"F452D442280662D2"
+			]
+		}
+	]
+}

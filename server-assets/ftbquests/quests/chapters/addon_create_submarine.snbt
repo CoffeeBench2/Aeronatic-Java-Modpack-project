@@ -1,0 +1,136 @@
+{
+	id: "3DEE0A5DBA0A738D"
+	group: "4E2FA1B674D143B0"
+	order_index: 119
+	filename: "addon_create_submarine"
+	title: "Create: Deep Seas"
+	icon: "create_submarine:ballast_tank"
+	subtitle: [
+		"Down, instead of up."
+	]
+	default_quest_shape: ""
+	default_hide_dependency_lines: false
+	quests: [
+		{
+			title: "Meet Create: Deep Seas"
+			x: 0.0d
+			y: 0.0d
+			description: [
+				"Ballast tanks flood to sink and blow to rise. A vent controls the rate."
+				""
+				"Bring 8 Andesite Alloy."
+			]
+			id: "68FA21A0F0987AF5"
+			tasks: [
+				{
+					id: "0DB97805A83C4ABC"
+					type: "item"
+					item: "create:andesite_alloy"
+					count: 8L
+				}
+			]
+			rewards: [
+				{
+					id: "C0975405021DD576"
+					type: "item"
+					item: "create_submarine:ballast_tank"
+					count: 1
+				}
+				{
+					id: "686179C98F058479"
+					type: "item"
+					item: "create_submarine:ballast_vent"
+					count: 2
+				}
+				{
+					id: "69A37911961E713E"
+					type: "xp"
+					xp: 10
+				}
+			]
+			shape: "square"
+		}
+		{
+			title: "Create: Deep Seas, Continued"
+			x: 0.0d
+			y: 2.0d
+			description: [
+				"A barometer reads depth. A rudder decides where you go."
+				""
+				"Bring 6 Brass Ingots."
+			]
+			id: "40D187330BD02E7D"
+			tasks: [
+				{
+					id: "A20CA69082DDA3D2"
+					type: "item"
+					item: "create:brass_ingot"
+					count: 6L
+				}
+			]
+			rewards: [
+				{
+					id: "9C424C4B1E88049A"
+					type: "item"
+					item: "create_submarine:barometer"
+					count: 1
+				}
+				{
+					id: "F67CCE1A55BDAF15"
+					type: "item"
+					item: "create_submarine:rudder"
+					count: 1
+				}
+				{
+					id: "0C73F14055CA6DD6"
+					type: "xp"
+					xp: 15
+				}
+			]
+			dependencies: [
+				"68FA21A0F0987AF5"
+			]
+		}
+		{
+			title: "Create: Deep Seas: Kitted Out"
+			x: 0.0d
+			y: 4.0d
+			description: [
+				"A propeller to move, and a diffuser so the crew keeps breathing."
+				""
+				"Bring 12 Iron Ingots."
+			]
+			id: "D12F63448A9DA765"
+			tasks: [
+				{
+					id: "1B512A736A5BB635"
+					type: "item"
+					item: "minecraft:iron_ingot"
+					count: 12L
+				}
+			]
+			rewards: [
+				{
+					id: "0E77D54EE1221A04"
+					type: "item"
+					item: "create_submarine:submarine_propeller"
+					count: 1
+				}
+				{
+					id: "6EAFA50F2969FBCC"
+					type: "item"
+					item: "create_submarine:oxygene_diffuser"
+					count: 1
+				}
+				{
+					id: "4E413AA9F753EBAE"
+					type: "xp"
+					xp: 20
+				}
+			]
+			dependencies: [
+				"40D187330BD02E7D"
+			]
+		}
+	]
+}

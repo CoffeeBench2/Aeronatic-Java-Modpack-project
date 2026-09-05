@@ -1,0 +1,136 @@
+{
+	id: "E2F13B4BE2790E85"
+	group: "4E2FA1B674D143B0"
+	order_index: 115
+	filename: "addon_createpropulsion"
+	title: "Create: Propulsion"
+	icon: "createpropulsion:cable"
+	subtitle: [
+		"Thrust, cabling, and contraption tooling."
+	]
+	default_quest_shape: ""
+	default_hide_dependency_lines: false
+	quests: [
+		{
+			title: "Meet Create: Propulsion"
+			x: 0.0d
+			y: 0.0d
+			description: [
+				"Cable and relays. Longer reach than Create's own wiring."
+				""
+				"Bring 8 Andesite Alloy."
+			]
+			id: "DE2D321EC1F959CA"
+			tasks: [
+				{
+					id: "C3F915F103BD59B8"
+					type: "item"
+					item: "create:andesite_alloy"
+					count: 8L
+				}
+			]
+			rewards: [
+				{
+					id: "EE80A8C3972E8F1C"
+					type: "item"
+					item: "createpropulsion:cable"
+					count: 8
+				}
+				{
+					id: "0E85BF36FEE5BA55"
+					type: "item"
+					item: "createpropulsion:cable_relay"
+					count: 2
+				}
+				{
+					id: "4086FE30D67F447C"
+					type: "xp"
+					xp: 10
+				}
+			]
+			shape: "square"
+		}
+		{
+			title: "Create: Propulsion, Continued"
+			x: 0.0d
+			y: 2.0d
+			description: [
+				"Auto glue sticks a build together without clicking every face."
+				""
+				"Bring 6 Brass Ingots."
+			]
+			id: "E0C7707896838731"
+			tasks: [
+				{
+					id: "3A6A418D35EC351F"
+					type: "item"
+					item: "create:brass_ingot"
+					count: 6L
+				}
+			]
+			rewards: [
+				{
+					id: "C39AEFB9C6962AC2"
+					type: "item"
+					item: "createpropulsion:auto_glue"
+					count: 1
+				}
+				{
+					id: "474AEEA4FDDD83E7"
+					type: "item"
+					item: "createpropulsion:assembler_stick"
+					count: 1
+				}
+				{
+					id: "9975AE0ABD60AF67"
+					type: "xp"
+					xp: 15
+				}
+			]
+			dependencies: [
+				"DE2D321EC1F959CA"
+			]
+		}
+		{
+			title: "Create: Propulsion: Kitted Out"
+			x: 0.0d
+			y: 4.0d
+			description: [
+				"A hub to gather cables, and a remover for when it all goes wrong."
+				""
+				"Bring 12 Iron Ingots."
+			]
+			id: "AE33737B42D335C8"
+			tasks: [
+				{
+					id: "55BD8BF98B9C5E09"
+					type: "item"
+					item: "minecraft:iron_ingot"
+					count: 12L
+				}
+			]
+			rewards: [
+				{
+					id: "109132827A034DBD"
+					type: "item"
+					item: "createpropulsion:cable_hub"
+					count: 1
+				}
+				{
+					id: "CFD0A497A99665A2"
+					type: "item"
+					item: "createpropulsion:contraption_remover"
+					count: 1
+				}
+				{
+					id: "BC068E33FB1ECE9F"
+					type: "xp"
+					xp: 20
+				}
+			]
+			dependencies: [
+				"E0C7707896838731"
+			]
+		}
+	]
+}

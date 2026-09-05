@@ -1,0 +1,136 @@
+{
+	id: "F8BD08DF3A836794"
+	group: "4E2FA1B674D143B0"
+	order_index: 102
+	filename: "addon_aeronautics"
+	title: "Create: Aeronautics"
+	icon: "aeronautics:levitite"
+	subtitle: [
+		"The mod this whole server is named after."
+	]
+	default_quest_shape: ""
+	default_hide_dependency_lines: false
+	quests: [
+		{
+			title: "Meet Create: Aeronautics"
+			x: 0.0d
+			y: 0.0d
+			description: [
+				"A propeller and goggles. The goggles read airspeed and altitude."
+				""
+				"Bring 8 Andesite Alloy."
+			]
+			id: "0F7E34A2ABD8F5D0"
+			tasks: [
+				{
+					id: "3E35A1B5E3B6F6FF"
+					type: "item"
+					item: "create:andesite_alloy"
+					count: 8L
+				}
+			]
+			rewards: [
+				{
+					id: "301618AB7E48C56B"
+					type: "item"
+					item: "aeronautics:andesite_propeller"
+					count: 1
+				}
+				{
+					id: "4F32EDC4D5C85F68"
+					type: "item"
+					item: "aeronautics:aviators_goggles"
+					count: 1
+				}
+				{
+					id: "42056DD632332ED1"
+					type: "xp"
+					xp: 10
+				}
+			]
+			shape: "square"
+		}
+		{
+			title: "Create: Aeronautics, Continued"
+			x: 0.0d
+			y: 2.0d
+			description: [
+				"Levitite blend crystallises into the block that makes things float."
+				""
+				"Bring 6 Brass Ingots."
+			]
+			id: "F2239941CBB9429A"
+			tasks: [
+				{
+					id: "1B215FDF8718156B"
+					type: "item"
+					item: "create:brass_ingot"
+					count: 6L
+				}
+			]
+			rewards: [
+				{
+					id: "4A21AE34E1BD7603"
+					type: "item"
+					item: "aeronautics:levitite_blend"
+					count: 4
+				}
+				{
+					id: "588688A54EAEB458"
+					type: "item"
+					item: "aeronautics:end_stone_powder"
+					count: 4
+				}
+				{
+					id: "927F09AA7B3B2A12"
+					type: "xp"
+					xp: 15
+				}
+			]
+			dependencies: [
+				"0F7E34A2ABD8F5D0"
+			]
+		}
+		{
+			title: "Create: Aeronautics: Kitted Out"
+			x: 0.0d
+			y: 4.0d
+			description: [
+				"A burner for hot air, and a bearing that keeps a propeller pointed where you want."
+				""
+				"Bring 12 Iron Ingots."
+			]
+			id: "6F831C98C4E17E63"
+			tasks: [
+				{
+					id: "9F2148AFBD2AFC1C"
+					type: "item"
+					item: "minecraft:iron_ingot"
+					count: 12L
+				}
+			]
+			rewards: [
+				{
+					id: "E7AFAB7C45A9CD92"
+					type: "item"
+					item: "aeronautics:adjustable_burner"
+					count: 1
+				}
+				{
+					id: "5243EE10C2E64758"
+					type: "item"
+					item: "aeronautics:gyroscopic_propeller_bearing"
+					count: 1
+				}
+				{
+					id: "B934716C366EEC1D"
+					type: "xp"
+					xp: 20
+				}
+			]
+			dependencies: [
+				"F2239941CBB9429A"
+			]
+		}
+	]
+}

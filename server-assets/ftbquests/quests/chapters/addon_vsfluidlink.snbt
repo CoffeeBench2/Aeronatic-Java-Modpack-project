@@ -1,0 +1,136 @@
+{
+	id: "9E92B51763D1135B"
+	group: "4E2FA1B674D143B0"
+	order_index: 131
+	filename: "addon_vsfluidlink"
+	title: "Hose Connectors"
+	icon: "vsfluidlink:hose_connector"
+	subtitle: [
+		"Move fluids and items between separate contraptions."
+	]
+	default_quest_shape: ""
+	default_hide_dependency_lines: false
+	quests: [
+		{
+			title: "Meet Hose Connectors"
+			x: 0.0d
+			y: 0.0d
+			description: [
+				"A hose for fluid, and one for items. Both cross the gap between ships."
+				""
+				"Bring 8 Andesite Alloy."
+			]
+			id: "21B93A05E4B38E21"
+			tasks: [
+				{
+					id: "03E4262399D01ACE"
+					type: "item"
+					item: "create:andesite_alloy"
+					count: 8L
+				}
+			]
+			rewards: [
+				{
+					id: "82373871918C0916"
+					type: "item"
+					item: "vsfluidlink:hose_connector"
+					count: 2
+				}
+				{
+					id: "20BF19DDEAF3CC6C"
+					type: "item"
+					item: "vsfluidlink:item_hose_connector"
+					count: 2
+				}
+				{
+					id: "0DC6D8040D41032C"
+					type: "xp"
+					xp: 10
+				}
+			]
+			shape: "square"
+		}
+		{
+			title: "Hose Connectors, Continued"
+			x: 0.0d
+			y: 2.0d
+			description: [
+				"Chains hold two builds together. Magnets do it without a hard link."
+				""
+				"Bring 6 Brass Ingots."
+			]
+			id: "BAC92FA4498AC64E"
+			tasks: [
+				{
+					id: "F9F0AB174DE26205"
+					type: "item"
+					item: "create:brass_ingot"
+					count: 6L
+				}
+			]
+			rewards: [
+				{
+					id: "E6B6C178A50FFDF3"
+					type: "item"
+					item: "vsfluidlink:chain_connector"
+					count: 2
+				}
+				{
+					id: "0B829999208D42B8"
+					type: "item"
+					item: "vsfluidlink:magnet_hose_connector"
+					count: 2
+				}
+				{
+					id: "642D20B7F9E4B91B"
+					type: "xp"
+					xp: 15
+				}
+			]
+			dependencies: [
+				"21B93A05E4B38E21"
+			]
+		}
+		{
+			title: "Hose Connectors: Kitted Out"
+			x: 0.0d
+			y: 4.0d
+			description: [
+				"Electric connectors, for when the other side needs power too."
+				""
+				"Bring 12 Iron Ingots."
+			]
+			id: "10217E3E0669A937"
+			tasks: [
+				{
+					id: "405B5F834DD36C84"
+					type: "item"
+					item: "minecraft:iron_ingot"
+					count: 12L
+				}
+			]
+			rewards: [
+				{
+					id: "214A1648C2FE8A06"
+					type: "item"
+					item: "vsfluidlink:electric_wire_connector"
+					count: 2
+				}
+				{
+					id: "667540FB59D6F0FB"
+					type: "item"
+					item: "vsfluidlink:magnet_chain_connector"
+					count: 2
+				}
+				{
+					id: "E4DD051F13E5F142"
+					type: "xp"
+					xp: 20
+				}
+			]
+			dependencies: [
+				"BAC92FA4498AC64E"
+			]
+		}
+	]
+}

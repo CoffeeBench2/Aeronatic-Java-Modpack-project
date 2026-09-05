@@ -1,0 +1,136 @@
+{
+	id: "6228E957BFE043D8"
+	group: "4E2FA1B674D143B0"
+	order_index: 110
+	filename: "addon_tfmg"
+	title: "The Factory Must Grow"
+	icon: "tfmg:aluminum_ingot"
+	subtitle: [
+		"Heavy industry. Steel, aluminium, and very large machines."
+	]
+	default_quest_shape: ""
+	default_hide_dependency_lines: false
+	quests: [
+		{
+			title: "Meet The Factory Must Grow"
+			x: 0.0d
+			y: 0.0d
+			description: [
+				"Aluminium is TFMG's entry metal. Light, and it does not rust."
+				""
+				"Bring 8 Andesite Alloy."
+			]
+			id: "1142D37B3B1D6DE2"
+			tasks: [
+				{
+					id: "7C57F4D7785D520E"
+					type: "item"
+					item: "create:andesite_alloy"
+					count: 8L
+				}
+			]
+			rewards: [
+				{
+					id: "5AE0A0F17735ACEF"
+					type: "item"
+					item: "tfmg:aluminum_ingot"
+					count: 6
+				}
+				{
+					id: "9A8ED36613415EF4"
+					type: "item"
+					item: "tfmg:aluminum_bars"
+					count: 4
+				}
+				{
+					id: "B63339B35E7B65FD"
+					type: "xp"
+					xp: 10
+				}
+			]
+			shape: "square"
+		}
+		{
+			title: "The Factory Must Grow, Continued"
+			x: 0.0d
+			y: 2.0d
+			description: [
+				"Frames and cogs, so you can build in it rather than just hold it."
+				""
+				"Bring 6 Brass Ingots."
+			]
+			id: "8B9DC26C327398D8"
+			tasks: [
+				{
+					id: "E772E4A2B4726F48"
+					type: "item"
+					item: "create:brass_ingot"
+					count: 6L
+				}
+			]
+			rewards: [
+				{
+					id: "5C1D1E4473DFDE67"
+					type: "item"
+					item: "tfmg:aluminum_frame"
+					count: 4
+				}
+				{
+					id: "6D8C0CF2C5C85D71"
+					type: "item"
+					item: "tfmg:aluminum_cogwheel"
+					count: 2
+				}
+				{
+					id: "E7194C1C41C1E9CD"
+					type: "xp"
+					xp: 15
+				}
+			]
+			dependencies: [
+				"1142D37B3B1D6DE2"
+			]
+		}
+		{
+			title: "The Factory Must Grow: Kitted Out"
+			x: 0.0d
+			y: 4.0d
+			description: [
+				"An air intake and a tank. The first machines want both."
+				""
+				"Bring 12 Iron Ingots."
+			]
+			id: "6717AD0C59C81E3B"
+			tasks: [
+				{
+					id: "67A1913C8F8032B4"
+					type: "item"
+					item: "minecraft:iron_ingot"
+					count: 12L
+				}
+			]
+			rewards: [
+				{
+					id: "D61255665DD7F732"
+					type: "item"
+					item: "tfmg:air_intake"
+					count: 1
+				}
+				{
+					id: "39839974FABE7889"
+					type: "item"
+					item: "tfmg:aluminum_fluid_tank"
+					count: 2
+				}
+				{
+					id: "EC5CEAAB69CCB344"
+					type: "xp"
+					xp: 20
+				}
+			]
+			dependencies: [
+				"8B9DC26C327398D8"
+			]
+		}
+	]
+}

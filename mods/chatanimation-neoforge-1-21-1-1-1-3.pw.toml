@@ -1,6 +1,6 @@
 name = "Chat Animation 1.1.3"
 filename = "chatanimation-neoforge-1.21.1-1.1.3.jar"
-side = "both"
+side = "client"
 
 [download]
 url = "https://cdn.modrinth.com/data/DnNYdJsx/versions/fo7IaI89/chatanimation-neoforge-1.21.1-1.1.3.jar"

@@ -1,0 +1,136 @@
+{
+	id: "9E0DA2B271122A0A"
+	group: "4E2FA1B674D143B0"
+	order_index: 123
+	filename: "addon_createmoregirder"
+	title: "More Girders"
+	icon: "createmoregirder:brass_beam"
+	subtitle: [
+		"Girders in more metals and more shapes."
+	]
+	default_quest_shape: ""
+	default_hide_dependency_lines: false
+	quests: [
+		{
+			title: "Meet More Girders"
+			x: 0.0d
+			y: 0.0d
+			description: [
+				"Copper beams and trusses. Warmer than iron, and they age nicely."
+				""
+				"Bring 8 Andesite Alloy."
+			]
+			id: "A12783C507BAB6FA"
+			tasks: [
+				{
+					id: "4A795B4B4F5F0D9F"
+					type: "item"
+					item: "create:andesite_alloy"
+					count: 8L
+				}
+			]
+			rewards: [
+				{
+					id: "B984FF68E4ED7C87"
+					type: "item"
+					item: "createmoregirder:copper_beam"
+					count: 8
+				}
+				{
+					id: "531FA3A3E06B0E6B"
+					type: "item"
+					item: "createmoregirder:copper_truss"
+					count: 8
+				}
+				{
+					id: "C9DEC7BF4A2EEC05"
+					type: "xp"
+					xp: 10
+				}
+			]
+			shape: "square"
+		}
+		{
+			title: "More Girders, Continued"
+			x: 0.0d
+			y: 2.0d
+			description: [
+				"The brass set. Matches everything else brass in the pack."
+				""
+				"Bring 6 Brass Ingots."
+			]
+			id: "2909A7FEFDB49BBC"
+			tasks: [
+				{
+					id: "B26427E47CB2103E"
+					type: "item"
+					item: "create:brass_ingot"
+					count: 6L
+				}
+			]
+			rewards: [
+				{
+					id: "51F0D9BDACD2CA34"
+					type: "item"
+					item: "createmoregirder:brass_beam"
+					count: 8
+				}
+				{
+					id: "FF0849C29538E6EE"
+					type: "item"
+					item: "createmoregirder:brass_truss"
+					count: 8
+				}
+				{
+					id: "4A738F275EEE2C63"
+					type: "xp"
+					xp: 15
+				}
+			]
+			dependencies: [
+				"A12783C507BAB6FA"
+			]
+		}
+		{
+			title: "More Girders: Kitted Out"
+			x: 0.0d
+			y: 4.0d
+			description: [
+				"Brackets and struts, to join them without it looking accidental."
+				""
+				"Bring 12 Iron Ingots."
+			]
+			id: "9CB75E570CCE61AF"
+			tasks: [
+				{
+					id: "74C2FBCB7D7BB1FB"
+					type: "item"
+					item: "minecraft:iron_ingot"
+					count: 12L
+				}
+			]
+			rewards: [
+				{
+					id: "76B2CF7ABD4FC3CF"
+					type: "item"
+					item: "createmoregirder:brass_bracket"
+					count: 4
+				}
+				{
+					id: "F7A883C4101860A5"
+					type: "item"
+					item: "createmoregirder:brass_beam_strut"
+					count: 4
+				}
+				{
+					id: "2D1FF767645533E3"
+					type: "xp"
+					xp: 20
+				}
+			]
+			dependencies: [
+				"2909A7FEFDB49BBC"
+			]
+		}
+	]
+}

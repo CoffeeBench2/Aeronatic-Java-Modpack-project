@@ -1,0 +1,136 @@
+{
+	id: "B81C70BF33C6094E"
+	group: "4E2FA1B674D143B0"
+	order_index: 134
+	filename: "addon_cmpackagecouriers"
+	title: "Package Couriers"
+	icon: "cmpackagecouriers:cardboard_plane"
+	subtitle: [
+		"Packages that deliver themselves."
+	]
+	default_quest_shape: ""
+	default_hide_dependency_lines: false
+	quests: [
+		{
+			title: "Meet Package Couriers"
+			x: 0.0d
+			y: 0.0d
+			description: [
+				"Parts and a transmitter. The transmitter is the address."
+				""
+				"Bring 8 Andesite Alloy."
+			]
+			id: "72B66F0E617D12BF"
+			tasks: [
+				{
+					id: "397BF0039D8E1ABA"
+					type: "item"
+					item: "create:andesite_alloy"
+					count: 8L
+				}
+			]
+			rewards: [
+				{
+					id: "FA7B7B3668CAD849"
+					type: "item"
+					item: "cmpackagecouriers:cardboard_plane_parts"
+					count: 4
+				}
+				{
+					id: "45EF0281345648F0"
+					type: "item"
+					item: "cmpackagecouriers:location_transmitter"
+					count: 2
+				}
+				{
+					id: "B9001E433616C025"
+					type: "xp"
+					xp: 10
+				}
+			]
+			shape: "square"
+		}
+		{
+			title: "Package Couriers, Continued"
+			x: 0.0d
+			y: 2.0d
+			description: [
+				"A finished plane, and a ticker so you can order from anywhere."
+				""
+				"Bring 6 Brass Ingots."
+			]
+			id: "4B62B26DA8A7E00C"
+			tasks: [
+				{
+					id: "4EBB2F967B705772"
+					type: "item"
+					item: "create:brass_ingot"
+					count: 6L
+				}
+			]
+			rewards: [
+				{
+					id: "98F8D766970DD6B8"
+					type: "item"
+					item: "cmpackagecouriers:cardboard_plane"
+					count: 1
+				}
+				{
+					id: "E00B4455D4544D75"
+					type: "item"
+					item: "cmpackagecouriers:portable_stock_ticker"
+					count: 1
+				}
+				{
+					id: "0FA3DFA43D01974F"
+					type: "xp"
+					xp: 15
+				}
+			]
+			dependencies: [
+				"72B66F0E617D12BF"
+			]
+		}
+		{
+			title: "Package Couriers: Kitted Out"
+			x: 0.0d
+			y: 4.0d
+			description: [
+				"More transmitters. Every destination needs its own."
+				""
+				"Bring 12 Iron Ingots."
+			]
+			id: "F32310E6481E9DF1"
+			tasks: [
+				{
+					id: "E1AB118F4656E3F1"
+					type: "item"
+					item: "minecraft:iron_ingot"
+					count: 12L
+				}
+			]
+			rewards: [
+				{
+					id: "AE59B1E23D376A8D"
+					type: "item"
+					item: "cmpackagecouriers:location_transmitter"
+					count: 4
+				}
+				{
+					id: "C87B18A41FC70ACF"
+					type: "item"
+					item: "cmparallelpipes:pipe_wrench"
+					count: 1
+				}
+				{
+					id: "151EC6FA6923BBEC"
+					type: "xp"
+					xp: 20
+				}
+			]
+			dependencies: [
+				"4B62B26DA8A7E00C"
+			]
+		}
+	]
+}

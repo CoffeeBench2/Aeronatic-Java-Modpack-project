@@ -1,0 +1,136 @@
+{
+	id: "783545831E6D06C0"
+	group: "4E2FA1B674D143B0"
+	order_index: 104
+	filename: "addon_simulated"
+	title: "Create: Simulated"
+	icon: "simulated:altitude_sensor"
+	subtitle: [
+		"Physics parts: engines, sails, and things that hold together."
+	]
+	default_quest_shape: ""
+	default_hide_dependency_lines: false
+	quests: [
+		{
+			title: "Meet Create: Simulated"
+			x: 0.0d
+			y: 0.0d
+			description: [
+				"Handles to grab and augers to dig. The basics of a moving build."
+				""
+				"Bring 8 Andesite Alloy."
+			]
+			id: "D97F0C0BD0D42D42"
+			tasks: [
+				{
+					id: "26C8887BAAD21A86"
+					type: "item"
+					item: "create:andesite_alloy"
+					count: 8L
+				}
+			]
+			rewards: [
+				{
+					id: "2E4C2F89C1C27152"
+					type: "item"
+					item: "simulated:copper_handle"
+					count: 2
+				}
+				{
+					id: "283D4830C7D60174"
+					type: "item"
+					item: "simulated:auger_shaft"
+					count: 2
+				}
+				{
+					id: "B6FB149A95103DCB"
+					type: "xp"
+					xp: 10
+				}
+			]
+			shape: "square"
+		}
+		{
+			title: "Create: Simulated, Continued"
+			x: 0.0d
+			y: 2.0d
+			description: [
+				"An altitude sensor, and a diagram that shows what your contraption thinks it is."
+				""
+				"Bring 6 Brass Ingots."
+			]
+			id: "F4A957ABBEB5553B"
+			tasks: [
+				{
+					id: "8556DA4BA142C5CC"
+					type: "item"
+					item: "create:brass_ingot"
+					count: 6L
+				}
+			]
+			rewards: [
+				{
+					id: "BA1B8684B85A964E"
+					type: "item"
+					item: "simulated:altitude_sensor"
+					count: 1
+				}
+				{
+					id: "7178CD7F53649294"
+					type: "item"
+					item: "simulated:contraption_diagram"
+					count: 1
+				}
+				{
+					id: "B975229F11CEE6CD"
+					type: "xp"
+					xp: 15
+				}
+			]
+			dependencies: [
+				"D97F0C0BD0D42D42"
+			]
+		}
+		{
+			title: "Create: Simulated: Kitted Out"
+			x: 0.0d
+			y: 4.0d
+			description: [
+				"Analog transmission and a directional gearshift, for drive trains that change their mind."
+				""
+				"Bring 12 Iron Ingots."
+			]
+			id: "54A6B5644CC2FECC"
+			tasks: [
+				{
+					id: "B0BCC38ED66773B6"
+					type: "item"
+					item: "minecraft:iron_ingot"
+					count: 12L
+				}
+			]
+			rewards: [
+				{
+					id: "48E3616500EAA5F5"
+					type: "item"
+					item: "simulated:analog_transmission"
+					count: 1
+				}
+				{
+					id: "EB23DC65F2612E31"
+					type: "item"
+					item: "simulated:directional_gearshift"
+					count: 1
+				}
+				{
+					id: "AC1870A056547593"
+					type: "xp"
+					xp: 20
+				}
+			]
+			dependencies: [
+				"F4A957ABBEB5553B"
+			]
+		}
+	]
+}
