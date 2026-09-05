@@ -16,6 +16,29 @@
       "body": "A few things we're still building. No dates promised — they land when they're good enough to land."
     },
     {
+      "version": "1.10.11",
+      "date": "September 2026",
+      "title": "Housekeeping",
+      "tag": "UPDATE",
+      "body": "Mods we drop now actually leave. If the pack removed something and it stayed in your folder anyway — and then stopped you joining — that is fixed, and the client will now say so out loud instead of failing quietly.",
+      "added": [
+        "A What's New card on the title screen after each update, so you stop finding out from other people",
+        "A full quest book: 57 quests from your first log through to your first airship",
+        "Claim Blocks as quest rewards, so land comes from playing rather than asking"
+      ],
+      "fixed": [
+        "Removed mods really get removed, even when an old copy of the launcher mod is left behind",
+        "Switching between Normal and Potato works on instances where it silently did nothing",
+        "Three Create Tracks blocks dropped nothing when broken. They drop again",
+        "Those blocks mine at the right speed with a pickaxe again too"
+      ],
+      "removed": [],
+      "link": {
+        "label": "Full changelog on GitHub",
+        "url": "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/tag/v1.10.11"
+      }
+    },
+    {
       "version": "1.10",
       "date": "September 2026",
       "title": "Head for the Skies",
