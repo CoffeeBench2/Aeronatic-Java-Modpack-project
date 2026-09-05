@@ -1,6 +1,6 @@
 name = "Subtle Effects (NeoForge) 1.21.1-1.14.3"
 filename = "SubtleEffects-neoforge-1.21.1-1.14.3.jar"
-side = "both"
+side = "client"
 
 [download]
 url = "https://cdn.modrinth.com/data/4q8UOK1d/versions/s3Fo4cDk/SubtleEffects-neoforge-1.21.1-1.14.3.jar"

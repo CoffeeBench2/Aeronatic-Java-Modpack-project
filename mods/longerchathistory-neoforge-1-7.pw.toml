@@ -1,6 +1,6 @@
 name = "Longer Chat History 1.7"
 filename = "LongerChatHistory-neoforge-1.7.jar"
-side = "both"
+side = "client"
 
 [download]
 url = "https://cdn.modrinth.com/data/f4P7fNKN/versions/Une73t0n/LongerChatHistory-neoforge-1.7.jar"

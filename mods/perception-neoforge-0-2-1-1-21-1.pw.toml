@@ -1,6 +1,6 @@
 name = "Perception 0.2.1"
 filename = "Perception-NEOFORGE-0.2.1+1.21.1.jar"
-side = "both"
+side = "client"
 
 [download]
 url = "https://cdn.modrinth.com/data/P8STLvzB/versions/W5IQteYO/Perception-NEOFORGE-0.2.1%2B1.21.1.jar"

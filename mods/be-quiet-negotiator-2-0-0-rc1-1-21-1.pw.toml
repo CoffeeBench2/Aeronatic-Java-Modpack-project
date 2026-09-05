@@ -1,6 +1,6 @@
 name = "Release 2.0.0-rc1 for Minecraft 1.21.1"
 filename = "be_quiet_negotiator-2.0.0-rc1+1.21.1.jar"
-side = "both"
+side = "client"
 
 [download]
 url = "https://cdn.modrinth.com/data/38x4KgoC/versions/YbqfgVkd/be_quiet_negotiator-2.0.0-rc1%2B1.21.1.jar"

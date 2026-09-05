@@ -1,6 +1,6 @@
 name = "1.21-3.6.7-neoforge"
 filename = "polytone-1.21-3.6.7-neoforge.jar"
-side = "both"
+side = "client"
 
 [download]
 url = "https://cdn.modrinth.com/data/3qAYkBMB/versions/g907ZKM2/polytone-1.21-3.6.7-neoforge.jar"

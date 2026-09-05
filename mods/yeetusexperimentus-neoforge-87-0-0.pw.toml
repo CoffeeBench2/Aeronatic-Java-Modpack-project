@@ -1,6 +1,6 @@
 name = "[NEOFORGE][1.21] YeetusExperimentus 87.0.0"
 filename = "yeetusexperimentus-neoforge-87.0.0.jar"
-side = "both"
+side = "client"
 
 [download]
 url = "https://cdn.modrinth.com/data/HaaH232J/versions/Pp0TjcvD/yeetusexperimentus-neoforge-87.0.0.jar"

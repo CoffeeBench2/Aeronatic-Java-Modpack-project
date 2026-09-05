@@ -1,6 +1,6 @@
 name = "NeoForge - 1.21"
 filename = "entity_texture_features_1.21-neoforge-7.1.jar"
-side = "both"
+side = "client"
 
 [download]
 url = "https://cdn.modrinth.com/data/BVzZfTc1/versions/YEMROAHv/entity_texture_features_1.21-neoforge-7.1.jar"

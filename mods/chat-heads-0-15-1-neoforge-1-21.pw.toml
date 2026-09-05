@@ -1,6 +1,6 @@
 name = "0.15.1"
 filename = "chat_heads-0.15.1-neoforge-1.21.jar"
-side = "both"
+side = "client"
 
 [download]
 url = "https://cdn.modrinth.com/data/Wb5oqrBJ/versions/8oDa7chj/chat_heads-0.15.1-neoforge-1.21.jar"
