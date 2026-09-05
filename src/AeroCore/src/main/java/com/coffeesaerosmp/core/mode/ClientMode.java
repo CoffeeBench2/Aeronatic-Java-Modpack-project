@@ -177,27 +177,13 @@ public final class ClientMode {
         pb.start();
     }
 
-    /** Same fallback as the updater: NeoForge's module classloader does not always expose a
-     *  plain {@code file:} code source, so scanning mods/ by name is the reliable path. */
+        /**
+     * Delegates to {@link com.coffeesaerosmp.core.util.SelfJar}, which picks a jar that actually
+     * contains the class the helper JVM will run. The old inline version took the first
+     * {@code coffeesaerocore*.jar} in directory order and silently chose a stale duplicate.
+     */
     private static Path resolveSelfJar(Path gameDir) throws IOException {
-        try {
-            var loc = ClientMode.class.getProtectionDomain().getCodeSource().getLocation();
-            if (loc != null) {
-                Path p = Paths.get(loc.toURI());
-                if (Files.isRegularFile(p) && p.toString().toLowerCase(Locale.ROOT).endsWith(".jar")) return p;
-            }
-        } catch (Exception ignored) {}
-        Path mods = gameDir.resolve("mods");
-        if (Files.isDirectory(mods)) {
-            try (var s = Files.list(mods)) {
-                var hit = s.filter(p -> {
-                    String n = p.getFileName().toString().toLowerCase(Locale.ROOT);
-                    return n.startsWith("coffeesaerocore") && n.endsWith(".jar");
-                }).findFirst();
-                if (hit.isPresent()) return hit.get();
-            }
-        }
-        throw new IOException("could not locate CoffeesAeroCore jar for the mode applier");
+        return com.coffeesaerosmp.core.util.SelfJar.locate(gameDir, "com.coffeesaerosmp.core.mode.ModeApplier");
     }
 
     private static String javaw() {

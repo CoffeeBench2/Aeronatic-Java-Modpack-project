@@ -1,0 +1,313 @@
+{
+	id: "AFDEAF1E86637AA1"
+	group: ""
+	order_index: 2
+	filename: "kinetics"
+	title: "Kinetics"
+	icon: "create:gearbox"
+	subtitle: [
+		"Speed, stress, and the art of not overloading everything."
+	]
+	default_quest_shape: ""
+	default_hide_dependency_lines: false
+	quests: [
+		{
+			title: "Gearbox"
+			x: 0.0d
+			y: 0.0d
+			description: [
+				"Turn a corner without a mess of cogs."
+			]
+			id: "979340D796E06F30"
+			tasks: [
+				{
+					id: "FE00FD2220DDA19C"
+					type: "item"
+					item: "create:gearbox"
+					count: 2L
+				}
+			]
+			rewards: [
+				{
+					id: "C701D1109115FEC0"
+					type: "item"
+					item: "create:shaft"
+					count: 8
+				}
+			]
+			shape: "square"
+		}
+		{
+			title: "Gearshift"
+			x: -2.0d
+			y: 2.0d
+			description: [
+				"Redstone reverses rotation. Useful for doors, pistons and regret."
+			]
+			id: "DC737F562786640E"
+			tasks: [
+				{
+					id: "B8DC1ADD63B8D881"
+					type: "item"
+					item: "create:gearshift"
+					count: 1L
+				}
+			]
+			rewards: [
+				{
+					id: "AAE54134605E35F3"
+					type: "item"
+					item: "minecraft:redstone"
+					count: 16
+				}
+			]
+			dependencies: [
+				"979340D796E06F30"
+			]
+		}
+		{
+			title: "Clutch"
+			x: 2.0d
+			y: 2.0d
+			description: [
+				"Cut rotation without breaking the line."
+			]
+			id: "992AE7ADC90DB243"
+			tasks: [
+				{
+					id: "C6D0DDC1B744A207"
+					type: "item"
+					item: "create:clutch"
+					count: 1L
+				}
+			]
+			rewards: [
+				{
+					id: "DA3D281B4F2DD1D4"
+					type: "item"
+					item: "minecraft:redstone"
+					count: 16
+				}
+			]
+			dependencies: [
+				"979340D796E06F30"
+			]
+		}
+		{
+			title: "Rotation Speed Controller"
+			x: 0.0d
+			y: 4.0d
+			description: [
+				"Set an exact RPM instead of stacking gear ratios and hoping."
+			]
+			id: "4EAF3181D3392DCE"
+			tasks: [
+				{
+					id: "7C7FA8617F835E8F"
+					type: "item"
+					item: "create:rotation_speed_controller"
+					count: 1L
+				}
+			]
+			rewards: [
+				{
+					id: "0676BFB136B5EA30"
+					type: "item"
+					item: "create:brass_ingot"
+					count: 4
+				}
+			]
+			dependencies: [
+				"DC737F562786640E"
+				"992AE7ADC90DB243"
+			]
+		}
+		{
+			title: "Read the Numbers"
+			x: -2.0d
+			y: 5.0d
+			description: [
+				"A stressometer plus goggles tells you why everything stopped."
+				"It is almost always stress."
+			]
+			id: "78817E9479284A22"
+			tasks: [
+				{
+					id: "F3B47888D86606B9"
+					type: "item"
+					item: "create:stressometer"
+					count: 1L
+				}
+			]
+			rewards: [
+				{
+					id: "545C23200BDA250C"
+					type: "item"
+					item: "create:goggles"
+					count: 1
+				}
+				{
+					id: "09D56AF3A4FA4D62"
+					type: "xp"
+					xp: 10
+				}
+			]
+			dependencies: [
+				"979340D796E06F30"
+			]
+		}
+		{
+			title: "Mechanical Drill"
+			x: 2.0d
+			y: 5.0d
+			description: [
+				"Breaks blocks. Put it on a contraption and it becomes a mining machine."
+			]
+			id: "0EFADA86A67A06DB"
+			tasks: [
+				{
+					id: "54529743539EE975"
+					type: "item"
+					item: "create:mechanical_drill"
+					count: 1L
+				}
+			]
+			rewards: [
+				{
+					id: "7C5317BCE27B0E48"
+					type: "item"
+					item: "create:andesite_alloy"
+					count: 8
+				}
+			]
+			dependencies: [
+				"4EAF3181D3392DCE"
+			]
+		}
+		{
+			title: "Mechanical Saw"
+			x: 0.0d
+			y: 6.0d
+			description: [
+				"Logs to planks at a better ratio, and it cuts trees down on its own."
+			]
+			id: "F4E21951B88FFA16"
+			tasks: [
+				{
+					id: "206DD343551D44CB"
+					type: "item"
+					item: "create:mechanical_saw"
+					count: 1L
+				}
+			]
+			rewards: [
+				{
+					id: "1739E5CC195F39FB"
+					type: "item"
+					item: "minecraft:oak_log"
+					count: 32
+				}
+			]
+			dependencies: [
+				"4EAF3181D3392DCE"
+			]
+		}
+		{
+			title: "Depot & Chute"
+			x: -2.0d
+			y: 7.0d
+			description: [
+				"A depot holds one item still so a machine can work on it."
+				"A chute moves items vertically without a belt."
+			]
+			id: "27AA59306232F787"
+			tasks: [
+				{
+					id: "7FD9CB2D779615A1"
+					type: "item"
+					item: "create:depot"
+					count: 2L
+				}
+				{
+					id: "AE9E6DCE7E3679E4"
+					type: "item"
+					item: "create:chute"
+					count: 4L
+				}
+			]
+			rewards: [
+				{
+					id: "ADF4F8CDFC7476B3"
+					type: "item"
+					item: "create:andesite_alloy"
+					count: 8
+				}
+			]
+			dependencies: [
+				"F4E21951B88FFA16"
+			]
+		}
+		{
+			title: "Funnels"
+			x: 2.0d
+			y: 7.0d
+			description: [
+				"Funnels move items between inventories and belts. The whole logistics game."
+			]
+			id: "DADACC0041CAF8BC"
+			tasks: [
+				{
+					id: "A9A98B7DF38C9403"
+					type: "item"
+					item: "create:andesite_funnel"
+					count: 4L
+				}
+			]
+			rewards: [
+				{
+					id: "17CEF2310593A604"
+					type: "item"
+					item: "create:andesite_funnel"
+					count: 4
+				}
+			]
+			dependencies: [
+				"0EFADA86A67A06DB"
+			]
+		}
+		{
+			title: "Industrial Estate"
+			x: 0.0d
+			y: 9.0d
+			description: [
+				"Machines sprawl. Claim the sprawl."
+			]
+			id: "9B729AD47E12A40A"
+			tasks: [
+				{
+					id: "29917BCA1715DDB2"
+					type: "item"
+					item: "create:cogwheel"
+					count: 32L
+				}
+			]
+			rewards: [
+				{
+					id: "49335815F5AB5FCF"
+					type: "item"
+					item: "aeroclaims:claim_block"
+					count: 2
+				}
+				{
+					id: "49D9D27056370E06"
+					type: "xp"
+					xp: 30
+				}
+			]
+			shape: "diamond"
+			dependencies: [
+				"DADACC0041CAF8BC"
+			]
+		}
+	]
+}

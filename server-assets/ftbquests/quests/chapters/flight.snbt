@@ -1,0 +1,305 @@
+{
+	id: "69F11C79E8BB7A0D"
+	group: ""
+	order_index: 5
+	filename: "flight"
+	title: "Taking Flight"
+	icon: "create:mechanical_bearing"
+	subtitle: [
+		"The part of the pack that gave it its name."
+	]
+	default_quest_shape: ""
+	default_hide_dependency_lines: false
+	quests: [
+		{
+			title: "Engineer's Goggles"
+			x: 0.0d
+			y: 0.0d
+			description: [
+				"Goggles show stress and contents. The wrench rotates and dismantles."
+				"If you have not made these yet, make them now."
+			]
+			id: "671F8693059BE095"
+			tasks: [
+				{
+					id: "DF4108DBBB092B0C"
+					type: "item"
+					item: "create:goggles"
+					count: 1L
+				}
+				{
+					id: "C61A0BD9413EF8F8"
+					type: "item"
+					item: "create:wrench"
+					count: 1L
+				}
+			]
+			rewards: [
+				{
+					id: "2CDA130F41C7DF2F"
+					type: "item"
+					item: "create:brass_ingot"
+					count: 4
+				}
+			]
+			shape: "square"
+		}
+		{
+			title: "Rope Pulley"
+			x: -2.0d
+			y: 2.0d
+			description: [
+				"Your first moving contraption. Straight up, straight down."
+			]
+			id: "315E27A23D09C63D"
+			tasks: [
+				{
+					id: "E22AC481141AFE96"
+					type: "item"
+					item: "create:rope_pulley"
+					count: 1L
+				}
+			]
+			rewards: [
+				{
+					id: "10781A6ADDF754B1"
+					type: "item"
+					item: "create:andesite_alloy"
+					count: 16
+				}
+			]
+			dependencies: [
+				"671F8693059BE095"
+			]
+		}
+		{
+			title: "Mechanical Piston"
+			x: 2.0d
+			y: 2.0d
+			description: [
+				"Same idea, any direction, and it carries whatever is glued to it."
+			]
+			id: "197FAFF3AC85221A"
+			tasks: [
+				{
+					id: "AA1B29EAF0595D6F"
+					type: "item"
+					item: "create:mechanical_piston"
+					count: 1L
+				}
+			]
+			rewards: [
+				{
+					id: "CFCAA0C64AC3E858"
+					type: "item"
+					item: "create:andesite_alloy"
+					count: 16
+				}
+			]
+			dependencies: [
+				"671F8693059BE095"
+			]
+		}
+		{
+			title: "Super Glue"
+			x: 0.0d
+			y: 4.0d
+			description: [
+				"Glue decides what moves with a contraption and what stays behind."
+				"Get this wrong and you leave half your ship in the air."
+			]
+			id: "E4EF3C47C6789E14"
+			tasks: [
+				{
+					id: "53EF9D616F0F841F"
+					type: "item"
+					item: "create:super_glue"
+					count: 1L
+				}
+			]
+			rewards: [
+				{
+					id: "6168F2546CE050DD"
+					type: "item"
+					item: "create:super_glue"
+					count: 1
+				}
+			]
+			dependencies: [
+				"315E27A23D09C63D"
+				"197FAFF3AC85221A"
+			]
+		}
+		{
+			title: "Mechanical Bearing"
+			x: 0.0d
+			y: 6.0d
+			description: [
+				"Rotating contraptions. Windmills, and the first thing that feels like flight."
+			]
+			id: "C25AAAAE6981A9BC"
+			tasks: [
+				{
+					id: "0952C67CC809A7F0"
+					type: "item"
+					item: "create:mechanical_bearing"
+					count: 1L
+				}
+			]
+			rewards: [
+				{
+					id: "188B45567B053EF3"
+					type: "item"
+					item: "create:brass_casing"
+					count: 4
+				}
+				{
+					id: "E75D30BA50A920B7"
+					type: "xp"
+					xp: 25
+				}
+			]
+			shape: "hexagon"
+			dependencies: [
+				"E4EF3C47C6789E14"
+			]
+		}
+		{
+			title: "Windmill"
+			x: -3.0d
+			y: 7.0d
+			description: [
+				"Sails on a bearing, up high. Free power with no water needed."
+			]
+			id: "1D257DAA0169E910"
+			tasks: [
+				{
+					id: "7AF3579C000FCB04"
+					type: "item"
+					item: "create:windmill_bearing"
+					count: 1L
+				}
+			]
+			rewards: [
+				{
+					id: "CC484FDC5C91702E"
+					type: "item"
+					item: "minecraft:string"
+					count: 16
+				}
+			]
+			dependencies: [
+				"C25AAAAE6981A9BC"
+			]
+		}
+		{
+			title: "Steam Engine"
+			x: 3.0d
+			y: 7.0d
+			description: [
+				"Water, fire and a tank. The endgame power source — feed it properly and it is enormous."
+			]
+			id: "45C8AEF6691C97D7"
+			tasks: [
+				{
+					id: "4A40335E305873C2"
+					type: "item"
+					item: "create:fluid_tank"
+					count: 4L
+				}
+				{
+					id: "BEDB2E00DE9CFBF0"
+					type: "item"
+					item: "create:steam_engine"
+					count: 2L
+				}
+			]
+			rewards: [
+				{
+					id: "BC059125EB01DF1D"
+					type: "item"
+					item: "create:steam_engine"
+					count: 2
+				}
+				{
+					id: "217522CD7FDCD1D0"
+					type: "xp"
+					xp: 30
+				}
+			]
+			dependencies: [
+				"C25AAAAE6981A9BC"
+			]
+		}
+		{
+			title: "Something That Flies"
+			x: 0.0d
+			y: 9.0d
+			description: [
+				"Chassis hold a contraption together across distance."
+				"From here it is your problem what you build. Make it fly."
+			]
+			id: "1D577175641B5260"
+			tasks: [
+				{
+					id: "DAFD477BF4B51935"
+					type: "item"
+					item: "create:linear_chassis"
+					count: 4L
+				}
+			]
+			rewards: [
+				{
+					id: "302584AA8EBC6FF9"
+					type: "item"
+					item: "create:linear_chassis"
+					count: 4
+				}
+				{
+					id: "07F292C0BED15506"
+					type: "xp"
+					xp: 40
+				}
+			]
+			shape: "hexagon"
+			dependencies: [
+				"1D257DAA0169E910"
+				"45C8AEF6691C97D7"
+			]
+		}
+		{
+			title: "Airspace"
+			x: 0.0d
+			y: 11.0d
+			description: [
+				"The last of the claim blocks. Build something worth defending."
+			]
+			id: "2C16319C68DFC1A0"
+			tasks: [
+				{
+					id: "9541D8C2912C8F9E"
+					type: "item"
+					item: "create:steam_engine"
+					count: 4L
+				}
+			]
+			rewards: [
+				{
+					id: "7292B65D7F35D779"
+					type: "item"
+					item: "aeroclaims:claim_block"
+					count: 4
+				}
+				{
+					id: "B8A1F5031E0C5D35"
+					type: "xp"
+					xp: 60
+				}
+			]
+			shape: "diamond"
+			dependencies: [
+				"1D577175641B5260"
+			]
+		}
+	]
+}

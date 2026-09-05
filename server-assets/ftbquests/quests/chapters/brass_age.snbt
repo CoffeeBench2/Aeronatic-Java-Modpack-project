@@ -1,0 +1,293 @@
+{
+	id: "2C1BDE6268C3FCEA"
+	group: ""
+	order_index: 3
+	filename: "brass_age"
+	title: "The Brass Age"
+	icon: "create:brass_casing"
+	subtitle: [
+		"Zinc and copper, and suddenly everything is smarter."
+	]
+	default_quest_shape: ""
+	default_hide_dependency_lines: false
+	quests: [
+		{
+			title: "Zinc Ingots"
+			x: 0.0d
+			y: 0.0d
+			description: [
+				"Smelt that zinc ore. You need a lot."
+			]
+			id: "E8E1C6B19EF8F298"
+			tasks: [
+				{
+					id: "0C3F29977F9BC8B1"
+					type: "item"
+					item: "create:zinc_ingot"
+					count: 16L
+				}
+			]
+			rewards: [
+				{
+					id: "1048D528ABC16453"
+					type: "item"
+					item: "minecraft:coal"
+					count: 16
+				}
+			]
+			shape: "square"
+		}
+		{
+			title: "Mechanical Mixer"
+			x: -2.0d
+			y: 2.0d
+			description: [
+				"Mixer over basin is Create's crafting bench. Almost everything alloys here."
+			]
+			id: "67BF7E4E423DE4F0"
+			tasks: [
+				{
+					id: "67E3BB6ED1BB0D44"
+					type: "item"
+					item: "create:mechanical_mixer"
+					count: 1L
+				}
+				{
+					id: "6FA89284D93B2773"
+					type: "item"
+					item: "create:basin"
+					count: 1L
+				}
+			]
+			rewards: [
+				{
+					id: "593C9A00624564F0"
+					type: "item"
+					item: "create:andesite_alloy"
+					count: 8
+				}
+			]
+			dependencies: [
+				"E8E1C6B19EF8F298"
+			]
+		}
+		{
+			title: "Blaze Burner"
+			x: 2.0d
+			y: 2.0d
+			description: [
+				"Heat under a basin unlocks the recipes that need it."
+				"Feed it — a starving burner does nothing."
+			]
+			id: "CB8BC1F0C0B2A4B2"
+			tasks: [
+				{
+					id: "627F6AAB6F167717"
+					type: "item"
+					item: "create:blaze_burner"
+					count: 1L
+				}
+			]
+			rewards: [
+				{
+					id: "39575D6F403CD5B4"
+					type: "item"
+					item: "minecraft:blaze_rod"
+					count: 2
+				}
+			]
+			dependencies: [
+				"E8E1C6B19EF8F298"
+			]
+		}
+		{
+			title: "Brass"
+			x: 0.0d
+			y: 4.0d
+			description: [
+				"Copper and zinc in a heated basin. Brass is the second age of this pack."
+			]
+			id: "9A58D715032B1029"
+			tasks: [
+				{
+					id: "CFF96F38DC132991"
+					type: "item"
+					item: "create:brass_ingot"
+					count: 16L
+				}
+			]
+			rewards: [
+				{
+					id: "89919129409F1D80"
+					type: "item"
+					item: "create:brass_ingot"
+					count: 8
+				}
+				{
+					id: "FA21D2271E1C350C"
+					type: "xp"
+					xp: 20
+				}
+			]
+			shape: "hexagon"
+			dependencies: [
+				"67BF7E4E423DE4F0"
+				"CB8BC1F0C0B2A4B2"
+			]
+		}
+		{
+			title: "Brass Casing"
+			x: -2.0d
+			y: 6.0d
+			description: [
+				"The smarter machines all want brass casing."
+			]
+			id: "9F787B5B58E94304"
+			tasks: [
+				{
+					id: "130C6CEFF6862604"
+					type: "item"
+					item: "create:brass_casing"
+					count: 8L
+				}
+			]
+			rewards: [
+				{
+					id: "D2E3FC639264AD77"
+					type: "item"
+					item: "create:brass_casing"
+					count: 4
+				}
+			]
+			dependencies: [
+				"9A58D715032B1029"
+			]
+		}
+		{
+			title: "Deployer"
+			x: 2.0d
+			y: 6.0d
+			description: [
+				"A deployer uses an item the way a player would. This is how you automate crafting."
+			]
+			id: "9068DF6FDEF417E2"
+			tasks: [
+				{
+					id: "080EBFEB91A9BC9D"
+					type: "item"
+					item: "create:deployer"
+					count: 2L
+				}
+			]
+			rewards: [
+				{
+					id: "C90F9B87678D6493"
+					type: "item"
+					item: "create:andesite_alloy"
+					count: 16
+				}
+			]
+			dependencies: [
+				"9A58D715032B1029"
+			]
+		}
+		{
+			title: "Brass Funnels"
+			x: -3.0d
+			y: 8.0d
+			description: [
+				"Brass funnels filter. Andesite ones do not."
+			]
+			id: "BB14063F91DCD0FA"
+			tasks: [
+				{
+					id: "88ABFA9E032E2684"
+					type: "item"
+					item: "create:brass_funnel"
+					count: 4L
+				}
+			]
+			rewards: [
+				{
+					id: "4C8EF78CF2C632B3"
+					type: "item"
+					item: "create:brass_funnel"
+					count: 4
+				}
+			]
+			dependencies: [
+				"9F787B5B58E94304"
+			]
+		}
+		{
+			title: "Precision Mechanism"
+			x: 0.0d
+			y: 8.0d
+			description: [
+				"The gate to everything advanced. Sequenced assembly — get it right in order."
+				"Golden sheets, cogwheels, iron nuggets, a lot of patience."
+			]
+			id: "393EA7263E6CE985"
+			tasks: [
+				{
+					id: "FCB587A3D396FD67"
+					type: "item"
+					item: "create:precision_mechanism"
+					count: 4L
+				}
+			]
+			rewards: [
+				{
+					id: "378E894A7B3092A4"
+					type: "item"
+					item: "create:precision_mechanism"
+					count: 2
+				}
+				{
+					id: "E5DAEC0CCD579D5C"
+					type: "xp"
+					xp: 30
+				}
+			]
+			shape: "hexagon"
+			dependencies: [
+				"9F787B5B58E94304"
+				"9068DF6FDEF417E2"
+			]
+		}
+		{
+			title: "Brass Works"
+			x: 0.0d
+			y: 10.0d
+			description: [
+				"Three more. Brass factories are big factories."
+			]
+			id: "4B7984D95F500250"
+			tasks: [
+				{
+					id: "9AB41CB6214479A9"
+					type: "item"
+					item: "create:brass_casing"
+					count: 16L
+				}
+			]
+			rewards: [
+				{
+					id: "777ABB23ACEF9CD6"
+					type: "item"
+					item: "aeroclaims:claim_block"
+					count: 3
+				}
+				{
+					id: "63A1511C236FFBDE"
+					type: "xp"
+					xp: 35
+				}
+			]
+			shape: "diamond"
+			dependencies: [
+				"393EA7263E6CE985"
+			]
+		}
+	]
+}

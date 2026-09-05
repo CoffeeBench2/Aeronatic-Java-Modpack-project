@@ -1,0 +1,291 @@
+{
+	id: "358D9B9ABA0E12A6"
+	group: ""
+	order_index: 0
+	filename: "first_steps"
+	title: "First Steps"
+	icon: "minecraft:oak_log"
+	subtitle: [
+		"Everything starts with a tree and a bad idea."
+	]
+	default_quest_shape: ""
+	default_hide_dependency_lines: false
+	quests: [
+		{
+			title: "Punch a Tree"
+			x: 0.0d
+			y: 0.0d
+			description: [
+				"Every empire begins here. Get some wood."
+			]
+			id: "FC4EB500DE9FD24C"
+			tasks: [
+				{
+					id: "B981D2EB37B7739E"
+					type: "item"
+					item: "minecraft:oak_log"
+					count: 16L
+				}
+			]
+			rewards: [
+				{
+					id: "E1E728ECDFE469ED"
+					type: "item"
+					item: "minecraft:oak_planks"
+					count: 16
+				}
+				{
+					id: "4AADEE587972B2C7"
+					type: "xp"
+					xp: 5
+				}
+			]
+			shape: "square"
+		}
+		{
+			title: "A Place to Work"
+			x: 0.0d
+			y: 2.0d
+			description: [
+				"A crafting table. You know how this goes."
+			]
+			id: "AB0C6451546EEE1A"
+			tasks: [
+				{
+					id: "2303271810BAF966"
+					type: "item"
+					item: "minecraft:crafting_table"
+					count: 1L
+				}
+			]
+			rewards: [
+				{
+					id: "BC6B845A1DFFF260"
+					type: "item"
+					item: "minecraft:stick"
+					count: 16
+				}
+			]
+			dependencies: [
+				"FC4EB500DE9FD24C"
+			]
+		}
+		{
+			title: "Into the Ground"
+			x: -2.0d
+			y: 3.0d
+			description: [
+				"Cobblestone is the whole tech tree in disguise."
+			]
+			id: "86C8FE7B7B6CBCBF"
+			tasks: [
+				{
+					id: "DF448A1DABE0084A"
+					type: "item"
+					item: "minecraft:cobblestone"
+					count: 32L
+				}
+			]
+			rewards: [
+				{
+					id: "06BC4C31F0508B5B"
+					type: "item"
+					item: "minecraft:torch"
+					count: 16
+				}
+			]
+			dependencies: [
+				"AB0C6451546EEE1A"
+			]
+		}
+		{
+			title: "Fire It Up"
+			x: 2.0d
+			y: 3.0d
+			description: [
+				"Smelting comes before automating smelting."
+			]
+			id: "66E00144A612EFCD"
+			tasks: [
+				{
+					id: "9B5AACD6D28F9D91"
+					type: "item"
+					item: "minecraft:furnace"
+					count: 1L
+				}
+			]
+			rewards: [
+				{
+					id: "68A0D499C39A1499"
+					type: "item"
+					item: "minecraft:coal"
+					count: 8
+				}
+			]
+			dependencies: [
+				"AB0C6451546EEE1A"
+			]
+		}
+		{
+			title: "Iron Age"
+			x: 0.0d
+			y: 5.0d
+			description: [
+				"Twelve iron. Create eats iron, so get comfortable mining it."
+			]
+			id: "D3EEFAC08917E33B"
+			tasks: [
+				{
+					id: "7667050A82255DEA"
+					type: "item"
+					item: "minecraft:iron_ingot"
+					count: 12L
+				}
+			]
+			rewards: [
+				{
+					id: "AAB3F7C64A0CDAEC"
+					type: "item"
+					item: "minecraft:iron_pickaxe"
+					count: 1
+				}
+				{
+					id: "854DC7C0EB653B58"
+					type: "xp"
+					xp: 10
+				}
+			]
+			dependencies: [
+				"86C8FE7B7B6CBCBF"
+				"66E00144A612EFCD"
+			]
+		}
+		{
+			title: "Copper Counts"
+			x: -2.0d
+			y: 6.0d
+			description: [
+				"Copper does the plumbing later. Stock up."
+			]
+			id: "6413D0C93724AF76"
+			tasks: [
+				{
+					id: "23AEBC053C87A6EC"
+					type: "item"
+					item: "minecraft:copper_ingot"
+					count: 16L
+				}
+			]
+			rewards: [
+				{
+					id: "373AF5B935FF60FD"
+					type: "item"
+					item: "minecraft:raw_copper"
+					count: 8
+				}
+			]
+			dependencies: [
+				"D3EEFAC08917E33B"
+			]
+		}
+		{
+			title: "Zinc, Somewhere Down There"
+			x: 2.0d
+			y: 6.0d
+			description: [
+				"Zinc spawns in stone, a little deeper than you'd like."
+			]
+			id: "6CE3E627FEB7BD8C"
+			tasks: [
+				{
+					id: "9E96AE5F554A1B7A"
+					type: "item"
+					item: "create:zinc_ore"
+					count: 8L
+				}
+			]
+			rewards: [
+				{
+					id: "99E390539CFF2968"
+					type: "item"
+					item: "minecraft:coal"
+					count: 16
+				}
+			]
+			dependencies: [
+				"D3EEFAC08917E33B"
+			]
+		}
+		{
+			title: "Andesite Alloy"
+			x: 0.0d
+			y: 8.0d
+			description: [
+				"Andesite + iron. The single most important item in the pack."
+				"You will make hundreds of these. Sorry."
+			]
+			id: "FA5D577E96C5D52C"
+			tasks: [
+				{
+					id: "45A7003EE38F7025"
+					type: "item"
+					item: "create:andesite_alloy"
+					count: 8L
+				}
+			]
+			rewards: [
+				{
+					id: "9AED6EE88D61AD91"
+					type: "item"
+					item: "create:andesite_alloy"
+					count: 8
+				}
+				{
+					id: "B5DADA794507BBEB"
+					type: "xp"
+					xp: 15
+				}
+			]
+			shape: "hexagon"
+			dependencies: [
+				"6413D0C93724AF76"
+				"6CE3E627FEB7BD8C"
+			]
+		}
+		{
+			title: "Somewhere to Put It"
+			x: 0.0d
+			y: 10.0d
+			description: [
+				"A Claim Block marks land as yours. Place it and nobody else can build there."
+				"Take one. You have earned somewhere to stand."
+			]
+			id: "4F9E9183493EA6E2"
+			tasks: [
+				{
+					id: "0D70C447AFA24575"
+					type: "item"
+					item: "create:andesite_alloy"
+					count: 16L
+				}
+			]
+			rewards: [
+				{
+					id: "FA57576F8F48845E"
+					type: "item"
+					item: "aeroclaims:claim_block"
+					count: 1
+				}
+				{
+					id: "F9638E663FDFD6CD"
+					type: "xp"
+					xp: 20
+				}
+			]
+			shape: "diamond"
+			dependencies: [
+				"FA5D577E96C5D52C"
+			]
+		}
+	]
+}

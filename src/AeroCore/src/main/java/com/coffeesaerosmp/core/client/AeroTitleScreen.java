@@ -60,6 +60,14 @@ public class AeroTitleScreen extends Screen {
     private int updateY;
     private AeroButton updateButton;
     /** Wall-clock ms of the last manual check; throttles button-mashing into the CDN. */
+    /**
+     * Session-scoped so the What's New popup fires once, not on every {@code init()}. init re-runs
+     * on window resize and on every return to the title screen, and a popup that reappears each
+     * time is a bug the player experiences as the mod being broken. Static because the screen object
+     * itself is recreated constantly; "once per launch" is the honest scope.
+     */
+    private static boolean whatsNewChecked;
+
     private static long lastManualCheck;
     /** Wall-clock ms until the transient "Up to date ✓" label reverts to "Updates". */
     private static long upToDateUntil;
@@ -146,6 +154,25 @@ public class AeroTitleScreen extends Screen {
                 Component.literal("News"),
                 b -> this.minecraft.setScreen(new com.coffeesaerosmp.core.screen.AnnouncementsScreen(this))
         ).bounds(announceX, announceY, ANNOUNCE_W, 20).build());
+
+        // "What's New" popup — once per release, the first time the title screen builds after an
+        // update. Fired from here rather than the mod constructor because it needs a parent screen
+        // to return to, and because the news file is fetched asynchronously: by the time the menu
+        // exists the latest entry is usually loaded, and if it is not, the popup simply waits for
+        // the next launch instead of showing a half-empty card.
+        //
+        // ⚠ Guarded by whatsNewChecked so it fires ONCE per session, not on every init() — init
+        // re-runs on every window resize, and a popup that reappears when you drag the window is
+        // worse than no popup. Dismissing it writes the seen-state, which also clears the NEW badge.
+        if (!whatsNewChecked) {
+            whatsNewChecked = true;
+            // Before anything cosmetic: say out loud if last session's post-exit helper failed.
+            // Four features finish their work after the game closes and each logs into its own
+            // dot-directory that nobody reads — which is how a broken cleaner went unnoticed while
+            // the player could not join. This puts it in latest.log instead.
+            com.coffeesaerosmp.core.util.PostExitAudit.run();
+            com.coffeesaerosmp.core.screen.WhatsNewScreen.showIfUnseen(this.minecraft, this);
+        }
 
         // ── Manual update check ───────────────────────────────────────────────────────────
         // Directly under News, in the RESERVED top-right utility column. Deliberately NOT in the

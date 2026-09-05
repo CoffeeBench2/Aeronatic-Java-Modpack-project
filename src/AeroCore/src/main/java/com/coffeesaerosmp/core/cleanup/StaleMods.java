@@ -80,6 +80,33 @@ public final class StaleMods {
                     }
                 }
             }
+
+            // 🔴 Duplicate Core jars, which are the reason this sweep can fail to run at all.
+            // An interrupted update leaves the previous Core in mods/ next to the new one. FML
+            // picks the newer and the game looks fine, but every post-exit helper — this cleaner,
+            // Potato mode, the updater's applier, the loader applier — used to copy "the first
+            // coffeesaerocore*.jar in directory order", which is the OLD one, and died with
+            // ClassNotFoundException. SelfJar now picks by content, and removing the stale jar here
+            // closes the loop so the instance stops carrying a booby-trapped duplicate.
+            //
+            // The RUNNING jar is protected by identity, not by name: resolveSelfJar tells us which
+            // file we are actually executing from, so a future rename cannot make us delete it.
+            try {
+                Path running = resolveSelfJar(gameDir).toRealPath();
+                try (var s = Files.list(mods)) {
+                    for (Path p : (Iterable<Path>) s::iterator) {
+                        String name = p.getFileName().toString();
+                        String low = name.toLowerCase(Locale.ROOT);
+                        if (!low.startsWith("coffeesaerocore") || !low.endsWith(".jar")) continue;
+                        if (p.toRealPath().equals(running)) continue;   // never the one we are in
+                        if (!doomed.contains(name)) doomed.add(name);
+                    }
+                }
+            } catch (Exception e) {
+                // If we cannot establish which jar is running we must not guess — deleting the
+                // live Core would leave an instance with no Core at all.
+            }
+
             if (doomed.isEmpty()) return;
 
             Path work = gameDir.resolve(DIR);
@@ -105,27 +132,13 @@ public final class StaleMods {
         pb.start();
     }
 
-    /** Same fallback as the updater: NeoForge's module classloader does not always expose a
-     *  plain {@code file:} code source, so scanning mods/ by name is the reliable path. */
+        /**
+     * Delegates to {@link com.coffeesaerosmp.core.util.SelfJar}, which picks a jar that actually
+     * contains the class the helper JVM will run. The old inline version took the first
+     * {@code coffeesaerocore*.jar} in directory order and silently chose a stale duplicate.
+     */
     private static Path resolveSelfJar(Path gameDir) throws IOException {
-        try {
-            var loc = StaleMods.class.getProtectionDomain().getCodeSource().getLocation();
-            if (loc != null) {
-                Path p = Paths.get(loc.toURI());
-                if (Files.isRegularFile(p) && p.toString().toLowerCase(Locale.ROOT).endsWith(".jar")) return p;
-            }
-        } catch (Exception ignored) {}
-        Path mods = gameDir.resolve("mods");
-        if (Files.isDirectory(mods)) {
-            try (var s = Files.list(mods)) {
-                var hit = s.filter(p -> {
-                    String n = p.getFileName().toString().toLowerCase(Locale.ROOT);
-                    return n.startsWith("coffeesaerocore") && n.endsWith(".jar");
-                }).findFirst();
-                if (hit.isPresent()) return hit.get();
-            }
-        }
-        throw new IOException("could not locate CoffeesAeroCore jar for the cleaner");
+        return com.coffeesaerosmp.core.util.SelfJar.locate(gameDir, "com.coffeesaerosmp.core.cleanup.StaleModsCleaner");
     }
 
     private static String javaw() {

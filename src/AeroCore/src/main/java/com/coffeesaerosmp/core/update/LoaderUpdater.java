@@ -183,27 +183,11 @@ public final class LoaderUpdater {
         return Files.exists(p) ? p.toString() : (win ? "javaw.exe" : "java");
     }
 
-    /** Reuses the updater's own jar-locating logic so there is one implementation of that trap. */
+    /** One implementation of the jar-locating trap, shared with the updater, cleaner and Mode. */
     static final class InClientUpdaterAccess {
         static Path selfJar(Path gameDir) throws java.io.IOException {
-            try {
-                var loc = LoaderUpdater.class.getProtectionDomain().getCodeSource().getLocation();
-                if (loc != null) {
-                    Path p = Path.of(loc.toURI());
-                    if (Files.isRegularFile(p) && p.toString().toLowerCase(Locale.ROOT).endsWith(".jar")) return p;
-                }
-            } catch (Exception ignored) {}
-            Path mods = gameDir.resolve("mods");
-            if (Files.isDirectory(mods)) {
-                try (var s = Files.list(mods)) {
-                    var hit = s.filter(p -> {
-                        String n = p.getFileName().toString().toLowerCase(Locale.ROOT);
-                        return n.startsWith("coffeesaerocore") && n.endsWith(".jar");
-                    }).findFirst();
-                    if (hit.isPresent()) return hit.get();
-                }
-            }
-            throw new java.io.IOException("could not locate CoffeesAeroCore jar");
+            return com.coffeesaerosmp.core.util.SelfJar.locate(
+                gameDir, "com.coffeesaerosmp.core.update.LoaderApplier");
         }
     }
 }

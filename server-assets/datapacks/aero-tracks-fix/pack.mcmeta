@@ -1,0 +1,6 @@
+{
+  "pack": {
+    "pack_format": 48,
+    "description": "Aero: fixes Create Tracks' capital-T resource locations (loot + mining tags)."
+  }
+}

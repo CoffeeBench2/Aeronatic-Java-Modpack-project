@@ -1,0 +1,309 @@
+{
+	id: "CB2CF9EFD6126A17"
+	group: ""
+	order_index: 1
+	filename: "andesite_age"
+	title: "The Andesite Age"
+	icon: "create:andesite_casing"
+	subtitle: [
+		"Rotation is power. Power is everything."
+	]
+	default_quest_shape: ""
+	default_hide_dependency_lines: false
+	quests: [
+		{
+			title: "Shafts"
+			x: 0.0d
+			y: 0.0d
+			description: [
+				"Rotation has to travel somehow."
+			]
+			id: "55A0953F4BD1C82F"
+			tasks: [
+				{
+					id: "C4565E4738730515"
+					type: "item"
+					item: "create:shaft"
+					count: 8L
+				}
+			]
+			rewards: [
+				{
+					id: "6D233EE48C93D1B5"
+					type: "item"
+					item: "create:andesite_alloy"
+					count: 4
+				}
+			]
+			shape: "square"
+		}
+		{
+			title: "Cogwheels"
+			x: -2.0d
+			y: 2.0d
+			description: [
+				"Small cogs mesh with large cogs to change speed. Learn this now."
+			]
+			id: "5D30792C13294AD0"
+			tasks: [
+				{
+					id: "1E1BCB04A26A76B9"
+					type: "item"
+					item: "create:cogwheel"
+					count: 8L
+				}
+			]
+			rewards: [
+				{
+					id: "A9443227C6737A16"
+					type: "item"
+					item: "create:cogwheel"
+					count: 4
+				}
+			]
+			dependencies: [
+				"55A0953F4BD1C82F"
+			]
+		}
+		{
+			title: "Large Cogwheels"
+			x: 2.0d
+			y: 2.0d
+			description: [
+				"Large into small speeds up. Small into large slows down and adds stress capacity."
+			]
+			id: "6D63ACE508B550F6"
+			tasks: [
+				{
+					id: "D8E32410FE038894"
+					type: "item"
+					item: "create:large_cogwheel"
+					count: 4L
+				}
+			]
+			rewards: [
+				{
+					id: "0AC7F02BC90B0E7C"
+					type: "item"
+					item: "create:large_cogwheel"
+					count: 2
+				}
+			]
+			dependencies: [
+				"55A0953F4BD1C82F"
+			]
+		}
+		{
+			title: "Andesite Casing"
+			x: 0.0d
+			y: 4.0d
+			description: [
+				"Casing turns raw machinery into something that looks deliberate."
+			]
+			id: "E20F79349293B688"
+			tasks: [
+				{
+					id: "2F59EB2272A92A34"
+					type: "item"
+					item: "create:andesite_casing"
+					count: 8L
+				}
+			]
+			rewards: [
+				{
+					id: "CCB8FB0DA404428C"
+					type: "item"
+					item: "create:andesite_casing"
+					count: 8
+				}
+			]
+			dependencies: [
+				"5D30792C13294AD0"
+				"6D63ACE508B550F6"
+			]
+		}
+		{
+			title: "Free Power"
+			x: -3.0d
+			y: 5.0d
+			description: [
+				"A water wheel in flowing water is the cheapest power you will ever get."
+				"It is slow. That is fine — gear it up."
+			]
+			id: "FA3AAF0940AC8F72"
+			tasks: [
+				{
+					id: "9B01CE2E749432A5"
+					type: "item"
+					item: "create:water_wheel"
+					count: 1L
+				}
+			]
+			rewards: [
+				{
+					id: "CD42D0CAD2B07793"
+					type: "item"
+					item: "create:water_wheel"
+					count: 1
+				}
+				{
+					id: "5DBC58B956D7924A"
+					type: "xp"
+					xp: 10
+				}
+			]
+			dependencies: [
+				"E20F79349293B688"
+			]
+		}
+		{
+			title: "Grind It"
+			x: 0.0d
+			y: 6.0d
+			description: [
+				"Your first processing machine. Ore into dust, wheat into flour."
+			]
+			id: "82E24F39C55DFC79"
+			tasks: [
+				{
+					id: "EEE48423BCE16136"
+					type: "item"
+					item: "create:millstone"
+					count: 1L
+				}
+			]
+			rewards: [
+				{
+					id: "0585C7D248801EC9"
+					type: "item"
+					item: "minecraft:wheat"
+					count: 16
+				}
+			]
+			dependencies: [
+				"E20F79349293B688"
+			]
+		}
+		{
+			title: "Mechanical Press"
+			x: 3.0d
+			y: 5.0d
+			description: [
+				"Presses make sheets. Sheets make almost everything else."
+			]
+			id: "2CF1D7BC91B396EE"
+			tasks: [
+				{
+					id: "DB332276C976092B"
+					type: "item"
+					item: "create:mechanical_press"
+					count: 1L
+				}
+			]
+			rewards: [
+				{
+					id: "3760E7BE14B895C6"
+					type: "item"
+					item: "create:andesite_alloy"
+					count: 8
+				}
+			]
+			dependencies: [
+				"E20F79349293B688"
+			]
+		}
+		{
+			title: "Encased Fan"
+			x: 0.0d
+			y: 8.0d
+			description: [
+				"A fan over fire smelts. Over water it washes. Over ice it freezes."
+				"One block, four recipes."
+			]
+			id: "21EDCDDCD789B6AA"
+			tasks: [
+				{
+					id: "878B217981D5C0F9"
+					type: "item"
+					item: "create:encased_fan"
+					count: 1L
+				}
+			]
+			rewards: [
+				{
+					id: "AB78E275358D953B"
+					type: "item"
+					item: "minecraft:coal"
+					count: 32
+				}
+			]
+			dependencies: [
+				"82E24F39C55DFC79"
+				"2CF1D7BC91B396EE"
+			]
+		}
+		{
+			title: "Belts"
+			x: -3.0d
+			y: 8.0d
+			description: [
+				"Two shafts and a belt item. Items ride, players ride, everything moves."
+			]
+			id: "1E54A74DA29AF1A5"
+			tasks: [
+				{
+					id: "3066AC616493DF5D"
+					type: "item"
+					item: "create:belt_connector"
+					count: 1L
+				}
+			]
+			rewards: [
+				{
+					id: "211DFECCFCB9865C"
+					type: "item"
+					item: "create:andesite_alloy"
+					count: 8
+				}
+			]
+			dependencies: [
+				"FA3AAF0940AC8F72"
+				"82E24F39C55DFC79"
+			]
+		}
+		{
+			title: "Room to Grow"
+			x: 0.0d
+			y: 10.0d
+			description: [
+				"Two more Claim Blocks. Your first factory deserves a fence."
+			]
+			id: "2BEB61B44BFBB343"
+			tasks: [
+				{
+					id: "80330FC748955C51"
+					type: "item"
+					item: "create:andesite_casing"
+					count: 16L
+				}
+			]
+			rewards: [
+				{
+					id: "BE7955359AD94F94"
+					type: "item"
+					item: "aeroclaims:claim_block"
+					count: 2
+				}
+				{
+					id: "E5C0B5B3A9C13694"
+					type: "xp"
+					xp: 25
+				}
+			]
+			shape: "diamond"
+			dependencies: [
+				"21EDCDDCD789B6AA"
+			]
+		}
+	]
+}

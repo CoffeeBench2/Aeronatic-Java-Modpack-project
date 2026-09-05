@@ -331,27 +331,13 @@ public final class InClientUpdater {
         LOGGER.info("[Updater] Windowless applier launched (waits on pid {}).", pid);
     }
 
-    /** Locates our own jar to copy as the applier classpath. Falls back to scanning mods/ because
-     *  NeoForge's module classloader doesn't always expose a plain file: code-source location. */
+        /**
+     * Delegates to {@link com.coffeesaerosmp.core.util.SelfJar}, which picks a jar that actually
+     * contains the class the helper JVM will run. The old inline version took the first
+     * {@code coffeesaerocore*.jar} in directory order and silently chose a stale duplicate.
+     */
     private static Path resolveSelfJar(Path gameDir) throws IOException {
-        try {
-            var loc = InClientUpdater.class.getProtectionDomain().getCodeSource().getLocation();
-            if (loc != null) {
-                Path p = Paths.get(loc.toURI());
-                if (Files.isRegularFile(p) && p.toString().toLowerCase(Locale.ROOT).endsWith(".jar")) return p;
-            }
-        } catch (Exception ignored) {}
-        Path mods = gameDir.resolve("mods");
-        if (Files.isDirectory(mods)) {
-            try (var s = Files.list(mods)) {
-                Optional<Path> hit = s.filter(p -> {
-                    String n = p.getFileName().toString().toLowerCase(Locale.ROOT);
-                    return n.startsWith("coffeesaerocore") && n.endsWith(".jar");
-                }).findFirst();
-                if (hit.isPresent()) return hit.get();
-            }
-        }
-        throw new IOException("could not locate CoffeesAeroCore jar for the applier");
+        return com.coffeesaerosmp.core.util.SelfJar.locate(gameDir, "com.coffeesaerosmp.core.update.Applier");
     }
 
     private static String javaw() {
