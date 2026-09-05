@@ -1,12 +1,14 @@
 {
 	id: "497C2A60B1BC729C"
 	group: "4E2FA1B674D143B0"
-	order_index: 128
+	order_index: 106
 	filename: "addon_creategoggles"
 	title: "Create: Goggles"
-	icon: "creategoggles:goggle_iron_helmet"
+	icon: {
+		id: "creategoggles:goggle_iron_helmet"
+	}
 	subtitle: [
-		"Goggles on a helmet, so you stop having to choose."
+		"Goggles on a helmet, so you stop having to choose.  &aEarly&r"
 	]
 	default_quest_shape: ""
 	default_hide_dependency_lines: false
@@ -18,15 +20,15 @@
 			description: [
 				"Leather and iron. Armour and goggle readouts at the same time."
 				""
-				"Bring 8 Andesite Alloy."
+				"&7Bring &f32 Andesite Alloy&7."
 			]
 			id: "D8C47B7D86CE2541"
 			tasks: [
 				{
-					id: "B0AE288405490326"
+					id: "E5F8F70CCBC117A3"
 					type: "item"
 					item: "create:andesite_alloy"
-					count: 8L
+					count: 32L
 				}
 			]
 			rewards: [
@@ -34,13 +36,13 @@
 					id: "DFE064C80DBC1482"
 					type: "item"
 					item: "creategoggles:goggle_leather_helmet"
-					count: 1
+					count: 3
 				}
 				{
 					id: "E294CFC841E9A13B"
 					type: "item"
 					item: "creategoggles:goggle_iron_helmet"
-					count: 1
+					count: 3
 				}
 				{
 					id: "D2183A3187BA3CA0"
@@ -48,6 +50,9 @@
 					xp: 10
 				}
 			]
+			icon: {
+				id: "creategoggles:goggle_leather_helmet"
+			}
 			shape: "square"
 		}
 		{
@@ -57,15 +62,22 @@
 			description: [
 				"Backtanks in more metals, holding more air."
 				""
-				"Bring 6 Brass Ingots."
+				"&7Bring &f16 Andesite Casing&7."
+				"&7Bring &f24 Cogwheels&7."
 			]
 			id: "36A01EB864113E56"
 			tasks: [
 				{
-					id: "8DCAF24EC8F2B8C1"
+					id: "B667DEA31FC80243"
 					type: "item"
-					item: "create:brass_ingot"
-					count: 6L
+					item: "create:andesite_casing"
+					count: 16L
+				}
+				{
+					id: "DBDE573EEF6A76F8"
+					type: "item"
+					item: "create:cogwheel"
+					count: 24L
 				}
 			]
 			rewards: [
@@ -73,13 +85,13 @@
 					id: "6E8015A4F9EAF830"
 					type: "item"
 					item: "creategoggles:iron_backtank"
-					count: 1
+					count: 3
 				}
 				{
 					id: "1F59304DE5467078"
 					type: "item"
 					item: "creategoggles:golden_backtank"
-					count: 1
+					count: 3
 				}
 				{
 					id: "D648AA4203037C1E"
@@ -87,6 +99,9 @@
 					xp: 15
 				}
 			]
+			icon: {
+				id: "creategoggles:iron_backtank"
+			}
 			dependencies: [
 				"D8C47B7D86CE2541"
 			]
@@ -98,15 +113,43 @@
 			description: [
 				"Diving variants, for the parts of the build that are underwater."
 				""
-				"Bring 12 Iron Ingots."
+				"&7Bring &f32 Andesite Casing&7."
+				"&7Bring &f16 Large Cogwheels&7."
+				"&7Bring &f24 Iron Sheets&7."
+				"&7Bring &f4 Goggle Leather Helmet&7."
+				"&7Bring &f4 Goggle Iron Helmet&7."
 			]
 			id: "D0AA980053EA6FB8"
 			tasks: [
 				{
-					id: "93F67BFF7F6AFDCD"
+					id: "76C31DD55CEE8945"
 					type: "item"
-					item: "minecraft:iron_ingot"
-					count: 12L
+					item: "create:andesite_casing"
+					count: 32L
+				}
+				{
+					id: "E5AAA3400619EFE3"
+					type: "item"
+					item: "create:large_cogwheel"
+					count: 16L
+				}
+				{
+					id: "0F08AAD623F947B7"
+					type: "item"
+					item: "create:iron_sheet"
+					count: 24L
+				}
+				{
+					id: "B8CEBAB395E8520A"
+					type: "item"
+					item: "creategoggles:goggle_leather_helmet"
+					count: 4L
+				}
+				{
+					id: "D147AB4D4DBB0D27"
+					type: "item"
+					item: "creategoggles:goggle_iron_helmet"
+					count: 4L
 				}
 			]
 			rewards: [
@@ -114,13 +157,25 @@
 					id: "97B74813E1CBAFEC"
 					type: "item"
 					item: "creategoggles:goggle_diving_helmet"
-					count: 1
+					count: 3
 				}
 				{
 					id: "674466AAC0BA56EC"
 					type: "item"
 					item: "creategoggles:goggle_turtle_helmet"
-					count: 1
+					count: 3
+				}
+				{
+					id: "4191A74BFAD91CB8"
+					type: "item"
+					item: "creategoggles:goggle_golden_helmet"
+					count: 6
+				}
+				{
+					id: "D953684C3A633F1A"
+					type: "item"
+					item: "creategoggles:chainmail_backtank"
+					count: 6
 				}
 				{
 					id: "8BADF085BF5341F6"
@@ -128,6 +183,9 @@
 					xp: 20
 				}
 			]
+			icon: {
+				id: "creategoggles:goggle_diving_helmet"
+			}
 			dependencies: [
 				"36A01EB864113E56"
 			]

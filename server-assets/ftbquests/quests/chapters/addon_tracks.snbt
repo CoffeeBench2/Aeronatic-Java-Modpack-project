@@ -1,12 +1,14 @@
 {
 	id: "B8006BAF70A32282"
 	group: "4E2FA1B674D143B0"
-	order_index: 105
+	order_index: 117
 	filename: "addon_tracks"
 	title: "Create Tracks"
-	icon: "tracks:track_mount"
+	icon: {
+		id: "tracks:track_mount"
+	}
 	subtitle: [
-		"Caterpillar tracks. Slower than wheels, stops for nothing."
+		"Caterpillar tracks. Slower than wheels, stops for nothing.  &eMid&r"
 	]
 	default_quest_shape: ""
 	default_hide_dependency_lines: false
@@ -18,15 +20,15 @@
 			description: [
 				"Mounts hold the track. The key adjusts how hard the suspension pushes back."
 				""
-				"Bring 8 Andesite Alloy."
+				"&7Bring &f16 Brass Casing&7."
 			]
 			id: "B86B2AB9205B3B3D"
 			tasks: [
 				{
-					id: "E2D4FDDEA5AE7FAF"
+					id: "F0C4FF962C0CB369"
 					type: "item"
-					item: "create:andesite_alloy"
-					count: 8L
+					item: "create:brass_casing"
+					count: 16L
 				}
 			]
 			rewards: [
@@ -34,13 +36,13 @@
 					id: "6826F7CB26C7037B"
 					type: "item"
 					item: "tracks:track_mount"
-					count: 2
+					count: 6
 				}
 				{
 					id: "16AC8A424F39D74C"
 					type: "item"
 					item: "tracks:suspension_key"
-					count: 2
+					count: 6
 				}
 				{
 					id: "B259DC43FC80758A"
@@ -48,6 +50,9 @@
 					xp: 10
 				}
 			]
+			icon: {
+				id: "tracks:track_mount"
+			}
 			shape: "square"
 		}
 		{
@@ -57,15 +62,22 @@
 			description: [
 				"Small drive wheels and short track sections — enough for a light crawler."
 				""
-				"Bring 6 Brass Ingots."
+				"&7Bring &f16 Electron Tubes&7."
+				"&7Bring &f32 Brass Sheets&7."
 			]
 			id: "F452D442280662D2"
 			tasks: [
 				{
-					id: "AEE61AE70F3359D5"
+					id: "A7F37AEBAE0A249B"
 					type: "item"
-					item: "create:brass_ingot"
-					count: 6L
+					item: "create:electron_tube"
+					count: 16L
+				}
+				{
+					id: "C226409BB1C9189A"
+					type: "item"
+					item: "create:brass_sheet"
+					count: 32L
 				}
 			]
 			rewards: [
@@ -73,13 +85,13 @@
 					id: "1486F467964AD31A"
 					type: "item"
 					item: "tracks:small_track_drive_wheel"
-					count: 2
+					count: 6
 				}
 				{
 					id: "BF8FCBEEBF9C43D2"
 					type: "item"
 					item: "tracks:small_suspension_track"
-					count: 2
+					count: 6
 				}
 				{
 					id: "391E79ACB6BAC6BD"
@@ -87,6 +99,9 @@
 					xp: 15
 				}
 			]
+			icon: {
+				id: "tracks:small_track_drive_wheel"
+			}
 			dependencies: [
 				"B86B2AB9205B3B3D"
 			]
@@ -98,15 +113,43 @@
 			description: [
 				"Full-size drive wheel and track. Heavy, slow, unstoppable."
 				""
-				"Bring 12 Iron Ingots."
+				"&7Bring &f8 Precision Mechanisms&7."
+				"&7Bring &f24 Brass Casing&7."
+				"&7Bring &f16 Polished Rose Quartz&7."
+				"&7Bring &f6 Track Mount&7."
+				"&7Bring &f6 Suspension Key&7."
 			]
 			id: "136DC4A434C4107E"
 			tasks: [
 				{
-					id: "FDEFBBE25C3796C3"
+					id: "10700EE57555E3EF"
 					type: "item"
-					item: "minecraft:iron_ingot"
-					count: 12L
+					item: "create:precision_mechanism"
+					count: 8L
+				}
+				{
+					id: "915DA0919AEB19F2"
+					type: "item"
+					item: "create:brass_casing"
+					count: 24L
+				}
+				{
+					id: "6F106CED6CD818C5"
+					type: "item"
+					item: "create:polished_rose_quartz"
+					count: 16L
+				}
+				{
+					id: "C9562990DCEDB84C"
+					type: "item"
+					item: "tracks:track_mount"
+					count: 6L
+				}
+				{
+					id: "31B622A579855812"
+					type: "item"
+					item: "tracks:suspension_key"
+					count: 6L
 				}
 			]
 			rewards: [
@@ -114,13 +157,19 @@
 					id: "5870FB7D4BF93546"
 					type: "item"
 					item: "tracks:track_drive_wheel"
-					count: 1
+					count: 3
 				}
 				{
 					id: "69A5B970644C03EE"
 					type: "item"
 					item: "tracks:suspension_track"
-					count: 2
+					count: 6
+				}
+				{
+					id: "3185C9911A25675B"
+					type: "item"
+					item: "tracks:large_track_drive_wheel"
+					count: 6
 				}
 				{
 					id: "8E17B5ED274FD21C"
@@ -128,6 +177,9 @@
 					xp: 20
 				}
 			]
+			icon: {
+				id: "tracks:track_drive_wheel"
+			}
 			dependencies: [
 				"F452D442280662D2"
 			]

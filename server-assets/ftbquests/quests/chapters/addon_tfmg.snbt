@@ -1,12 +1,14 @@
 {
 	id: "6228E957BFE043D8"
 	group: "4E2FA1B674D143B0"
-	order_index: 110
+	order_index: 133
 	filename: "addon_tfmg"
 	title: "The Factory Must Grow"
-	icon: "tfmg:aluminum_ingot"
+	icon: {
+		id: "tfmg:aluminum_ingot"
+	}
 	subtitle: [
-		"Heavy industry. Steel, aluminium, and very large machines."
+		"Heavy industry. Steel, aluminium, and very large machines.  &cLate&r"
 	]
 	default_quest_shape: ""
 	default_hide_dependency_lines: false
@@ -18,15 +20,15 @@
 			description: [
 				"Aluminium is TFMG's entry metal. Light, and it does not rust."
 				""
-				"Bring 8 Andesite Alloy."
+				"&7Bring &f16 Precision Mechanisms&7."
 			]
 			id: "1142D37B3B1D6DE2"
 			tasks: [
 				{
-					id: "7C57F4D7785D520E"
+					id: "F5375A260E0D8EC7"
 					type: "item"
-					item: "create:andesite_alloy"
-					count: 8L
+					item: "create:precision_mechanism"
+					count: 16L
 				}
 			]
 			rewards: [
@@ -34,13 +36,13 @@
 					id: "5AE0A0F17735ACEF"
 					type: "item"
 					item: "tfmg:aluminum_ingot"
-					count: 6
+					count: 24
 				}
 				{
 					id: "9A8ED36613415EF4"
 					type: "item"
 					item: "tfmg:aluminum_bars"
-					count: 4
+					count: 16
 				}
 				{
 					id: "B63339B35E7B65FD"
@@ -48,6 +50,9 @@
 					xp: 10
 				}
 			]
+			icon: {
+				id: "tfmg:aluminum_ingot"
+			}
 			shape: "square"
 		}
 		{
@@ -57,15 +62,22 @@
 			description: [
 				"Frames and cogs, so you can build in it rather than just hold it."
 				""
-				"Bring 6 Brass Ingots."
+				"&7Bring &f24 Precision Mechanisms&7."
+				"&7Bring &f8 Sturdy Sheets&7."
 			]
 			id: "8B9DC26C327398D8"
 			tasks: [
 				{
-					id: "E772E4A2B4726F48"
+					id: "1EC4ED93070176F7"
 					type: "item"
-					item: "create:brass_ingot"
-					count: 6L
+					item: "create:precision_mechanism"
+					count: 24L
+				}
+				{
+					id: "99D23AC1AE7EDA70"
+					type: "item"
+					item: "create:sturdy_sheet"
+					count: 8L
 				}
 			]
 			rewards: [
@@ -73,13 +85,13 @@
 					id: "5C1D1E4473DFDE67"
 					type: "item"
 					item: "tfmg:aluminum_frame"
-					count: 4
+					count: 16
 				}
 				{
 					id: "6D8C0CF2C5C85D71"
 					type: "item"
 					item: "tfmg:aluminum_cogwheel"
-					count: 2
+					count: 8
 				}
 				{
 					id: "E7194C1C41C1E9CD"
@@ -87,6 +99,9 @@
 					xp: 15
 				}
 			]
+			icon: {
+				id: "tfmg:aluminum_frame"
+			}
 			dependencies: [
 				"1142D37B3B1D6DE2"
 			]
@@ -98,15 +113,43 @@
 			description: [
 				"An air intake and a tank. The first machines want both."
 				""
-				"Bring 12 Iron Ingots."
+				"&7Bring &f32 Precision Mechanisms&7."
+				"&7Bring &f16 Sturdy Sheets&7."
+				"&7Bring &f8 Refined Radiance&7."
+				"&7Bring &f8 Aluminum Ingot&7."
+				"&7Bring &f8 Aluminum Bars&7."
 			]
 			id: "6717AD0C59C81E3B"
 			tasks: [
 				{
-					id: "67A1913C8F8032B4"
+					id: "EAE288CCD616B965"
 					type: "item"
-					item: "minecraft:iron_ingot"
-					count: 12L
+					item: "create:precision_mechanism"
+					count: 32L
+				}
+				{
+					id: "9CDDBD07D19CDEA8"
+					type: "item"
+					item: "create:sturdy_sheet"
+					count: 16L
+				}
+				{
+					id: "FC5B3FBA383851DD"
+					type: "item"
+					item: "create:refined_radiance"
+					count: 8L
+				}
+				{
+					id: "D7D1DDF067B4FDD1"
+					type: "item"
+					item: "tfmg:aluminum_ingot"
+					count: 8L
+				}
+				{
+					id: "78D7698C0DAAFFEA"
+					type: "item"
+					item: "tfmg:aluminum_bars"
+					count: 8L
 				}
 			]
 			rewards: [
@@ -114,13 +157,25 @@
 					id: "D61255665DD7F732"
 					type: "item"
 					item: "tfmg:air_intake"
-					count: 1
+					count: 4
 				}
 				{
 					id: "39839974FABE7889"
 					type: "item"
 					item: "tfmg:aluminum_fluid_tank"
-					count: 2
+					count: 8
+				}
+				{
+					id: "1E57222A3665289F"
+					type: "item"
+					item: "tfmg:aluminum_block"
+					count: 8
+				}
+				{
+					id: "54CB0D10A8BAD869"
+					type: "item"
+					item: "tfmg:aluminum_ladder"
+					count: 8
 				}
 				{
 					id: "EC5CEAAB69CCB344"
@@ -128,6 +183,9 @@
 					xp: 20
 				}
 			]
+			icon: {
+				id: "tfmg:air_intake"
+			}
 			dependencies: [
 				"8B9DC26C327398D8"
 			]

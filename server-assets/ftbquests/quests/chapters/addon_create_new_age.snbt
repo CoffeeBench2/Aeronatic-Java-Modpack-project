@@ -1,12 +1,14 @@
 {
 	id: "510AD418F3DEB6DF"
 	group: "4E2FA1B674D143B0"
-	order_index: 109
+	order_index: 130
 	filename: "addon_create_new_age"
 	title: "Create: New Age"
-	icon: "create_new_age:basic_motor"
+	icon: {
+		id: "create_new_age:basic_motor"
+	}
 	subtitle: [
-		"Proper electricity, with wires that care about voltage."
+		"Proper electricity, with wires that care about voltage.  &cLate&r"
 	]
 	default_quest_shape: ""
 	default_hide_dependency_lines: false
@@ -18,15 +20,15 @@
 			description: [
 				"Wire and connectors. Runs are limited, so plan the layout."
 				""
-				"Bring 8 Andesite Alloy."
+				"&7Bring &f16 Precision Mechanisms&7."
 			]
 			id: "C3F95E6F992E2F2F"
 			tasks: [
 				{
-					id: "BD682FE2E41ABDC8"
+					id: "D23C7E4D8EDC7D7F"
 					type: "item"
-					item: "create:andesite_alloy"
-					count: 8L
+					item: "create:precision_mechanism"
+					count: 16L
 				}
 			]
 			rewards: [
@@ -34,13 +36,13 @@
 					id: "486BF5ED0E00B3E7"
 					type: "item"
 					item: "create_new_age:copper_wire"
-					count: 8
+					count: 32
 				}
 				{
 					id: "32270340C24EF48D"
 					type: "item"
 					item: "create_new_age:electrical_connector"
-					count: 4
+					count: 16
 				}
 				{
 					id: "67CBD16B8464A7B6"
@@ -48,6 +50,9 @@
 					xp: 10
 				}
 			]
+			icon: {
+				id: "create_new_age:copper_wire"
+			}
 			shape: "square"
 		}
 		{
@@ -57,15 +62,22 @@
 			description: [
 				"Blank circuits print into copper ones. These gate everything above."
 				""
-				"Bring 6 Brass Ingots."
+				"&7Bring &f24 Precision Mechanisms&7."
+				"&7Bring &f8 Sturdy Sheets&7."
 			]
 			id: "360FC77D90179F21"
 			tasks: [
 				{
-					id: "C6002372BFB65E36"
+					id: "BCAC6ADD308544EE"
 					type: "item"
-					item: "create:brass_ingot"
-					count: 6L
+					item: "create:precision_mechanism"
+					count: 24L
+				}
+				{
+					id: "3648DA1DC5559EB5"
+					type: "item"
+					item: "create:sturdy_sheet"
+					count: 8L
 				}
 			]
 			rewards: [
@@ -73,13 +85,13 @@
 					id: "5D8CB752FC5DC226"
 					type: "item"
 					item: "create_new_age:blank_circuit"
-					count: 4
+					count: 16
 				}
 				{
 					id: "493DEEDAD8B84641"
 					type: "item"
 					item: "create_new_age:copper_circuit"
-					count: 2
+					count: 8
 				}
 				{
 					id: "5608B51410B5B749"
@@ -87,6 +99,9 @@
 					xp: 15
 				}
 			]
+			icon: {
+				id: "create_new_age:blank_circuit"
+			}
 			dependencies: [
 				"C3F95E6F992E2F2F"
 			]
@@ -98,15 +113,43 @@
 			description: [
 				"A motor to spend power, and an energiser to make it."
 				""
-				"Bring 12 Iron Ingots."
+				"&7Bring &f32 Precision Mechanisms&7."
+				"&7Bring &f16 Sturdy Sheets&7."
+				"&7Bring &f8 Refined Radiance&7."
+				"&7Bring &f8 Copper Wire&7."
+				"&7Bring &f8 Electrical Connector&7."
 			]
 			id: "5CFC41474024A8D7"
 			tasks: [
 				{
-					id: "A18A1F744946CE8C"
+					id: "C3483DEA67A7E6A4"
 					type: "item"
-					item: "minecraft:iron_ingot"
-					count: 12L
+					item: "create:precision_mechanism"
+					count: 32L
+				}
+				{
+					id: "F2608FEE807E95BB"
+					type: "item"
+					item: "create:sturdy_sheet"
+					count: 16L
+				}
+				{
+					id: "209F7136D90D1032"
+					type: "item"
+					item: "create:refined_radiance"
+					count: 8L
+				}
+				{
+					id: "8DDBEA509D161A2A"
+					type: "item"
+					item: "create_new_age:copper_wire"
+					count: 8L
+				}
+				{
+					id: "26C255DCFB4175EE"
+					type: "item"
+					item: "create_new_age:electrical_connector"
+					count: 8L
 				}
 			]
 			rewards: [
@@ -114,13 +157,25 @@
 					id: "1F09699F392FD666"
 					type: "item"
 					item: "create_new_age:basic_motor"
-					count: 1
+					count: 4
 				}
 				{
 					id: "7B1DED719D8E8ABB"
 					type: "item"
 					item: "create_new_age:basic_energiser"
-					count: 1
+					count: 4
+				}
+				{
+					id: "9C657CD12D3BA46C"
+					type: "item"
+					item: "create_new_age:generator_coil"
+					count: 8
+				}
+				{
+					id: "6D870910EB49D79E"
+					type: "item"
+					item: "create_new_age:heat_pipe"
+					count: 8
 				}
 				{
 					id: "991DDD6B7D056B10"
@@ -128,6 +183,9 @@
 					xp: 20
 				}
 			]
+			icon: {
+				id: "create_new_age:basic_motor"
+			}
 			dependencies: [
 				"360FC77D90179F21"
 			]

@@ -1,12 +1,14 @@
 {
 	id: "CCC85989D738D861"
 	group: "4E2FA1B674D143B0"
-	order_index: 103
+	order_index: 120
 	filename: "addon_offroad"
 	title: "Create: Offroad"
-	icon: "offroad:tire"
+	icon: {
+		id: "offroad:tire"
+	}
 	subtitle: [
-		"Wheels, for when flying is overkill."
+		"Wheels, for when flying is overkill.  &eMid&r"
 	]
 	default_quest_shape: ""
 	default_hide_dependency_lines: false
@@ -18,15 +20,15 @@
 			description: [
 				"A tire and the mount that holds it. Bolt them to a contraption and drive."
 				""
-				"Bring 8 Andesite Alloy."
+				"&7Bring &f16 Brass Casing&7."
 			]
 			id: "21F7BC3489F7C69E"
 			tasks: [
 				{
-					id: "E87CDB1DEEEFC456"
+					id: "CCC04C827A00F59A"
 					type: "item"
-					item: "create:andesite_alloy"
-					count: 8L
+					item: "create:brass_casing"
+					count: 16L
 				}
 			]
 			rewards: [
@@ -34,13 +36,13 @@
 					id: "DB1BF2C5AB730FED"
 					type: "item"
 					item: "offroad:tire"
-					count: 2
+					count: 6
 				}
 				{
 					id: "47E900F877B71C3D"
 					type: "item"
 					item: "offroad:wheel_mount"
-					count: 2
+					count: 6
 				}
 				{
 					id: "5E99D5C5EED233E6"
@@ -48,6 +50,9 @@
 					xp: 10
 				}
 			]
+			icon: {
+				id: "offroad:tire"
+			}
 			shape: "square"
 		}
 		{
@@ -57,15 +62,22 @@
 			description: [
 				"Small tires turn tighter. Large ones climb better."
 				""
-				"Bring 6 Brass Ingots."
+				"&7Bring &f16 Electron Tubes&7."
+				"&7Bring &f32 Brass Sheets&7."
 			]
 			id: "0A962E30093A0ECA"
 			tasks: [
 				{
-					id: "18FF0C4557507151"
+					id: "22BD98E20C3DCB64"
 					type: "item"
-					item: "create:brass_ingot"
-					count: 6L
+					item: "create:electron_tube"
+					count: 16L
+				}
+				{
+					id: "FCEFB6A0860AA9E1"
+					type: "item"
+					item: "create:brass_sheet"
+					count: 32L
 				}
 			]
 			rewards: [
@@ -73,13 +85,13 @@
 					id: "56F170D7182837AB"
 					type: "item"
 					item: "offroad:small_tire"
-					count: 2
+					count: 6
 				}
 				{
 					id: "0BF3E9627BA129C6"
 					type: "item"
 					item: "offroad:large_tire"
-					count: 1
+					count: 3
 				}
 				{
 					id: "664477EAF1E51F11"
@@ -87,6 +99,9 @@
 					xp: 15
 				}
 			]
+			icon: {
+				id: "offroad:small_tire"
+			}
 			dependencies: [
 				"21F7BC3489F7C69E"
 			]
@@ -98,15 +113,43 @@
 			description: [
 				"A borehead bearing spins a cutting wheel. This is how you tunnel."
 				""
-				"Bring 12 Iron Ingots."
+				"&7Bring &f8 Precision Mechanisms&7."
+				"&7Bring &f24 Brass Casing&7."
+				"&7Bring &f16 Polished Rose Quartz&7."
+				"&7Bring &f6 Tire&7."
+				"&7Bring &f6 Wheel Mount&7."
 			]
 			id: "99044DCD41B0E381"
 			tasks: [
 				{
-					id: "0103DE7DFA5048AC"
+					id: "698117CFFD7E792B"
 					type: "item"
-					item: "minecraft:iron_ingot"
-					count: 12L
+					item: "create:precision_mechanism"
+					count: 8L
+				}
+				{
+					id: "5A03C0EFD3D874F8"
+					type: "item"
+					item: "create:brass_casing"
+					count: 24L
+				}
+				{
+					id: "189B3A251AF821C4"
+					type: "item"
+					item: "create:polished_rose_quartz"
+					count: 16L
+				}
+				{
+					id: "12D1E0F78472C936"
+					type: "item"
+					item: "offroad:tire"
+					count: 6L
+				}
+				{
+					id: "60E55B5918F59D4A"
+					type: "item"
+					item: "offroad:wheel_mount"
+					count: 6L
 				}
 			]
 			rewards: [
@@ -114,13 +157,19 @@
 					id: "7295DC81E4003B87"
 					type: "item"
 					item: "offroad:borehead_bearing"
-					count: 1
+					count: 3
 				}
 				{
 					id: "689C83616A5EDA52"
 					type: "item"
 					item: "offroad:rockcutting_wheel"
-					count: 1
+					count: 3
+				}
+				{
+					id: "400B8656C04E3823"
+					type: "item"
+					item: "offroad:monstrous_tire"
+					count: 6
 				}
 				{
 					id: "A8EB90763B56210C"
@@ -128,6 +177,9 @@
 					xp: 20
 				}
 			]
+			icon: {
+				id: "offroad:borehead_bearing"
+			}
 			dependencies: [
 				"0A962E30093A0ECA"
 			]

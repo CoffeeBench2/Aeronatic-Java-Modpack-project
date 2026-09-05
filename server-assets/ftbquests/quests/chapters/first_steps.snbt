@@ -4,7 +4,9 @@
 	order_index: 0
 	filename: "first_steps"
 	title: "First Steps"
-	icon: "minecraft:oak_log"
+	icon: {
+		id: "minecraft:oak_log"
+	}
 	subtitle: [
 		"Everything starts with a tree and a bad idea."
 	]

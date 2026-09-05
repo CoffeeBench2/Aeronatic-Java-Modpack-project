@@ -1,32 +1,34 @@
 {
 	id: "297D0D2F5AFC434B"
 	group: "4E2FA1B674D143B0"
-	order_index: 106
+	order_index: 116
 	filename: "addon_createaddition"
-	title: "Crafts & Additions"
-	icon: "createaddition:capacitor"
+	title: "Crafts and Additions"
+	icon: {
+		id: "createaddition:capacitor"
+	}
 	subtitle: [
-		"Rotation becomes electricity, and back again."
+		"Rotation becomes electricity, and back again.  &eMid&r"
 	]
 	default_quest_shape: ""
 	default_hide_dependency_lines: false
 	quests: [
 		{
-			title: "Meet Crafts & Additions"
+			title: "Meet Crafts and Additions"
 			x: 0.0d
 			y: 0.0d
 			description: [
 				"Wire and rods. Everything electrical here starts with these two."
 				""
-				"Bring 8 Andesite Alloy."
+				"&7Bring &f16 Brass Casing&7."
 			]
 			id: "5BAB40A9EF8529CD"
 			tasks: [
 				{
-					id: "302A19A156559365"
+					id: "A41715827A3DF042"
 					type: "item"
-					item: "create:andesite_alloy"
-					count: 8L
+					item: "create:brass_casing"
+					count: 16L
 				}
 			]
 			rewards: [
@@ -34,13 +36,13 @@
 					id: "9C98ADC5EA21081C"
 					type: "item"
 					item: "createaddition:copper_wire"
-					count: 8
+					count: 24
 				}
 				{
 					id: "3B23A2C4740123A0"
 					type: "item"
 					item: "createaddition:brass_rod"
-					count: 4
+					count: 12
 				}
 				{
 					id: "20CA7078D96F0676"
@@ -48,24 +50,34 @@
 					xp: 10
 				}
 			]
+			icon: {
+				id: "createaddition:copper_wire"
+			}
 			shape: "square"
 		}
 		{
-			title: "Crafts & Additions, Continued"
+			title: "Crafts and Additions, Continued"
 			x: 0.0d
 			y: 2.0d
 			description: [
 				"A capacitor stores a little. Connectors move it between machines."
 				""
-				"Bring 6 Brass Ingots."
+				"&7Bring &f16 Electron Tubes&7."
+				"&7Bring &f32 Brass Sheets&7."
 			]
 			id: "53167B911286BD62"
 			tasks: [
 				{
-					id: "B3DD4B5A6FE4F890"
+					id: "32E3B137CBF67ED9"
 					type: "item"
-					item: "create:brass_ingot"
-					count: 6L
+					item: "create:electron_tube"
+					count: 16L
+				}
+				{
+					id: "8F57A2A483D1614D"
+					type: "item"
+					item: "create:brass_sheet"
+					count: 32L
 				}
 			]
 			rewards: [
@@ -73,13 +85,13 @@
 					id: "0B8718E88B07BE4F"
 					type: "item"
 					item: "createaddition:capacitor"
-					count: 1
+					count: 3
 				}
 				{
 					id: "52EE6EF352D24D1B"
 					type: "item"
 					item: "createaddition:connector"
-					count: 2
+					count: 6
 				}
 				{
 					id: "6E2BF103D56D0DE8"
@@ -87,40 +99,83 @@
 					xp: 15
 				}
 			]
+			icon: {
+				id: "createaddition:capacitor"
+			}
 			dependencies: [
 				"5BAB40A9EF8529CD"
 			]
 		}
 		{
-			title: "Crafts & Additions: Kitted Out"
+			title: "Crafts and Additions: Kitted Out"
 			x: 0.0d
 			y: 4.0d
 			description: [
 				"An alternator turns rotation into power; an accumulator holds it."
 				""
-				"Bring 12 Iron Ingots."
+				"&7Bring &f8 Precision Mechanisms&7."
+				"&7Bring &f24 Brass Casing&7."
+				"&7Bring &f16 Polished Rose Quartz&7."
+				"&7Bring &f6 Capacitor&7."
+				"&7Bring &f6 Connector&7."
 			]
 			id: "AA12D9331C0F20F3"
 			tasks: [
 				{
-					id: "CE3CE1570737CD82"
+					id: "42933AC4D374F2BF"
 					type: "item"
-					item: "minecraft:iron_ingot"
-					count: 12L
+					item: "create:precision_mechanism"
+					count: 8L
+				}
+				{
+					id: "8395FAF3C6E447D9"
+					type: "item"
+					item: "create:brass_casing"
+					count: 24L
+				}
+				{
+					id: "ABD680F9A827C0C9"
+					type: "item"
+					item: "create:polished_rose_quartz"
+					count: 16L
+				}
+				{
+					id: "70F9037EBED0731F"
+					type: "item"
+					item: "createaddition:capacitor"
+					count: 6L
+				}
+				{
+					id: "17889C70F943F3F8"
+					type: "item"
+					item: "createaddition:connector"
+					count: 6L
 				}
 			]
 			rewards: [
 				{
-					id: "11448813FED4185D"
+					id: "18BD2C2EA9FD8A13"
 					type: "item"
-					item: "createaddition:accumulator"
-					count: 1
+					item: "createaddition:electric_motor"
+					count: 3
 				}
 				{
 					id: "658B748BF56A99B7"
 					type: "item"
 					item: "createaddition:alternator"
-					count: 1
+					count: 3
+				}
+				{
+					id: "D9098992EC395F03"
+					type: "item"
+					item: "createaddition:electrum_ingot"
+					count: 6
+				}
+				{
+					id: "4D0F12D31F41ED23"
+					type: "item"
+					item: "createaddition:copper_spool"
+					count: 6
 				}
 				{
 					id: "9AD3C46E911A2EBF"
@@ -128,6 +183,9 @@
 					xp: 20
 				}
 			]
+			icon: {
+				id: "createaddition:electric_motor"
+			}
 			dependencies: [
 				"53167B911286BD62"
 			]

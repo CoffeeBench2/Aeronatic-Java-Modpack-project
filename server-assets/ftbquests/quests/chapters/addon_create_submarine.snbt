@@ -4,9 +4,11 @@
 	order_index: 119
 	filename: "addon_create_submarine"
 	title: "Create: Deep Seas"
-	icon: "create_submarine:ballast_tank"
+	icon: {
+		id: "create_submarine:ballast_tank"
+	}
 	subtitle: [
-		"Down, instead of up."
+		"Down, instead of up.  &eMid&r"
 	]
 	default_quest_shape: ""
 	default_hide_dependency_lines: false
@@ -18,15 +20,15 @@
 			description: [
 				"Ballast tanks flood to sink and blow to rise. A vent controls the rate."
 				""
-				"Bring 8 Andesite Alloy."
+				"&7Bring &f16 Brass Casing&7."
 			]
 			id: "68FA21A0F0987AF5"
 			tasks: [
 				{
-					id: "0DB97805A83C4ABC"
+					id: "0F9C01E585D5EEE6"
 					type: "item"
-					item: "create:andesite_alloy"
-					count: 8L
+					item: "create:brass_casing"
+					count: 16L
 				}
 			]
 			rewards: [
@@ -34,13 +36,13 @@
 					id: "C0975405021DD576"
 					type: "item"
 					item: "create_submarine:ballast_tank"
-					count: 1
+					count: 3
 				}
 				{
 					id: "686179C98F058479"
 					type: "item"
 					item: "create_submarine:ballast_vent"
-					count: 2
+					count: 6
 				}
 				{
 					id: "69A37911961E713E"
@@ -48,6 +50,9 @@
 					xp: 10
 				}
 			]
+			icon: {
+				id: "create_submarine:ballast_tank"
+			}
 			shape: "square"
 		}
 		{
@@ -57,15 +62,22 @@
 			description: [
 				"A barometer reads depth. A rudder decides where you go."
 				""
-				"Bring 6 Brass Ingots."
+				"&7Bring &f16 Electron Tubes&7."
+				"&7Bring &f32 Brass Sheets&7."
 			]
 			id: "40D187330BD02E7D"
 			tasks: [
 				{
-					id: "A20CA69082DDA3D2"
+					id: "CD802B168CB72EBA"
 					type: "item"
-					item: "create:brass_ingot"
-					count: 6L
+					item: "create:electron_tube"
+					count: 16L
+				}
+				{
+					id: "499C7BC1D18E9E91"
+					type: "item"
+					item: "create:brass_sheet"
+					count: 32L
 				}
 			]
 			rewards: [
@@ -73,13 +85,13 @@
 					id: "9C424C4B1E88049A"
 					type: "item"
 					item: "create_submarine:barometer"
-					count: 1
+					count: 3
 				}
 				{
-					id: "F67CCE1A55BDAF15"
+					id: "19F775D7E82B9AB8"
 					type: "item"
-					item: "create_submarine:rudder"
-					count: 1
+					item: "create_submarine:floater"
+					count: 3
 				}
 				{
 					id: "0C73F14055CA6DD6"
@@ -87,6 +99,9 @@
 					xp: 15
 				}
 			]
+			icon: {
+				id: "create_submarine:barometer"
+			}
 			dependencies: [
 				"68FA21A0F0987AF5"
 			]
@@ -98,15 +113,43 @@
 			description: [
 				"A propeller to move, and a diffuser so the crew keeps breathing."
 				""
-				"Bring 12 Iron Ingots."
+				"&7Bring &f8 Precision Mechanisms&7."
+				"&7Bring &f24 Brass Casing&7."
+				"&7Bring &f16 Polished Rose Quartz&7."
+				"&7Bring &f6 Ballast Tank&7."
+				"&7Bring &f6 Ballast Vent&7."
 			]
 			id: "D12F63448A9DA765"
 			tasks: [
 				{
-					id: "1B512A736A5BB635"
+					id: "EE2C88FA23673ED1"
 					type: "item"
-					item: "minecraft:iron_ingot"
-					count: 12L
+					item: "create:precision_mechanism"
+					count: 8L
+				}
+				{
+					id: "F0855F732DD8C28C"
+					type: "item"
+					item: "create:brass_casing"
+					count: 24L
+				}
+				{
+					id: "913C30297B3BE5B7"
+					type: "item"
+					item: "create:polished_rose_quartz"
+					count: 16L
+				}
+				{
+					id: "ADB7F9D53B89A56C"
+					type: "item"
+					item: "create_submarine:ballast_tank"
+					count: 6L
+				}
+				{
+					id: "7D8E2A8E201F943E"
+					type: "item"
+					item: "create_submarine:ballast_vent"
+					count: 6L
 				}
 			]
 			rewards: [
@@ -114,13 +157,25 @@
 					id: "0E77D54EE1221A04"
 					type: "item"
 					item: "create_submarine:submarine_propeller"
-					count: 1
+					count: 3
 				}
 				{
 					id: "6EAFA50F2969FBCC"
 					type: "item"
 					item: "create_submarine:oxygene_diffuser"
-					count: 1
+					count: 3
+				}
+				{
+					id: "AA557E288BC2E576"
+					type: "item"
+					item: "create_submarine:steel_cable"
+					count: 6
+				}
+				{
+					id: "B472908664A1A6F0"
+					type: "item"
+					item: "create_submarine:industrial_alarm"
+					count: 6
 				}
 				{
 					id: "4E413AA9F753EBAE"
@@ -128,6 +183,9 @@
 					xp: 20
 				}
 			]
+			icon: {
+				id: "create_submarine:submarine_propeller"
+			}
 			dependencies: [
 				"40D187330BD02E7D"
 			]

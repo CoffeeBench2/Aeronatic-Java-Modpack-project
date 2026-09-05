@@ -1,12 +1,14 @@
 {
 	id: "27104CE39AA3CF7E"
 	group: "4E2FA1B674D143B0"
-	order_index: 118
+	order_index: 114
 	filename: "addon_createadditionallogistics"
 	title: "Additional Logistics"
-	icon: "createadditionallogistics:network_monitor"
+	icon: {
+		id: "createadditionallogistics:network_monitor"
+	}
 	subtitle: [
-		"Lazy shafts, and a view of the whole network."
+		"Lazy shafts, and a view of the whole network.  &eMid&r"
 	]
 	default_quest_shape: ""
 	default_hide_dependency_lines: false
@@ -18,15 +20,15 @@
 			description: [
 				"Lazy parts only tick when something changes. Free performance."
 				""
-				"Bring 8 Andesite Alloy."
+				"&7Bring &f16 Brass Casing&7."
 			]
 			id: "F6AF492F39707D31"
 			tasks: [
 				{
-					id: "2D1A50BF58CFA439"
+					id: "648B1EDA40A7A213"
 					type: "item"
-					item: "create:andesite_alloy"
-					count: 8L
+					item: "create:brass_casing"
+					count: 16L
 				}
 			]
 			rewards: [
@@ -34,13 +36,13 @@
 					id: "D37FDBF6C5330E49"
 					type: "item"
 					item: "createadditionallogistics:lazy_shaft"
-					count: 4
+					count: 12
 				}
 				{
 					id: "9E538BE79F6AD3C8"
 					type: "item"
 					item: "createadditionallogistics:lazy_cogwheel"
-					count: 4
+					count: 12
 				}
 				{
 					id: "8886632C9C15CFB4"
@@ -48,6 +50,9 @@
 					xp: 10
 				}
 			]
+			icon: {
+				id: "createadditionallogistics:lazy_shaft"
+			}
 			shape: "square"
 		}
 		{
@@ -57,15 +62,22 @@
 			description: [
 				"A flexible shaft bends around a corner without a gearbox."
 				""
-				"Bring 6 Brass Ingots."
+				"&7Bring &f16 Electron Tubes&7."
+				"&7Bring &f32 Brass Sheets&7."
 			]
 			id: "0B6B2B90A3D97930"
 			tasks: [
 				{
-					id: "8BC4FD595C5D341F"
+					id: "235D6476A050D62E"
 					type: "item"
-					item: "create:brass_ingot"
-					count: 6L
+					item: "create:electron_tube"
+					count: 16L
+				}
+				{
+					id: "C373778AB743FD40"
+					type: "item"
+					item: "create:brass_sheet"
+					count: 32L
 				}
 			]
 			rewards: [
@@ -73,13 +85,13 @@
 					id: "C48C19D318D1FC5C"
 					type: "item"
 					item: "createadditionallogistics:flexible_shaft"
-					count: 2
+					count: 6
 				}
 				{
 					id: "5E4A656C91764666"
 					type: "item"
 					item: "createadditionallogistics:lazy_large_cogwheel"
-					count: 2
+					count: 6
 				}
 				{
 					id: "89D483689B781E39"
@@ -87,6 +99,9 @@
 					xp: 15
 				}
 			]
+			icon: {
+				id: "createadditionallogistics:flexible_shaft"
+			}
 			dependencies: [
 				"F6AF492F39707D31"
 			]
@@ -98,15 +113,43 @@
 			description: [
 				"A network monitor shows every train and station at once."
 				""
-				"Bring 12 Iron Ingots."
+				"&7Bring &f8 Precision Mechanisms&7."
+				"&7Bring &f24 Brass Casing&7."
+				"&7Bring &f16 Polished Rose Quartz&7."
+				"&7Bring &f6 Lazy Shaft&7."
+				"&7Bring &f6 Lazy Cogwheel&7."
 			]
 			id: "CA635124F2CE12E8"
 			tasks: [
 				{
-					id: "B2248EABC633F4C7"
+					id: "CC8F9028FE662A71"
 					type: "item"
-					item: "minecraft:iron_ingot"
-					count: 12L
+					item: "create:precision_mechanism"
+					count: 8L
+				}
+				{
+					id: "0BAF5B1786DE70D0"
+					type: "item"
+					item: "create:brass_casing"
+					count: 24L
+				}
+				{
+					id: "01E286438F65161D"
+					type: "item"
+					item: "create:polished_rose_quartz"
+					count: 16L
+				}
+				{
+					id: "AC86254D1A42121D"
+					type: "item"
+					item: "createadditionallogistics:lazy_shaft"
+					count: 6L
+				}
+				{
+					id: "DDCC2BD208772463"
+					type: "item"
+					item: "createadditionallogistics:lazy_cogwheel"
+					count: 6L
 				}
 			]
 			rewards: [
@@ -114,13 +157,13 @@
 					id: "5A81C5CFD9E7009E"
 					type: "item"
 					item: "createadditionallogistics:network_monitor"
-					count: 1
+					count: 3
 				}
 				{
 					id: "64FE23CFE254BA65"
 					type: "item"
 					item: "createadditionallogistics:cash_register"
-					count: 1
+					count: 3
 				}
 				{
 					id: "65FF08DA9AD7299D"
@@ -128,6 +171,9 @@
 					xp: 20
 				}
 			]
+			icon: {
+				id: "createadditionallogistics:network_monitor"
+			}
 			dependencies: [
 				"0B6B2B90A3D97930"
 			]

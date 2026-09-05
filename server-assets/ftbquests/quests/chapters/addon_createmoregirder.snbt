@@ -1,12 +1,14 @@
 {
 	id: "9E0DA2B271122A0A"
 	group: "4E2FA1B674D143B0"
-	order_index: 123
+	order_index: 111
 	filename: "addon_createmoregirder"
 	title: "More Girders"
-	icon: "createmoregirder:brass_beam"
+	icon: {
+		id: "createmoregirder:brass_beam"
+	}
 	subtitle: [
-		"Girders in more metals and more shapes."
+		"Girders in more metals and more shapes.  &aEarly&r"
 	]
 	default_quest_shape: ""
 	default_hide_dependency_lines: false
@@ -18,15 +20,15 @@
 			description: [
 				"Copper beams and trusses. Warmer than iron, and they age nicely."
 				""
-				"Bring 8 Andesite Alloy."
+				"&7Bring &f32 Andesite Alloy&7."
 			]
 			id: "A12783C507BAB6FA"
 			tasks: [
 				{
-					id: "4A795B4B4F5F0D9F"
+					id: "20B252CDD454FAEF"
 					type: "item"
 					item: "create:andesite_alloy"
-					count: 8L
+					count: 32L
 				}
 			]
 			rewards: [
@@ -34,13 +36,13 @@
 					id: "B984FF68E4ED7C87"
 					type: "item"
 					item: "createmoregirder:copper_beam"
-					count: 8
+					count: 24
 				}
 				{
 					id: "531FA3A3E06B0E6B"
 					type: "item"
 					item: "createmoregirder:copper_truss"
-					count: 8
+					count: 24
 				}
 				{
 					id: "C9DEC7BF4A2EEC05"
@@ -48,6 +50,9 @@
 					xp: 10
 				}
 			]
+			icon: {
+				id: "createmoregirder:copper_beam"
+			}
 			shape: "square"
 		}
 		{
@@ -57,15 +62,22 @@
 			description: [
 				"The brass set. Matches everything else brass in the pack."
 				""
-				"Bring 6 Brass Ingots."
+				"&7Bring &f16 Andesite Casing&7."
+				"&7Bring &f24 Cogwheels&7."
 			]
 			id: "2909A7FEFDB49BBC"
 			tasks: [
 				{
-					id: "B26427E47CB2103E"
+					id: "A464D6111E5F36B0"
 					type: "item"
-					item: "create:brass_ingot"
-					count: 6L
+					item: "create:andesite_casing"
+					count: 16L
+				}
+				{
+					id: "D91F9A7CE87631CE"
+					type: "item"
+					item: "create:cogwheel"
+					count: 24L
 				}
 			]
 			rewards: [
@@ -73,13 +85,13 @@
 					id: "51F0D9BDACD2CA34"
 					type: "item"
 					item: "createmoregirder:brass_beam"
-					count: 8
+					count: 24
 				}
 				{
 					id: "FF0849C29538E6EE"
 					type: "item"
 					item: "createmoregirder:brass_truss"
-					count: 8
+					count: 24
 				}
 				{
 					id: "4A738F275EEE2C63"
@@ -87,6 +99,9 @@
 					xp: 15
 				}
 			]
+			icon: {
+				id: "createmoregirder:brass_beam"
+			}
 			dependencies: [
 				"A12783C507BAB6FA"
 			]
@@ -98,15 +113,43 @@
 			description: [
 				"Brackets and struts, to join them without it looking accidental."
 				""
-				"Bring 12 Iron Ingots."
+				"&7Bring &f32 Andesite Casing&7."
+				"&7Bring &f16 Large Cogwheels&7."
+				"&7Bring &f24 Iron Sheets&7."
+				"&7Bring &f4 Copper Beam&7."
+				"&7Bring &f4 Copper Truss&7."
 			]
 			id: "9CB75E570CCE61AF"
 			tasks: [
 				{
-					id: "74C2FBCB7D7BB1FB"
+					id: "020A5FD126728581"
 					type: "item"
-					item: "minecraft:iron_ingot"
-					count: 12L
+					item: "create:andesite_casing"
+					count: 32L
+				}
+				{
+					id: "9BECC091F6FDA0D5"
+					type: "item"
+					item: "create:large_cogwheel"
+					count: 16L
+				}
+				{
+					id: "40FACE03866D98A5"
+					type: "item"
+					item: "create:iron_sheet"
+					count: 24L
+				}
+				{
+					id: "5F3A63FEC5610716"
+					type: "item"
+					item: "createmoregirder:copper_beam"
+					count: 4L
+				}
+				{
+					id: "714277D56B3ECB3F"
+					type: "item"
+					item: "createmoregirder:copper_truss"
+					count: 4L
 				}
 			]
 			rewards: [
@@ -114,13 +157,19 @@
 					id: "76B2CF7ABD4FC3CF"
 					type: "item"
 					item: "createmoregirder:brass_bracket"
-					count: 4
+					count: 12
 				}
 				{
 					id: "F7A883C4101860A5"
 					type: "item"
 					item: "createmoregirder:brass_beam_strut"
-					count: 4
+					count: 12
+				}
+				{
+					id: "239FE44E5EB51216"
+					type: "item"
+					item: "createmoregirder:andesite_bracket"
+					count: 6
 				}
 				{
 					id: "2D1FF767645533E3"
@@ -128,6 +177,9 @@
 					xp: 20
 				}
 			]
+			icon: {
+				id: "createmoregirder:brass_bracket"
+			}
 			dependencies: [
 				"2909A7FEFDB49BBC"
 			]

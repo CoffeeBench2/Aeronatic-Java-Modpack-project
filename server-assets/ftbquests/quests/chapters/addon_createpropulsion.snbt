@@ -1,12 +1,14 @@
 {
 	id: "E2F13B4BE2790E85"
 	group: "4E2FA1B674D143B0"
-	order_index: 115
+	order_index: 121
 	filename: "addon_createpropulsion"
 	title: "Create: Propulsion"
-	icon: "createpropulsion:cable"
+	icon: {
+		id: "createpropulsion:cable"
+	}
 	subtitle: [
-		"Thrust, cabling, and contraption tooling."
+		"Thrust, cabling, and contraption tooling.  &eMid&r"
 	]
 	default_quest_shape: ""
 	default_hide_dependency_lines: false
@@ -18,15 +20,15 @@
 			description: [
 				"Cable and relays. Longer reach than Create's own wiring."
 				""
-				"Bring 8 Andesite Alloy."
+				"&7Bring &f16 Brass Casing&7."
 			]
 			id: "DE2D321EC1F959CA"
 			tasks: [
 				{
-					id: "C3F915F103BD59B8"
+					id: "350E76481DCF4169"
 					type: "item"
-					item: "create:andesite_alloy"
-					count: 8L
+					item: "create:brass_casing"
+					count: 16L
 				}
 			]
 			rewards: [
@@ -34,13 +36,13 @@
 					id: "EE80A8C3972E8F1C"
 					type: "item"
 					item: "createpropulsion:cable"
-					count: 8
+					count: 24
 				}
 				{
 					id: "0E85BF36FEE5BA55"
 					type: "item"
 					item: "createpropulsion:cable_relay"
-					count: 2
+					count: 6
 				}
 				{
 					id: "4086FE30D67F447C"
@@ -48,6 +50,9 @@
 					xp: 10
 				}
 			]
+			icon: {
+				id: "createpropulsion:cable"
+			}
 			shape: "square"
 		}
 		{
@@ -57,15 +62,22 @@
 			description: [
 				"Auto glue sticks a build together without clicking every face."
 				""
-				"Bring 6 Brass Ingots."
+				"&7Bring &f16 Electron Tubes&7."
+				"&7Bring &f32 Brass Sheets&7."
 			]
 			id: "E0C7707896838731"
 			tasks: [
 				{
-					id: "3A6A418D35EC351F"
+					id: "B06FAB95D38D05D6"
 					type: "item"
-					item: "create:brass_ingot"
-					count: 6L
+					item: "create:electron_tube"
+					count: 16L
+				}
+				{
+					id: "6E4463AB99F58C03"
+					type: "item"
+					item: "create:brass_sheet"
+					count: 32L
 				}
 			]
 			rewards: [
@@ -73,13 +85,13 @@
 					id: "C39AEFB9C6962AC2"
 					type: "item"
 					item: "createpropulsion:auto_glue"
-					count: 1
+					count: 3
 				}
 				{
 					id: "474AEEA4FDDD83E7"
 					type: "item"
 					item: "createpropulsion:assembler_stick"
-					count: 1
+					count: 3
 				}
 				{
 					id: "9975AE0ABD60AF67"
@@ -87,6 +99,9 @@
 					xp: 15
 				}
 			]
+			icon: {
+				id: "createpropulsion:auto_glue"
+			}
 			dependencies: [
 				"DE2D321EC1F959CA"
 			]
@@ -98,15 +113,43 @@
 			description: [
 				"A hub to gather cables, and a remover for when it all goes wrong."
 				""
-				"Bring 12 Iron Ingots."
+				"&7Bring &f8 Precision Mechanisms&7."
+				"&7Bring &f24 Brass Casing&7."
+				"&7Bring &f16 Polished Rose Quartz&7."
+				"&7Bring &f6 Cable&7."
+				"&7Bring &f6 Cable Relay&7."
 			]
 			id: "AE33737B42D335C8"
 			tasks: [
 				{
-					id: "55BD8BF98B9C5E09"
+					id: "02F1A89BB2753B1C"
 					type: "item"
-					item: "minecraft:iron_ingot"
-					count: 12L
+					item: "create:precision_mechanism"
+					count: 8L
+				}
+				{
+					id: "B16D85B402E7E892"
+					type: "item"
+					item: "create:brass_casing"
+					count: 24L
+				}
+				{
+					id: "9D617D20E8E5CA35"
+					type: "item"
+					item: "create:polished_rose_quartz"
+					count: 16L
+				}
+				{
+					id: "A5BFFA4E4DA9D060"
+					type: "item"
+					item: "createpropulsion:cable"
+					count: 6L
+				}
+				{
+					id: "B2A0958660AE82E1"
+					type: "item"
+					item: "createpropulsion:cable_relay"
+					count: 6L
 				}
 			]
 			rewards: [
@@ -114,13 +157,19 @@
 					id: "109132827A034DBD"
 					type: "item"
 					item: "createpropulsion:cable_hub"
-					count: 1
+					count: 3
 				}
 				{
 					id: "CFD0A497A99665A2"
 					type: "item"
 					item: "createpropulsion:contraption_remover"
-					count: 1
+					count: 3
+				}
+				{
+					id: "BF7C5CA81F2171E7"
+					type: "item"
+					item: "createpropulsion:cable_spool"
+					count: 6
 				}
 				{
 					id: "BC068E33FB1ECE9F"
@@ -128,6 +177,9 @@
 					xp: 20
 				}
 			]
+			icon: {
+				id: "createpropulsion:cable_hub"
+			}
 			dependencies: [
 				"E0C7707896838731"
 			]

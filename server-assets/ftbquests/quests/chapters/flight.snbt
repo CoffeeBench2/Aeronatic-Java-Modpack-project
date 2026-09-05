@@ -4,7 +4,9 @@
 	order_index: 5
 	filename: "flight"
 	title: "Taking Flight"
-	icon: "create:mechanical_bearing"
+	icon: {
+		id: "create:mechanical_bearing"
+	}
 	subtitle: [
 		"The part of the pack that gave it its name."
 	]

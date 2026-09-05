@@ -1,32 +1,34 @@
 {
 	id: "01F57A0FB1A81BA6"
 	group: "4E2FA1B674D143B0"
-	order_index: 116
+	order_index: 113
 	filename: "addon_create_sa"
-	title: "Stuff & Additions"
-	icon: "create_sa:brass_pickaxe"
+	title: "Stuff and Additions"
+	icon: {
+		id: "create_sa:brass_pickaxe"
+	}
 	subtitle: [
-		"Tools, armour and gadgets, in Create's own materials."
+		"Tools, armour and gadgets, in Create's own materials.  &aEarly&r"
 	]
 	default_quest_shape: ""
 	default_hide_dependency_lines: false
 	quests: [
 		{
-			title: "Meet Stuff & Additions"
+			title: "Meet Stuff and Additions"
 			x: 0.0d
 			y: 0.0d
 			description: [
 				"Brass tools. Not stronger than iron — they just belong here."
 				""
-				"Bring 8 Andesite Alloy."
+				"&7Bring &f32 Andesite Alloy&7."
 			]
 			id: "5B0693B697FD42AC"
 			tasks: [
 				{
-					id: "86509DBA21EBDD6E"
+					id: "63A918914181FE84"
 					type: "item"
 					item: "create:andesite_alloy"
-					count: 8L
+					count: 32L
 				}
 			]
 			rewards: [
@@ -34,13 +36,13 @@
 					id: "9F974988E21902DE"
 					type: "item"
 					item: "create_sa:brass_pickaxe"
-					count: 1
+					count: 3
 				}
 				{
 					id: "9F9A04A52A0E2AC1"
 					type: "item"
 					item: "create_sa:brass_axe"
-					count: 1
+					count: 3
 				}
 				{
 					id: "EF7FC77B47AD2A91"
@@ -48,24 +50,34 @@
 					xp: 10
 				}
 			]
+			icon: {
+				id: "create_sa:brass_pickaxe"
+			}
 			shape: "square"
 		}
 		{
-			title: "Stuff & Additions, Continued"
+			title: "Stuff and Additions, Continued"
 			x: 0.0d
 			y: 2.0d
 			description: [
 				"Brass armour to match. Cosmetic more than practical, and that is fine."
 				""
-				"Bring 6 Brass Ingots."
+				"&7Bring &f16 Andesite Casing&7."
+				"&7Bring &f24 Cogwheels&7."
 			]
 			id: "7784A4BD8FD41388"
 			tasks: [
 				{
-					id: "9E032CA75FFBD4FE"
+					id: "47CBA0206BB7F6E4"
 					type: "item"
-					item: "create:brass_ingot"
-					count: 6L
+					item: "create:andesite_casing"
+					count: 16L
+				}
+				{
+					id: "D0FF6C2D823C1ABE"
+					type: "item"
+					item: "create:cogwheel"
+					count: 24L
 				}
 			]
 			rewards: [
@@ -73,13 +85,13 @@
 					id: "6E970C0DC18FFA75"
 					type: "item"
 					item: "create_sa:brass_helmet"
-					count: 1
+					count: 3
 				}
 				{
 					id: "CF4406EA5447810D"
 					type: "item"
 					item: "create_sa:brass_chestplate"
-					count: 1
+					count: 3
 				}
 				{
 					id: "E4897AA7015270D6"
@@ -87,26 +99,57 @@
 					xp: 15
 				}
 			]
+			icon: {
+				id: "create_sa:brass_helmet"
+			}
 			dependencies: [
 				"5B0693B697FD42AC"
 			]
 		}
 		{
-			title: "Stuff & Additions: Kitted Out"
+			title: "Stuff and Additions: Kitted Out"
 			x: 0.0d
 			y: 4.0d
 			description: [
 				"A block picker, and a brass cube for the recipes that ask for one."
 				""
-				"Bring 12 Iron Ingots."
+				"&7Bring &f32 Andesite Casing&7."
+				"&7Bring &f16 Large Cogwheels&7."
+				"&7Bring &f24 Iron Sheets&7."
+				"&7Bring &f4 Brass Pickaxe&7."
+				"&7Bring &f4 Brass Axe&7."
 			]
 			id: "39AAACCA688BA141"
 			tasks: [
 				{
-					id: "73B654C21BBA1B53"
+					id: "E1B679ED3A0CFE06"
 					type: "item"
-					item: "minecraft:iron_ingot"
-					count: 12L
+					item: "create:andesite_casing"
+					count: 32L
+				}
+				{
+					id: "C4D7C6D850A77E4C"
+					type: "item"
+					item: "create:large_cogwheel"
+					count: 16L
+				}
+				{
+					id: "4A012F064173F4F2"
+					type: "item"
+					item: "create:iron_sheet"
+					count: 24L
+				}
+				{
+					id: "71554EA88DB34003"
+					type: "item"
+					item: "create_sa:brass_pickaxe"
+					count: 4L
+				}
+				{
+					id: "F522091C7A819A87"
+					type: "item"
+					item: "create_sa:brass_axe"
+					count: 4L
 				}
 			]
 			rewards: [
@@ -114,13 +157,25 @@
 					id: "79B362C53A3FB4F3"
 					type: "item"
 					item: "create_sa:block_picker"
-					count: 1
+					count: 3
 				}
 				{
 					id: "4C36E44B38CA5003"
 					type: "item"
 					item: "create_sa:brass_cube"
-					count: 2
+					count: 6
+				}
+				{
+					id: "1EA243D7063FE007"
+					type: "item"
+					item: "create_sa:brass_shovel"
+					count: 6
+				}
+				{
+					id: "77AC9F09B334F991"
+					type: "item"
+					item: "create_sa:brass_hoe"
+					count: 6
 				}
 				{
 					id: "56C75FE9E37C4AC9"
@@ -128,6 +183,9 @@
 					xp: 20
 				}
 			]
+			icon: {
+				id: "create_sa:block_picker"
+			}
 			dependencies: [
 				"7784A4BD8FD41388"
 			]

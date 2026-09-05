@@ -1,12 +1,14 @@
 {
 	id: "6FAB313A9D4396D9"
 	group: "4E2FA1B674D143B0"
-	order_index: 132
+	order_index: 108
 	filename: "addon_createsolar"
 	title: "Create: Solar"
-	icon: "createsolar:solar_panel"
+	icon: {
+		id: "createsolar:solar_panel"
+	}
 	subtitle: [
-		"Free power, if the sky cooperates."
+		"Free power, if the sky cooperates.  &aEarly&r"
 	]
 	default_quest_shape: ""
 	default_hide_dependency_lines: false
@@ -18,15 +20,15 @@
 			description: [
 				"A panel and sunglasses. One makes power, the other is a statement."
 				""
-				"Bring 8 Andesite Alloy."
+				"&7Bring &f32 Andesite Alloy&7."
 			]
 			id: "CC5429917E9219C3"
 			tasks: [
 				{
-					id: "6FCA0C282D297E5A"
+					id: "9F6079A7E757CD0F"
 					type: "item"
 					item: "create:andesite_alloy"
-					count: 8L
+					count: 32L
 				}
 			]
 			rewards: [
@@ -34,13 +36,13 @@
 					id: "E0729D0BE5D874C9"
 					type: "item"
 					item: "createsolar:solar_panel"
-					count: 2
+					count: 6
 				}
 				{
 					id: "370E591D36EA848A"
 					type: "item"
 					item: "createsolar:sunglasses"
-					count: 1
+					count: 3
 				}
 				{
 					id: "2536B3526B45A7B3"
@@ -48,6 +50,9 @@
 					xp: 10
 				}
 			]
+			icon: {
+				id: "createsolar:solar_panel"
+			}
 			shape: "square"
 		}
 		{
@@ -57,15 +62,36 @@
 			description: [
 				"A growth lamp for crops, and a sculk panel for power without daylight."
 				""
-				"Bring 6 Brass Ingots."
+				"&7Bring &f16 Andesite Casing&7."
+				"&7Bring &f24 Cogwheels&7."
+				"&7Bring &f4 Solar Panel&7."
+				"&7Bring &f4 Sunglasses&7."
 			]
 			id: "838B0754985BFAE9"
 			tasks: [
 				{
-					id: "99A763E84D49A5B3"
+					id: "0D2047B146FF855A"
 					type: "item"
-					item: "create:brass_ingot"
-					count: 6L
+					item: "create:andesite_casing"
+					count: 16L
+				}
+				{
+					id: "F146A9446F5457A8"
+					type: "item"
+					item: "create:cogwheel"
+					count: 24L
+				}
+				{
+					id: "32973D3474AA7FD5"
+					type: "item"
+					item: "createsolar:solar_panel"
+					count: 4L
+				}
+				{
+					id: "355BE619BF380D7B"
+					type: "item"
+					item: "createsolar:sunglasses"
+					count: 4L
 				}
 			]
 			rewards: [
@@ -73,13 +99,13 @@
 					id: "42655328F412209B"
 					type: "item"
 					item: "createsolar:growth_lamp"
-					count: 1
+					count: 3
 				}
 				{
 					id: "7C19A9812122FE94"
 					type: "item"
 					item: "createsolar:sculk_panel"
-					count: 1
+					count: 3
 				}
 				{
 					id: "9DA2E6DA390AFD10"
@@ -87,49 +113,11 @@
 					xp: 15
 				}
 			]
+			icon: {
+				id: "createsolar:growth_lamp"
+			}
 			dependencies: [
 				"CC5429917E9219C3"
-			]
-		}
-		{
-			title: "Create: Solar: Kitted Out"
-			x: 0.0d
-			y: 4.0d
-			description: [
-				"More panels. An array beats a single panel every time."
-				""
-				"Bring 12 Iron Ingots."
-			]
-			id: "C9A127CCC6F8D789"
-			tasks: [
-				{
-					id: "9C833B6195FAE530"
-					type: "item"
-					item: "minecraft:iron_ingot"
-					count: 12L
-				}
-			]
-			rewards: [
-				{
-					id: "B3FDD5CE6E3CD920"
-					type: "item"
-					item: "createsolar:solar_panel"
-					count: 4
-				}
-				{
-					id: "C98A5CAF96B555F2"
-					type: "item"
-					item: "minecraft:glass"
-					count: 16
-				}
-				{
-					id: "9F1EFFE034A6FCF8"
-					type: "xp"
-					xp: 20
-				}
-			]
-			dependencies: [
-				"838B0754985BFAE9"
 			]
 		}
 	]

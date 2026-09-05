@@ -1,12 +1,14 @@
 {
 	id: "0D245B57DC4A9A89"
 	group: "4E2FA1B674D143B0"
-	order_index: 124
+	order_index: 132
 	filename: "addon_create_enchantment_industry"
 	title: "Enchantment Industry"
-	icon: "create_enchantment_industry:blaze_enchanter"
+	icon: {
+		id: "create_enchantment_industry:blaze_enchanter"
+	}
 	subtitle: [
-		"Automate the enchanting table."
+		"Automate the enchanting table.  &cLate&r"
 	]
 	default_quest_shape: ""
 	default_hide_dependency_lines: false
@@ -18,15 +20,15 @@
 			description: [
 				"Liquid experience. Yes, really — it pipes like any other fluid."
 				""
-				"Bring 8 Andesite Alloy."
+				"&7Bring &f16 Precision Mechanisms&7."
 			]
 			id: "E43AAA8E2C28D7EC"
 			tasks: [
 				{
-					id: "F994B8B77173D8AC"
+					id: "19E89A25EDADFB00"
 					type: "item"
-					item: "create:andesite_alloy"
-					count: 8L
+					item: "create:precision_mechanism"
+					count: 16L
 				}
 			]
 			rewards: [
@@ -34,13 +36,13 @@
 					id: "7C2CAA2E7078117B"
 					type: "item"
 					item: "create_enchantment_industry:experience_bucket"
-					count: 1
+					count: 4
 				}
 				{
-					id: "B39008ED2EDDBCE1"
+					id: "8526BF1C0CE3636A"
 					type: "item"
-					item: "create_enchantment_industry:brass_bookshelf"
-					count: 2
+					item: "create_enchantment_industry:experience_lantern"
+					count: 8
 				}
 				{
 					id: "ED0BC28ACF1B93EE"
@@ -48,6 +50,9 @@
 					xp: 10
 				}
 			]
+			icon: {
+				id: "create_enchantment_industry:experience_bucket"
+			}
 			shape: "square"
 		}
 		{
@@ -57,15 +62,22 @@
 			description: [
 				"A blaze enchanter applies a template instead of a random roll."
 				""
-				"Bring 6 Brass Ingots."
+				"&7Bring &f24 Precision Mechanisms&7."
+				"&7Bring &f8 Sturdy Sheets&7."
 			]
 			id: "7C88167DCE1F8CD5"
 			tasks: [
 				{
-					id: "D2B24AFCB6F6F768"
+					id: "C8F94AF645D384FA"
 					type: "item"
-					item: "create:brass_ingot"
-					count: 6L
+					item: "create:precision_mechanism"
+					count: 24L
+				}
+				{
+					id: "151F0D2DDA75B300"
+					type: "item"
+					item: "create:sturdy_sheet"
+					count: 8L
 				}
 			]
 			rewards: [
@@ -73,13 +85,13 @@
 					id: "406492A870F1D552"
 					type: "item"
 					item: "create_enchantment_industry:blaze_enchanter"
-					count: 1
+					count: 4
 				}
 				{
 					id: "FFA977E7C1C87862"
 					type: "item"
 					item: "create_enchantment_industry:enchanting_template"
-					count: 1
+					count: 4
 				}
 				{
 					id: "FB99E224C95651F0"
@@ -87,6 +99,9 @@
 					xp: 15
 				}
 			]
+			icon: {
+				id: "create_enchantment_industry:blaze_enchanter"
+			}
 			dependencies: [
 				"E43AAA8E2C28D7EC"
 			]
@@ -98,15 +113,43 @@
 			description: [
 				"The forger repairs and combines. The bag carries the mess."
 				""
-				"Bring 12 Iron Ingots."
+				"&7Bring &f32 Precision Mechanisms&7."
+				"&7Bring &f16 Sturdy Sheets&7."
+				"&7Bring &f8 Refined Radiance&7."
+				"&7Bring &f8 Experience Lantern&7."
+				"&7Bring &f8 Blaze Enchanter&7."
 			]
 			id: "E74B94102A07BCA0"
 			tasks: [
 				{
-					id: "2B49D46B74D91723"
+					id: "AA3E87CB52A67CDB"
 					type: "item"
-					item: "minecraft:iron_ingot"
-					count: 12L
+					item: "create:precision_mechanism"
+					count: 32L
+				}
+				{
+					id: "EA30E308C9A6ED50"
+					type: "item"
+					item: "create:sturdy_sheet"
+					count: 16L
+				}
+				{
+					id: "BE0C184236198485"
+					type: "item"
+					item: "create:refined_radiance"
+					count: 8L
+				}
+				{
+					id: "C87DD372184FE6AF"
+					type: "item"
+					item: "create_enchantment_industry:experience_lantern"
+					count: 8L
+				}
+				{
+					id: "CB6923B83D8872BB"
+					type: "item"
+					item: "create_enchantment_industry:blaze_enchanter"
+					count: 8L
 				}
 			]
 			rewards: [
@@ -114,13 +157,19 @@
 					id: "AF1046C0496D8517"
 					type: "item"
 					item: "create_enchantment_industry:blaze_forger"
-					count: 1
+					count: 4
 				}
 				{
-					id: "7BC0464ECF250D3B"
+					id: "703D681A211F0613"
 					type: "item"
-					item: "create_enchantment_industry:ender_woven_bag"
-					count: 1
+					item: "create_enchantment_industry:printer"
+					count: 4
+				}
+				{
+					id: "F52D99A10480F4B7"
+					type: "item"
+					item: "create_enchantment_industry:mechanical_grindstone"
+					count: 8
 				}
 				{
 					id: "32BD8C41BCD60309"
@@ -128,6 +177,9 @@
 					xp: 20
 				}
 			]
+			icon: {
+				id: "create_enchantment_industry:blaze_forger"
+			}
 			dependencies: [
 				"7C88167DCE1F8CD5"
 			]

@@ -1,0 +1,114 @@
+{
+	default_hide_dependency_lines: false
+	default_quest_shape: ""
+	filename: "exploration"
+	group: ""
+	icon: {
+		id: "minecraft:spyglass"
+	}
+	id: "1300000000000001"
+	order_index: 0
+	quest_links: [ ]
+	quests: [
+		{
+			id: "1300000000000002"
+			rewards: [{
+				id: "1300000000000004"
+				item: {
+					count: 1
+					id: "minecraft:filled_map"
+				}
+				type: "item"
+			}]
+			shape: "hexagon"
+			size: 1.5d
+			tasks: [{
+				id: "1300000000000003"
+				item: { count: 1, id: "minecraft:spyglass" }
+				type: "item"
+			}]
+			x: 0.0d
+			y: 0.0d
+		}
+		{
+			dependencies: ["1300000000000002"]
+			id: "1300000000000030"
+			rewards: [{
+				count: 2
+				id: "1300000000000032"
+				item: {
+					count: 1
+					id: "minecraft:map"
+				}
+				type: "item"
+			}]
+			shape: "circle"
+			tasks: [{
+				id: "1300000000000031"
+				item: { count: 1, id: "minecraft:cartography_table" }
+				type: "item"
+			}]
+			x: 2.0d
+			y: -2.0d
+		}
+		{
+			dependencies: ["1300000000000002"]
+			id: "1300000000000060"
+			rewards: [{
+				count: 8
+				id: "1300000000000062"
+				item: {
+					count: 1
+					id: "minecraft:cooked_beef"
+				}
+				type: "item"
+			}]
+			shape: "circle"
+			tasks: [{
+				id: "1300000000000061"
+				item: { count: 1, id: "comforts:sleeping_bag_red" }
+				type: "item"
+			}]
+			x: 2.0d
+			y: 2.0d
+		}
+		{
+			dependencies: ["1300000000000002"]
+			id: "1300000000000020"
+			rewards: [{
+				count: 3
+				id: "1300000000000022"
+				item: {
+					count: 1
+					id: "minecraft:diamond"
+				}
+				type: "item"
+			}]
+			shape: "circle"
+			tasks: [{
+				dimension: "minecraft:the_nether"
+				id: "1300000000000021"
+				type: "dimension"
+			}]
+			x: 4.0d
+			y: 0.0d
+		}
+		{
+			dependencies: ["1300000000000002"]
+			id: "1300000000000040"
+			rewards: [{
+				id: "1300000000000042"
+				type: "xp_levels"
+				xp_levels: 5
+			}]
+			shape: "circle"
+			tasks: [{
+				id: "1300000000000041"
+				item: { count: 1, id: "minecraft:recovery_compass" }
+				type: "item"
+			}]
+			x: 4.0d
+			y: 2.0d
+		}
+	]
+}

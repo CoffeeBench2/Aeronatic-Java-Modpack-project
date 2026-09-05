@@ -4,7 +4,9 @@
 	order_index: 1
 	filename: "andesite_age"
 	title: "The Andesite Age"
-	icon: "create:andesite_casing"
+	icon: {
+		id: "create:andesite_casing"
+	}
 	subtitle: [
 		"Rotation is power. Power is everything."
 	]

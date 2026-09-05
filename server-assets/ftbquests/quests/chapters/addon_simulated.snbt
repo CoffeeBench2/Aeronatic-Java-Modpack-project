@@ -1,12 +1,14 @@
 {
 	id: "783545831E6D06C0"
 	group: "4E2FA1B674D143B0"
-	order_index: 104
+	order_index: 123
 	filename: "addon_simulated"
 	title: "Create: Simulated"
-	icon: "simulated:altitude_sensor"
+	icon: {
+		id: "simulated:altitude_sensor"
+	}
 	subtitle: [
-		"Physics parts: engines, sails, and things that hold together."
+		"Physics parts: engines, sails, and things that hold together.  &eMid&r"
 	]
 	default_quest_shape: ""
 	default_hide_dependency_lines: false
@@ -18,15 +20,15 @@
 			description: [
 				"Handles to grab and augers to dig. The basics of a moving build."
 				""
-				"Bring 8 Andesite Alloy."
+				"&7Bring &f16 Brass Casing&7."
 			]
 			id: "D97F0C0BD0D42D42"
 			tasks: [
 				{
-					id: "26C8887BAAD21A86"
+					id: "26414BFB094A4BF0"
 					type: "item"
-					item: "create:andesite_alloy"
-					count: 8L
+					item: "create:brass_casing"
+					count: 16L
 				}
 			]
 			rewards: [
@@ -34,13 +36,13 @@
 					id: "2E4C2F89C1C27152"
 					type: "item"
 					item: "simulated:copper_handle"
-					count: 2
+					count: 6
 				}
 				{
 					id: "283D4830C7D60174"
 					type: "item"
 					item: "simulated:auger_shaft"
-					count: 2
+					count: 6
 				}
 				{
 					id: "B6FB149A95103DCB"
@@ -48,6 +50,9 @@
 					xp: 10
 				}
 			]
+			icon: {
+				id: "simulated:copper_handle"
+			}
 			shape: "square"
 		}
 		{
@@ -57,15 +62,22 @@
 			description: [
 				"An altitude sensor, and a diagram that shows what your contraption thinks it is."
 				""
-				"Bring 6 Brass Ingots."
+				"&7Bring &f16 Electron Tubes&7."
+				"&7Bring &f32 Brass Sheets&7."
 			]
 			id: "F4A957ABBEB5553B"
 			tasks: [
 				{
-					id: "8556DA4BA142C5CC"
+					id: "74AFEA784DACE303"
 					type: "item"
-					item: "create:brass_ingot"
-					count: 6L
+					item: "create:electron_tube"
+					count: 16L
+				}
+				{
+					id: "B40C02AAAE8E69DC"
+					type: "item"
+					item: "create:brass_sheet"
+					count: 32L
 				}
 			]
 			rewards: [
@@ -73,13 +85,13 @@
 					id: "BA1B8684B85A964E"
 					type: "item"
 					item: "simulated:altitude_sensor"
-					count: 1
+					count: 3
 				}
 				{
 					id: "7178CD7F53649294"
 					type: "item"
 					item: "simulated:contraption_diagram"
-					count: 1
+					count: 3
 				}
 				{
 					id: "B975229F11CEE6CD"
@@ -87,6 +99,9 @@
 					xp: 15
 				}
 			]
+			icon: {
+				id: "simulated:altitude_sensor"
+			}
 			dependencies: [
 				"D97F0C0BD0D42D42"
 			]
@@ -98,15 +113,43 @@
 			description: [
 				"Analog transmission and a directional gearshift, for drive trains that change their mind."
 				""
-				"Bring 12 Iron Ingots."
+				"&7Bring &f8 Precision Mechanisms&7."
+				"&7Bring &f24 Brass Casing&7."
+				"&7Bring &f16 Polished Rose Quartz&7."
+				"&7Bring &f6 Copper Handle&7."
+				"&7Bring &f6 Auger Shaft&7."
 			]
 			id: "54A6B5644CC2FECC"
 			tasks: [
 				{
-					id: "B0BCC38ED66773B6"
+					id: "DF8550164D5F983D"
 					type: "item"
-					item: "minecraft:iron_ingot"
-					count: 12L
+					item: "create:precision_mechanism"
+					count: 8L
+				}
+				{
+					id: "117DF6F22F13021F"
+					type: "item"
+					item: "create:brass_casing"
+					count: 24L
+				}
+				{
+					id: "7166AB3090D8D342"
+					type: "item"
+					item: "create:polished_rose_quartz"
+					count: 16L
+				}
+				{
+					id: "F63D4E29F3D10CBA"
+					type: "item"
+					item: "simulated:copper_handle"
+					count: 6L
+				}
+				{
+					id: "987BF5B7A74766EB"
+					type: "item"
+					item: "simulated:auger_shaft"
+					count: 6L
 				}
 			]
 			rewards: [
@@ -114,13 +157,19 @@
 					id: "48E3616500EAA5F5"
 					type: "item"
 					item: "simulated:analog_transmission"
-					count: 1
+					count: 3
 				}
 				{
 					id: "EB23DC65F2612E31"
 					type: "item"
 					item: "simulated:directional_gearshift"
-					count: 1
+					count: 3
+				}
+				{
+					id: "1BBFB9FE0689BDDD"
+					type: "item"
+					item: "simulated:auger_cog"
+					count: 6
 				}
 				{
 					id: "AC1870A056547593"
@@ -128,6 +177,9 @@
 					xp: 20
 				}
 			]
+			icon: {
+				id: "simulated:analog_transmission"
+			}
 			dependencies: [
 				"F4A957ABBEB5553B"
 			]

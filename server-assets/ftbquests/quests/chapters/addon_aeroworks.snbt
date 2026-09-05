@@ -1,12 +1,14 @@
 {
 	id: "05E357A17BC920E3"
 	group: "4E2FA1B674D143B0"
-	order_index: 101
+	order_index: 115
 	filename: "addon_aeroworks"
 	title: "Aeroworks"
-	icon: "aeroworks:control_desk"
+	icon: {
+		id: "aeroworks:control_desk"
+	}
 	subtitle: [
-		"Cockpit furniture that actually does something."
+		"Cockpit furniture that actually does something.  &eMid&r"
 	]
 	default_quest_shape: ""
 	default_hide_dependency_lines: false
@@ -18,15 +20,15 @@
 			description: [
 				"A stand to mount controls on, so a cockpit stops being a wall of levers."
 				""
-				"Bring 8 Andesite Alloy."
+				"&7Bring &f16 Brass Casing&7."
 			]
 			id: "74F9A11FDFE9CCCD"
 			tasks: [
 				{
-					id: "F3D52D86CD384EF3"
+					id: "89D49BA43AE1DCE6"
 					type: "item"
-					item: "create:andesite_alloy"
-					count: 8L
+					item: "create:brass_casing"
+					count: 16L
 				}
 			]
 			rewards: [
@@ -34,13 +36,13 @@
 					id: "E6E78F168A849DA0"
 					type: "item"
 					item: "aeroworks:control_stand"
-					count: 1
+					count: 3
 				}
 				{
 					id: "F09B0C295F0AB385"
 					type: "item"
 					item: "aeroworks:copper_lever_module"
-					count: 2
+					count: 6
 				}
 				{
 					id: "C64E077D6C07DC9A"
@@ -48,6 +50,9 @@
 					xp: 10
 				}
 			]
+			icon: {
+				id: "aeroworks:control_stand"
+			}
 			shape: "square"
 		}
 		{
@@ -57,15 +62,22 @@
 			description: [
 				"The desk is the flat version. Modules clip into either."
 				""
-				"Bring 6 Brass Ingots."
+				"&7Bring &f16 Electron Tubes&7."
+				"&7Bring &f32 Brass Sheets&7."
 			]
 			id: "06E73BF408419E8D"
 			tasks: [
 				{
-					id: "0DB17BE345408FCA"
+					id: "341443FE00F6B4CD"
 					type: "item"
-					item: "create:brass_ingot"
-					count: 6L
+					item: "create:electron_tube"
+					count: 16L
+				}
+				{
+					id: "888959BF6D3A5D15"
+					type: "item"
+					item: "create:brass_sheet"
+					count: 32L
 				}
 			]
 			rewards: [
@@ -73,13 +85,13 @@
 					id: "4712EA3F66416CEF"
 					type: "item"
 					item: "aeroworks:control_desk"
-					count: 1
+					count: 3
 				}
 				{
 					id: "3D262910CC5C7146"
 					type: "item"
 					item: "aeroworks:copper_button_module"
-					count: 2
+					count: 6
 				}
 				{
 					id: "1D070C4F589BEE46"
@@ -87,6 +99,9 @@
 					xp: 15
 				}
 			]
+			icon: {
+				id: "aeroworks:control_desk"
+			}
 			dependencies: [
 				"74F9A11FDFE9CCCD"
 			]
@@ -98,15 +113,43 @@
 			description: [
 				"A yoke and a throttle quadrant. Now it feels like a cockpit."
 				""
-				"Bring 12 Iron Ingots."
+				"&7Bring &f8 Precision Mechanisms&7."
+				"&7Bring &f24 Brass Casing&7."
+				"&7Bring &f16 Polished Rose Quartz&7."
+				"&7Bring &f6 Control Stand&7."
+				"&7Bring &f6 Copper Lever Module&7."
 			]
 			id: "7070E2189F73E534"
 			tasks: [
 				{
-					id: "793009E3D3EA9BC1"
+					id: "4C2B0950FF3F1F68"
 					type: "item"
-					item: "minecraft:iron_ingot"
-					count: 12L
+					item: "create:precision_mechanism"
+					count: 8L
+				}
+				{
+					id: "68871E5528E3F307"
+					type: "item"
+					item: "create:brass_casing"
+					count: 24L
+				}
+				{
+					id: "92CCA3FA0A04BA14"
+					type: "item"
+					item: "create:polished_rose_quartz"
+					count: 16L
+				}
+				{
+					id: "A41E6CCC5146ECE7"
+					type: "item"
+					item: "aeroworks:control_stand"
+					count: 6L
+				}
+				{
+					id: "77AF989A291B1A36"
+					type: "item"
+					item: "aeroworks:copper_lever_module"
+					count: 6L
 				}
 			]
 			rewards: [
@@ -114,13 +157,25 @@
 					id: "85275C9036875254"
 					type: "item"
 					item: "aeroworks:copper_yoke_module"
-					count: 1
+					count: 3
 				}
 				{
 					id: "00618A612CBA2441"
 					type: "item"
 					item: "aeroworks:copper_throttle_quadrant_module"
-					count: 1
+					count: 3
+				}
+				{
+					id: "E4EB5DD2395CA319"
+					type: "item"
+					item: "aeroworks:gyroscope"
+					count: 6
+				}
+				{
+					id: "788FAAC76204007E"
+					type: "item"
+					item: "aeroworks:joystick"
+					count: 6
 				}
 				{
 					id: "43AF531B42D9C63D"
@@ -128,6 +183,9 @@
 					xp: 20
 				}
 			]
+			icon: {
+				id: "aeroworks:copper_yoke_module"
+			}
 			dependencies: [
 				"06E73BF408419E8D"
 			]

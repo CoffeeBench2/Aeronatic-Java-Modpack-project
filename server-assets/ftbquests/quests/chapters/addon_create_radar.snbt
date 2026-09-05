@@ -1,12 +1,14 @@
 {
 	id: "4697B77A50D51634"
 	group: "4E2FA1B674D143B0"
-	order_index: 114
+	order_index: 122
 	filename: "addon_create_radar"
 	title: "Create: Radars"
-	icon: "create_radar:binoculars"
+	icon: {
+		id: "create_radar:binoculars"
+	}
 	subtitle: [
-		"See further than you can build."
+		"See further than you can build.  &eMid&r"
 	]
 	default_quest_shape: ""
 	default_hide_dependency_lines: false
@@ -18,15 +20,15 @@
 			description: [
 				"Binoculars first. The data link carries what a radar sees to somewhere useful."
 				""
-				"Bring 8 Andesite Alloy."
+				"&7Bring &f16 Brass Casing&7."
 			]
 			id: "3E32401086B8CCE8"
 			tasks: [
 				{
-					id: "B77B8F8D6D43EB6D"
+					id: "50E005C55F2B9678"
 					type: "item"
-					item: "create:andesite_alloy"
-					count: 8L
+					item: "create:brass_casing"
+					count: 16L
 				}
 			]
 			rewards: [
@@ -34,13 +36,13 @@
 					id: "31D5D927DCFAF49C"
 					type: "item"
 					item: "create_radar:binoculars"
-					count: 1
+					count: 3
 				}
 				{
 					id: "4F0B031B9E2E39E9"
 					type: "item"
 					item: "create_radar:data_link"
-					count: 2
+					count: 6
 				}
 				{
 					id: "566BCF78CD027F77"
@@ -48,6 +50,9 @@
 					xp: 10
 				}
 			]
+			icon: {
+				id: "create_radar:binoculars"
+			}
 			shape: "square"
 		}
 		{
@@ -57,15 +62,22 @@
 			description: [
 				"Plates and a bearing make a dish that actually sweeps."
 				""
-				"Bring 6 Brass Ingots."
+				"&7Bring &f16 Electron Tubes&7."
+				"&7Bring &f32 Brass Sheets&7."
 			]
 			id: "A867AEF24D927CBF"
 			tasks: [
 				{
-					id: "3C1F326E01AC913E"
+					id: "B4F1995C8741C11E"
 					type: "item"
-					item: "create:brass_ingot"
-					count: 6L
+					item: "create:electron_tube"
+					count: 16L
+				}
+				{
+					id: "E33CE54B0B81F185"
+					type: "item"
+					item: "create:brass_sheet"
+					count: 32L
 				}
 			]
 			rewards: [
@@ -73,13 +85,13 @@
 					id: "588A8DCAD5F6FA8D"
 					type: "item"
 					item: "create_radar:radar_plate_block"
-					count: 2
+					count: 6
 				}
 				{
 					id: "BB740E17E4301BDB"
 					type: "item"
 					item: "create_radar:radar_bearing"
-					count: 1
+					count: 3
 				}
 				{
 					id: "B733488CF60559D7"
@@ -87,6 +99,9 @@
 					xp: 15
 				}
 			]
+			icon: {
+				id: "create_radar:radar_plate_block"
+			}
 			dependencies: [
 				"3E32401086B8CCE8"
 			]
@@ -98,15 +113,43 @@
 			description: [
 				"A monitor to read it, and a filter so it only reports what matters."
 				""
-				"Bring 12 Iron Ingots."
+				"&7Bring &f8 Precision Mechanisms&7."
+				"&7Bring &f24 Brass Casing&7."
+				"&7Bring &f16 Polished Rose Quartz&7."
+				"&7Bring &f6 Binoculars&7."
+				"&7Bring &f6 Data Link&7."
 			]
 			id: "49903A4F6BA1A71E"
 			tasks: [
 				{
-					id: "32CE587E41962471"
+					id: "FF03907596C61308"
 					type: "item"
-					item: "minecraft:iron_ingot"
-					count: 12L
+					item: "create:precision_mechanism"
+					count: 8L
+				}
+				{
+					id: "C83FBF0C00BA6A8C"
+					type: "item"
+					item: "create:brass_casing"
+					count: 24L
+				}
+				{
+					id: "E8B06AB8E1371EB8"
+					type: "item"
+					item: "create:polished_rose_quartz"
+					count: 16L
+				}
+				{
+					id: "229B3B622BBD93F3"
+					type: "item"
+					item: "create_radar:binoculars"
+					count: 6L
+				}
+				{
+					id: "20CFB93D67C88273"
+					type: "item"
+					item: "create_radar:data_link"
+					count: 6L
 				}
 			]
 			rewards: [
@@ -114,13 +157,19 @@
 					id: "0A9AD26C798D9FD1"
 					type: "item"
 					item: "create_radar:monitor"
-					count: 1
+					count: 3
 				}
 				{
 					id: "9674BFB41042D919"
 					type: "item"
 					item: "create_radar:ident_filter_item"
-					count: 1
+					count: 3
+				}
+				{
+					id: "98D0EAF23A86322F"
+					type: "item"
+					item: "create_radar:auto_pitch_controller"
+					count: 6
 				}
 				{
 					id: "8ED26A0D5CD9EA2C"
@@ -128,6 +177,9 @@
 					xp: 20
 				}
 			]
+			icon: {
+				id: "create_radar:monitor"
+			}
 			dependencies: [
 				"A867AEF24D927CBF"
 			]

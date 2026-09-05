@@ -19,10 +19,32 @@ import os
 import hashlib
 
 ROOT = "server-assets/ftbquests"
-# Every item id every jar in overrides/mods declares, keyed by namespace. Extracted from the jars
-# themselves, so this cannot drift from what the pack actually ships.
-_vocab = json.load(open("scripts/_questgen/vocab.json"))
+# 🔴 VALIDATE AGAINST ITEM MODELS, NOT LANG KEYS.
+#
+# The first version of this built its vocabulary from assets/<ns>/lang/en_us.json, on the reasoning
+# that a translation exists for everything real. It does not. Fluids keep a lang key with no item
+# behind them, so do blocks with no item form and content a mod removed but never cleaned up. The
+# quest book rendered 16 rewards as a purple "Missing Item" question mark and the server log said
+# nothing, because the file was perfectly valid — the id was simply not in the item registry.
+#
+# assets/<ns>/models/item/<name>.json only exists for a registered ITEM. That is the closest thing
+# to the registry available without a running game, and it catches every one of those 16.
+_vocab = json.load(open("scripts/_questgen/vocab_items.json"))
 VALID = {i for ids in _vocab.values() for i in ids}
+
+# 🔴 AND the live registry has the final say.
+#
+# Item models were the second guess and still wrong: create_enchantment_industry:ender_woven_bag has
+# a model AND a recipe AND is not in the item registry, because that mod config-gates part of its
+# content. Static analysis cannot see a runtime decision.
+#
+# registry_rejected.json is the set of ids the RUNNING pack refused, collected by feeding every
+# candidate to the server as a throwaway recipe and reading the "Unknown registry key" lines back
+# out of the log. That is the registry itself, so it outranks everything above it.
+try:
+    REJECTED = set(json.load(open("scripts/_questgen/registry_rejected.json")))
+except FileNotFoundError:
+    REJECTED = set()
 
 # Vanilla ids used below.
 #
@@ -59,7 +81,27 @@ def qid(*parts):
 RESTRICTED = set(json.load(open("scripts/_questgen/restricted.json")))
 
 
+import re as _re
+
+_BAD_AMP = _re.compile(r"&(\s|$)")
+
+
+def text(t):
+    """Validate any string shown to a player.
+
+    FTB Quests reads & as the start of a colour code. A literal ampersand followed by whitespace is
+    a formatting error that replaces the whole line with red error text in the quest book, and the
+    server log says nothing at all. Caught here because no boot test can catch it."""
+    if isinstance(t, str) and _BAD_AMP.search(t):
+        raise SystemExit(f"REFUSING TO BUILD: {t!r} contains a bare '&' — use 'and', or a real "
+                         f"colour code like &e")
+    return t
+
+
 def check(item):
+    if item in REJECTED:
+        raise SystemExit(f"REFUSING TO BUILD: {item!r} is NOT in the live item registry — the "
+                         f"server rejected it during the registry probe")
     if item in RESTRICTED:
         raise SystemExit(f"REFUSING TO BUILD: {item!r} is on the toolgun_restricted list")
     if item not in VALID:
@@ -122,17 +164,24 @@ class Chapter:
         self.last = None
         self.group = ""
 
-    def q(self, key, title, x, y, tasks, rewards, desc, deps=None, shape="", optional=False):
+    def q(self, key, title, x, y, tasks, rewards, desc, deps=None, shape="", optional=False,
+          icon=""):
         i = qid("quest", self.key, key)
         entry = {
-            "title": title,
+            "title": text(title),
             "x": Double(x),
             "y": Double(y),
-            "description": desc,
+            "description": [text(d) for d in desc],
             "id": i,
             "tasks": tasks,
             "rewards": rewards,
         }
+        # 🔑 FTB Quests derives a quest's icon from its FIRST TASK when none is set. Every addon
+        # quest is gated on the same three common materials, so without this every one of them
+        # renders as andesite alloy / brass / iron and the book looks like one quest copied 105
+        # times. The icon has to come from the REWARD — that is the thing the quest is about.
+        if icon:
+            entry["icon"] = {"id": check(icon)}
         if shape:
             entry["shape"] = shape
         if optional:
@@ -149,9 +198,9 @@ class Chapter:
             "group": self.group,
             "order_index": self.order,
             "filename": self.key,
-            "title": self.title,
-            "icon": check(self.icon),
-            "subtitle": [self.subtitle],
+            "title": text(self.title),
+            "icon": {"id": check(self.icon)},
+            "subtitle": [text(self.subtitle)],
             "default_quest_shape": "",
             "default_hide_dependency_lines": False,
             "quests": self.quests,
@@ -284,7 +333,7 @@ h = c.q("saw", "Mechanical Saw", 0, 6,
         [task("saw", "create:mechanical_saw", Long(1))],
         [r_item("saw", "minecraft:oak_log", 32)],
         ["Logs to planks at a better ratio, and it cuts trees down on its own."], [e])
-c.q("depot", "Depot & Chute", -2, 7,
+c.q("depot", "Depot and Chute", -2, 7,
     [task("depot", "create:depot", Long(2)), task("chute", "create:chute", Long(4))],
     [r_item("depot", "create:andesite_alloy", 8)],
     ["A depot holds one item still so a machine can work on it.",
@@ -446,24 +495,66 @@ def build_addons():
     what introduce the mod. That inversion is what makes these unbreakable: no quest can be gated
     behind an addon recipe nobody verified, and a mod's own progression is left intact."""
     spec = json.load(open("scripts/_questgen/addons.json", encoding="utf-8"))
-    gates = spec["gates"]
+
+    # 🔑 Two rules that keep a chapter feeling like ITS mod rather than filler:
+    #   1. every reward inside a chapter is a DIFFERENT item — repeating one to pad a third quest
+    #      out is what made small addons look copy-pasted;
+    #   2. every reward comes from that addon's OWN namespace — borrowing minecraft:glass or another
+    #      mod's wrench to fill a slot defeats the point of an introduction.
+    # A mod with only four items gets two quests. That is correct, not a shortfall.
+    for _a in spec["addons"]:
+        _seen = {}
+        for _q in _a["quests"]:
+            for _it, _n in _q["rewards"]:
+                if _it in _seen:
+                    raise SystemExit(f"REFUSING TO BUILD: {_a['key']} rewards {_it} twice — "
+                                     f"give it a different item or drop a quest")
+                _seen[_it] = True
+                if _it.split(":")[0] != _a["key"]:
+                    raise SystemExit(f"REFUSING TO BUILD: {_a['key']} rewards {_it}, which is not "
+                                     f"its own item")
+    ladder = spec["gate_ladder"]
+    # Items each mod can actually be made to produce, harvested from its own recipe results. Only
+    # these may be demanded back — a creative-only or worldgen-only item would make the quest
+    # impossible, which is the exact failure the generic gates existed to avoid.
+    craftable = json.load(open("scripts/_questgen/craftable.json"))
     grp = qid("group", "addons")
     titles = ["Meet {}", "{}, Continued", "{}: Kitted Out"]
-    for order, a in enumerate(spec["addons"]):
-        ch = Chapter("addon_" + a["key"], a["title"], a["icon"], 100 + order, a["blurb"])
+    for order, a in enumerate(sorted(spec["addons"], key=lambda x: (x["tier"], x["title"]))):
+        tier_tag = {1: "&aEarly", 2: "&eMid", 3: "&cLate"}[a["tier"]]
+        ch = Chapter("addon_" + a["key"], a["title"], a["icon"], 100 + order,
+                     f'{a["blurb"]}  {tier_tag}&r')
         ch.group = grp
         prev = None
         for i, q in enumerate(a["quests"]):
-            gate_item, gate_n, gate_name = gates[i % len(gates)]
+            # Cost rises within a chapter AND with the addon's tier, so a Power Grid quest is
+            # never the same price as a Copycats one. Materials are ordered by what they actually
+            # cost to make: andesite alloy < iron < brass < precision mechanism.
+            tier_gates = ladder[str(a["tier"])]
+            reqs = list(tier_gates[min(i, len(tier_gates) - 1)])
+
+            # 🔑 The last quest of a chapter also asks for the mod's OWN tech — specifically the
+            # items its earlier quests handed you. Generic Create gates never make you engage with
+            # the addon; this does. Safe because every id here is confirmed craftable, and the
+            # player has already been given one of each to reverse-engineer.
+            if i == len(a["quests"]) - 1 and len(a["quests"]) > 1:
+                own_ok = set(craftable.get(a["key"], []))
+                give_back = [it for q0 in a["quests"][:-1] for it, _ in q0["rewards"]
+                             if it in own_ok][:2]
+                mult = {1: 4, 2: 6, 3: 8}[a["tier"]]
+                for it in give_back:
+                    nice = it.split(":")[1].replace("_", " ").title()
+                    reqs.append([it, mult, nice])
             rw = [r_item(f'{a["key"]}{i}{k}', it, n) for k, (it, n) in enumerate(q["rewards"])]
             rw.append(r_xp(f'{a["key"]}{i}', 10 + i * 5))
             prev = ch.q(
                 f'{a["key"]}_{i}', titles[i].format(a["title"]), 0, i * 2,
-                [task(f'{a["key"]}{i}', gate_item, Long(gate_n))],
+                [task(f'{a["key"]}{i}{k}', it, Long(n)) for k, (it, n, _) in enumerate(reqs)],
                 rw,
-                [q["desc"], "", f"Bring {gate_n} {gate_name}."],
+                [q["desc"], ""] + [f"&7Bring &f{n} {nm}&7." for _, n, nm in reqs],
                 [prev] if prev else None,
-                shape="square" if i == 0 else "")
+                shape="square" if i == 0 else "",
+                icon=q["rewards"][0][0])
         chapters.append(ch)
         ADDON_GROUP[0] = grp
 
@@ -474,10 +565,21 @@ build_addons()
 
 def main():
     out = os.path.join(ROOT, "quests")
-    os.makedirs(os.path.join(out, "chapters"), exist_ok=True)
+    chapters_dir = os.path.join(out, "chapters")
+    # 🔑 Wipe first. Writing without clearing leaves orphans behind: removing Numismatics from
+    # addons.json still left addon_numismatics.snbt on disk, so the chapter kept loading and the
+    # generator's own summary said 40 chapters while the book showed 41. Generated output must be
+    # a complete description of the directory, not an overlay on whatever was there before.
+    if os.path.isdir(chapters_dir):
+        for f in os.listdir(chapters_dir):
+            if f.startswith("addon_") or f in {"first_steps.snbt", "andesite_age.snbt",
+                                               "kinetics.snbt", "brass_age.snbt",
+                                               "automation.snbt", "flight.snbt"}:
+                os.remove(os.path.join(chapters_dir, f))
+    os.makedirs(chapters_dir, exist_ok=True)
 
     for ch in chapters:
-        with open(os.path.join(out, "chapters", ch.key + ".snbt"), "w",
+        with open(os.path.join(chapters_dir, ch.key + ".snbt"), "w",
                   encoding="utf-8", newline="\n") as fh:
             fh.write(ch.render() + "\n")
 

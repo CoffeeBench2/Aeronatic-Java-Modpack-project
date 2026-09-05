@@ -1,12 +1,14 @@
 {
 	id: "C673E0A6C19BE78C"
 	group: "4E2FA1B674D143B0"
-	order_index: 100
+	order_index: 125
 	filename: "addon_drivebywire"
 	title: "Drive By Wire"
-	icon: "drivebywire:controller_hub"
+	icon: {
+		id: "drivebywire:controller_hub"
+	}
 	subtitle: [
-		"Wire a cockpit to the thing it is meant to fly."
+		"Wire a cockpit to the thing it is meant to fly.  &eMid&r"
 	]
 	default_quest_shape: ""
 	default_hide_dependency_lines: false
@@ -18,15 +20,15 @@
 			description: [
 				"Linked controllers let you steer a contraption from a seat instead of standing on it."
 				""
-				"Bring 8 Andesite Alloy."
+				"&7Bring &f16 Brass Casing&7."
 			]
 			id: "0E7CC5E3081AE228"
 			tasks: [
 				{
-					id: "ACD23FF6760FE34C"
+					id: "4A2920C7BD1F9F09"
 					type: "item"
-					item: "create:andesite_alloy"
-					count: 8L
+					item: "create:brass_casing"
+					count: 16L
 				}
 			]
 			rewards: [
@@ -34,13 +36,13 @@
 					id: "B867238A11444C18"
 					type: "item"
 					item: "drivebywire:controller_hub"
-					count: 1
+					count: 3
 				}
 				{
 					id: "A2388C307BC5D21A"
 					type: "item"
 					item: "drivebywire:wire"
-					count: 8
+					count: 24
 				}
 				{
 					id: "7D436A5EB40834BA"
@@ -48,6 +50,9 @@
 					xp: 10
 				}
 			]
+			icon: {
+				id: "drivebywire:controller_hub"
+			}
 			shape: "square"
 		}
 		{
@@ -57,15 +62,22 @@
 			description: [
 				"Wire runs from the hub to whatever it controls. Cutters undo your mistakes."
 				""
-				"Bring 6 Brass Ingots."
+				"&7Bring &f16 Electron Tubes&7."
+				"&7Bring &f32 Brass Sheets&7."
 			]
 			id: "18D3405FB965EEBA"
 			tasks: [
 				{
-					id: "4CECFB3AEC540699"
+					id: "7226D4BD27286CAB"
 					type: "item"
-					item: "create:brass_ingot"
-					count: 6L
+					item: "create:electron_tube"
+					count: 16L
+				}
+				{
+					id: "AEA8A6811BC3A816"
+					type: "item"
+					item: "create:brass_sheet"
+					count: 32L
 				}
 			]
 			rewards: [
@@ -73,13 +85,13 @@
 					id: "A9B7A0D94FA0CE91"
 					type: "item"
 					item: "drivebywire:wire_cutter"
-					count: 1
+					count: 3
 				}
 				{
-					id: "D2834BBDEA5CC11C"
+					id: "7A0DF9A2E5323E2F"
 					type: "item"
-					item: "drivebywire:wire"
-					count: 8
+					item: "drivebywire:backup_block"
+					count: 6
 				}
 				{
 					id: "0F7677FDCA16D630"
@@ -87,6 +99,9 @@
 					xp: 15
 				}
 			]
+			icon: {
+				id: "drivebywire:wire_cutter"
+			}
 			dependencies: [
 				"0E7CC5E3081AE228"
 			]
@@ -98,15 +113,43 @@
 			description: [
 				"The tweaked hub does the same job with more channels."
 				""
-				"Bring 12 Iron Ingots."
+				"&7Bring &f8 Precision Mechanisms&7."
+				"&7Bring &f24 Brass Casing&7."
+				"&7Bring &f16 Polished Rose Quartz&7."
+				"&7Bring &f6 Controller Hub&7."
+				"&7Bring &f6 Wire&7."
 			]
 			id: "8AFEDD3B33FBE998"
 			tasks: [
 				{
-					id: "F5545C5785021E90"
+					id: "EA0A40F239E26FFD"
 					type: "item"
-					item: "minecraft:iron_ingot"
-					count: 12L
+					item: "create:precision_mechanism"
+					count: 8L
+				}
+				{
+					id: "0ADED2F43A122AF6"
+					type: "item"
+					item: "create:brass_casing"
+					count: 24L
+				}
+				{
+					id: "5911777B71C0C7C0"
+					type: "item"
+					item: "create:polished_rose_quartz"
+					count: 16L
+				}
+				{
+					id: "763A5F328D9D2748"
+					type: "item"
+					item: "drivebywire:controller_hub"
+					count: 6L
+				}
+				{
+					id: "43360FE90530D495"
+					type: "item"
+					item: "drivebywire:wire"
+					count: 6L
 				}
 			]
 			rewards: [
@@ -114,13 +157,7 @@
 					id: "FED1473DCE0F446B"
 					type: "item"
 					item: "drivebywire:tweaked_controller_hub"
-					count: 1
-				}
-				{
-					id: "4416802E1DAE4709"
-					type: "item"
-					item: "drivebywire:backup_block"
-					count: 2
+					count: 3
 				}
 				{
 					id: "E087E8B84E63486B"
@@ -128,6 +165,9 @@
 					xp: 20
 				}
 			]
+			icon: {
+				id: "drivebywire:tweaked_controller_hub"
+			}
 			dependencies: [
 				"18D3405FB965EEBA"
 			]

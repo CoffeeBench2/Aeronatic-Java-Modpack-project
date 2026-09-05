@@ -1,0 +1,248 @@
+{
+	default_hide_dependency_lines: false
+	default_quest_shape: ""
+	filename: "create_gauntlet"
+	group: ""
+	icon: {
+		id: "create:precision_mechanism"
+	}
+	id: "1500000000000001"
+	order_index: 1
+	quest_links: [ ]
+	quests: [
+		{
+			id: "1500000000000010"
+			rewards: [
+				{
+					count: 16
+					id: "1500000000000012"
+					item: {
+						count: 1
+						id: "create:andesite_alloy"
+					}
+					type: "item"
+				}
+				{
+					id: "1500000000000013"
+					type: "xp_levels"
+					xp_levels: 2
+				}
+			]
+			shape: "hexagon"
+			size: 1.5d
+			tasks: [{
+				id: "1500000000000011"
+				item: { count: 1, id: "create:andesite_casing" }
+				type: "item"
+			}]
+			x: 0.0d
+			y: 0.0d
+		}
+		{
+			dependencies: ["1500000000000010"]
+			id: "1500000000000020"
+			rewards: [
+				{
+					count: 2
+					id: "1500000000000022"
+					item: {
+						count: 1
+						id: "create:precision_mechanism"
+					}
+					type: "item"
+				}
+				{
+					count: 8
+					id: "1500000000000023"
+					item: {
+						count: 1
+						id: "create:brass_ingot"
+					}
+					type: "item"
+				}
+				{
+					id: "1500000000000024"
+					type: "xp_levels"
+					xp_levels: 5
+				}
+			]
+			shape: "hexagon"
+			size: 1.5d
+			tasks: [{
+				id: "1500000000000021"
+				item: { count: 1, id: "create:precision_mechanism" }
+				type: "item"
+			}]
+			x: 2.0d
+			y: 0.0d
+		}
+		{
+			dependencies: ["1500000000000020"]
+			id: "1500000000000030"
+			rewards: [
+				{
+					count: 2
+					id: "1500000000000032"
+					item: {
+						count: 1
+						id: "createdieselgenerators:diesel_bucket"
+					}
+					type: "item"
+				}
+				{
+					id: "1500000000000033"
+					type: "xp_levels"
+					xp_levels: 4
+				}
+			]
+			shape: "circle"
+			tasks: [{
+				id: "1500000000000031"
+				item: { count: 1, id: "createdieselgenerators:diesel_engine" }
+				type: "item"
+			}]
+			x: 4.0d
+			y: -3.0d
+		}
+		{
+			dependencies: ["1500000000000020"]
+			id: "1500000000000040"
+			rewards: [
+				{
+					count: 2
+					id: "1500000000000042"
+					item: {
+						count: 1
+						id: "createaddition:capacitor"
+					}
+					type: "item"
+				}
+				{
+					id: "1500000000000043"
+					type: "xp_levels"
+					xp_levels: 4
+				}
+			]
+			shape: "circle"
+			tasks: [{
+				id: "1500000000000041"
+				item: { count: 1, id: "createaddition:electric_motor" }
+				type: "item"
+			}]
+			x: 4.0d
+			y: -1.0d
+		}
+		{
+			dependencies: ["1500000000000020"]
+			id: "1500000000000050"
+			rewards: [
+				{
+					id: "1500000000000052"
+					item: {
+						count: 1
+						id: "create_enchantment_industry:experience_bucket"
+					}
+					type: "item"
+				}
+				{
+					id: "1500000000000053"
+					type: "xp_levels"
+					xp_levels: 4
+				}
+			]
+			shape: "circle"
+			tasks: [{
+				id: "1500000000000051"
+				item: { count: 1, id: "create_enchantment_industry:printer" }
+				type: "item"
+			}]
+			x: 4.0d
+			y: 1.0d
+		}
+		{
+			dependencies: [
+				"1500000000000030"
+				"1500000000000040"
+				"1500000000000050"
+			]
+			id: "1500000000000060"
+			min_required_dependencies: 2
+			rewards: [
+				{
+					count: 2
+					id: "1500000000000062"
+					item: {
+						count: 1
+						id: "create_new_age:nuclear_fuel"
+					}
+					type: "item"
+				}
+				{
+					count: 3
+					id: "1500000000000063"
+					item: {
+						count: 1
+						id: "minecraft:diamond"
+					}
+					type: "item"
+				}
+				{
+					id: "1500000000000064"
+					type: "xp_levels"
+					xp_levels: 8
+				}
+			]
+			shape: "diamond"
+			size: 1.25d
+			tasks: [{
+				id: "1500000000000061"
+				item: { count: 1, id: "create_new_age:reactor_casing" }
+				type: "item"
+			}]
+			x: 6.0d
+			y: 2.0d
+		}
+		{
+			dependencies: [
+				"1500000000000030"
+				"1500000000000040"
+				"1500000000000050"
+				"1500000000000060"
+			]
+			id: "1500000000000070"
+			min_required_dependencies: 2
+			rewards: [
+				{
+					count: 8
+					id: "1500000000000072"
+					item: {
+						count: 1
+						id: "create:precision_mechanism"
+					}
+					type: "item"
+				}
+				{
+					id: "1500000000000073"
+					item: {
+						count: 1
+						id: "create:brass_block"
+					}
+					type: "item"
+				}
+				{
+					id: "1500000000000074"
+					type: "xp_levels"
+					xp_levels: 10
+				}
+			]
+			shape: "gear"
+			size: 2.0d
+			tasks: [{
+				id: "1500000000000071"
+				type: "checkmark"
+			}]
+			x: 8.0d
+			y: 0.0d
+		}
+	]
+}

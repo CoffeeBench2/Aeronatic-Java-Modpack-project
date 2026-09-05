@@ -1,12 +1,14 @@
 {
 	id: "9E92B51763D1135B"
 	group: "4E2FA1B674D143B0"
-	order_index: 131
+	order_index: 126
 	filename: "addon_vsfluidlink"
 	title: "Hose Connectors"
-	icon: "vsfluidlink:hose_connector"
+	icon: {
+		id: "vsfluidlink:hose_connector"
+	}
 	subtitle: [
-		"Move fluids and items between separate contraptions."
+		"Move fluids and items between separate contraptions.  &eMid&r"
 	]
 	default_quest_shape: ""
 	default_hide_dependency_lines: false
@@ -18,15 +20,15 @@
 			description: [
 				"A hose for fluid, and one for items. Both cross the gap between ships."
 				""
-				"Bring 8 Andesite Alloy."
+				"&7Bring &f16 Brass Casing&7."
 			]
 			id: "21B93A05E4B38E21"
 			tasks: [
 				{
-					id: "03E4262399D01ACE"
+					id: "F0672D34D16CDBA1"
 					type: "item"
-					item: "create:andesite_alloy"
-					count: 8L
+					item: "create:brass_casing"
+					count: 16L
 				}
 			]
 			rewards: [
@@ -34,13 +36,13 @@
 					id: "82373871918C0916"
 					type: "item"
 					item: "vsfluidlink:hose_connector"
-					count: 2
+					count: 6
 				}
 				{
 					id: "20BF19DDEAF3CC6C"
 					type: "item"
 					item: "vsfluidlink:item_hose_connector"
-					count: 2
+					count: 6
 				}
 				{
 					id: "0DC6D8040D41032C"
@@ -48,6 +50,9 @@
 					xp: 10
 				}
 			]
+			icon: {
+				id: "vsfluidlink:hose_connector"
+			}
 			shape: "square"
 		}
 		{
@@ -57,15 +62,22 @@
 			description: [
 				"Chains hold two builds together. Magnets do it without a hard link."
 				""
-				"Bring 6 Brass Ingots."
+				"&7Bring &f16 Electron Tubes&7."
+				"&7Bring &f32 Brass Sheets&7."
 			]
 			id: "BAC92FA4498AC64E"
 			tasks: [
 				{
-					id: "F9F0AB174DE26205"
+					id: "756CAB22E5C479CA"
 					type: "item"
-					item: "create:brass_ingot"
-					count: 6L
+					item: "create:electron_tube"
+					count: 16L
+				}
+				{
+					id: "FA208C1871615005"
+					type: "item"
+					item: "create:brass_sheet"
+					count: 32L
 				}
 			]
 			rewards: [
@@ -73,13 +85,13 @@
 					id: "E6B6C178A50FFDF3"
 					type: "item"
 					item: "vsfluidlink:chain_connector"
-					count: 2
+					count: 6
 				}
 				{
 					id: "0B829999208D42B8"
 					type: "item"
 					item: "vsfluidlink:magnet_hose_connector"
-					count: 2
+					count: 6
 				}
 				{
 					id: "642D20B7F9E4B91B"
@@ -87,6 +99,9 @@
 					xp: 15
 				}
 			]
+			icon: {
+				id: "vsfluidlink:chain_connector"
+			}
 			dependencies: [
 				"21B93A05E4B38E21"
 			]
@@ -98,15 +113,43 @@
 			description: [
 				"Electric connectors, for when the other side needs power too."
 				""
-				"Bring 12 Iron Ingots."
+				"&7Bring &f8 Precision Mechanisms&7."
+				"&7Bring &f24 Brass Casing&7."
+				"&7Bring &f16 Polished Rose Quartz&7."
+				"&7Bring &f6 Hose Connector&7."
+				"&7Bring &f6 Item Hose Connector&7."
 			]
 			id: "10217E3E0669A937"
 			tasks: [
 				{
-					id: "405B5F834DD36C84"
+					id: "2846C408C1202321"
 					type: "item"
-					item: "minecraft:iron_ingot"
-					count: 12L
+					item: "create:precision_mechanism"
+					count: 8L
+				}
+				{
+					id: "BDF3808811927E53"
+					type: "item"
+					item: "create:brass_casing"
+					count: 24L
+				}
+				{
+					id: "8F6755EBBE494996"
+					type: "item"
+					item: "create:polished_rose_quartz"
+					count: 16L
+				}
+				{
+					id: "58FEF9EA9CDC68D8"
+					type: "item"
+					item: "vsfluidlink:hose_connector"
+					count: 6L
+				}
+				{
+					id: "AB8593B5B151A526"
+					type: "item"
+					item: "vsfluidlink:item_hose_connector"
+					count: 6L
 				}
 			]
 			rewards: [
@@ -114,13 +157,19 @@
 					id: "214A1648C2FE8A06"
 					type: "item"
 					item: "vsfluidlink:electric_wire_connector"
-					count: 2
+					count: 6
 				}
 				{
 					id: "667540FB59D6F0FB"
 					type: "item"
 					item: "vsfluidlink:magnet_chain_connector"
-					count: 2
+					count: 6
+				}
+				{
+					id: "531063CF8311CF9C"
+					type: "item"
+					item: "vsfluidlink:item_magnet_hose_connector"
+					count: 6
 				}
 				{
 					id: "E4DD051F13E5F142"
@@ -128,6 +177,9 @@
 					xp: 20
 				}
 			]
+			icon: {
+				id: "vsfluidlink:electric_wire_connector"
+			}
 			dependencies: [
 				"BAC92FA4498AC64E"
 			]

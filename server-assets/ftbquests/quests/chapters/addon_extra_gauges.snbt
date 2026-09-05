@@ -1,12 +1,14 @@
 {
 	id: "EF7D533FBC8E8286"
 	group: "4E2FA1B674D143B0"
-	order_index: 130
+	order_index: 110
 	filename: "addon_extra_gauges"
 	title: "Extra Gauges"
-	icon: "extra_gauges:integer_gauge"
+	icon: {
+		id: "extra_gauges:integer_gauge"
+	}
 	subtitle: [
-		"Readouts and logic for display boards."
+		"Readouts and logic for display boards.  &aEarly&r"
 	]
 	default_quest_shape: ""
 	default_hide_dependency_lines: false
@@ -18,15 +20,15 @@
 			description: [
 				"Integer and string gauges. Put a number or a word on a board."
 				""
-				"Bring 8 Andesite Alloy."
+				"&7Bring &f32 Andesite Alloy&7."
 			]
 			id: "B133710311F10287"
 			tasks: [
 				{
-					id: "3D15DE343194E2BD"
+					id: "0F087FFB93D93217"
 					type: "item"
 					item: "create:andesite_alloy"
-					count: 8L
+					count: 32L
 				}
 			]
 			rewards: [
@@ -34,13 +36,13 @@
 					id: "5B80A1E8CD83B5CA"
 					type: "item"
 					item: "extra_gauges:integer_gauge"
-					count: 2
+					count: 6
 				}
 				{
 					id: "C47796DAE2080B3A"
 					type: "item"
 					item: "extra_gauges:string_gauge"
-					count: 2
+					count: 6
 				}
 				{
 					id: "2C9FC9B0AAAB9779"
@@ -48,6 +50,9 @@
 					xp: 10
 				}
 			]
+			icon: {
+				id: "extra_gauges:integer_gauge"
+			}
 			shape: "square"
 		}
 		{
@@ -57,15 +62,22 @@
 			description: [
 				"Comparator and logic gauges, for boards that decide things."
 				""
-				"Bring 6 Brass Ingots."
+				"&7Bring &f16 Andesite Casing&7."
+				"&7Bring &f24 Cogwheels&7."
 			]
 			id: "59A136DEA08A0D0B"
 			tasks: [
 				{
-					id: "C758DBF382D8E3A8"
+					id: "F8A012C919A1E207"
 					type: "item"
-					item: "create:brass_ingot"
-					count: 6L
+					item: "create:andesite_casing"
+					count: 16L
+				}
+				{
+					id: "4DFAFF38B2FB6EA4"
+					type: "item"
+					item: "create:cogwheel"
+					count: 24L
 				}
 			]
 			rewards: [
@@ -73,13 +85,13 @@
 					id: "D994B3963C6BE85A"
 					type: "item"
 					item: "extra_gauges:comparator_gauge"
-					count: 2
+					count: 6
 				}
 				{
 					id: "10A20B5411BEE28C"
 					type: "item"
 					item: "extra_gauges:logic_gauge"
-					count: 2
+					count: 6
 				}
 				{
 					id: "5CA354FB722EAE28"
@@ -87,6 +99,9 @@
 					xp: 15
 				}
 			]
+			icon: {
+				id: "extra_gauges:comparator_gauge"
+			}
 			dependencies: [
 				"B133710311F10287"
 			]
@@ -98,15 +113,43 @@
 			description: [
 				"A linked lever and a redstone port, to wire it into the rest."
 				""
-				"Bring 12 Iron Ingots."
+				"&7Bring &f32 Andesite Casing&7."
+				"&7Bring &f16 Large Cogwheels&7."
+				"&7Bring &f24 Iron Sheets&7."
+				"&7Bring &f4 Integer Gauge&7."
+				"&7Bring &f4 String Gauge&7."
 			]
 			id: "4426DC9AAD556FD5"
 			tasks: [
 				{
-					id: "79E1E015B65B7814"
+					id: "63CADA39F998E284"
 					type: "item"
-					item: "minecraft:iron_ingot"
-					count: 12L
+					item: "create:andesite_casing"
+					count: 32L
+				}
+				{
+					id: "9975598F95C2AB07"
+					type: "item"
+					item: "create:large_cogwheel"
+					count: 16L
+				}
+				{
+					id: "43F72A83D49C9141"
+					type: "item"
+					item: "create:iron_sheet"
+					count: 24L
+				}
+				{
+					id: "902E89E8CDB3C1E5"
+					type: "item"
+					item: "extra_gauges:integer_gauge"
+					count: 4L
+				}
+				{
+					id: "E5CA4ECE7CA92018"
+					type: "item"
+					item: "extra_gauges:string_gauge"
+					count: 4L
 				}
 			]
 			rewards: [
@@ -114,13 +157,25 @@
 					id: "EB0B567EE993CE66"
 					type: "item"
 					item: "extra_gauges:linked_lever"
-					count: 2
+					count: 6
 				}
 				{
 					id: "FA6B38F4734A6998"
 					type: "item"
 					item: "extra_gauges:redstone_port"
-					count: 2
+					count: 6
+				}
+				{
+					id: "5621E3FCF1113E05"
+					type: "item"
+					item: "extra_gauges:display_collector"
+					count: 6
+				}
+				{
+					id: "2F01D7FF8C3C15B3"
+					type: "item"
+					item: "extra_gauges:filter_gauge"
+					count: 6
 				}
 				{
 					id: "AD5D6AB56DC4FBB8"
@@ -128,6 +183,9 @@
 					xp: 20
 				}
 			]
+			icon: {
+				id: "extra_gauges:linked_lever"
+			}
 			dependencies: [
 				"59A136DEA08A0D0B"
 			]

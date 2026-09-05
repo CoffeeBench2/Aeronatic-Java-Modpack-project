@@ -1,12 +1,14 @@
 {
 	id: "0B09A45C6899F5E4"
 	group: "4E2FA1B674D143B0"
-	order_index: 121
+	order_index: 101
 	filename: "addon_bits_n_bobs"
 	title: "Bits 'n' Bobs"
-	icon: "bits_n_bobs:lightbulb"
+	icon: {
+		id: "bits_n_bobs:lightbulb"
+	}
 	subtitle: [
-		"Small parts that fill in Create's gaps."
+		"Small parts that fill in Create's gaps.  &aEarly&r"
 	]
 	default_quest_shape: ""
 	default_hide_dependency_lines: false
@@ -18,15 +20,15 @@
 			description: [
 				"Bulbs and lamps. Lighting that suits the aesthetic."
 				""
-				"Bring 8 Andesite Alloy."
+				"&7Bring &f32 Andesite Alloy&7."
 			]
 			id: "C29417E334C64F94"
 			tasks: [
 				{
-					id: "C3A6C7256D662F36"
+					id: "CBC8C14FA027FA37"
 					type: "item"
 					item: "create:andesite_alloy"
-					count: 8L
+					count: 32L
 				}
 			]
 			rewards: [
@@ -34,13 +36,13 @@
 					id: "95A656FEB9CDA35A"
 					type: "item"
 					item: "bits_n_bobs:lightbulb"
-					count: 4
+					count: 12
 				}
 				{
 					id: "B99F7E9384A849F0"
 					type: "item"
 					item: "bits_n_bobs:brass_lamp"
-					count: 2
+					count: 6
 				}
 				{
 					id: "1DF18B1B471799DD"
@@ -48,6 +50,9 @@
 					xp: 10
 				}
 			]
+			icon: {
+				id: "bits_n_bobs:lightbulb"
+			}
 			shape: "square"
 		}
 		{
@@ -57,29 +62,36 @@
 			description: [
 				"Chain rope and a pulley, for lifts that are not rope pulleys."
 				""
-				"Bring 6 Brass Ingots."
+				"&7Bring &f16 Andesite Casing&7."
+				"&7Bring &f24 Cogwheels&7."
 			]
 			id: "2B553959A4BFC0E8"
 			tasks: [
 				{
-					id: "F42820A633917DCB"
+					id: "83C8FED1558FAF82"
 					type: "item"
-					item: "create:brass_ingot"
-					count: 6L
+					item: "create:andesite_casing"
+					count: 16L
+				}
+				{
+					id: "327F6AB78962734D"
+					type: "item"
+					item: "create:cogwheel"
+					count: 24L
 				}
 			]
 			rewards: [
 				{
-					id: "9275FFE22FEFE94E"
+					id: "1686CE3134D92D88"
 					type: "item"
-					item: "bits_n_bobs:chain_rope"
-					count: 4
+					item: "bits_n_bobs:headlamp"
+					count: 12
 				}
 				{
 					id: "890620C2B21CF588"
 					type: "item"
 					item: "bits_n_bobs:chain_pulley"
-					count: 1
+					count: 3
 				}
 				{
 					id: "57986501C95ED14C"
@@ -87,6 +99,9 @@
 					xp: 15
 				}
 			]
+			icon: {
+				id: "bits_n_bobs:headlamp"
+			}
 			dependencies: [
 				"C29417E334C64F94"
 			]
@@ -98,15 +113,43 @@
 			description: [
 				"Flanged cogs and girder struts. Structural, and they look the part."
 				""
-				"Bring 12 Iron Ingots."
+				"&7Bring &f32 Andesite Casing&7."
+				"&7Bring &f16 Large Cogwheels&7."
+				"&7Bring &f24 Iron Sheets&7."
+				"&7Bring &f4 Lightbulb&7."
+				"&7Bring &f4 Brass Lamp&7."
 			]
 			id: "7AC2409A50857CB7"
 			tasks: [
 				{
-					id: "BEB7AA8B4B9F95CA"
+					id: "32A214FBEC27BDE6"
 					type: "item"
-					item: "minecraft:iron_ingot"
-					count: 12L
+					item: "create:andesite_casing"
+					count: 32L
+				}
+				{
+					id: "C5E33096F725E4D6"
+					type: "item"
+					item: "create:large_cogwheel"
+					count: 16L
+				}
+				{
+					id: "55CC30C7E8E342A8"
+					type: "item"
+					item: "create:iron_sheet"
+					count: 24L
+				}
+				{
+					id: "C2F9DB3394CC3645"
+					type: "item"
+					item: "bits_n_bobs:lightbulb"
+					count: 4L
+				}
+				{
+					id: "2069CD95151C0D67"
+					type: "item"
+					item: "bits_n_bobs:brass_lamp"
+					count: 4L
 				}
 			]
 			rewards: [
@@ -114,13 +157,25 @@
 					id: "0DAB954162BF313E"
 					type: "item"
 					item: "bits_n_bobs:small_flanged_cogwheel"
-					count: 4
+					count: 12
 				}
 				{
 					id: "00C7B28202562DAB"
 					type: "item"
 					item: "bits_n_bobs:girder_strut"
-					count: 8
+					count: 24
+				}
+				{
+					id: "7066E92BDF8A7765"
+					type: "item"
+					item: "bits_n_bobs:nixie_board"
+					count: 6
+				}
+				{
+					id: "3F6D169C85585249"
+					type: "item"
+					item: "bits_n_bobs:large_nixie_tube"
+					count: 6
 				}
 				{
 					id: "5441A2B61E2C197E"
@@ -128,6 +183,9 @@
 					xp: 20
 				}
 			]
+			icon: {
+				id: "bits_n_bobs:small_flanged_cogwheel"
+			}
 			dependencies: [
 				"2B553959A4BFC0E8"
 			]

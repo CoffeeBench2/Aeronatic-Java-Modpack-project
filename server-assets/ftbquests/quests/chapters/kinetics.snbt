@@ -4,7 +4,9 @@
 	order_index: 2
 	filename: "kinetics"
 	title: "Kinetics"
-	icon: "create:gearbox"
+	icon: {
+		id: "create:gearbox"
+	}
 	subtitle: [
 		"Speed, stress, and the art of not overloading everything."
 	]
@@ -213,7 +215,7 @@
 			]
 		}
 		{
-			title: "Depot & Chute"
+			title: "Depot and Chute"
 			x: -2.0d
 			y: 7.0d
 			description: [

@@ -1,12 +1,14 @@
 {
 	id: "90AD5C0DEE16F092"
 	group: "4E2FA1B674D143B0"
-	order_index: 113
+	order_index: 128
 	filename: "addon_railways"
 	title: "Steam 'n' Rails"
-	icon: "railways:buffer"
+	icon: {
+		id: "railways:buffer"
+	}
 	subtitle: [
-		"Everything Create's trains were missing."
+		"Everything Create's trains were missing.  &eMid&r"
 	]
 	default_quest_shape: ""
 	default_hide_dependency_lines: false
@@ -18,15 +20,15 @@
 			description: [
 				"Buffers cap a line so a train has something to stop against."
 				""
-				"Bring 8 Andesite Alloy."
+				"&7Bring &f16 Brass Casing&7."
 			]
 			id: "2B7FC74B8C6B33BC"
 			tasks: [
 				{
-					id: "A22AC02B3B3FC52B"
+					id: "D0672450CAEED0D8"
 					type: "item"
-					item: "create:andesite_alloy"
-					count: 8L
+					item: "create:brass_casing"
+					count: 16L
 				}
 			]
 			rewards: [
@@ -34,13 +36,13 @@
 					id: "FFFA94D4AA3EF0C8"
 					type: "item"
 					item: "railways:buffer"
-					count: 2
+					count: 6
 				}
 				{
 					id: "7BA1F889FC306F80"
 					type: "item"
 					item: "railways:big_buffer"
-					count: 1
+					count: 3
 				}
 				{
 					id: "E467A418C9ACBFCE"
@@ -48,6 +50,9 @@
 					xp: 10
 				}
 			]
+			icon: {
+				id: "railways:buffer"
+			}
 			shape: "square"
 		}
 		{
@@ -57,15 +62,22 @@
 			description: [
 				"A bench cart, for the parts of a railway that carry people."
 				""
-				"Bring 6 Brass Ingots."
+				"&7Bring &f16 Electron Tubes&7."
+				"&7Bring &f32 Brass Sheets&7."
 			]
 			id: "0560CC52C2A5A659"
 			tasks: [
 				{
-					id: "C8B7C0D5BFBF43D4"
+					id: "2ED909C9AB5B9658"
 					type: "item"
-					item: "create:brass_ingot"
-					count: 6L
+					item: "create:electron_tube"
+					count: 16L
+				}
+				{
+					id: "2D09E8DBFAF47D59"
+					type: "item"
+					item: "create:brass_sheet"
+					count: 32L
 				}
 			]
 			rewards: [
@@ -73,13 +85,13 @@
 					id: "CC6754E929A39204"
 					type: "item"
 					item: "railways:benchcart"
-					count: 1
+					count: 3
 				}
 				{
-					id: "C74E08D81DB91FEA"
+					id: "BFE60D4C9EC23A1C"
 					type: "item"
-					item: "railways:buffer_wide"
-					count: 2
+					item: "railways:conductor_whistle"
+					count: 6
 				}
 				{
 					id: "9CF3E3840D03453B"
@@ -87,6 +99,9 @@
 					xp: 15
 				}
 			]
+			icon: {
+				id: "railways:benchcart"
+			}
 			dependencies: [
 				"2B7FC74B8C6B33BC"
 			]
@@ -98,29 +113,63 @@
 			description: [
 				"Narrow and mono buffers, for the lines that are not standard gauge."
 				""
-				"Bring 12 Iron Ingots."
+				"&7Bring &f8 Precision Mechanisms&7."
+				"&7Bring &f24 Brass Casing&7."
+				"&7Bring &f16 Polished Rose Quartz&7."
+				"&7Bring &f6 Buffer&7."
+				"&7Bring &f6 Big Buffer&7."
 			]
 			id: "59571DCDF4AF698E"
 			tasks: [
 				{
-					id: "8E68F07F9991BF93"
+					id: "2055A65B1A237902"
 					type: "item"
-					item: "minecraft:iron_ingot"
-					count: 12L
+					item: "create:precision_mechanism"
+					count: 8L
+				}
+				{
+					id: "DDC159E70F56F599"
+					type: "item"
+					item: "create:brass_casing"
+					count: 24L
+				}
+				{
+					id: "9289C5099636383F"
+					type: "item"
+					item: "create:polished_rose_quartz"
+					count: 16L
+				}
+				{
+					id: "5F44BB872FFBA16A"
+					type: "item"
+					item: "railways:buffer"
+					count: 6L
+				}
+				{
+					id: "8C13751922B5C361"
+					type: "item"
+					item: "railways:big_buffer"
+					count: 6L
 				}
 			]
 			rewards: [
 				{
-					id: "9DAACC723493887F"
+					id: "D7A521DDCC44E98A"
 					type: "item"
-					item: "railways:buffer_narrow"
-					count: 2
+					item: "railways:knuckle_coupler"
+					count: 6
 				}
 				{
-					id: "FFB8642C43E98185"
+					id: "584E1CF96A9B6B97"
 					type: "item"
-					item: "railways:buffer_mono"
-					count: 2
+					item: "railways:conductor_vent"
+					count: 6
+				}
+				{
+					id: "5287BAAC391493CE"
+					type: "item"
+					item: "railways:conductor_cap"
+					count: 6
 				}
 				{
 					id: "7D02FF24EFDF882C"
@@ -128,6 +177,9 @@
 					xp: 20
 				}
 			]
+			icon: {
+				id: "railways:knuckle_coupler"
+			}
 			dependencies: [
 				"0560CC52C2A5A659"
 			]

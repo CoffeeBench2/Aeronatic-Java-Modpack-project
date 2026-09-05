@@ -1,12 +1,14 @@
 {
 	id: "6C8D2AE777E4233C"
 	group: "4E2FA1B674D143B0"
-	order_index: 108
+	order_index: 124
 	filename: "addon_createdieselgenerators"
 	title: "Diesel Generators"
-	icon: "createdieselgenerators:canister"
+	icon: {
+		id: "createdieselgenerators:canister"
+	}
 	subtitle: [
-		"Oil, refining, and engines that drink it."
+		"Oil, refining, and engines that drink it.  &eMid&r"
 	]
 	default_quest_shape: ""
 	default_hide_dependency_lines: false
@@ -18,15 +20,15 @@
 			description: [
 				"Canisters carry fuel. The burner is where it goes."
 				""
-				"Bring 8 Andesite Alloy."
+				"&7Bring &f16 Brass Casing&7."
 			]
 			id: "C691968C3A11C69B"
 			tasks: [
 				{
-					id: "A7B6F917BD6C4168"
+					id: "BF4B3BD7FFBC77BA"
 					type: "item"
-					item: "create:andesite_alloy"
-					count: 8L
+					item: "create:brass_casing"
+					count: 16L
 				}
 			]
 			rewards: [
@@ -34,13 +36,13 @@
 					id: "F18F8CB57F00F1CD"
 					type: "item"
 					item: "createdieselgenerators:canister"
-					count: 2
+					count: 6
 				}
 				{
 					id: "C3AC22BC4FE7A4F8"
 					type: "item"
 					item: "createdieselgenerators:burner"
-					count: 1
+					count: 3
 				}
 				{
 					id: "BC8F132589E43C80"
@@ -48,6 +50,9 @@
 					xp: 10
 				}
 			]
+			icon: {
+				id: "createdieselgenerators:canister"
+			}
 			shape: "square"
 		}
 		{
@@ -57,15 +62,22 @@
 			description: [
 				"Chipped wood ferments into something you can burn. Asphalt is the by-product."
 				""
-				"Bring 6 Brass Ingots."
+				"&7Bring &f16 Electron Tubes&7."
+				"&7Bring &f32 Brass Sheets&7."
 			]
 			id: "7F57E57A5DEE61EB"
 			tasks: [
 				{
-					id: "AB8A67AC2DB367B0"
+					id: "48998B6C95C36C95"
 					type: "item"
-					item: "create:brass_ingot"
-					count: 6L
+					item: "create:electron_tube"
+					count: 16L
+				}
+				{
+					id: "EB0E0B9C0917F6D4"
+					type: "item"
+					item: "create:brass_sheet"
+					count: 32L
 				}
 			]
 			rewards: [
@@ -73,13 +85,13 @@
 					id: "257DF0F5121CD087"
 					type: "item"
 					item: "createdieselgenerators:chip_wood_block"
-					count: 4
+					count: 12
 				}
 				{
 					id: "35C2B449130CE9C8"
 					type: "item"
 					item: "createdieselgenerators:asphalt_block"
-					count: 4
+					count: 12
 				}
 				{
 					id: "83B0C0F1F83C004E"
@@ -87,6 +99,9 @@
 					xp: 15
 				}
 			]
+			icon: {
+				id: "createdieselgenerators:chip_wood_block"
+			}
 			dependencies: [
 				"C691968C3A11C69B"
 			]
@@ -98,15 +113,43 @@
 			description: [
 				"A distillation controller splits crude into the useful parts."
 				""
-				"Bring 12 Iron Ingots."
+				"&7Bring &f8 Precision Mechanisms&7."
+				"&7Bring &f24 Brass Casing&7."
+				"&7Bring &f16 Polished Rose Quartz&7."
+				"&7Bring &f6 Canister&7."
+				"&7Bring &f6 Burner&7."
 			]
 			id: "B6A94C93390754B8"
 			tasks: [
 				{
-					id: "9A6E910B3C66281E"
+					id: "E586D59518735EB1"
 					type: "item"
-					item: "minecraft:iron_ingot"
-					count: 12L
+					item: "create:precision_mechanism"
+					count: 8L
+				}
+				{
+					id: "190338BDAB03AF7A"
+					type: "item"
+					item: "create:brass_casing"
+					count: 24L
+				}
+				{
+					id: "1A3F055B31EBB256"
+					type: "item"
+					item: "create:polished_rose_quartz"
+					count: 16L
+				}
+				{
+					id: "39F0030C4208AB90"
+					type: "item"
+					item: "createdieselgenerators:canister"
+					count: 6L
+				}
+				{
+					id: "BBB956458DF29F9D"
+					type: "item"
+					item: "createdieselgenerators:burner"
+					count: 6L
 				}
 			]
 			rewards: [
@@ -114,13 +157,19 @@
 					id: "8DCCD6DB4CD5C88A"
 					type: "item"
 					item: "createdieselgenerators:distillation_controller"
-					count: 1
+					count: 3
 				}
 				{
 					id: "CC657FDCFEB282C7"
 					type: "item"
 					item: "createdieselgenerators:basin_lid"
-					count: 1
+					count: 3
+				}
+				{
+					id: "7C5887A636ADEE87"
+					type: "item"
+					item: "createdieselgenerators:diesel_engine"
+					count: 6
 				}
 				{
 					id: "EF3B6D20E3F125F6"
@@ -128,6 +177,9 @@
 					xp: 20
 				}
 			]
+			icon: {
+				id: "createdieselgenerators:distillation_controller"
+			}
 			dependencies: [
 				"7F57E57A5DEE61EB"
 			]

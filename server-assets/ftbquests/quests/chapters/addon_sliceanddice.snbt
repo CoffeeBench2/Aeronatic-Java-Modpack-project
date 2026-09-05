@@ -1,32 +1,34 @@
 {
 	id: "E58B24B6A2DF69DA"
 	group: "4E2FA1B674D143B0"
-	order_index: 133
+	order_index: 112
 	filename: "addon_sliceanddice"
-	title: "Slice & Dice"
-	icon: "sliceanddice:slicer"
+	title: "Slice and Dice"
+	icon: {
+		id: "sliceanddice:slicer"
+	}
 	subtitle: [
-		"Farming automation that fits on a contraption."
+		"Farming automation that fits on a contraption.  &aEarly&r"
 	]
 	default_quest_shape: ""
 	default_hide_dependency_lines: false
 	quests: [
 		{
-			title: "Meet Slice & Dice"
+			title: "Meet Slice and Dice"
 			x: 0.0d
 			y: 0.0d
 			description: [
 				"A slicer harvests. A sprinkler waters. Together, that is a farm."
 				""
-				"Bring 8 Andesite Alloy."
+				"&7Bring &f32 Andesite Alloy&7."
 			]
 			id: "B5BE2D2D688FB039"
 			tasks: [
 				{
-					id: "1234DA000B9A4231"
+					id: "D5C5135C00918B24"
 					type: "item"
 					item: "create:andesite_alloy"
-					count: 8L
+					count: 32L
 				}
 			]
 			rewards: [
@@ -34,13 +36,13 @@
 					id: "018A249070EC12FC"
 					type: "item"
 					item: "sliceanddice:slicer"
-					count: 1
+					count: 3
 				}
 				{
 					id: "88AC9565AF6611C9"
 					type: "item"
 					item: "sliceanddice:sprinkler"
-					count: 1
+					count: 6
 				}
 				{
 					id: "69E875AC47D67CC8"
@@ -48,38 +50,62 @@
 					xp: 10
 				}
 			]
+			icon: {
+				id: "sliceanddice:slicer"
+			}
 			shape: "square"
 		}
 		{
-			title: "Slice & Dice, Continued"
+			title: "Slice and Dice, Continued"
 			x: 0.0d
 			y: 2.0d
 			description: [
 				"Fertiliser, in solid and liquid form."
 				""
-				"Bring 6 Brass Ingots."
+				"&7Bring &f16 Andesite Casing&7."
+				"&7Bring &f24 Cogwheels&7."
+				"&7Bring &f4 Slicer&7."
+				"&7Bring &f4 Sprinkler&7."
 			]
 			id: "8CEACAA1B1276420"
 			tasks: [
 				{
-					id: "408A5C6426814154"
+					id: "BBAF7CF29E17C1E6"
 					type: "item"
-					item: "create:brass_ingot"
-					count: 6L
+					item: "create:andesite_casing"
+					count: 16L
+				}
+				{
+					id: "BAEC92FF6F4199B0"
+					type: "item"
+					item: "create:cogwheel"
+					count: 24L
+				}
+				{
+					id: "2FB364E5AE3D269C"
+					type: "item"
+					item: "sliceanddice:slicer"
+					count: 4L
+				}
+				{
+					id: "C2492F2C30AA04EB"
+					type: "item"
+					item: "sliceanddice:sprinkler"
+					count: 4L
 				}
 			]
 			rewards: [
 				{
-					id: "1EEEFBA115D91F5D"
+					id: "E2102A09C352EB33"
 					type: "item"
-					item: "sliceanddice:fertilizer"
-					count: 8
+					item: "sliceanddice:floor_sprinkler"
+					count: 24
 				}
 				{
 					id: "0B95B3F37BAF1568"
 					type: "item"
 					item: "sliceanddice:fertilizer_bucket"
-					count: 1
+					count: 3
 				}
 				{
 					id: "3DD001409E277175"
@@ -87,49 +113,11 @@
 					xp: 15
 				}
 			]
+			icon: {
+				id: "sliceanddice:floor_sprinkler"
+			}
 			dependencies: [
 				"B5BE2D2D688FB039"
-			]
-		}
-		{
-			title: "Slice & Dice: Kitted Out"
-			x: 0.0d
-			y: 4.0d
-			description: [
-				"More sprinklers, and something to grow with them."
-				""
-				"Bring 12 Iron Ingots."
-			]
-			id: "454EA839B5A368E1"
-			tasks: [
-				{
-					id: "A7310E1C2BB2EB5F"
-					type: "item"
-					item: "minecraft:iron_ingot"
-					count: 12L
-				}
-			]
-			rewards: [
-				{
-					id: "5722A0C63754854A"
-					type: "item"
-					item: "sliceanddice:sprinkler"
-					count: 2
-				}
-				{
-					id: "24E4C6EA0F3936F0"
-					type: "item"
-					item: "minecraft:wheat"
-					count: 16
-				}
-				{
-					id: "74C4D72376B061C1"
-					type: "xp"
-					xp: 20
-				}
-			]
-			dependencies: [
-				"8CEACAA1B1276420"
 			]
 		}
 	]

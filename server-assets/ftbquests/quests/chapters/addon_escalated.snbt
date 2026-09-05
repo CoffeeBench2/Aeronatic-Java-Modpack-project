@@ -1,12 +1,14 @@
 {
 	id: "AC2AB8F0B7FE0F8F"
 	group: "4E2FA1B674D143B0"
-	order_index: 120
+	order_index: 104
 	filename: "addon_escalated"
 	title: "Create: Escalated"
-	icon: "escalated:metal_walkway_steps"
+	icon: {
+		id: "escalated:metal_walkway_steps"
+	}
 	subtitle: [
-		"Walkways and escalators that carry you."
+		"Walkways and escalators that carry you.  &aEarly&r"
 	]
 	default_quest_shape: ""
 	default_hide_dependency_lines: false
@@ -16,17 +18,17 @@
 			x: 0.0d
 			y: 0.0d
 			description: [
-				"Steps and rail. A walkway is just these two, repeated."
+				"Steps in metal and wood. A walkway is these, repeated — the rails and terminals are placed as part of the same block."
 				""
-				"Bring 8 Andesite Alloy."
+				"&7Bring &f32 Andesite Alloy&7."
 			]
 			id: "3DF273801E07C06B"
 			tasks: [
 				{
-					id: "C4811F7E7B7F7530"
+					id: "02B13D0C8BA85BC7"
 					type: "item"
 					item: "create:andesite_alloy"
-					count: 8L
+					count: 32L
 				}
 			]
 			rewards: [
@@ -34,13 +36,13 @@
 					id: "BA5D6B2A55EB6D9C"
 					type: "item"
 					item: "escalated:metal_walkway_steps"
-					count: 8
+					count: 24
 				}
 				{
-					id: "B0FDA9535968B321"
+					id: "8DCADBD85B291B04"
 					type: "item"
-					item: "escalated:metal_walkway_handrail"
-					count: 8
+					item: "escalated:wooden_walkway_steps"
+					count: 24
 				}
 				{
 					id: "3A4D3A497875647F"
@@ -48,89 +50,10 @@
 					xp: 10
 				}
 			]
+			icon: {
+				id: "escalated:metal_walkway_steps"
+			}
 			shape: "square"
-		}
-		{
-			title: "Create: Escalated, Continued"
-			x: 0.0d
-			y: 2.0d
-			description: [
-				"An escalator section, and the terminal that ends it."
-				""
-				"Bring 6 Brass Ingots."
-			]
-			id: "03E1FB93A38BBA32"
-			tasks: [
-				{
-					id: "FA4071601D84C769"
-					type: "item"
-					item: "create:brass_ingot"
-					count: 6L
-				}
-			]
-			rewards: [
-				{
-					id: "6B26D5BCD89BDDC2"
-					type: "item"
-					item: "escalated:metal_narrow_escalator"
-					count: 4
-				}
-				{
-					id: "EA721C79EC49C28C"
-					type: "item"
-					item: "escalated:metal_walkway_terminal"
-					count: 2
-				}
-				{
-					id: "9D06A39EF4918BD5"
-					type: "xp"
-					xp: 15
-				}
-			]
-			dependencies: [
-				"3DF273801E07C06B"
-			]
-		}
-		{
-			title: "Create: Escalated: Kitted Out"
-			x: 0.0d
-			y: 4.0d
-			description: [
-				"Wood and glass variants, for when steel is too industrial."
-				""
-				"Bring 12 Iron Ingots."
-			]
-			id: "6B1CA02DA60DC6D4"
-			tasks: [
-				{
-					id: "14FBBC4BB7242CB6"
-					type: "item"
-					item: "minecraft:iron_ingot"
-					count: 12L
-				}
-			]
-			rewards: [
-				{
-					id: "7F0A2EB4886A8828"
-					type: "item"
-					item: "escalated:wooden_narrow_walkway"
-					count: 8
-				}
-				{
-					id: "B788923BAA9F759D"
-					type: "item"
-					item: "escalated:glass_walkway_handrail"
-					count: 8
-				}
-				{
-					id: "9D4E4FC7C394D60E"
-					type: "xp"
-					xp: 20
-				}
-			]
-			dependencies: [
-				"03E1FB93A38BBA32"
-			]
 		}
 	]
 }

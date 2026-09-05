@@ -4,7 +4,9 @@
 	order_index: 4
 	filename: "automation"
 	title: "Automation"
-	icon: "create:mechanical_arm"
+	icon: {
+		id: "create:mechanical_arm"
+	}
 	subtitle: [
 		"Stop doing it yourself."
 	]

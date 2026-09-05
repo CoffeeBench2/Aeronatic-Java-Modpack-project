@@ -1,12 +1,14 @@
 {
 	id: "5FF1B2C7C55FB03A"
 	group: "4E2FA1B674D143B0"
-	order_index: 127
+	order_index: 100
 	filename: "addon_create_aquatic_ambitions"
 	title: "Aquatic Ambitions"
-	icon: "create_aquatic_ambitions:prismarine_alloy"
+	icon: {
+		id: "create_aquatic_ambitions:prismarine_alloy"
+	}
 	subtitle: [
-		"Ocean materials and conduits."
+		"Ocean materials and conduits.  &aEarly&r"
 	]
 	default_quest_shape: ""
 	default_hide_dependency_lines: false
@@ -18,29 +20,29 @@
 			description: [
 				"Shards and shells, from things that did not want to give them up."
 				""
-				"Bring 8 Andesite Alloy."
+				"&7Bring &f32 Andesite Alloy&7."
 			]
 			id: "1BA7BA8347816535"
 			tasks: [
 				{
-					id: "79DBD8467BB7B3C8"
+					id: "1137C72CE1E03152"
 					type: "item"
 					item: "create:andesite_alloy"
-					count: 8L
+					count: 32L
 				}
 			]
 			rewards: [
 				{
-					id: "E93F135BA49A1564"
+					id: "E45A452EEB221009"
 					type: "item"
-					item: "create_aquatic_ambitions:nautilus_shard"
-					count: 4
+					item: "create_aquatic_ambitions:suspicious_rock"
+					count: 12
 				}
 				{
 					id: "D70829A17B2BAC45"
 					type: "item"
 					item: "create_aquatic_ambitions:spiky_shell"
-					count: 4
+					count: 12
 				}
 				{
 					id: "E478EE460DC3AAA3"
@@ -48,6 +50,9 @@
 					xp: 10
 				}
 			]
+			icon: {
+				id: "create_aquatic_ambitions:suspicious_rock"
+			}
 			shape: "square"
 		}
 		{
@@ -57,15 +62,22 @@
 			description: [
 				"Prismarine alloy and rods. Underwater building material."
 				""
-				"Bring 6 Brass Ingots."
+				"&7Bring &f16 Andesite Casing&7."
+				"&7Bring &f24 Cogwheels&7."
 			]
 			id: "8A9051279B4C7DBB"
 			tasks: [
 				{
-					id: "E187999B800F50F5"
+					id: "DACF4F6606AB4609"
 					type: "item"
-					item: "create:brass_ingot"
-					count: 6L
+					item: "create:andesite_casing"
+					count: 16L
+				}
+				{
+					id: "1AD3D660B9069BD9"
+					type: "item"
+					item: "create:cogwheel"
+					count: 24L
 				}
 			]
 			rewards: [
@@ -73,13 +85,13 @@
 					id: "84A8B2D9822F7BF0"
 					type: "item"
 					item: "create_aquatic_ambitions:prismarine_alloy"
-					count: 4
+					count: 12
 				}
 				{
 					id: "09252910F2594646"
 					type: "item"
 					item: "create_aquatic_ambitions:prismarine_alloy_rod"
-					count: 4
+					count: 12
 				}
 				{
 					id: "82B7CB83088279DE"
@@ -87,6 +99,9 @@
 					xp: 15
 				}
 			]
+			icon: {
+				id: "create_aquatic_ambitions:prismarine_alloy"
+			}
 			dependencies: [
 				"1BA7BA8347816535"
 			]
@@ -98,15 +113,43 @@
 			description: [
 				"A mechanical conduit, and powder to keep it fed."
 				""
-				"Bring 12 Iron Ingots."
+				"&7Bring &f32 Andesite Casing&7."
+				"&7Bring &f16 Large Cogwheels&7."
+				"&7Bring &f24 Iron Sheets&7."
+				"&7Bring &f4 Prismarine Alloy&7."
+				"&7Bring &f4 Prismarine Alloy Rod&7."
 			]
 			id: "CBED187C988F2D79"
 			tasks: [
 				{
-					id: "56ED747FC45577E5"
+					id: "DDC52EAB7AE6C464"
 					type: "item"
-					item: "minecraft:iron_ingot"
-					count: 12L
+					item: "create:andesite_casing"
+					count: 32L
+				}
+				{
+					id: "0C13B14B6B7FDF93"
+					type: "item"
+					item: "create:large_cogwheel"
+					count: 16L
+				}
+				{
+					id: "FCAD4A8B046236DF"
+					type: "item"
+					item: "create:iron_sheet"
+					count: 24L
+				}
+				{
+					id: "D5EE25AAD79002AE"
+					type: "item"
+					item: "create_aquatic_ambitions:prismarine_alloy"
+					count: 4L
+				}
+				{
+					id: "A3788A32F3A1BC7A"
+					type: "item"
+					item: "create_aquatic_ambitions:prismarine_alloy_rod"
+					count: 4L
 				}
 			]
 			rewards: [
@@ -114,13 +157,19 @@
 					id: "8EA14A4A5B645262"
 					type: "item"
 					item: "create_aquatic_ambitions:mechanical_conduit"
-					count: 1
+					count: 3
 				}
 				{
 					id: "BA06CAD07B3050F2"
 					type: "item"
 					item: "create_aquatic_ambitions:calcium_rich_powder"
-					count: 8
+					count: 24
+				}
+				{
+					id: "622461F3BC883AFC"
+					type: "item"
+					item: "create_aquatic_ambitions:prismarine_rod"
+					count: 6
 				}
 				{
 					id: "FC1007F0FCC8B40F"
@@ -128,6 +177,9 @@
 					xp: 20
 				}
 			]
+			icon: {
+				id: "create_aquatic_ambitions:mechanical_conduit"
+			}
 			dependencies: [
 				"8A9051279B4C7DBB"
 			]

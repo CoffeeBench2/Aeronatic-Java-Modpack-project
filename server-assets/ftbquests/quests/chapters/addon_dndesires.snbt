@@ -1,12 +1,14 @@
 {
 	id: "EB3328FF4C392598"
 	group: "4E2FA1B674D143B0"
-	order_index: 125
+	order_index: 109
 	filename: "addon_dndesires"
 	title: "Dreams n' Desires"
-	icon: "dndesires:cog_crank"
+	icon: {
+		id: "dndesires:cog_crank"
+	}
 	subtitle: [
-		"More kinetics, and some genuinely odd machines."
+		"More kinetics, and some genuinely odd machines.  &aEarly&r"
 	]
 	default_quest_shape: ""
 	default_hide_dependency_lines: false
@@ -18,15 +20,15 @@
 			description: [
 				"A crank that takes a cog directly. Hand power, less fiddly."
 				""
-				"Bring 8 Andesite Alloy."
+				"&7Bring &f32 Andesite Alloy&7."
 			]
 			id: "3D388A8372EBEB06"
 			tasks: [
 				{
-					id: "7220364B7E8B94E2"
+					id: "D454FDA36E01831A"
 					type: "item"
 					item: "create:andesite_alloy"
-					count: 8L
+					count: 32L
 				}
 			]
 			rewards: [
@@ -34,13 +36,13 @@
 					id: "8A9E88E5FA1A52B2"
 					type: "item"
 					item: "dndesires:cog_crank"
-					count: 1
+					count: 3
 				}
 				{
 					id: "87ADA9536A0C61C4"
 					type: "item"
 					item: "dndesires:coal_piece"
-					count: 8
+					count: 24
 				}
 				{
 					id: "7F17D471CE7381F6"
@@ -48,6 +50,9 @@
 					xp: 10
 				}
 			]
+			icon: {
+				id: "dndesires:cog_crank"
+			}
 			shape: "square"
 		}
 		{
@@ -57,15 +62,22 @@
 			description: [
 				"A gauge and a hatch, so tanks stop being guesswork."
 				""
-				"Bring 6 Brass Ingots."
+				"&7Bring &f16 Andesite Casing&7."
+				"&7Bring &f24 Cogwheels&7."
 			]
 			id: "B3DBA3ACC3127862"
 			tasks: [
 				{
-					id: "0358721281B6C125"
+					id: "6C571D5B8426398F"
 					type: "item"
-					item: "create:brass_ingot"
-					count: 6L
+					item: "create:andesite_casing"
+					count: 16L
+				}
+				{
+					id: "67AD5F354A6B8B91"
+					type: "item"
+					item: "create:cogwheel"
+					count: 24L
 				}
 			]
 			rewards: [
@@ -73,13 +85,13 @@
 					id: "D837FC4E5D31E8B3"
 					type: "item"
 					item: "dndesires:fluid_gauge"
-					count: 1
+					count: 3
 				}
 				{
 					id: "C8B50771A3E912EF"
 					type: "item"
 					item: "dndesires:fluid_hatch"
-					count: 2
+					count: 6
 				}
 				{
 					id: "E1F9C4688432B90A"
@@ -87,6 +99,9 @@
 					xp: 15
 				}
 			]
+			icon: {
+				id: "dndesires:fluid_gauge"
+			}
 			dependencies: [
 				"3D388A8372EBEB06"
 			]
@@ -98,15 +113,43 @@
 			description: [
 				"A burner and asphalt. Industrial groundwork."
 				""
-				"Bring 12 Iron Ingots."
+				"&7Bring &f32 Andesite Casing&7."
+				"&7Bring &f16 Large Cogwheels&7."
+				"&7Bring &f24 Iron Sheets&7."
+				"&7Bring &f4 Cog Crank&7."
+				"&7Bring &f4 Coal Piece&7."
 			]
 			id: "3338DB0D04991F67"
 			tasks: [
 				{
-					id: "BA967006A1CD6D4E"
+					id: "CA8AEA5B2B3842BB"
 					type: "item"
-					item: "minecraft:iron_ingot"
-					count: 12L
+					item: "create:andesite_casing"
+					count: 32L
+				}
+				{
+					id: "E97DF7892C74C269"
+					type: "item"
+					item: "create:large_cogwheel"
+					count: 16L
+				}
+				{
+					id: "3B946FE82131BD23"
+					type: "item"
+					item: "create:iron_sheet"
+					count: 24L
+				}
+				{
+					id: "DC89845F5A267DF7"
+					type: "item"
+					item: "dndesires:cog_crank"
+					count: 4L
+				}
+				{
+					id: "E88507CA96D8E885"
+					type: "item"
+					item: "dndesires:coal_piece"
+					count: 4L
 				}
 			]
 			rewards: [
@@ -114,13 +157,25 @@
 					id: "8E57D789953D07C5"
 					type: "item"
 					item: "dndesires:burner"
-					count: 1
+					count: 3
 				}
 				{
 					id: "FFEEA6DFC10A6A67"
 					type: "item"
 					item: "dndesires:asphalt"
-					count: 8
+					count: 24
+				}
+				{
+					id: "6E264CEEA03A2C25"
+					type: "item"
+					item: "dndesires:cut_breccia"
+					count: 6
+				}
+				{
+					id: "13558364A1E4C715"
+					type: "item"
+					item: "dndesires:breccia"
+					count: 6
 				}
 				{
 					id: "CE3F17551A34EB78"
@@ -128,6 +183,9 @@
 					xp: 20
 				}
 			]
+			icon: {
+				id: "dndesires:burner"
+			}
 			dependencies: [
 				"B3DBA3ACC3127862"
 			]

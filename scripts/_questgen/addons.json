@@ -14,431 +14,1849 @@
     "create_aeronautics_toolgun is deliberately absent: all seven of its items are on the",
     "toolgun_restricted list, so any quest for it would be uncompletable by design."
   ],
-  "gates": [
-    ["create:andesite_alloy", 8, "Andesite Alloy"],
-    ["create:brass_ingot", 6, "Brass Ingots"],
-    ["minecraft:iron_ingot", 12, "Iron Ingots"]
-  ],
   "addons": [
     {
-      "key": "drivebywire", "title": "Drive By Wire", "icon": "drivebywire:controller_hub",
+      "key": "drivebywire",
+      "title": "Drive By Wire",
+      "icon": "drivebywire:controller_hub",
       "blurb": "Wire a cockpit to the thing it is meant to fly.",
       "quests": [
-        {"desc": "Linked controllers let you steer a contraption from a seat instead of standing on it.",
-         "rewards": [["drivebywire:controller_hub", 1], ["drivebywire:wire", 8]]},
-        {"desc": "Wire runs from the hub to whatever it controls. Cutters undo your mistakes.",
-         "rewards": [["drivebywire:wire_cutter", 1], ["drivebywire:wire", 8]]},
-        {"desc": "The tweaked hub does the same job with more channels.",
-         "rewards": [["drivebywire:tweaked_controller_hub", 1], ["drivebywire:backup_block", 2]]}
-      ]
+        {
+          "desc": "Linked controllers let you steer a contraption from a seat instead of standing on it.",
+          "rewards": [
+            [
+              "drivebywire:controller_hub",
+              3
+            ],
+            [
+              "drivebywire:wire",
+              24
+            ]
+          ]
+        },
+        {
+          "desc": "Wire runs from the hub to whatever it controls. Cutters undo your mistakes.",
+          "rewards": [
+            [
+              "drivebywire:wire_cutter",
+              3
+            ],
+            [
+              "drivebywire:backup_block",
+              6
+            ]
+          ]
+        },
+        {
+          "desc": "The tweaked hub does the same job with more channels.",
+          "rewards": [
+            [
+              "drivebywire:tweaked_controller_hub",
+              3
+            ]
+          ]
+        }
+      ],
+      "tier": 2
     },
     {
-      "key": "aeroworks", "title": "Aeroworks", "icon": "aeroworks:control_desk",
+      "key": "aeroworks",
+      "title": "Aeroworks",
+      "icon": "aeroworks:control_desk",
       "blurb": "Cockpit furniture that actually does something.",
       "quests": [
-        {"desc": "A stand to mount controls on, so a cockpit stops being a wall of levers.",
-         "rewards": [["aeroworks:control_stand", 1], ["aeroworks:copper_lever_module", 2]]},
-        {"desc": "The desk is the flat version. Modules clip into either.",
-         "rewards": [["aeroworks:control_desk", 1], ["aeroworks:copper_button_module", 2]]},
-        {"desc": "A yoke and a throttle quadrant. Now it feels like a cockpit.",
-         "rewards": [["aeroworks:copper_yoke_module", 1], ["aeroworks:copper_throttle_quadrant_module", 1]]}
-      ]
+        {
+          "desc": "A stand to mount controls on, so a cockpit stops being a wall of levers.",
+          "rewards": [
+            [
+              "aeroworks:control_stand",
+              3
+            ],
+            [
+              "aeroworks:copper_lever_module",
+              6
+            ]
+          ]
+        },
+        {
+          "desc": "The desk is the flat version. Modules clip into either.",
+          "rewards": [
+            [
+              "aeroworks:control_desk",
+              3
+            ],
+            [
+              "aeroworks:copper_button_module",
+              6
+            ]
+          ]
+        },
+        {
+          "desc": "A yoke and a throttle quadrant. Now it feels like a cockpit.",
+          "rewards": [
+            [
+              "aeroworks:copper_yoke_module",
+              3
+            ],
+            [
+              "aeroworks:copper_throttle_quadrant_module",
+              3
+            ],
+            [
+              "aeroworks:gyroscope",
+              6
+            ],
+            [
+              "aeroworks:joystick",
+              6
+            ]
+          ]
+        }
+      ],
+      "tier": 2
     },
     {
-      "key": "aeronautics", "title": "Create: Aeronautics", "icon": "aeronautics:levitite",
+      "key": "aeronautics",
+      "title": "Create: Aeronautics",
+      "icon": "aeronautics:levitite",
       "blurb": "The mod this whole server is named after.",
       "quests": [
-        {"desc": "A propeller and goggles. The goggles read airspeed and altitude.",
-         "rewards": [["aeronautics:andesite_propeller", 1], ["aeronautics:aviators_goggles", 1]]},
-        {"desc": "Levitite blend crystallises into the block that makes things float.",
-         "rewards": [["aeronautics:levitite_blend", 4], ["aeronautics:end_stone_powder", 4]]},
-        {"desc": "A burner for hot air, and a bearing that keeps a propeller pointed where you want.",
-         "rewards": [["aeronautics:adjustable_burner", 1], ["aeronautics:gyroscopic_propeller_bearing", 1]]}
-      ]
+        {
+          "desc": "A propeller and goggles. The goggles read airspeed and altitude.",
+          "rewards": [
+            [
+              "aeronautics:andesite_propeller",
+              4
+            ],
+            [
+              "aeronautics:aviators_goggles",
+              4
+            ]
+          ]
+        },
+        {
+          "desc": "Levitite blend crystallises into the block that makes things float.",
+          "rewards": [
+            [
+              "aeronautics:levitite",
+              16
+            ],
+            [
+              "aeronautics:end_stone_powder",
+              16
+            ]
+          ]
+        },
+        {
+          "desc": "A burner for hot air, and a bearing that keeps a propeller pointed where you want.",
+          "rewards": [
+            [
+              "aeronautics:adjustable_burner",
+              4
+            ],
+            [
+              "aeronautics:gyroscopic_propeller_bearing",
+              4
+            ],
+            [
+              "aeronautics:wooden_propeller",
+              8
+            ],
+            [
+              "aeronautics:steam_vent",
+              8
+            ]
+          ]
+        }
+      ],
+      "tier": 3
     },
     {
-      "key": "offroad", "title": "Create: Offroad", "icon": "offroad:tire",
+      "key": "offroad",
+      "title": "Create: Offroad",
+      "icon": "offroad:tire",
       "blurb": "Wheels, for when flying is overkill.",
       "quests": [
-        {"desc": "A tire and the mount that holds it. Bolt them to a contraption and drive.",
-         "rewards": [["offroad:tire", 2], ["offroad:wheel_mount", 2]]},
-        {"desc": "Small tires turn tighter. Large ones climb better.",
-         "rewards": [["offroad:small_tire", 2], ["offroad:large_tire", 1]]},
-        {"desc": "A borehead bearing spins a cutting wheel. This is how you tunnel.",
-         "rewards": [["offroad:borehead_bearing", 1], ["offroad:rockcutting_wheel", 1]]}
-      ]
+        {
+          "desc": "A tire and the mount that holds it. Bolt them to a contraption and drive.",
+          "rewards": [
+            [
+              "offroad:tire",
+              6
+            ],
+            [
+              "offroad:wheel_mount",
+              6
+            ]
+          ]
+        },
+        {
+          "desc": "Small tires turn tighter. Large ones climb better.",
+          "rewards": [
+            [
+              "offroad:small_tire",
+              6
+            ],
+            [
+              "offroad:large_tire",
+              3
+            ]
+          ]
+        },
+        {
+          "desc": "A borehead bearing spins a cutting wheel. This is how you tunnel.",
+          "rewards": [
+            [
+              "offroad:borehead_bearing",
+              3
+            ],
+            [
+              "offroad:rockcutting_wheel",
+              3
+            ],
+            [
+              "offroad:monstrous_tire",
+              6
+            ]
+          ]
+        }
+      ],
+      "tier": 2
     },
     {
-      "key": "simulated", "title": "Create: Simulated", "icon": "simulated:altitude_sensor",
+      "key": "simulated",
+      "title": "Create: Simulated",
+      "icon": "simulated:altitude_sensor",
       "blurb": "Physics parts: engines, sails, and things that hold together.",
       "quests": [
-        {"desc": "Handles to grab and augers to dig. The basics of a moving build.",
-         "rewards": [["simulated:copper_handle", 2], ["simulated:auger_shaft", 2]]},
-        {"desc": "An altitude sensor, and a diagram that shows what your contraption thinks it is.",
-         "rewards": [["simulated:altitude_sensor", 1], ["simulated:contraption_diagram", 1]]},
-        {"desc": "Analog transmission and a directional gearshift, for drive trains that change their mind.",
-         "rewards": [["simulated:analog_transmission", 1], ["simulated:directional_gearshift", 1]]}
-      ]
+        {
+          "desc": "Handles to grab and augers to dig. The basics of a moving build.",
+          "rewards": [
+            [
+              "simulated:copper_handle",
+              6
+            ],
+            [
+              "simulated:auger_shaft",
+              6
+            ]
+          ]
+        },
+        {
+          "desc": "An altitude sensor, and a diagram that shows what your contraption thinks it is.",
+          "rewards": [
+            [
+              "simulated:altitude_sensor",
+              3
+            ],
+            [
+              "simulated:contraption_diagram",
+              3
+            ]
+          ]
+        },
+        {
+          "desc": "Analog transmission and a directional gearshift, for drive trains that change their mind.",
+          "rewards": [
+            [
+              "simulated:analog_transmission",
+              3
+            ],
+            [
+              "simulated:directional_gearshift",
+              3
+            ],
+            [
+              "simulated:auger_cog",
+              6
+            ]
+          ]
+        }
+      ],
+      "tier": 2
     },
     {
-      "key": "tracks", "title": "Create Tracks", "icon": "tracks:track_mount",
+      "key": "tracks",
+      "title": "Create Tracks",
+      "icon": "tracks:track_mount",
       "blurb": "Caterpillar tracks. Slower than wheels, stops for nothing.",
       "quests": [
-        {"desc": "Mounts hold the track. The key adjusts how hard the suspension pushes back.",
-         "rewards": [["tracks:track_mount", 2], ["tracks:suspension_key", 2]]},
-        {"desc": "Small drive wheels and short track sections — enough for a light crawler.",
-         "rewards": [["tracks:small_track_drive_wheel", 2], ["tracks:small_suspension_track", 2]]},
-        {"desc": "Full-size drive wheel and track. Heavy, slow, unstoppable.",
-         "rewards": [["tracks:track_drive_wheel", 1], ["tracks:suspension_track", 2]]}
-      ]
+        {
+          "desc": "Mounts hold the track. The key adjusts how hard the suspension pushes back.",
+          "rewards": [
+            [
+              "tracks:track_mount",
+              6
+            ],
+            [
+              "tracks:suspension_key",
+              6
+            ]
+          ]
+        },
+        {
+          "desc": "Small drive wheels and short track sections — enough for a light crawler.",
+          "rewards": [
+            [
+              "tracks:small_track_drive_wheel",
+              6
+            ],
+            [
+              "tracks:small_suspension_track",
+              6
+            ]
+          ]
+        },
+        {
+          "desc": "Full-size drive wheel and track. Heavy, slow, unstoppable.",
+          "rewards": [
+            [
+              "tracks:track_drive_wheel",
+              3
+            ],
+            [
+              "tracks:suspension_track",
+              6
+            ],
+            [
+              "tracks:large_track_drive_wheel",
+              6
+            ]
+          ]
+        }
+      ],
+      "tier": 2
     },
     {
-      "key": "createaddition", "title": "Crafts & Additions", "icon": "createaddition:capacitor",
+      "key": "createaddition",
+      "title": "Crafts and Additions",
+      "icon": "createaddition:capacitor",
       "blurb": "Rotation becomes electricity, and back again.",
       "quests": [
-        {"desc": "Wire and rods. Everything electrical here starts with these two.",
-         "rewards": [["createaddition:copper_wire", 8], ["createaddition:brass_rod", 4]]},
-        {"desc": "A capacitor stores a little. Connectors move it between machines.",
-         "rewards": [["createaddition:capacitor", 1], ["createaddition:connector", 2]]},
-        {"desc": "An alternator turns rotation into power; an accumulator holds it.",
-         "rewards": [["createaddition:accumulator", 1], ["createaddition:alternator", 1]]}
-      ]
+        {
+          "desc": "Wire and rods. Everything electrical here starts with these two.",
+          "rewards": [
+            [
+              "createaddition:copper_wire",
+              24
+            ],
+            [
+              "createaddition:brass_rod",
+              12
+            ]
+          ]
+        },
+        {
+          "desc": "A capacitor stores a little. Connectors move it between machines.",
+          "rewards": [
+            [
+              "createaddition:capacitor",
+              3
+            ],
+            [
+              "createaddition:connector",
+              6
+            ]
+          ]
+        },
+        {
+          "desc": "An alternator turns rotation into power; an accumulator holds it.",
+          "rewards": [
+            [
+              "createaddition:electric_motor",
+              3
+            ],
+            [
+              "createaddition:alternator",
+              3
+            ],
+            [
+              "createaddition:electrum_ingot",
+              6
+            ],
+            [
+              "createaddition:copper_spool",
+              6
+            ]
+          ]
+        }
+      ],
+      "tier": 2
     },
     {
-      "key": "create_connected", "title": "Create: Connected", "icon": "create_connected:brass_gearbox",
+      "key": "create_connected",
+      "title": "Create: Connected",
+      "icon": "create_connected:brass_gearbox",
       "blurb": "The quality-of-life parts Create almost has.",
       "quests": [
-        {"desc": "Cross connectors route rotation through a junction. A crank wheel starts it by hand.",
-         "rewards": [["create_connected:cross_connector", 4], ["create_connected:crank_wheel", 1]]},
-        {"desc": "A brass gearbox, and a clutch that disengages on its own at speed.",
-         "rewards": [["create_connected:brass_gearbox", 1], ["create_connected:centrifugal_clutch", 1]]},
-        {"desc": "A brake stops a line dead. Control chips make it conditional.",
-         "rewards": [["create_connected:brake", 1], ["create_connected:control_chip", 2]]}
-      ]
+        {
+          "desc": "Cross connectors route rotation through a junction. A crank wheel starts it by hand.",
+          "rewards": [
+            [
+              "create_connected:cross_connector",
+              12
+            ],
+            [
+              "create_connected:crank_wheel",
+              3
+            ]
+          ]
+        },
+        {
+          "desc": "A brass gearbox, and a clutch that disengages on its own at speed.",
+          "rewards": [
+            [
+              "create_connected:brass_gearbox",
+              3
+            ],
+            [
+              "create_connected:centrifugal_clutch",
+              3
+            ]
+          ]
+        },
+        {
+          "desc": "A brake stops a line dead. Control chips make it conditional.",
+          "rewards": [
+            [
+              "create_connected:brake",
+              3
+            ],
+            [
+              "create_connected:control_chip",
+              6
+            ],
+            [
+              "create_connected:copycat_beam",
+              6
+            ]
+          ]
+        }
+      ],
+      "tier": 2
     },
     {
-      "key": "createdieselgenerators", "title": "Diesel Generators", "icon": "createdieselgenerators:canister",
+      "key": "createdieselgenerators",
+      "title": "Diesel Generators",
+      "icon": "createdieselgenerators:canister",
       "blurb": "Oil, refining, and engines that drink it.",
       "quests": [
-        {"desc": "Canisters carry fuel. The burner is where it goes.",
-         "rewards": [["createdieselgenerators:canister", 2], ["createdieselgenerators:burner", 1]]},
-        {"desc": "Chipped wood ferments into something you can burn. Asphalt is the by-product.",
-         "rewards": [["createdieselgenerators:chip_wood_block", 4], ["createdieselgenerators:asphalt_block", 4]]},
-        {"desc": "A distillation controller splits crude into the useful parts.",
-         "rewards": [["createdieselgenerators:distillation_controller", 1], ["createdieselgenerators:basin_lid", 1]]}
-      ]
+        {
+          "desc": "Canisters carry fuel. The burner is where it goes.",
+          "rewards": [
+            [
+              "createdieselgenerators:canister",
+              6
+            ],
+            [
+              "createdieselgenerators:burner",
+              3
+            ]
+          ]
+        },
+        {
+          "desc": "Chipped wood ferments into something you can burn. Asphalt is the by-product.",
+          "rewards": [
+            [
+              "createdieselgenerators:chip_wood_block",
+              12
+            ],
+            [
+              "createdieselgenerators:asphalt_block",
+              12
+            ]
+          ]
+        },
+        {
+          "desc": "A distillation controller splits crude into the useful parts.",
+          "rewards": [
+            [
+              "createdieselgenerators:distillation_controller",
+              3
+            ],
+            [
+              "createdieselgenerators:basin_lid",
+              3
+            ],
+            [
+              "createdieselgenerators:diesel_engine",
+              6
+            ]
+          ]
+        }
+      ],
+      "tier": 2
     },
     {
-      "key": "create_new_age", "title": "Create: New Age", "icon": "create_new_age:basic_motor",
+      "key": "create_new_age",
+      "title": "Create: New Age",
+      "icon": "create_new_age:basic_motor",
       "blurb": "Proper electricity, with wires that care about voltage.",
       "quests": [
-        {"desc": "Wire and connectors. Runs are limited, so plan the layout.",
-         "rewards": [["create_new_age:copper_wire", 8], ["create_new_age:electrical_connector", 4]]},
-        {"desc": "Blank circuits print into copper ones. These gate everything above.",
-         "rewards": [["create_new_age:blank_circuit", 4], ["create_new_age:copper_circuit", 2]]},
-        {"desc": "A motor to spend power, and an energiser to make it.",
-         "rewards": [["create_new_age:basic_motor", 1], ["create_new_age:basic_energiser", 1]]}
-      ]
+        {
+          "desc": "Wire and connectors. Runs are limited, so plan the layout.",
+          "rewards": [
+            [
+              "create_new_age:copper_wire",
+              32
+            ],
+            [
+              "create_new_age:electrical_connector",
+              16
+            ]
+          ]
+        },
+        {
+          "desc": "Blank circuits print into copper ones. These gate everything above.",
+          "rewards": [
+            [
+              "create_new_age:blank_circuit",
+              16
+            ],
+            [
+              "create_new_age:copper_circuit",
+              8
+            ]
+          ]
+        },
+        {
+          "desc": "A motor to spend power, and an energiser to make it.",
+          "rewards": [
+            [
+              "create_new_age:basic_motor",
+              4
+            ],
+            [
+              "create_new_age:basic_energiser",
+              4
+            ],
+            [
+              "create_new_age:generator_coil",
+              8
+            ],
+            [
+              "create_new_age:heat_pipe",
+              8
+            ]
+          ]
+        }
+      ],
+      "tier": 3
     },
     {
-      "key": "tfmg", "title": "The Factory Must Grow", "icon": "tfmg:aluminum_ingot",
+      "key": "tfmg",
+      "title": "The Factory Must Grow",
+      "icon": "tfmg:aluminum_ingot",
       "blurb": "Heavy industry. Steel, aluminium, and very large machines.",
       "quests": [
-        {"desc": "Aluminium is TFMG's entry metal. Light, and it does not rust.",
-         "rewards": [["tfmg:aluminum_ingot", 6], ["tfmg:aluminum_bars", 4]]},
-        {"desc": "Frames and cogs, so you can build in it rather than just hold it.",
-         "rewards": [["tfmg:aluminum_frame", 4], ["tfmg:aluminum_cogwheel", 2]]},
-        {"desc": "An air intake and a tank. The first machines want both.",
-         "rewards": [["tfmg:air_intake", 1], ["tfmg:aluminum_fluid_tank", 2]]}
-      ]
+        {
+          "desc": "Aluminium is TFMG's entry metal. Light, and it does not rust.",
+          "rewards": [
+            [
+              "tfmg:aluminum_ingot",
+              24
+            ],
+            [
+              "tfmg:aluminum_bars",
+              16
+            ]
+          ]
+        },
+        {
+          "desc": "Frames and cogs, so you can build in it rather than just hold it.",
+          "rewards": [
+            [
+              "tfmg:aluminum_frame",
+              16
+            ],
+            [
+              "tfmg:aluminum_cogwheel",
+              8
+            ]
+          ]
+        },
+        {
+          "desc": "An air intake and a tank. The first machines want both.",
+          "rewards": [
+            [
+              "tfmg:air_intake",
+              4
+            ],
+            [
+              "tfmg:aluminum_fluid_tank",
+              8
+            ],
+            [
+              "tfmg:aluminum_block",
+              8
+            ],
+            [
+              "tfmg:aluminum_ladder",
+              8
+            ]
+          ]
+        }
+      ],
+      "tier": 3
     },
     {
-      "key": "powergrid", "title": "Create: Power Grid", "icon": "powergrid:battery",
+      "key": "powergrid",
+      "title": "Create: Power Grid",
+      "icon": "powergrid:battery",
       "blurb": "Real circuits. Voltage, current, and consequences.",
       "quests": [
-        {"desc": "A board and capacitors. Everything here is built on these.",
-         "rewards": [["powergrid:circuit_board", 2], ["powergrid:capacitor", 4]]},
-        {"desc": "A battery to store charge, and a bell for when something goes wrong.",
-         "rewards": [["powergrid:battery", 1], ["powergrid:alarm_bell", 1]]},
-        {"desc": "A carbon pile resists on purpose. The heater turns that into warmth.",
-         "rewards": [["powergrid:carbon_pile", 1], ["powergrid:basin_heater", 1]]}
-      ]
+        {
+          "desc": "A board and capacitors. Everything here is built on these.",
+          "rewards": [
+            [
+              "powergrid:circuit_board",
+              8
+            ],
+            [
+              "powergrid:capacitor",
+              16
+            ]
+          ]
+        },
+        {
+          "desc": "A battery to store charge, and a bell for when something goes wrong.",
+          "rewards": [
+            [
+              "powergrid:battery",
+              4
+            ],
+            [
+              "powergrid:alarm_bell",
+              4
+            ]
+          ]
+        },
+        {
+          "desc": "A carbon pile resists on purpose. The heater turns that into warmth.",
+          "rewards": [
+            [
+              "powergrid:carbon_pile_coil",
+              4
+            ],
+            [
+              "powergrid:basin_heater",
+              4
+            ],
+            [
+              "powergrid:copper_coil",
+              8
+            ],
+            [
+              "powergrid:contactor",
+              8
+            ]
+          ]
+        }
+      ],
+      "tier": 3
     },
     {
-      "key": "numismatics", "title": "Create: Numismatics", "icon": "numismatics:spur",
-      "blurb": "Money, so trade stops being a chest of diamonds.",
-      "quests": [
-        {"desc": "Spurs and cogs are the small coins. Everything else converts up from these.",
-         "rewards": [["numismatics:spur", 16], ["numismatics:cog", 8]]},
-        {"desc": "A vendor sells for you. A depositor takes payment straight into an account.",
-         "rewards": [["numismatics:vendor", 1], ["numismatics:brass_depositor", 1]]},
-        {"desc": "A bank terminal, and the guide that explains the rest.",
-         "rewards": [["numismatics:bank_terminal", 1], ["numismatics:banking_guide", 1]]}
-      ]
-    },
-    {
-      "key": "railways", "title": "Steam 'n' Rails", "icon": "railways:buffer",
+      "key": "railways",
+      "title": "Steam 'n' Rails",
+      "icon": "railways:buffer",
       "blurb": "Everything Create's trains were missing.",
       "quests": [
-        {"desc": "Buffers cap a line so a train has something to stop against.",
-         "rewards": [["railways:buffer", 2], ["railways:big_buffer", 1]]},
-        {"desc": "A bench cart, for the parts of a railway that carry people.",
-         "rewards": [["railways:benchcart", 1], ["railways:buffer_wide", 2]]},
-        {"desc": "Narrow and mono buffers, for the lines that are not standard gauge.",
-         "rewards": [["railways:buffer_narrow", 2], ["railways:buffer_mono", 2]]}
-      ]
+        {
+          "desc": "Buffers cap a line so a train has something to stop against.",
+          "rewards": [
+            [
+              "railways:buffer",
+              6
+            ],
+            [
+              "railways:big_buffer",
+              3
+            ]
+          ]
+        },
+        {
+          "desc": "A bench cart, for the parts of a railway that carry people.",
+          "rewards": [
+            [
+              "railways:benchcart",
+              3
+            ],
+            [
+              "railways:conductor_whistle",
+              6
+            ]
+          ]
+        },
+        {
+          "desc": "Narrow and mono buffers, for the lines that are not standard gauge.",
+          "rewards": [
+            [
+              "railways:knuckle_coupler",
+              6
+            ],
+            [
+              "railways:conductor_vent",
+              6
+            ],
+            [
+              "railways:conductor_cap",
+              6
+            ]
+          ]
+        }
+      ],
+      "tier": 2
     },
     {
-      "key": "create_radar", "title": "Create: Radars", "icon": "create_radar:binoculars",
+      "key": "create_radar",
+      "title": "Create: Radars",
+      "icon": "create_radar:binoculars",
       "blurb": "See further than you can build.",
       "quests": [
-        {"desc": "Binoculars first. The data link carries what a radar sees to somewhere useful.",
-         "rewards": [["create_radar:binoculars", 1], ["create_radar:data_link", 2]]},
-        {"desc": "Plates and a bearing make a dish that actually sweeps.",
-         "rewards": [["create_radar:radar_plate_block", 2], ["create_radar:radar_bearing", 1]]},
-        {"desc": "A monitor to read it, and a filter so it only reports what matters.",
-         "rewards": [["create_radar:monitor", 1], ["create_radar:ident_filter_item", 1]]}
-      ]
+        {
+          "desc": "Binoculars first. The data link carries what a radar sees to somewhere useful.",
+          "rewards": [
+            [
+              "create_radar:binoculars",
+              3
+            ],
+            [
+              "create_radar:data_link",
+              6
+            ]
+          ]
+        },
+        {
+          "desc": "Plates and a bearing make a dish that actually sweeps.",
+          "rewards": [
+            [
+              "create_radar:radar_plate_block",
+              6
+            ],
+            [
+              "create_radar:radar_bearing",
+              3
+            ]
+          ]
+        },
+        {
+          "desc": "A monitor to read it, and a filter so it only reports what matters.",
+          "rewards": [
+            [
+              "create_radar:monitor",
+              3
+            ],
+            [
+              "create_radar:ident_filter_item",
+              3
+            ],
+            [
+              "create_radar:auto_pitch_controller",
+              6
+            ]
+          ]
+        }
+      ],
+      "tier": 2
     },
     {
-      "key": "createpropulsion", "title": "Create: Propulsion", "icon": "createpropulsion:cable",
+      "key": "createpropulsion",
+      "title": "Create: Propulsion",
+      "icon": "createpropulsion:cable",
       "blurb": "Thrust, cabling, and contraption tooling.",
       "quests": [
-        {"desc": "Cable and relays. Longer reach than Create's own wiring.",
-         "rewards": [["createpropulsion:cable", 8], ["createpropulsion:cable_relay", 2]]},
-        {"desc": "Auto glue sticks a build together without clicking every face.",
-         "rewards": [["createpropulsion:auto_glue", 1], ["createpropulsion:assembler_stick", 1]]},
-        {"desc": "A hub to gather cables, and a remover for when it all goes wrong.",
-         "rewards": [["createpropulsion:cable_hub", 1], ["createpropulsion:contraption_remover", 1]]}
-      ]
+        {
+          "desc": "Cable and relays. Longer reach than Create's own wiring.",
+          "rewards": [
+            [
+              "createpropulsion:cable",
+              24
+            ],
+            [
+              "createpropulsion:cable_relay",
+              6
+            ]
+          ]
+        },
+        {
+          "desc": "Auto glue sticks a build together without clicking every face.",
+          "rewards": [
+            [
+              "createpropulsion:auto_glue",
+              3
+            ],
+            [
+              "createpropulsion:assembler_stick",
+              3
+            ]
+          ]
+        },
+        {
+          "desc": "A hub to gather cables, and a remover for when it all goes wrong.",
+          "rewards": [
+            [
+              "createpropulsion:cable_hub",
+              3
+            ],
+            [
+              "createpropulsion:contraption_remover",
+              3
+            ],
+            [
+              "createpropulsion:cable_spool",
+              6
+            ]
+          ]
+        }
+      ],
+      "tier": 2
     },
     {
-      "key": "create_sa", "title": "Stuff & Additions", "icon": "create_sa:brass_pickaxe",
+      "key": "create_sa",
+      "title": "Stuff and Additions",
+      "icon": "create_sa:brass_pickaxe",
       "blurb": "Tools, armour and gadgets, in Create's own materials.",
       "quests": [
-        {"desc": "Brass tools. Not stronger than iron — they just belong here.",
-         "rewards": [["create_sa:brass_pickaxe", 1], ["create_sa:brass_axe", 1]]},
-        {"desc": "Brass armour to match. Cosmetic more than practical, and that is fine.",
-         "rewards": [["create_sa:brass_helmet", 1], ["create_sa:brass_chestplate", 1]]},
-        {"desc": "A block picker, and a brass cube for the recipes that ask for one.",
-         "rewards": [["create_sa:block_picker", 1], ["create_sa:brass_cube", 2]]}
-      ]
+        {
+          "desc": "Brass tools. Not stronger than iron — they just belong here.",
+          "rewards": [
+            [
+              "create_sa:brass_pickaxe",
+              3
+            ],
+            [
+              "create_sa:brass_axe",
+              3
+            ]
+          ]
+        },
+        {
+          "desc": "Brass armour to match. Cosmetic more than practical, and that is fine.",
+          "rewards": [
+            [
+              "create_sa:brass_helmet",
+              3
+            ],
+            [
+              "create_sa:brass_chestplate",
+              3
+            ]
+          ]
+        },
+        {
+          "desc": "A block picker, and a brass cube for the recipes that ask for one.",
+          "rewards": [
+            [
+              "create_sa:block_picker",
+              3
+            ],
+            [
+              "create_sa:brass_cube",
+              6
+            ],
+            [
+              "create_sa:brass_shovel",
+              6
+            ],
+            [
+              "create_sa:brass_hoe",
+              6
+            ]
+          ]
+        }
+      ],
+      "tier": 1
     },
     {
-      "key": "create_factory", "title": "Create: Factory", "icon": "create_factory:caramel_roll",
+      "key": "create_factory",
+      "title": "Create: Factory",
+      "icon": "create_factory:caramel_roll",
       "blurb": "Food processing, industrialised.",
       "quests": [
-        {"desc": "Paste and nectar. The two things most recipes here start from.",
-         "rewards": [["create_factory:cake_paste", 4], ["create_factory:nectar_bucket", 1]]},
-        {"desc": "Rolls, because a factory should feed the people running it.",
-         "rewards": [["create_factory:caramel_roll", 4], ["create_factory:chocolate_roll", 4]]},
-        {"desc": "Waffles and jam. Yes, this is a whole tech tree.",
-         "rewards": [["create_factory:honey_waffle", 4], ["create_factory:glow_berries_jam_bucket", 1]]}
-      ]
+        {
+          "desc": "Paste and nectar. The two things most recipes here start from.",
+          "rewards": [
+            [
+              "create_factory:cake_paste",
+              12
+            ],
+            [
+              "create_factory:nectar_bucket",
+              3
+            ]
+          ]
+        },
+        {
+          "desc": "Rolls, because a factory should feed the people running it.",
+          "rewards": [
+            [
+              "create_factory:caramel_roll",
+              12
+            ],
+            [
+              "create_factory:chocolate_roll",
+              12
+            ]
+          ]
+        },
+        {
+          "desc": "Waffles and jam. Yes, this is a whole tech tree.",
+          "rewards": [
+            [
+              "create_factory:honey_waffle",
+              12
+            ],
+            [
+              "create_factory:glow_berries_jam_bucket",
+              3
+            ],
+            [
+              "create_factory:caramel_waffle",
+              6
+            ],
+            [
+              "create_factory:chocolate_apple",
+              6
+            ]
+          ]
+        }
+      ],
+      "tier": 1
     },
     {
-      "key": "createadditionallogistics", "title": "Additional Logistics", "icon": "createadditionallogistics:network_monitor",
+      "key": "createadditionallogistics",
+      "title": "Additional Logistics",
+      "icon": "createadditionallogistics:network_monitor",
       "blurb": "Lazy shafts, and a view of the whole network.",
       "quests": [
-        {"desc": "Lazy parts only tick when something changes. Free performance.",
-         "rewards": [["createadditionallogistics:lazy_shaft", 4], ["createadditionallogistics:lazy_cogwheel", 4]]},
-        {"desc": "A flexible shaft bends around a corner without a gearbox.",
-         "rewards": [["createadditionallogistics:flexible_shaft", 2], ["createadditionallogistics:lazy_large_cogwheel", 2]]},
-        {"desc": "A network monitor shows every train and station at once.",
-         "rewards": [["createadditionallogistics:network_monitor", 1], ["createadditionallogistics:cash_register", 1]]}
-      ]
+        {
+          "desc": "Lazy parts only tick when something changes. Free performance.",
+          "rewards": [
+            [
+              "createadditionallogistics:lazy_shaft",
+              12
+            ],
+            [
+              "createadditionallogistics:lazy_cogwheel",
+              12
+            ]
+          ]
+        },
+        {
+          "desc": "A flexible shaft bends around a corner without a gearbox.",
+          "rewards": [
+            [
+              "createadditionallogistics:flexible_shaft",
+              6
+            ],
+            [
+              "createadditionallogistics:lazy_large_cogwheel",
+              6
+            ]
+          ]
+        },
+        {
+          "desc": "A network monitor shows every train and station at once.",
+          "rewards": [
+            [
+              "createadditionallogistics:network_monitor",
+              3
+            ],
+            [
+              "createadditionallogistics:cash_register",
+              3
+            ]
+          ]
+        }
+      ],
+      "tier": 2
     },
     {
-      "key": "create_submarine", "title": "Create: Deep Seas", "icon": "create_submarine:ballast_tank",
+      "key": "create_submarine",
+      "title": "Create: Deep Seas",
+      "icon": "create_submarine:ballast_tank",
       "blurb": "Down, instead of up.",
       "quests": [
-        {"desc": "Ballast tanks flood to sink and blow to rise. A vent controls the rate.",
-         "rewards": [["create_submarine:ballast_tank", 1], ["create_submarine:ballast_vent", 2]]},
-        {"desc": "A barometer reads depth. A rudder decides where you go.",
-         "rewards": [["create_submarine:barometer", 1], ["create_submarine:rudder", 1]]},
-        {"desc": "A propeller to move, and a diffuser so the crew keeps breathing.",
-         "rewards": [["create_submarine:submarine_propeller", 1], ["create_submarine:oxygene_diffuser", 1]]}
-      ]
+        {
+          "desc": "Ballast tanks flood to sink and blow to rise. A vent controls the rate.",
+          "rewards": [
+            [
+              "create_submarine:ballast_tank",
+              3
+            ],
+            [
+              "create_submarine:ballast_vent",
+              6
+            ]
+          ]
+        },
+        {
+          "desc": "A barometer reads depth. A rudder decides where you go.",
+          "rewards": [
+            [
+              "create_submarine:barometer",
+              3
+            ],
+            [
+              "create_submarine:floater",
+              3
+            ]
+          ]
+        },
+        {
+          "desc": "A propeller to move, and a diffuser so the crew keeps breathing.",
+          "rewards": [
+            [
+              "create_submarine:submarine_propeller",
+              3
+            ],
+            [
+              "create_submarine:oxygene_diffuser",
+              3
+            ],
+            [
+              "create_submarine:steel_cable",
+              6
+            ],
+            [
+              "create_submarine:industrial_alarm",
+              6
+            ]
+          ]
+        }
+      ],
+      "tier": 2
     },
     {
-      "key": "escalated", "title": "Create: Escalated", "icon": "escalated:metal_walkway_steps",
+      "key": "escalated",
+      "title": "Create: Escalated",
+      "icon": "escalated:metal_walkway_steps",
       "blurb": "Walkways and escalators that carry you.",
       "quests": [
-        {"desc": "Steps and rail. A walkway is just these two, repeated.",
-         "rewards": [["escalated:metal_walkway_steps", 8], ["escalated:metal_walkway_handrail", 8]]},
-        {"desc": "An escalator section, and the terminal that ends it.",
-         "rewards": [["escalated:metal_narrow_escalator", 4], ["escalated:metal_walkway_terminal", 2]]},
-        {"desc": "Wood and glass variants, for when steel is too industrial.",
-         "rewards": [["escalated:wooden_narrow_walkway", 8], ["escalated:glass_walkway_handrail", 8]]}
-      ]
+        {
+          "desc": "Steps in metal and wood. A walkway is these, repeated — the rails and terminals are placed as part of the same block.",
+          "rewards": [
+            [
+              "escalated:metal_walkway_steps",
+              24
+            ],
+            [
+              "escalated:wooden_walkway_steps",
+              24
+            ]
+          ]
+        }
+      ],
+      "tier": 1
     },
     {
-      "key": "bits_n_bobs", "title": "Bits 'n' Bobs", "icon": "bits_n_bobs:lightbulb",
+      "key": "bits_n_bobs",
+      "title": "Bits 'n' Bobs",
+      "icon": "bits_n_bobs:lightbulb",
       "blurb": "Small parts that fill in Create's gaps.",
       "quests": [
-        {"desc": "Bulbs and lamps. Lighting that suits the aesthetic.",
-         "rewards": [["bits_n_bobs:lightbulb", 4], ["bits_n_bobs:brass_lamp", 2]]},
-        {"desc": "Chain rope and a pulley, for lifts that are not rope pulleys.",
-         "rewards": [["bits_n_bobs:chain_rope", 4], ["bits_n_bobs:chain_pulley", 1]]},
-        {"desc": "Flanged cogs and girder struts. Structural, and they look the part.",
-         "rewards": [["bits_n_bobs:small_flanged_cogwheel", 4], ["bits_n_bobs:girder_strut", 8]]}
-      ]
+        {
+          "desc": "Bulbs and lamps. Lighting that suits the aesthetic.",
+          "rewards": [
+            [
+              "bits_n_bobs:lightbulb",
+              12
+            ],
+            [
+              "bits_n_bobs:brass_lamp",
+              6
+            ]
+          ]
+        },
+        {
+          "desc": "Chain rope and a pulley, for lifts that are not rope pulleys.",
+          "rewards": [
+            [
+              "bits_n_bobs:headlamp",
+              12
+            ],
+            [
+              "bits_n_bobs:chain_pulley",
+              3
+            ]
+          ]
+        },
+        {
+          "desc": "Flanged cogs and girder struts. Structural, and they look the part.",
+          "rewards": [
+            [
+              "bits_n_bobs:small_flanged_cogwheel",
+              12
+            ],
+            [
+              "bits_n_bobs:girder_strut",
+              24
+            ],
+            [
+              "bits_n_bobs:nixie_board",
+              6
+            ],
+            [
+              "bits_n_bobs:large_nixie_tube",
+              6
+            ]
+          ]
+        }
+      ],
+      "tier": 1
     },
     {
-      "key": "copycats", "title": "Copycats+", "icon": "copycats:copycat_block",
+      "key": "copycats",
+      "title": "Copycats+",
+      "icon": "copycats:copycat_block",
       "blurb": "Make any shape look like any block.",
       "quests": [
-        {"desc": "The plain block and the base it is made from. Start here.",
-         "rewards": [["copycats:copycat_block", 8], ["copycats:copycat_base", 8]]},
-        {"desc": "Beams and boards. Structure that wears whatever texture you give it.",
-         "rewards": [["copycats:copycat_beam", 4], ["copycats:copycat_board", 4]]},
-        {"desc": "Catwalks and ladders, so the industrial parts match the build.",
-         "rewards": [["copycats:copycat_catwalk", 4], ["copycats:copycat_ladder", 4]]}
-      ]
+        {
+          "desc": "The plain block and the base it is made from. Start here.",
+          "rewards": [
+            [
+              "copycats:copycat_block",
+              24
+            ],
+            [
+              "copycats:copycat_box",
+              24
+            ]
+          ]
+        },
+        {
+          "desc": "Beams and boards. Structure that wears whatever texture you give it.",
+          "rewards": [
+            [
+              "copycats:copycat_beam",
+              12
+            ],
+            [
+              "copycats:copycat_board",
+              12
+            ]
+          ]
+        },
+        {
+          "desc": "Catwalks and ladders, so the industrial parts match the build.",
+          "rewards": [
+            [
+              "copycats:copycat_catwalk",
+              12
+            ],
+            [
+              "copycats:copycat_ladder",
+              12
+            ],
+            [
+              "copycats:copycat_fence",
+              6
+            ],
+            [
+              "copycats:copycat_pane",
+              6
+            ]
+          ]
+        }
+      ],
+      "tier": 1
     },
     {
-      "key": "createmoregirder", "title": "More Girders", "icon": "createmoregirder:brass_beam",
+      "key": "createmoregirder",
+      "title": "More Girders",
+      "icon": "createmoregirder:brass_beam",
       "blurb": "Girders in more metals and more shapes.",
       "quests": [
-        {"desc": "Copper beams and trusses. Warmer than iron, and they age nicely.",
-         "rewards": [["createmoregirder:copper_beam", 8], ["createmoregirder:copper_truss", 8]]},
-        {"desc": "The brass set. Matches everything else brass in the pack.",
-         "rewards": [["createmoregirder:brass_beam", 8], ["createmoregirder:brass_truss", 8]]},
-        {"desc": "Brackets and struts, to join them without it looking accidental.",
-         "rewards": [["createmoregirder:brass_bracket", 4], ["createmoregirder:brass_beam_strut", 4]]}
-      ]
+        {
+          "desc": "Copper beams and trusses. Warmer than iron, and they age nicely.",
+          "rewards": [
+            [
+              "createmoregirder:copper_beam",
+              24
+            ],
+            [
+              "createmoregirder:copper_truss",
+              24
+            ]
+          ]
+        },
+        {
+          "desc": "The brass set. Matches everything else brass in the pack.",
+          "rewards": [
+            [
+              "createmoregirder:brass_beam",
+              24
+            ],
+            [
+              "createmoregirder:brass_truss",
+              24
+            ]
+          ]
+        },
+        {
+          "desc": "Brackets and struts, to join them without it looking accidental.",
+          "rewards": [
+            [
+              "createmoregirder:brass_bracket",
+              12
+            ],
+            [
+              "createmoregirder:brass_beam_strut",
+              12
+            ],
+            [
+              "createmoregirder:andesite_bracket",
+              6
+            ]
+          ]
+        }
+      ],
+      "tier": 1
     },
     {
-      "key": "create_enchantment_industry", "title": "Enchantment Industry", "icon": "create_enchantment_industry:blaze_enchanter",
+      "key": "create_enchantment_industry",
+      "title": "Enchantment Industry",
+      "icon": "create_enchantment_industry:blaze_enchanter",
       "blurb": "Automate the enchanting table.",
       "quests": [
-        {"desc": "Liquid experience. Yes, really — it pipes like any other fluid.",
-         "rewards": [["create_enchantment_industry:experience_bucket", 1], ["create_enchantment_industry:brass_bookshelf", 2]]},
-        {"desc": "A blaze enchanter applies a template instead of a random roll.",
-         "rewards": [["create_enchantment_industry:blaze_enchanter", 1], ["create_enchantment_industry:enchanting_template", 1]]},
-        {"desc": "The forger repairs and combines. The bag carries the mess.",
-         "rewards": [["create_enchantment_industry:blaze_forger", 1], ["create_enchantment_industry:ender_woven_bag", 1]]}
-      ]
+        {
+          "desc": "Liquid experience. Yes, really — it pipes like any other fluid.",
+          "rewards": [
+            [
+              "create_enchantment_industry:experience_bucket",
+              4
+            ],
+            [
+              "create_enchantment_industry:experience_lantern",
+              8
+            ]
+          ]
+        },
+        {
+          "desc": "A blaze enchanter applies a template instead of a random roll.",
+          "rewards": [
+            [
+              "create_enchantment_industry:blaze_enchanter",
+              4
+            ],
+            [
+              "create_enchantment_industry:enchanting_template",
+              4
+            ]
+          ]
+        },
+        {
+          "desc": "The forger repairs and combines. The bag carries the mess.",
+          "rewards": [
+            [
+              "create_enchantment_industry:blaze_forger",
+              4
+            ],
+            [
+              "create_enchantment_industry:printer",
+              4
+            ],
+            [
+              "create_enchantment_industry:mechanical_grindstone",
+              8
+            ]
+          ]
+        }
+      ],
+      "tier": 3
     },
     {
-      "key": "dndesires", "title": "Dreams n' Desires", "icon": "dndesires:cog_crank",
+      "key": "dndesires",
+      "title": "Dreams n' Desires",
+      "icon": "dndesires:cog_crank",
       "blurb": "More kinetics, and some genuinely odd machines.",
       "quests": [
-        {"desc": "A crank that takes a cog directly. Hand power, less fiddly.",
-         "rewards": [["dndesires:cog_crank", 1], ["dndesires:coal_piece", 8]]},
-        {"desc": "A gauge and a hatch, so tanks stop being guesswork.",
-         "rewards": [["dndesires:fluid_gauge", 1], ["dndesires:fluid_hatch", 2]]},
-        {"desc": "A burner and asphalt. Industrial groundwork.",
-         "rewards": [["dndesires:burner", 1], ["dndesires:asphalt", 8]]}
-      ]
+        {
+          "desc": "A crank that takes a cog directly. Hand power, less fiddly.",
+          "rewards": [
+            [
+              "dndesires:cog_crank",
+              3
+            ],
+            [
+              "dndesires:coal_piece",
+              24
+            ]
+          ]
+        },
+        {
+          "desc": "A gauge and a hatch, so tanks stop being guesswork.",
+          "rewards": [
+            [
+              "dndesires:fluid_gauge",
+              3
+            ],
+            [
+              "dndesires:fluid_hatch",
+              6
+            ]
+          ]
+        },
+        {
+          "desc": "A burner and asphalt. Industrial groundwork.",
+          "rewards": [
+            [
+              "dndesires:burner",
+              3
+            ],
+            [
+              "dndesires:asphalt",
+              24
+            ],
+            [
+              "dndesires:cut_breccia",
+              6
+            ],
+            [
+              "dndesires:breccia",
+              6
+            ]
+          ]
+        }
+      ],
+      "tier": 1
     },
     {
-      "key": "createbb", "title": "Create: Broken Bad", "icon": "createbb:brass_call_bell",
+      "key": "createbb",
+      "title": "Create: Broken Bad",
+      "icon": "createbb:brass_call_bell",
       "blurb": "Chemistry. Handle with more care than usual.",
       "quests": [
-        {"desc": "Crushed ores. The starting point for every reaction here.",
-         "rewards": [["createbb:crushed_copper", 8], ["createbb:crushed_zinc", 8]]},
-        {"desc": "Matches, and a bell for the front of a shop.",
-         "rewards": [["createbb:match", 8], ["createbb:brass_call_bell", 1]]},
-        {"desc": "Iodine and seeds. What you do next is between you and the server rules.",
-         "rewards": [["createbb:iodine", 4], ["createbb:ephedra_seeds", 4]]}
-      ]
+        {
+          "desc": "Crushed ores. The starting point for every reaction here.",
+          "rewards": [
+            [
+              "createbb:crushed_copper",
+              24
+            ],
+            [
+              "createbb:crushed_zinc",
+              24
+            ]
+          ]
+        },
+        {
+          "desc": "Matches, and a bell for the front of a shop.",
+          "rewards": [
+            [
+              "createbb:match",
+              24
+            ],
+            [
+              "createbb:brass_call_bell",
+              3
+            ]
+          ]
+        },
+        {
+          "desc": "Iodine and seeds. What you do next is between you and the server rules.",
+          "rewards": [
+            [
+              "createbb:iodine",
+              12
+            ],
+            [
+              "createbb:ephedra_seeds",
+              12
+            ],
+            [
+              "createbb:brine",
+              6
+            ]
+          ]
+        }
+      ],
+      "tier": 1
     },
     {
-      "key": "create_aquatic_ambitions", "title": "Aquatic Ambitions", "icon": "create_aquatic_ambitions:prismarine_alloy",
+      "key": "create_aquatic_ambitions",
+      "title": "Aquatic Ambitions",
+      "icon": "create_aquatic_ambitions:prismarine_alloy",
       "blurb": "Ocean materials and conduits.",
       "quests": [
-        {"desc": "Shards and shells, from things that did not want to give them up.",
-         "rewards": [["create_aquatic_ambitions:nautilus_shard", 4], ["create_aquatic_ambitions:spiky_shell", 4]]},
-        {"desc": "Prismarine alloy and rods. Underwater building material.",
-         "rewards": [["create_aquatic_ambitions:prismarine_alloy", 4], ["create_aquatic_ambitions:prismarine_alloy_rod", 4]]},
-        {"desc": "A mechanical conduit, and powder to keep it fed.",
-         "rewards": [["create_aquatic_ambitions:mechanical_conduit", 1], ["create_aquatic_ambitions:calcium_rich_powder", 8]]}
-      ]
+        {
+          "desc": "Shards and shells, from things that did not want to give them up.",
+          "rewards": [
+            [
+              "create_aquatic_ambitions:suspicious_rock",
+              12
+            ],
+            [
+              "create_aquatic_ambitions:spiky_shell",
+              12
+            ]
+          ]
+        },
+        {
+          "desc": "Prismarine alloy and rods. Underwater building material.",
+          "rewards": [
+            [
+              "create_aquatic_ambitions:prismarine_alloy",
+              12
+            ],
+            [
+              "create_aquatic_ambitions:prismarine_alloy_rod",
+              12
+            ]
+          ]
+        },
+        {
+          "desc": "A mechanical conduit, and powder to keep it fed.",
+          "rewards": [
+            [
+              "create_aquatic_ambitions:mechanical_conduit",
+              3
+            ],
+            [
+              "create_aquatic_ambitions:calcium_rich_powder",
+              24
+            ],
+            [
+              "create_aquatic_ambitions:prismarine_rod",
+              6
+            ]
+          ]
+        }
+      ],
+      "tier": 1
     },
     {
-      "key": "creategoggles", "title": "Create: Goggles", "icon": "creategoggles:goggle_iron_helmet",
+      "key": "creategoggles",
+      "title": "Create: Goggles",
+      "icon": "creategoggles:goggle_iron_helmet",
       "blurb": "Goggles on a helmet, so you stop having to choose.",
       "quests": [
-        {"desc": "Leather and iron. Armour and goggle readouts at the same time.",
-         "rewards": [["creategoggles:goggle_leather_helmet", 1], ["creategoggles:goggle_iron_helmet", 1]]},
-        {"desc": "Backtanks in more metals, holding more air.",
-         "rewards": [["creategoggles:iron_backtank", 1], ["creategoggles:golden_backtank", 1]]},
-        {"desc": "Diving variants, for the parts of the build that are underwater.",
-         "rewards": [["creategoggles:goggle_diving_helmet", 1], ["creategoggles:goggle_turtle_helmet", 1]]}
-      ]
+        {
+          "desc": "Leather and iron. Armour and goggle readouts at the same time.",
+          "rewards": [
+            [
+              "creategoggles:goggle_leather_helmet",
+              3
+            ],
+            [
+              "creategoggles:goggle_iron_helmet",
+              3
+            ]
+          ]
+        },
+        {
+          "desc": "Backtanks in more metals, holding more air.",
+          "rewards": [
+            [
+              "creategoggles:iron_backtank",
+              3
+            ],
+            [
+              "creategoggles:golden_backtank",
+              3
+            ]
+          ]
+        },
+        {
+          "desc": "Diving variants, for the parts of the build that are underwater.",
+          "rewards": [
+            [
+              "creategoggles:goggle_diving_helmet",
+              3
+            ],
+            [
+              "creategoggles:goggle_turtle_helmet",
+              3
+            ],
+            [
+              "creategoggles:goggle_golden_helmet",
+              6
+            ],
+            [
+              "creategoggles:chainmail_backtank",
+              6
+            ]
+          ]
+        }
+      ],
+      "tier": 1
     },
     {
-      "key": "create_hypertube", "title": "Create: Hypertube", "icon": "create_hypertube:hypertube",
+      "key": "create_hypertube",
+      "title": "Create: Hypertube",
+      "icon": "create_hypertube:hypertube",
       "blurb": "Get across the base without walking.",
       "quests": [
-        {"desc": "Tube and an entrance. Step in, come out somewhere else.",
-         "rewards": [["create_hypertube:hypertube", 8], ["create_hypertube:hypertube_entrance", 2]]},
-        {"desc": "Junctions branch. Funnels feed items in without a player.",
-         "rewards": [["create_hypertube:hypertube_junction", 2], ["create_hypertube:hypertube_funnel", 2]]},
-        {"desc": "An accelerator for distance, and a scanner to see what is inside.",
-         "rewards": [["create_hypertube:hypertube_accelerator", 1], ["create_hypertube:tube_scanner_attachment", 1]]}
-      ]
+        {
+          "desc": "Tube and an entrance. Step in, come out somewhere else.",
+          "rewards": [
+            [
+              "create_hypertube:hypertube",
+              24
+            ],
+            [
+              "create_hypertube:hypertube_entrance",
+              6
+            ]
+          ]
+        },
+        {
+          "desc": "Junctions branch. Funnels feed items in without a player.",
+          "rewards": [
+            [
+              "create_hypertube:hypertube_junction",
+              6
+            ],
+            [
+              "create_hypertube:hypertube_funnel",
+              6
+            ]
+          ]
+        },
+        {
+          "desc": "An accelerator for distance, and a scanner to see what is inside.",
+          "rewards": [
+            [
+              "create_hypertube:hypertube_accelerator",
+              3
+            ],
+            [
+              "create_hypertube:tube_scanner_attachment",
+              3
+            ]
+          ]
+        }
+      ],
+      "tier": 1
     },
     {
-      "key": "extra_gauges", "title": "Extra Gauges", "icon": "extra_gauges:integer_gauge",
+      "key": "extra_gauges",
+      "title": "Extra Gauges",
+      "icon": "extra_gauges:integer_gauge",
       "blurb": "Readouts and logic for display boards.",
       "quests": [
-        {"desc": "Integer and string gauges. Put a number or a word on a board.",
-         "rewards": [["extra_gauges:integer_gauge", 2], ["extra_gauges:string_gauge", 2]]},
-        {"desc": "Comparator and logic gauges, for boards that decide things.",
-         "rewards": [["extra_gauges:comparator_gauge", 2], ["extra_gauges:logic_gauge", 2]]},
-        {"desc": "A linked lever and a redstone port, to wire it into the rest.",
-         "rewards": [["extra_gauges:linked_lever", 2], ["extra_gauges:redstone_port", 2]]}
-      ]
+        {
+          "desc": "Integer and string gauges. Put a number or a word on a board.",
+          "rewards": [
+            [
+              "extra_gauges:integer_gauge",
+              6
+            ],
+            [
+              "extra_gauges:string_gauge",
+              6
+            ]
+          ]
+        },
+        {
+          "desc": "Comparator and logic gauges, for boards that decide things.",
+          "rewards": [
+            [
+              "extra_gauges:comparator_gauge",
+              6
+            ],
+            [
+              "extra_gauges:logic_gauge",
+              6
+            ]
+          ]
+        },
+        {
+          "desc": "A linked lever and a redstone port, to wire it into the rest.",
+          "rewards": [
+            [
+              "extra_gauges:linked_lever",
+              6
+            ],
+            [
+              "extra_gauges:redstone_port",
+              6
+            ],
+            [
+              "extra_gauges:display_collector",
+              6
+            ],
+            [
+              "extra_gauges:filter_gauge",
+              6
+            ]
+          ]
+        }
+      ],
+      "tier": 1
     },
     {
-      "key": "vsfluidlink", "title": "Hose Connectors", "icon": "vsfluidlink:hose_connector",
+      "key": "vsfluidlink",
+      "title": "Hose Connectors",
+      "icon": "vsfluidlink:hose_connector",
       "blurb": "Move fluids and items between separate contraptions.",
       "quests": [
-        {"desc": "A hose for fluid, and one for items. Both cross the gap between ships.",
-         "rewards": [["vsfluidlink:hose_connector", 2], ["vsfluidlink:item_hose_connector", 2]]},
-        {"desc": "Chains hold two builds together. Magnets do it without a hard link.",
-         "rewards": [["vsfluidlink:chain_connector", 2], ["vsfluidlink:magnet_hose_connector", 2]]},
-        {"desc": "Electric connectors, for when the other side needs power too.",
-         "rewards": [["vsfluidlink:electric_wire_connector", 2], ["vsfluidlink:magnet_chain_connector", 2]]}
-      ]
+        {
+          "desc": "A hose for fluid, and one for items. Both cross the gap between ships.",
+          "rewards": [
+            [
+              "vsfluidlink:hose_connector",
+              6
+            ],
+            [
+              "vsfluidlink:item_hose_connector",
+              6
+            ]
+          ]
+        },
+        {
+          "desc": "Chains hold two builds together. Magnets do it without a hard link.",
+          "rewards": [
+            [
+              "vsfluidlink:chain_connector",
+              6
+            ],
+            [
+              "vsfluidlink:magnet_hose_connector",
+              6
+            ]
+          ]
+        },
+        {
+          "desc": "Electric connectors, for when the other side needs power too.",
+          "rewards": [
+            [
+              "vsfluidlink:electric_wire_connector",
+              6
+            ],
+            [
+              "vsfluidlink:magnet_chain_connector",
+              6
+            ],
+            [
+              "vsfluidlink:item_magnet_hose_connector",
+              6
+            ]
+          ]
+        }
+      ],
+      "tier": 2
     },
     {
-      "key": "createsolar", "title": "Create: Solar", "icon": "createsolar:solar_panel",
+      "key": "createsolar",
+      "title": "Create: Solar",
+      "icon": "createsolar:solar_panel",
       "blurb": "Free power, if the sky cooperates.",
       "quests": [
-        {"desc": "A panel and sunglasses. One makes power, the other is a statement.",
-         "rewards": [["createsolar:solar_panel", 2], ["createsolar:sunglasses", 1]]},
-        {"desc": "A growth lamp for crops, and a sculk panel for power without daylight.",
-         "rewards": [["createsolar:growth_lamp", 1], ["createsolar:sculk_panel", 1]]},
-        {"desc": "More panels. An array beats a single panel every time.",
-         "rewards": [["createsolar:solar_panel", 4], ["minecraft:glass", 16]]}
-      ]
+        {
+          "desc": "A panel and sunglasses. One makes power, the other is a statement.",
+          "rewards": [
+            [
+              "createsolar:solar_panel",
+              6
+            ],
+            [
+              "createsolar:sunglasses",
+              3
+            ]
+          ]
+        },
+        {
+          "desc": "A growth lamp for crops, and a sculk panel for power without daylight.",
+          "rewards": [
+            [
+              "createsolar:growth_lamp",
+              3
+            ],
+            [
+              "createsolar:sculk_panel",
+              3
+            ]
+          ]
+        }
+      ],
+      "tier": 1
     },
     {
-      "key": "sliceanddice", "title": "Slice & Dice", "icon": "sliceanddice:slicer",
+      "key": "sliceanddice",
+      "title": "Slice and Dice",
+      "icon": "sliceanddice:slicer",
       "blurb": "Farming automation that fits on a contraption.",
       "quests": [
-        {"desc": "A slicer harvests. A sprinkler waters. Together, that is a farm.",
-         "rewards": [["sliceanddice:slicer", 1], ["sliceanddice:sprinkler", 1]]},
-        {"desc": "Fertiliser, in solid and liquid form.",
-         "rewards": [["sliceanddice:fertilizer", 8], ["sliceanddice:fertilizer_bucket", 1]]},
-        {"desc": "More sprinklers, and something to grow with them.",
-         "rewards": [["sliceanddice:sprinkler", 2], ["minecraft:wheat", 16]]}
-      ]
+        {
+          "desc": "A slicer harvests. A sprinkler waters. Together, that is a farm.",
+          "rewards": [
+            [
+              "sliceanddice:slicer",
+              3
+            ],
+            [
+              "sliceanddice:sprinkler",
+              6
+            ]
+          ]
+        },
+        {
+          "desc": "Fertiliser, in solid and liquid form.",
+          "rewards": [
+            [
+              "sliceanddice:floor_sprinkler",
+              24
+            ],
+            [
+              "sliceanddice:fertilizer_bucket",
+              3
+            ]
+          ]
+        }
+      ],
+      "tier": 1
     },
     {
-      "key": "cmpackagecouriers", "title": "Package Couriers", "icon": "cmpackagecouriers:cardboard_plane",
+      "key": "cmpackagecouriers",
+      "title": "Package Couriers",
+      "icon": "cmpackagecouriers:cardboard_plane",
       "blurb": "Packages that deliver themselves.",
       "quests": [
-        {"desc": "Parts and a transmitter. The transmitter is the address.",
-         "rewards": [["cmpackagecouriers:cardboard_plane_parts", 4], ["cmpackagecouriers:location_transmitter", 2]]},
-        {"desc": "A finished plane, and a ticker so you can order from anywhere.",
-         "rewards": [["cmpackagecouriers:cardboard_plane", 1], ["cmpackagecouriers:portable_stock_ticker", 1]]},
-        {"desc": "More transmitters. Every destination needs its own.",
-         "rewards": [["cmpackagecouriers:location_transmitter", 4], ["cmparallelpipes:pipe_wrench", 1]]}
-      ]
+        {
+          "desc": "Parts and a transmitter. The transmitter is the address.",
+          "rewards": [
+            [
+              "cmpackagecouriers:cardboard_plane_parts",
+              12
+            ],
+            [
+              "cmpackagecouriers:location_transmitter",
+              6
+            ]
+          ]
+        },
+        {
+          "desc": "A finished plane, and a ticker so you can order from anywhere.",
+          "rewards": [
+            [
+              "cmpackagecouriers:cardboard_plane",
+              3
+            ],
+            [
+              "cmpackagecouriers:portable_stock_ticker",
+              3
+            ]
+          ]
+        }
+      ],
+      "tier": 2
     }
-  ]
+  ],
+  "gate_ladder": {
+    "1": [
+      [
+        [
+          "create:andesite_alloy",
+          32,
+          "Andesite Alloy"
+        ]
+      ],
+      [
+        [
+          "create:andesite_casing",
+          16,
+          "Andesite Casing"
+        ],
+        [
+          "create:cogwheel",
+          24,
+          "Cogwheels"
+        ]
+      ],
+      [
+        [
+          "create:andesite_casing",
+          32,
+          "Andesite Casing"
+        ],
+        [
+          "create:large_cogwheel",
+          16,
+          "Large Cogwheels"
+        ],
+        [
+          "create:iron_sheet",
+          24,
+          "Iron Sheets"
+        ]
+      ]
+    ],
+    "2": [
+      [
+        [
+          "create:brass_casing",
+          16,
+          "Brass Casing"
+        ]
+      ],
+      [
+        [
+          "create:electron_tube",
+          16,
+          "Electron Tubes"
+        ],
+        [
+          "create:brass_sheet",
+          32,
+          "Brass Sheets"
+        ]
+      ],
+      [
+        [
+          "create:precision_mechanism",
+          8,
+          "Precision Mechanisms"
+        ],
+        [
+          "create:brass_casing",
+          24,
+          "Brass Casing"
+        ],
+        [
+          "create:polished_rose_quartz",
+          16,
+          "Polished Rose Quartz"
+        ]
+      ]
+    ],
+    "3": [
+      [
+        [
+          "create:precision_mechanism",
+          16,
+          "Precision Mechanisms"
+        ]
+      ],
+      [
+        [
+          "create:precision_mechanism",
+          24,
+          "Precision Mechanisms"
+        ],
+        [
+          "create:sturdy_sheet",
+          8,
+          "Sturdy Sheets"
+        ]
+      ],
+      [
+        [
+          "create:precision_mechanism",
+          32,
+          "Precision Mechanisms"
+        ],
+        [
+          "create:sturdy_sheet",
+          16,
+          "Sturdy Sheets"
+        ],
+        [
+          "create:refined_radiance",
+          8,
+          "Refined Radiance"
+        ]
+      ]
+    ]
+  }
 }

@@ -1,12 +1,14 @@
 {
 	id: "D134A1BBDE6B8D5E"
 	group: "4E2FA1B674D143B0"
-	order_index: 129
+	order_index: 107
 	filename: "addon_create_hypertube"
 	title: "Create: Hypertube"
-	icon: "create_hypertube:hypertube"
+	icon: {
+		id: "create_hypertube:hypertube"
+	}
 	subtitle: [
-		"Get across the base without walking."
+		"Get across the base without walking.  &aEarly&r"
 	]
 	default_quest_shape: ""
 	default_hide_dependency_lines: false
@@ -18,15 +20,15 @@
 			description: [
 				"Tube and an entrance. Step in, come out somewhere else."
 				""
-				"Bring 8 Andesite Alloy."
+				"&7Bring &f32 Andesite Alloy&7."
 			]
 			id: "3013E620415BAC51"
 			tasks: [
 				{
-					id: "CE6469ACE26FADC5"
+					id: "B92A460382196CE4"
 					type: "item"
 					item: "create:andesite_alloy"
-					count: 8L
+					count: 32L
 				}
 			]
 			rewards: [
@@ -34,13 +36,13 @@
 					id: "24CA56714A44B2CE"
 					type: "item"
 					item: "create_hypertube:hypertube"
-					count: 8
+					count: 24
 				}
 				{
 					id: "4A0B9AD48006C514"
 					type: "item"
 					item: "create_hypertube:hypertube_entrance"
-					count: 2
+					count: 6
 				}
 				{
 					id: "84CC76956650923F"
@@ -48,6 +50,9 @@
 					xp: 10
 				}
 			]
+			icon: {
+				id: "create_hypertube:hypertube"
+			}
 			shape: "square"
 		}
 		{
@@ -57,15 +62,22 @@
 			description: [
 				"Junctions branch. Funnels feed items in without a player."
 				""
-				"Bring 6 Brass Ingots."
+				"&7Bring &f16 Andesite Casing&7."
+				"&7Bring &f24 Cogwheels&7."
 			]
 			id: "F61EC7B03250986C"
 			tasks: [
 				{
-					id: "2DC7186AB2BEE9A9"
+					id: "A5BCDBC1F598F5B4"
 					type: "item"
-					item: "create:brass_ingot"
-					count: 6L
+					item: "create:andesite_casing"
+					count: 16L
+				}
+				{
+					id: "F53FCF777CA5A70B"
+					type: "item"
+					item: "create:cogwheel"
+					count: 24L
 				}
 			]
 			rewards: [
@@ -73,13 +85,13 @@
 					id: "5F5530AD0BDB9A74"
 					type: "item"
 					item: "create_hypertube:hypertube_junction"
-					count: 2
+					count: 6
 				}
 				{
 					id: "59B315904354A306"
 					type: "item"
 					item: "create_hypertube:hypertube_funnel"
-					count: 2
+					count: 6
 				}
 				{
 					id: "CE0976BB8F254FA3"
@@ -87,6 +99,9 @@
 					xp: 15
 				}
 			]
+			icon: {
+				id: "create_hypertube:hypertube_junction"
+			}
 			dependencies: [
 				"3013E620415BAC51"
 			]
@@ -98,15 +113,43 @@
 			description: [
 				"An accelerator for distance, and a scanner to see what is inside."
 				""
-				"Bring 12 Iron Ingots."
+				"&7Bring &f32 Andesite Casing&7."
+				"&7Bring &f16 Large Cogwheels&7."
+				"&7Bring &f24 Iron Sheets&7."
+				"&7Bring &f4 Hypertube&7."
+				"&7Bring &f4 Hypertube Entrance&7."
 			]
 			id: "2963AE4C26E95A2E"
 			tasks: [
 				{
-					id: "008A39958D79DFC7"
+					id: "961BDA7FC3EFF46B"
 					type: "item"
-					item: "minecraft:iron_ingot"
-					count: 12L
+					item: "create:andesite_casing"
+					count: 32L
+				}
+				{
+					id: "51E0EC39869E35E5"
+					type: "item"
+					item: "create:large_cogwheel"
+					count: 16L
+				}
+				{
+					id: "ADFB85ED5BA33303"
+					type: "item"
+					item: "create:iron_sheet"
+					count: 24L
+				}
+				{
+					id: "B3ABC9ACA7A451C7"
+					type: "item"
+					item: "create_hypertube:hypertube"
+					count: 4L
+				}
+				{
+					id: "7DB6F1AB211C76AF"
+					type: "item"
+					item: "create_hypertube:hypertube_entrance"
+					count: 4L
 				}
 			]
 			rewards: [
@@ -114,13 +157,13 @@
 					id: "1CA14C51D1FE6BD9"
 					type: "item"
 					item: "create_hypertube:hypertube_accelerator"
-					count: 1
+					count: 3
 				}
 				{
 					id: "BF547C003BF73A16"
 					type: "item"
 					item: "create_hypertube:tube_scanner_attachment"
-					count: 1
+					count: 3
 				}
 				{
 					id: "B79E70F517C0B46B"
@@ -128,6 +171,9 @@
 					xp: 20
 				}
 			]
+			icon: {
+				id: "create_hypertube:hypertube_accelerator"
+			}
 			dependencies: [
 				"F61EC7B03250986C"
 			]

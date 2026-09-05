@@ -1,12 +1,14 @@
 {
 	id: "45F5E9DA0F1884AA"
 	group: "4E2FA1B674D143B0"
-	order_index: 122
+	order_index: 102
 	filename: "addon_copycats"
 	title: "Copycats+"
-	icon: "copycats:copycat_block"
+	icon: {
+		id: "copycats:copycat_block"
+	}
 	subtitle: [
-		"Make any shape look like any block."
+		"Make any shape look like any block.  &aEarly&r"
 	]
 	default_quest_shape: ""
 	default_hide_dependency_lines: false
@@ -18,15 +20,15 @@
 			description: [
 				"The plain block and the base it is made from. Start here."
 				""
-				"Bring 8 Andesite Alloy."
+				"&7Bring &f32 Andesite Alloy&7."
 			]
 			id: "E75175609925ABB6"
 			tasks: [
 				{
-					id: "7C1953EF90F370EB"
+					id: "8DD8D5CBC1D0D236"
 					type: "item"
 					item: "create:andesite_alloy"
-					count: 8L
+					count: 32L
 				}
 			]
 			rewards: [
@@ -34,13 +36,13 @@
 					id: "7EF3D3F970E547CB"
 					type: "item"
 					item: "copycats:copycat_block"
-					count: 8
+					count: 24
 				}
 				{
-					id: "E9405D9699A9B8F5"
+					id: "04469B720C7FFBCA"
 					type: "item"
-					item: "copycats:copycat_base"
-					count: 8
+					item: "copycats:copycat_box"
+					count: 24
 				}
 				{
 					id: "35F7F70B1F9389C6"
@@ -48,6 +50,9 @@
 					xp: 10
 				}
 			]
+			icon: {
+				id: "copycats:copycat_block"
+			}
 			shape: "square"
 		}
 		{
@@ -57,15 +62,22 @@
 			description: [
 				"Beams and boards. Structure that wears whatever texture you give it."
 				""
-				"Bring 6 Brass Ingots."
+				"&7Bring &f16 Andesite Casing&7."
+				"&7Bring &f24 Cogwheels&7."
 			]
 			id: "A3BD0E768AC9A59E"
 			tasks: [
 				{
-					id: "C60198615A9E1358"
+					id: "A03B519500D26E38"
 					type: "item"
-					item: "create:brass_ingot"
-					count: 6L
+					item: "create:andesite_casing"
+					count: 16L
+				}
+				{
+					id: "ADFD7EEB5C4DEE6D"
+					type: "item"
+					item: "create:cogwheel"
+					count: 24L
 				}
 			]
 			rewards: [
@@ -73,13 +85,13 @@
 					id: "0ED0609E7E99BF54"
 					type: "item"
 					item: "copycats:copycat_beam"
-					count: 4
+					count: 12
 				}
 				{
 					id: "7A04B979C7EFFF4D"
 					type: "item"
 					item: "copycats:copycat_board"
-					count: 4
+					count: 12
 				}
 				{
 					id: "7BD3AB3DD88BC45A"
@@ -87,6 +99,9 @@
 					xp: 15
 				}
 			]
+			icon: {
+				id: "copycats:copycat_beam"
+			}
 			dependencies: [
 				"E75175609925ABB6"
 			]
@@ -98,15 +113,43 @@
 			description: [
 				"Catwalks and ladders, so the industrial parts match the build."
 				""
-				"Bring 12 Iron Ingots."
+				"&7Bring &f32 Andesite Casing&7."
+				"&7Bring &f16 Large Cogwheels&7."
+				"&7Bring &f24 Iron Sheets&7."
+				"&7Bring &f4 Copycat Block&7."
+				"&7Bring &f4 Copycat Box&7."
 			]
 			id: "62073A1BD321A21C"
 			tasks: [
 				{
-					id: "30026A38539CEAE6"
+					id: "B6A5FE71D778D847"
 					type: "item"
-					item: "minecraft:iron_ingot"
-					count: 12L
+					item: "create:andesite_casing"
+					count: 32L
+				}
+				{
+					id: "270779E286D0EE21"
+					type: "item"
+					item: "create:large_cogwheel"
+					count: 16L
+				}
+				{
+					id: "5F3AA81DACA12A0B"
+					type: "item"
+					item: "create:iron_sheet"
+					count: 24L
+				}
+				{
+					id: "C6DA0CCFBC0371E6"
+					type: "item"
+					item: "copycats:copycat_block"
+					count: 4L
+				}
+				{
+					id: "CDD48D6410D2CC06"
+					type: "item"
+					item: "copycats:copycat_box"
+					count: 4L
 				}
 			]
 			rewards: [
@@ -114,13 +157,25 @@
 					id: "1BB2E3A1EA6D5C85"
 					type: "item"
 					item: "copycats:copycat_catwalk"
-					count: 4
+					count: 12
 				}
 				{
 					id: "6C00DA84F54F7837"
 					type: "item"
 					item: "copycats:copycat_ladder"
-					count: 4
+					count: 12
+				}
+				{
+					id: "0CB1DE813A00A82D"
+					type: "item"
+					item: "copycats:copycat_fence"
+					count: 6
+				}
+				{
+					id: "4FF503E50599AF30"
+					type: "item"
+					item: "copycats:copycat_pane"
+					count: 6
 				}
 				{
 					id: "F944CDDC48F0D82F"
@@ -128,6 +183,9 @@
 					xp: 20
 				}
 			]
+			icon: {
+				id: "copycats:copycat_catwalk"
+			}
 			dependencies: [
 				"A3BD0E768AC9A59E"
 			]

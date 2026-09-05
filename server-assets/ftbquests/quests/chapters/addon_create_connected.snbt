@@ -1,12 +1,14 @@
 {
 	id: "1D17C028E51C952D"
 	group: "4E2FA1B674D143B0"
-	order_index: 107
+	order_index: 118
 	filename: "addon_create_connected"
 	title: "Create: Connected"
-	icon: "create_connected:brass_gearbox"
+	icon: {
+		id: "create_connected:brass_gearbox"
+	}
 	subtitle: [
-		"The quality-of-life parts Create almost has."
+		"The quality-of-life parts Create almost has.  &eMid&r"
 	]
 	default_quest_shape: ""
 	default_hide_dependency_lines: false
@@ -18,15 +20,15 @@
 			description: [
 				"Cross connectors route rotation through a junction. A crank wheel starts it by hand."
 				""
-				"Bring 8 Andesite Alloy."
+				"&7Bring &f16 Brass Casing&7."
 			]
 			id: "E6A7929942FFD63C"
 			tasks: [
 				{
-					id: "1895281184D31A58"
+					id: "609C8A1B312C3F90"
 					type: "item"
-					item: "create:andesite_alloy"
-					count: 8L
+					item: "create:brass_casing"
+					count: 16L
 				}
 			]
 			rewards: [
@@ -34,13 +36,13 @@
 					id: "68FB07A2F81166D1"
 					type: "item"
 					item: "create_connected:cross_connector"
-					count: 4
+					count: 12
 				}
 				{
 					id: "AAAB1F41F30BCBB6"
 					type: "item"
 					item: "create_connected:crank_wheel"
-					count: 1
+					count: 3
 				}
 				{
 					id: "7CCC3762D9124476"
@@ -48,6 +50,9 @@
 					xp: 10
 				}
 			]
+			icon: {
+				id: "create_connected:cross_connector"
+			}
 			shape: "square"
 		}
 		{
@@ -57,15 +62,22 @@
 			description: [
 				"A brass gearbox, and a clutch that disengages on its own at speed."
 				""
-				"Bring 6 Brass Ingots."
+				"&7Bring &f16 Electron Tubes&7."
+				"&7Bring &f32 Brass Sheets&7."
 			]
 			id: "6A921EB6A3DAB47D"
 			tasks: [
 				{
-					id: "FA7832D9AF200147"
+					id: "C53B90B30CFD350F"
 					type: "item"
-					item: "create:brass_ingot"
-					count: 6L
+					item: "create:electron_tube"
+					count: 16L
+				}
+				{
+					id: "3D8C4CDBC2318579"
+					type: "item"
+					item: "create:brass_sheet"
+					count: 32L
 				}
 			]
 			rewards: [
@@ -73,13 +85,13 @@
 					id: "E720F6B612CC0CB1"
 					type: "item"
 					item: "create_connected:brass_gearbox"
-					count: 1
+					count: 3
 				}
 				{
 					id: "715C68C5750FAFFB"
 					type: "item"
 					item: "create_connected:centrifugal_clutch"
-					count: 1
+					count: 3
 				}
 				{
 					id: "0E16EE04B19F6E97"
@@ -87,6 +99,9 @@
 					xp: 15
 				}
 			]
+			icon: {
+				id: "create_connected:brass_gearbox"
+			}
 			dependencies: [
 				"E6A7929942FFD63C"
 			]
@@ -98,15 +113,43 @@
 			description: [
 				"A brake stops a line dead. Control chips make it conditional."
 				""
-				"Bring 12 Iron Ingots."
+				"&7Bring &f8 Precision Mechanisms&7."
+				"&7Bring &f24 Brass Casing&7."
+				"&7Bring &f16 Polished Rose Quartz&7."
+				"&7Bring &f6 Cross Connector&7."
+				"&7Bring &f6 Crank Wheel&7."
 			]
 			id: "59E5851CFA55EBD8"
 			tasks: [
 				{
-					id: "F1D0460DE5E9B9D6"
+					id: "C12838EEA2AE9E55"
 					type: "item"
-					item: "minecraft:iron_ingot"
-					count: 12L
+					item: "create:precision_mechanism"
+					count: 8L
+				}
+				{
+					id: "A3FAB0E46693D58F"
+					type: "item"
+					item: "create:brass_casing"
+					count: 24L
+				}
+				{
+					id: "34E609673E5A50C9"
+					type: "item"
+					item: "create:polished_rose_quartz"
+					count: 16L
+				}
+				{
+					id: "D3362490F96FA517"
+					type: "item"
+					item: "create_connected:cross_connector"
+					count: 6L
+				}
+				{
+					id: "A9C9D18F9A00C640"
+					type: "item"
+					item: "create_connected:crank_wheel"
+					count: 6L
 				}
 			]
 			rewards: [
@@ -114,13 +157,19 @@
 					id: "BCF2BD7D98FC197A"
 					type: "item"
 					item: "create_connected:brake"
-					count: 1
+					count: 3
 				}
 				{
 					id: "ED19C5B1917F3EDF"
 					type: "item"
 					item: "create_connected:control_chip"
-					count: 2
+					count: 6
+				}
+				{
+					id: "D7CD4A20A05BF5C9"
+					type: "item"
+					item: "create_connected:copycat_beam"
+					count: 6
 				}
 				{
 					id: "EA3EFC3C65F7B62B"
@@ -128,6 +177,9 @@
 					xp: 20
 				}
 			]
+			icon: {
+				id: "create_connected:brake"
+			}
 			dependencies: [
 				"6A921EB6A3DAB47D"
 			]

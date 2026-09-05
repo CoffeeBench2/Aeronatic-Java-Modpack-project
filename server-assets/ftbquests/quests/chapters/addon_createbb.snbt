@@ -1,12 +1,14 @@
 {
 	id: "EF8BB141C8CF3922"
 	group: "4E2FA1B674D143B0"
-	order_index: 126
+	order_index: 103
 	filename: "addon_createbb"
 	title: "Create: Broken Bad"
-	icon: "createbb:brass_call_bell"
+	icon: {
+		id: "createbb:brass_call_bell"
+	}
 	subtitle: [
-		"Chemistry. Handle with more care than usual."
+		"Chemistry. Handle with more care than usual.  &aEarly&r"
 	]
 	default_quest_shape: ""
 	default_hide_dependency_lines: false
@@ -18,15 +20,15 @@
 			description: [
 				"Crushed ores. The starting point for every reaction here."
 				""
-				"Bring 8 Andesite Alloy."
+				"&7Bring &f32 Andesite Alloy&7."
 			]
 			id: "F020BB511F1245AA"
 			tasks: [
 				{
-					id: "C32E037486ACFEDB"
+					id: "66628BBB793A8CB4"
 					type: "item"
 					item: "create:andesite_alloy"
-					count: 8L
+					count: 32L
 				}
 			]
 			rewards: [
@@ -34,13 +36,13 @@
 					id: "14D4E518F4350802"
 					type: "item"
 					item: "createbb:crushed_copper"
-					count: 8
+					count: 24
 				}
 				{
 					id: "54BE76B81F1501F0"
 					type: "item"
 					item: "createbb:crushed_zinc"
-					count: 8
+					count: 24
 				}
 				{
 					id: "2E57B2A29529DF60"
@@ -48,6 +50,9 @@
 					xp: 10
 				}
 			]
+			icon: {
+				id: "createbb:crushed_copper"
+			}
 			shape: "square"
 		}
 		{
@@ -57,15 +62,22 @@
 			description: [
 				"Matches, and a bell for the front of a shop."
 				""
-				"Bring 6 Brass Ingots."
+				"&7Bring &f16 Andesite Casing&7."
+				"&7Bring &f24 Cogwheels&7."
 			]
 			id: "3C2C407FA29F08D7"
 			tasks: [
 				{
-					id: "4918D0889C98D3EA"
+					id: "1FB6DB2AC9517B34"
 					type: "item"
-					item: "create:brass_ingot"
-					count: 6L
+					item: "create:andesite_casing"
+					count: 16L
+				}
+				{
+					id: "673970C98AAB0AB2"
+					type: "item"
+					item: "create:cogwheel"
+					count: 24L
 				}
 			]
 			rewards: [
@@ -73,13 +85,13 @@
 					id: "66E58F2E877BC4C2"
 					type: "item"
 					item: "createbb:match"
-					count: 8
+					count: 24
 				}
 				{
 					id: "CB014A9C6EB11CCF"
 					type: "item"
 					item: "createbb:brass_call_bell"
-					count: 1
+					count: 3
 				}
 				{
 					id: "28F1036913EEB93D"
@@ -87,6 +99,9 @@
 					xp: 15
 				}
 			]
+			icon: {
+				id: "createbb:match"
+			}
 			dependencies: [
 				"F020BB511F1245AA"
 			]
@@ -98,15 +113,43 @@
 			description: [
 				"Iodine and seeds. What you do next is between you and the server rules."
 				""
-				"Bring 12 Iron Ingots."
+				"&7Bring &f32 Andesite Casing&7."
+				"&7Bring &f16 Large Cogwheels&7."
+				"&7Bring &f24 Iron Sheets&7."
+				"&7Bring &f4 Match&7."
+				"&7Bring &f4 Brass Call Bell&7."
 			]
 			id: "EB7564FBE8EA2F2E"
 			tasks: [
 				{
-					id: "564B5F51E0B92A2C"
+					id: "F424B7C0203B6618"
 					type: "item"
-					item: "minecraft:iron_ingot"
-					count: 12L
+					item: "create:andesite_casing"
+					count: 32L
+				}
+				{
+					id: "880A5C9FF5D70ED2"
+					type: "item"
+					item: "create:large_cogwheel"
+					count: 16L
+				}
+				{
+					id: "65BD5F2C1FD95A84"
+					type: "item"
+					item: "create:iron_sheet"
+					count: 24L
+				}
+				{
+					id: "56D5A0960A80A42E"
+					type: "item"
+					item: "createbb:match"
+					count: 4L
+				}
+				{
+					id: "939F4ED46A698885"
+					type: "item"
+					item: "createbb:brass_call_bell"
+					count: 4L
 				}
 			]
 			rewards: [
@@ -114,13 +157,19 @@
 					id: "E6FB352BCDE6257A"
 					type: "item"
 					item: "createbb:iodine"
-					count: 4
+					count: 12
 				}
 				{
 					id: "FBB960E26D30F416"
 					type: "item"
 					item: "createbb:ephedra_seeds"
-					count: 4
+					count: 12
+				}
+				{
+					id: "A01CCFDB45A427EF"
+					type: "item"
+					item: "createbb:brine"
+					count: 6
 				}
 				{
 					id: "93E1BC6BC8F757F8"
@@ -128,6 +177,9 @@
 					xp: 20
 				}
 			]
+			icon: {
+				id: "createbb:iodine"
+			}
 			dependencies: [
 				"3C2C407FA29F08D7"
 			]

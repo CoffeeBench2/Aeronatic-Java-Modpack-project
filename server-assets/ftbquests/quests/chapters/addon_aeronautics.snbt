@@ -1,12 +1,14 @@
 {
 	id: "F8BD08DF3A836794"
 	group: "4E2FA1B674D143B0"
-	order_index: 102
+	order_index: 129
 	filename: "addon_aeronautics"
 	title: "Create: Aeronautics"
-	icon: "aeronautics:levitite"
+	icon: {
+		id: "aeronautics:levitite"
+	}
 	subtitle: [
-		"The mod this whole server is named after."
+		"The mod this whole server is named after.  &cLate&r"
 	]
 	default_quest_shape: ""
 	default_hide_dependency_lines: false
@@ -18,15 +20,15 @@
 			description: [
 				"A propeller and goggles. The goggles read airspeed and altitude."
 				""
-				"Bring 8 Andesite Alloy."
+				"&7Bring &f16 Precision Mechanisms&7."
 			]
 			id: "0F7E34A2ABD8F5D0"
 			tasks: [
 				{
-					id: "3E35A1B5E3B6F6FF"
+					id: "F548DD63D18BB519"
 					type: "item"
-					item: "create:andesite_alloy"
-					count: 8L
+					item: "create:precision_mechanism"
+					count: 16L
 				}
 			]
 			rewards: [
@@ -34,13 +36,13 @@
 					id: "301618AB7E48C56B"
 					type: "item"
 					item: "aeronautics:andesite_propeller"
-					count: 1
+					count: 4
 				}
 				{
 					id: "4F32EDC4D5C85F68"
 					type: "item"
 					item: "aeronautics:aviators_goggles"
-					count: 1
+					count: 4
 				}
 				{
 					id: "42056DD632332ED1"
@@ -48,6 +50,9 @@
 					xp: 10
 				}
 			]
+			icon: {
+				id: "aeronautics:andesite_propeller"
+			}
 			shape: "square"
 		}
 		{
@@ -57,29 +62,36 @@
 			description: [
 				"Levitite blend crystallises into the block that makes things float."
 				""
-				"Bring 6 Brass Ingots."
+				"&7Bring &f24 Precision Mechanisms&7."
+				"&7Bring &f8 Sturdy Sheets&7."
 			]
 			id: "F2239941CBB9429A"
 			tasks: [
 				{
-					id: "1B215FDF8718156B"
+					id: "ECC7D1B5B891A58D"
 					type: "item"
-					item: "create:brass_ingot"
-					count: 6L
+					item: "create:precision_mechanism"
+					count: 24L
+				}
+				{
+					id: "1196D602D9305113"
+					type: "item"
+					item: "create:sturdy_sheet"
+					count: 8L
 				}
 			]
 			rewards: [
 				{
-					id: "4A21AE34E1BD7603"
+					id: "0C41BC36F580F043"
 					type: "item"
-					item: "aeronautics:levitite_blend"
-					count: 4
+					item: "aeronautics:levitite"
+					count: 16
 				}
 				{
 					id: "588688A54EAEB458"
 					type: "item"
 					item: "aeronautics:end_stone_powder"
-					count: 4
+					count: 16
 				}
 				{
 					id: "927F09AA7B3B2A12"
@@ -87,6 +99,9 @@
 					xp: 15
 				}
 			]
+			icon: {
+				id: "aeronautics:levitite"
+			}
 			dependencies: [
 				"0F7E34A2ABD8F5D0"
 			]
@@ -98,15 +113,43 @@
 			description: [
 				"A burner for hot air, and a bearing that keeps a propeller pointed where you want."
 				""
-				"Bring 12 Iron Ingots."
+				"&7Bring &f32 Precision Mechanisms&7."
+				"&7Bring &f16 Sturdy Sheets&7."
+				"&7Bring &f8 Refined Radiance&7."
+				"&7Bring &f8 Andesite Propeller&7."
+				"&7Bring &f8 Aviators Goggles&7."
 			]
 			id: "6F831C98C4E17E63"
 			tasks: [
 				{
-					id: "9F2148AFBD2AFC1C"
+					id: "AEBC8AF6523D787F"
 					type: "item"
-					item: "minecraft:iron_ingot"
-					count: 12L
+					item: "create:precision_mechanism"
+					count: 32L
+				}
+				{
+					id: "731A86871B0DE9F5"
+					type: "item"
+					item: "create:sturdy_sheet"
+					count: 16L
+				}
+				{
+					id: "E7BBCFF3B02A2519"
+					type: "item"
+					item: "create:refined_radiance"
+					count: 8L
+				}
+				{
+					id: "F0CAF0BB24A1FFDA"
+					type: "item"
+					item: "aeronautics:andesite_propeller"
+					count: 8L
+				}
+				{
+					id: "356A4926EC066F5A"
+					type: "item"
+					item: "aeronautics:aviators_goggles"
+					count: 8L
 				}
 			]
 			rewards: [
@@ -114,13 +157,25 @@
 					id: "E7AFAB7C45A9CD92"
 					type: "item"
 					item: "aeronautics:adjustable_burner"
-					count: 1
+					count: 4
 				}
 				{
 					id: "5243EE10C2E64758"
 					type: "item"
 					item: "aeronautics:gyroscopic_propeller_bearing"
-					count: 1
+					count: 4
+				}
+				{
+					id: "036EFB88E044CBF6"
+					type: "item"
+					item: "aeronautics:wooden_propeller"
+					count: 8
+				}
+				{
+					id: "D0D2ABAA6BA0BF21"
+					type: "item"
+					item: "aeronautics:steam_vent"
+					count: 8
 				}
 				{
 					id: "B934716C366EEC1D"
@@ -128,6 +183,9 @@
 					xp: 20
 				}
 			]
+			icon: {
+				id: "aeronautics:adjustable_burner"
+			}
 			dependencies: [
 				"F2239941CBB9429A"
 			]

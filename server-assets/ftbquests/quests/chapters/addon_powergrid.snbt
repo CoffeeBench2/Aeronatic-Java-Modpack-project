@@ -1,12 +1,14 @@
 {
 	id: "8C5AA767EACDD4CA"
 	group: "4E2FA1B674D143B0"
-	order_index: 111
+	order_index: 131
 	filename: "addon_powergrid"
 	title: "Create: Power Grid"
-	icon: "powergrid:battery"
+	icon: {
+		id: "powergrid:battery"
+	}
 	subtitle: [
-		"Real circuits. Voltage, current, and consequences."
+		"Real circuits. Voltage, current, and consequences.  &cLate&r"
 	]
 	default_quest_shape: ""
 	default_hide_dependency_lines: false
@@ -18,15 +20,15 @@
 			description: [
 				"A board and capacitors. Everything here is built on these."
 				""
-				"Bring 8 Andesite Alloy."
+				"&7Bring &f16 Precision Mechanisms&7."
 			]
 			id: "E3F3EA3895D86B33"
 			tasks: [
 				{
-					id: "509771750405C8FA"
+					id: "65BFAF35691EB0C0"
 					type: "item"
-					item: "create:andesite_alloy"
-					count: 8L
+					item: "create:precision_mechanism"
+					count: 16L
 				}
 			]
 			rewards: [
@@ -34,13 +36,13 @@
 					id: "6079894FDE840E79"
 					type: "item"
 					item: "powergrid:circuit_board"
-					count: 2
+					count: 8
 				}
 				{
 					id: "23EF9B2BD70A39AE"
 					type: "item"
 					item: "powergrid:capacitor"
-					count: 4
+					count: 16
 				}
 				{
 					id: "6171A00CF7E22A06"
@@ -48,6 +50,9 @@
 					xp: 10
 				}
 			]
+			icon: {
+				id: "powergrid:circuit_board"
+			}
 			shape: "square"
 		}
 		{
@@ -57,15 +62,22 @@
 			description: [
 				"A battery to store charge, and a bell for when something goes wrong."
 				""
-				"Bring 6 Brass Ingots."
+				"&7Bring &f24 Precision Mechanisms&7."
+				"&7Bring &f8 Sturdy Sheets&7."
 			]
 			id: "A7B1EB980D4158C4"
 			tasks: [
 				{
-					id: "174360C8F8D69BD2"
+					id: "F182C9FDAEB121EE"
 					type: "item"
-					item: "create:brass_ingot"
-					count: 6L
+					item: "create:precision_mechanism"
+					count: 24L
+				}
+				{
+					id: "379B3F2E7F4564CA"
+					type: "item"
+					item: "create:sturdy_sheet"
+					count: 8L
 				}
 			]
 			rewards: [
@@ -73,13 +85,13 @@
 					id: "0BF762A48A2B4190"
 					type: "item"
 					item: "powergrid:battery"
-					count: 1
+					count: 4
 				}
 				{
 					id: "38003D4E16409687"
 					type: "item"
 					item: "powergrid:alarm_bell"
-					count: 1
+					count: 4
 				}
 				{
 					id: "587F52A00A2171E8"
@@ -87,6 +99,9 @@
 					xp: 15
 				}
 			]
+			icon: {
+				id: "powergrid:battery"
+			}
 			dependencies: [
 				"E3F3EA3895D86B33"
 			]
@@ -98,29 +113,69 @@
 			description: [
 				"A carbon pile resists on purpose. The heater turns that into warmth."
 				""
-				"Bring 12 Iron Ingots."
+				"&7Bring &f32 Precision Mechanisms&7."
+				"&7Bring &f16 Sturdy Sheets&7."
+				"&7Bring &f8 Refined Radiance&7."
+				"&7Bring &f8 Capacitor&7."
+				"&7Bring &f8 Alarm Bell&7."
 			]
 			id: "01F33E647619CA27"
 			tasks: [
 				{
-					id: "EA2D49A6C6CD2A8A"
+					id: "CF5EDA25CE0E1E79"
 					type: "item"
-					item: "minecraft:iron_ingot"
-					count: 12L
+					item: "create:precision_mechanism"
+					count: 32L
+				}
+				{
+					id: "6EE67A96B8CE4804"
+					type: "item"
+					item: "create:sturdy_sheet"
+					count: 16L
+				}
+				{
+					id: "8F6A0590086BAFD1"
+					type: "item"
+					item: "create:refined_radiance"
+					count: 8L
+				}
+				{
+					id: "C50435F9349C5629"
+					type: "item"
+					item: "powergrid:capacitor"
+					count: 8L
+				}
+				{
+					id: "AE6CDBAAC8E33A47"
+					type: "item"
+					item: "powergrid:alarm_bell"
+					count: 8L
 				}
 			]
 			rewards: [
 				{
-					id: "9C4DAF7AFD10C584"
+					id: "2D196EB9217C49E1"
 					type: "item"
-					item: "powergrid:carbon_pile"
-					count: 1
+					item: "powergrid:carbon_pile_coil"
+					count: 4
 				}
 				{
 					id: "229C636B4737BB37"
 					type: "item"
 					item: "powergrid:basin_heater"
-					count: 1
+					count: 4
+				}
+				{
+					id: "8B91EBAB3E5E2983"
+					type: "item"
+					item: "powergrid:copper_coil"
+					count: 8
+				}
+				{
+					id: "B13079F4E7FDC4AF"
+					type: "item"
+					item: "powergrid:contactor"
+					count: 8
 				}
 				{
 					id: "64937BD0B973F933"
@@ -128,6 +183,9 @@
 					xp: 20
 				}
 			]
+			icon: {
+				id: "powergrid:carbon_pile_coil"
+			}
 			dependencies: [
 				"A7B1EB980D4158C4"
 			]
