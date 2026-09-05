@@ -1,6 +1,6 @@
 name = "1.5.1 - NeoForge 1.21"
 filename = "Scribble-1.5.1+mc1.21-neoforge.jar"
-side = "both"
+side = "client"
 
 [download]
 url = "https://cdn.modrinth.com/data/yXAvIk0x/versions/I0KbSlL9/Scribble-1.5.1%2Bmc1.21-neoforge.jar"

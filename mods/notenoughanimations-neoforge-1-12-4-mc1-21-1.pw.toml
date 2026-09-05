@@ -1,6 +1,6 @@
 name = "1.12.4-1.21.1 - NeoForge"
 filename = "notenoughanimations-neoforge-1.12.4-mc1.21.1.jar"
-side = "both"
+side = "client"
 
 [download]
 url = "https://cdn.modrinth.com/data/MPCX6s5C/versions/eYNogep3/notenoughanimations-neoforge-1.12.4-mc1.21.1.jar"

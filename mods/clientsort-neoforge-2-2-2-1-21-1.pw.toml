@@ -1,6 +1,6 @@
 name = "v2.2.2+1.21.1-NeoForge"
 filename = "clientsort-neoforge-2.2.2+1.21.1.jar"
-side = "both"
+side = "client"
 
 [download]
 url = "https://cdn.modrinth.com/data/K0AkAin6/versions/lLpcVRPr/clientsort-neoforge-2.2.2%2B1.21.1.jar"

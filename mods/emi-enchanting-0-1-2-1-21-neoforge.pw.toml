@@ -1,6 +1,6 @@
 name = "EMI Enchanting 0.1.2+1.21+neoforge"
 filename = "emi_enchanting-0.1.2+1.21+neoforge.jar"
-side = "both"
+side = "client"
 
 [download]
 url = "https://cdn.modrinth.com/data/wbWoo11W/versions/ZyJ6TKvh/emi_enchanting-0.1.2%2B1.21%2Bneoforge.jar"

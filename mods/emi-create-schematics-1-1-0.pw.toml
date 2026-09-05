@@ -1,6 +1,6 @@
 name = "Create: EMI Schematics [1.1.0]"
 filename = "emi_create_schematics-1.1.0.jar"
-side = "both"
+side = "client"
 
 [download]
 url = "https://cdn.modrinth.com/data/5bgqgixq/versions/opyfkMHl/emi_create_schematics-1.1.0.jar"

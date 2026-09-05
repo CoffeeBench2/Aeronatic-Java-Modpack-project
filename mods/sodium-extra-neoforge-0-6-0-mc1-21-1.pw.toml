@@ -1,6 +1,6 @@
 name = "[NeoForge] Sodium Extra 0.6.0 for Minecraft 1.21.1"
 filename = "sodium-extra-neoforge-0.6.0+mc1.21.1.jar"
-side = "both"
+side = "client"
 
 [download]
 url = "https://cdn.modrinth.com/data/PtjYWJkn/versions/pFmw1eci/sodium-extra-neoforge-0.6.0%2Bmc1.21.1.jar"

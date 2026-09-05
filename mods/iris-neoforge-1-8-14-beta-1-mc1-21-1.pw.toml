@@ -1,6 +1,6 @@
 name = "Iris 1.8.14 Beta 1 for NeoForge 1.21.1"
 filename = "iris-neoforge-1.8.14-beta.1+mc1.21.1.jar"
-side = "both"
+side = "client"
 
 [download]
 url = "https://cdn.modrinth.com/data/YL57xq9U/versions/KduFYu4t/iris-neoforge-1.8.14-beta.1%2Bmc1.21.1.jar"

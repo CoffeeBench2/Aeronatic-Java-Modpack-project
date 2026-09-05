@@ -1,6 +1,6 @@
 name = "MRU 1.0.31 for 1.21.1 NeoForge"
 filename = "mru-1.0.31+1.21.1-neoforge.jar"
-side = "both"
+side = "client"
 
 [download]
 url = "https://cdn.modrinth.com/data/SNVQ2c0g/versions/W0PkvNtT/mru-1.0.31%2B1.21.1-neoforge.jar"

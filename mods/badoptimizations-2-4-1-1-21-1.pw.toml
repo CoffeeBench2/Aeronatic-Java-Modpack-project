@@ -1,6 +1,6 @@
 name = "2.4.1 (1.21.1)"
 filename = "BadOptimizations-2.4.1-1.21.1.jar"
-side = "both"
+side = "client"
 
 [download]
 url = "https://cdn.modrinth.com/data/g96Z4WVZ/versions/S2qthD5S/BadOptimizations-2.4.1-1.21.1.jar"

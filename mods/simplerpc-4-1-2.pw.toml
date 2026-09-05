@@ -1,6 +1,6 @@
 name = "[1.18.2 - 26.1.2] Simple RPC Universal 4.1.2"
 filename = "SimpleRPC-4.1.2.jar"
-side = "both"
+side = "client"
 
 [download]
 url = "https://cdn.modrinth.com/data/ObXSoyrn/versions/K1WFXmS7/SimpleRPC-4.1.2.jar"

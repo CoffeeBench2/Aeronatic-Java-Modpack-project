@@ -1,6 +1,6 @@
 name = "Aeronautics Wind Sound 1.0.1"
 filename = "aeronautics_windsound-1.0.1.jar"
-side = "both"
+side = "client"
 
 [download]
 url = "https://cdn.modrinth.com/data/XU9MYvTx/versions/9p7pjRKb/aeronautics_windsound-1.0.1.jar"

@@ -1,6 +1,6 @@
 name = "Dynamic FPS 3.11.4"
 filename = "dynamic-fps-3.11.4+minecraft-1.21.0-neoforge.jar"
-side = "both"
+side = "client"
 
 [download]
 url = "https://cdn.modrinth.com/data/LQ3K71Q1/versions/T238FZpQ/dynamic-fps-3.11.4%2Bminecraft-1.21.0-neoforge.jar"

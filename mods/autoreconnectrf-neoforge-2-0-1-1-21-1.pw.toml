@@ -1,6 +1,6 @@
 name = "v2.0.1+1.21.1-NeoForge"
 filename = "autoreconnectrf-neoforge-2.0.1+1.21.1.jar"
-side = "both"
+side = "client"
 
 [download]
 url = "https://cdn.modrinth.com/data/PRy8Khga/versions/8pGeRZjP/autoreconnectrf-neoforge-2.0.1%2B1.21.1.jar"

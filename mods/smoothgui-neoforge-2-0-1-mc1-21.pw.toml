@@ -1,6 +1,6 @@
 name = "2.0.1"
 filename = "smoothgui-neoforge-2.0.1+mc1.21.jar"
-side = "both"
+side = "client"
 
 [download]
 url = "https://cdn.modrinth.com/data/j6yrZogB/versions/41wQBB9A/smoothgui-neoforge-2.0.1%2Bmc1.21.jar"
