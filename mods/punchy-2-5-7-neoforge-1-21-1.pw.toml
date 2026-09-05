@@ -1,6 +1,6 @@
 name = "Punchy 2.5.7 (NeoForge) - 1.21.1"
 filename = "punchy-2.5.7-neoforge-1.21.1.jar"
-side = "both"
+side = "client"
 
 [download]
 url = "https://cdn.modrinth.com/data/8aoMKplv/versions/9xjopXnz/punchy-2.5.7-neoforge-1.21.1.jar"

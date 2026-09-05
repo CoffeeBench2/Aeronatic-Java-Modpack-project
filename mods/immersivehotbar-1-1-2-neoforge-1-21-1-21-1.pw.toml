@@ -1,6 +1,6 @@
 name = "Immersive Hotbar 1.1.2-neoforge-1.21.1-BETA"
 filename = "immersivehotbar-1.1.2-neoforge-1.21-1.21.1.jar"
-side = "both"
+side = "client"
 
 [download]
 url = "https://cdn.modrinth.com/data/hsPB5xMD/versions/Hst8RqgA/immersivehotbar-1.1.2-neoforge-1.21-1.21.1.jar"
