@@ -7,8 +7,20 @@ the next time they open the menu — **no pack rebuild, no version bump, no rele
 overrides/config/coffees_aero_announcements.json
 ```
 
-Push it to `main` and you are done. Give the CDN ~5 minutes; the client already cache-busts, so it
-will pick it up on its own.
+🔴 **`packwiz refresh` first, then push.** This file is **in the packwiz index** with a recorded
+hash, so editing it and pushing on its own leaves the index pointing at a hash the served file no
+longer has — and every client mid-update fails with `hash mismatch after download`. The live news
+fetch and the packwiz index are two separate mechanisms and this one file is in both.
+
+```
+py -c "import json;d=json.load(open('overrides/config/coffees_aero_announcements.json',encoding='utf-8'));print(len(d['entries']),'entries OK')"
+packwiz refresh
+git add overrides/config/coffees_aero_announcements.json index.toml pack.toml && git commit && git push
+```
+
+What you still **don't** need is a version bump, a pack rebuild or a GitHub release — the client
+pulls the news live from raw `main` and cache-busts, so players see it on their next menu visit.
+Give the CDN ~5 minutes.
 
 ---
 
@@ -34,8 +46,24 @@ Entries live in `"entries"`, **newest first**. Only `version`, `date` and `title
 everything else can be left out and that part simply will not render. An entry written before the
 1.10.9 redesign still works exactly as it did.
 
-**Keep "On the horizon" pinned at the top.** It has an empty `date` and is the teaser for what is
-coming; new releases go directly underneath it.
+🔴 **The newest release must be entry 0 — above "On the horizon".** This reverses the old rule, and
+the reason is not cosmetic. `AnnouncementData.latest()` returns `entries.get(0)`, and **both** the
+What's New popup and the "NEW" badge are driven by it:
+
+- With the teaser pinned first, the popup shows **"Still in the workshop"** instead of the release.
+- Worse, `AnnouncementState` stores the seen-state as `latest.version()` — the literal string
+  `"On the horizon…"`, which never changes. Once a player dismisses it, `hasUnseen()` is false
+  **forever**, so no future release ever pops the card or re-badges the button again.
+
+Putting the release at index 0 fixes both without a code change: the version string differs from
+whatever the player has stored, so the badge and popup fire exactly as intended.
+
+"On the horizon" now sits **second**, directly under the newest release. It still renders fine in the
+scroll — newest release, then what's coming, then the back catalogue.
+
+⚠️ The durable fix belongs in the Core: `latest()` should return the first entry with a **non-blank
+`date`**, which would let the teaser be pinned first again and make the ordering irrelevant. Until
+that ships, the ordering above is load-bearing — do not "tidy" the teaser back to the top.
 
 ### The newer fields
 

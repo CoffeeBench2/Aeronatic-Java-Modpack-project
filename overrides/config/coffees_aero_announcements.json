@@ -2,6 +2,24 @@
   "_comment": "LIVE pack changelog for the main-menu Announcements screen (Core reads this; overrides the jar-bundled fallback). Newest entry first. Edit per release. Keep it short, warm and player-facing — write like a person, no mod names, no filler. Entries whose version does NOT start with a digit render as a TEASER ('On the horizon' instead of 'Added', no v prefix).",
   "entries": [
     {
+      "version": "1.10.12",
+      "date": "September 2026",
+      "title": "Steady Hands",
+      "tag": "HOTFIX",
+      "body": "A deliberate step backwards. The newest airship control gear was causing trouble, so the older, well-behaved version is back in its place. One thing worth knowing before you log in: the control stand and the two copycat control desks only existed in the newer version, so any you had placed are gone. Nothing else in the pack has moved.",
+      "added": [],
+      "fixed": [
+        "Airship controls are back on the build that behaved itself"
+      ],
+      "removed": [
+        "The control stand, and the copycat control desk and stand. Any you had placed are gone"
+      ],
+      "link": {
+        "label": "Full changelog on GitHub",
+        "url": "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/tag/v1.10.12"
+      }
+    },
+    {
       "version": "On the horizon…",
       "date": "",
       "title": "Still in the workshop",
