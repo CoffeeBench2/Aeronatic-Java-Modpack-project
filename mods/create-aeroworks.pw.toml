@@ -1,13 +1,13 @@
-name = "Create Aeroworks 1.5.0+mc1.21.1"
-filename = "aeroworks-1.5.0.jar"
+name = "Create Aeroworks 1.4.1+mc1.21.1"
+filename = "aeroworks-1.4.1.jar"
 side = "both"
 
 [download]
-url = "https://cdn.modrinth.com/data/P26k79kP/versions/6kk7ruR3/aeroworks-1.5.0.jar"
+url = "https://cdn.modrinth.com/data/P26k79kP/versions/H2PGtFQ5/aeroworks-1.4.1.jar"
 hash-format = "sha512"
-hash = "d79435aaf9c8d8697d1cb5a95b2189ab00ac1387dcbcdc0fbd701a25a22678eba2107e55b8da47bf0089282280ee2b3ff36418d9d7bda744b210d5fa5f4ca697"
+hash = "02453328c7fa1e3d0aac5bea50369377ef2ea02b14e87ae95c78c95a47c31289e36590747f43c0281137c56858069f16059dc572ce3a2c16430645bda3e02e9f"
 
 [update]
 [update.modrinth]
 mod-id = "P26k79kP"
-version = "6kk7ruR3"
+version = "H2PGtFQ5"

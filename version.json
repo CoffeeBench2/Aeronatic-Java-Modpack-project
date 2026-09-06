@@ -1,8 +1,8 @@
 {
-  "version": "1.10.11",
+  "version": "1.10.12",
   "url": "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/latest",
   "neoforge": "21.1.249",
   "minecraft": "1.21.1",
-  "notes": "1.10.10 - the News screen has been rebuilt. It is now a proper scrolling page with a card per release, coloured tags, room for real paragraphs, and support for pictures. The old parchment scroll had about 200 pixels to write in, which is why longer entries stopped reading properly. Everything else from 1.10.x is unchanged.",
+  "notes": "1.10.12 - Create: Aeroworks has been rolled back from 1.5.0 to 1.4.1. Note that the control stand and the two copycat control desk/stand blocks only exist in 1.5.0, so any of those you had placed will be gone after this update. Nothing else has changed.",
   "lodReset": "season1"
 }

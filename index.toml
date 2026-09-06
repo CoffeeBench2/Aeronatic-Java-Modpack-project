@@ -157,7 +157,7 @@ metafile = true
 
 [[files]]
 file = "mods/coffeesaerocore.pw.toml"
-hash = "c195aa03a6a42852cca6ca14c9bc6fe02fecccf7af535e494bc1ab6429f209e0"
+hash = "7bc974744fa83a4ee91ad3806ad5aec54b9483c37a6aaac9d57a7e8c7dd476b7"
 metafile = true
 
 [[files]]
@@ -227,7 +227,7 @@ metafile = true
 
 [[files]]
 file = "mods/create-aeroworks.pw.toml"
-hash = "faba6363c40f04f41773f1f07ccd38920c1e16939e679077e29cb8444ebaee14"
+hash = "c50831e793e5c16695d608bd69f5fcd498ab6663a1d8bcbd29358f1e58d24cf0"
 metafile = true
 
 [[files]]
@@ -1248,7 +1248,7 @@ hash = "5ce6a4dc0fbec75807a9bb9e6fdbf2909c487954cfe063c3988e7a268dc38a20"
 
 [[files]]
 file = "overrides/config/coffeesaerosmp_core-client.toml"
-hash = "0c34e0bd85a76a42888ac62d745587aa3b95749ce64838d56197a851ffdd5471"
+hash = "129b4d70eb9aafdd0068d270296463479ba8fa8dd6b649975e9da92cc3c234c9"
 
 [[files]]
 file = "overrides/config/entity_texture_features.json"
