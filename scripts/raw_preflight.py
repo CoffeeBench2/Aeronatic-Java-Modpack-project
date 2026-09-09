@@ -29,6 +29,34 @@ def get(path):
         return r.read()
 
 
+def check_reachable(index_text):
+    """Every file the index names, HEAD-checked against raw main. Returns the ones that are not 200.
+
+    This is the only check that catches "indexed locally, absent on main". Threaded because the
+    index is ~285 entries and a serial sweep would make the preflight too slow to actually run.
+    """
+    import concurrent.futures
+    import urllib.parse
+
+    files = re.findall(r'file\s*=\s*"([^"]+)"', index_text)
+    cb = str(time.time_ns())
+
+    def head(f):
+        url = BASE + urllib.parse.quote(f) + "?cb=" + cb
+        try:
+            req = urllib.request.Request(url, method="HEAD")
+            return (f, urllib.request.urlopen(req, timeout=25).status)
+        except Exception as e:
+            return (f, getattr(e, "code", str(e)))
+
+    bad = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=16) as ex:
+        for f, st in ex.map(head, files):
+            if st != 200:
+                bad.append(f)
+    return bad
+
+
 def main():
     expected = sys.argv[1] if len(sys.argv) > 1 else None
 
@@ -63,9 +91,29 @@ def main():
         print("index local         : %s" % local[:20])
         print("index matches local : %s" % (actual == local))
 
+    # 🔴 An INDEXED file is not a REACHABLE file, and nothing above notices the difference.
+    # packwiz indexes whatever is on disk; anything untracked or gitignored is then absent from raw
+    # main, and the client dies mid-download with "Update failed: HTTP 404" — AFTER the integrity
+    # gate has passed, because the index itself is perfectly valid.
+    #
+    # This has now shipped THREE times: *.bak-* (2026-08-13), client-mods-temp (2026-08-17) and
+    # .mcp.json (2026-09-09, pack 1.10.13, caught only by a player's screenshot). Every one was a
+    # file that existed locally and not on main. The gate cannot see it; only fetching can.
+    missing = check_reachable(index.decode("utf-8", "replace"))
+    print("indexed files 404   : %s" % (len(missing) if missing else "none"))
+    for f in missing[:10]:
+        print("   MISSING           : %s" % f)
+
     if expected:
         fresh = version == expected and pack_version == expected
         synced = local is None or actual == local
+        if missing:
+            print()
+            print("STATUS              : BROKEN — %d indexed file(s) 404 on raw main. Every updater"
+                  % len(missing))
+            print("                      client will fail. Add them to .packwizignore (or commit")
+            print("                      them), run `packwiz refresh`, and push before announcing.")
+            sys.exit(1)
         print()
         print("expected            : %s" % expected)
         if fresh and gate and synced:

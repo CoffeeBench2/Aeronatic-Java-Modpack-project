@@ -157,7 +157,7 @@ metafile = true
 
 [[files]]
 file = "mods/coffeesaerocore.pw.toml"
-hash = "6e9b3ae03be9ae9fa652670ba4bd5d68055ffd1f479e2265249d39c1b2094361"
+hash = "2190de7d7ba404d35c7ae495ede1a8e2fa4b724748dcebb87eee1bebac3b62f2"
 metafile = true
 
 [[files]]
@@ -1196,6 +1196,11 @@ hash = "f6085b247783ccabd521156caa9b59088ebc36decf5b5f43762d2d49cd9add45"
 metafile = true
 
 [[files]]
+file = "mods/wannaplaychess.pw.toml"
+hash = "a7bab61f13e67f7e8fc90178d9092c16543528a6b66b9d13a00592b942b29231"
+metafile = true
+
+[[files]]
 file = "mods/watermedia-2-1-37.pw.toml"
 hash = "290be86a8544e12a9924ee60148980bfb4d5bc0a8b5773556fc794692ba89740"
 metafile = true
@@ -1248,7 +1253,7 @@ hash = "22f28227f57537cdba075123994df3d6e39a5ccd5d86103125fa2c4fb31f2f4d"
 
 [[files]]
 file = "overrides/config/coffeesaerosmp_core-client.toml"
-hash = "500f98038f08276b1174efc8284d043078935793323328d93cd6efffb4531198"
+hash = "26e79289ceecfd055cde15e8d7dc94ae78f0ce23080241533e2ba167ec471357"
 
 [[files]]
 file = "overrides/config/entity_texture_features.json"
