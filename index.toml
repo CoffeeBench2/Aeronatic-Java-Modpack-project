@@ -157,7 +157,7 @@ metafile = true
 
 [[files]]
 file = "mods/coffeesaerocore.pw.toml"
-hash = "446e03508f36e7e08890442ab936e29242f5d84829f5b575bb704f97d5dba9b3"
+hash = "abf2c6f6e959b2671448e4d0fe4127aa3802189d16a2eb2bbc3d43f555cf2f3f"
 metafile = true
 
 [[files]]
@@ -518,11 +518,6 @@ metafile = true
 [[files]]
 file = "mods/easy-npc-neoforge-1-21-1-7-6-0.pw.toml"
 hash = "f4e5ffe02bf5022452f6ef18b652b9a00a0230750d7aac20366e2a543a3da0cc"
-metafile = true
-
-[[files]]
-file = "mods/easybuilding-neoforge-1-21-1-v1-1.pw.toml"
-hash = "eadfa1cc37e5630aedd1f4d65fa933cd2467b3936a09d65780f86350f37c750e"
 metafile = true
 
 [[files]]
@@ -1263,7 +1258,7 @@ hash = "22f28227f57537cdba075123994df3d6e39a5ccd5d86103125fa2c4fb31f2f4d"
 
 [[files]]
 file = "overrides/config/coffeesaerosmp_core-client.toml"
-hash = "000a419bc970baf145cc44d88b12fa51f08bc835afeee1ac39e89f6518b19a0f"
+hash = "51db6561875bfe2f98cee60f9637825750ed683cd547e3c9b6628fdb2618fb01"
 
 [[files]]
 file = "overrides/config/entity_texture_features.json"
