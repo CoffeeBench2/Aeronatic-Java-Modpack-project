@@ -155,6 +155,16 @@ try:
         "kubejs-neoforge-",           # runs scripts during load
         "rhino-",                     # KubeJS's script engine; useless apart
         "GlitchCore-neoforge-",       # hard dep of the worldgen stack
+        # 🔴 Added 2026-09-09 after a player's import died with
+        #   "Mod alexsmobs requires citadel 2.6.0 or above. Currently, citadel is not installed"
+        # Citadel is not a classload-time library, so it did not obviously belong on this list — but
+        # a missing HARD dependency aborts mod loading just as fatally as a missing language
+        # provider, and the profile then cannot reach the title screen to self-repair. The reference
+        # itself was well-formed (allowModDistribution=true, correct 1.21.1/NeoForge file, valid
+        # downloadUrl), so this is insurance against the DOWNLOAD failing, not against a bad ref:
+        # a referenced file that CurseForge skips is indistinguishable, to the player, from one we
+        # never shipped. Anything another mod hard-requires belongs here.
+        "citadel-",
     ]
     for prefix in MUST_BUNDLE:
         import glob as _g2
