@@ -1,6 +1,10 @@
 hash-format = "sha256"
 
 [[files]]
+file = ".mcp.json"
+hash = "97edc7a1e77555c8201dbc71e578978eb84f831c8f908c438e6d533426a8bf04"
+
+[[files]]
 file = "mods/abyssal-decor-1-21-1-0-10-0-neoforge.pw.toml"
 hash = "65c3c2cec5011984f5b0c11956c9860ea33abb5c7ccf72bd54e204d7acb7f6ab"
 metafile = true
@@ -157,7 +161,7 @@ metafile = true
 
 [[files]]
 file = "mods/coffeesaerocore.pw.toml"
-hash = "7bc974744fa83a4ee91ad3806ad5aec54b9483c37a6aaac9d57a7e8c7dd476b7"
+hash = "6e9b3ae03be9ae9fa652670ba4bd5d68055ffd1f479e2265249d39c1b2094361"
 metafile = true
 
 [[files]]
@@ -1248,7 +1252,7 @@ hash = "22f28227f57537cdba075123994df3d6e39a5ccd5d86103125fa2c4fb31f2f4d"
 
 [[files]]
 file = "overrides/config/coffeesaerosmp_core-client.toml"
-hash = "129b4d70eb9aafdd0068d270296463479ba8fa8dd6b649975e9da92cc3c234c9"
+hash = "500f98038f08276b1174efc8284d043078935793323328d93cd6efffb4531198"
 
 [[files]]
 file = "overrides/config/entity_texture_features.json"
