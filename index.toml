@@ -157,7 +157,7 @@ metafile = true
 
 [[files]]
 file = "mods/coffeesaerocore.pw.toml"
-hash = "2fb411fd65df3e66f31d5e4288d0c6156caa3ae4c9ea1d0db3282e1b8e407539"
+hash = "446e03508f36e7e08890442ab936e29242f5d84829f5b575bb704f97d5dba9b3"
 metafile = true
 
 [[files]]
@@ -188,6 +188,11 @@ metafile = true
 [[files]]
 file = "mods/controlling-neoforge-1-21-1-19-0-5.pw.toml"
 hash = "047a9ad85ea3b802c34993e9456de915890a635cf0dca67ac0a39c6c261fac8d"
+metafile = true
+
+[[files]]
+file = "mods/coolrain.pw.toml"
+hash = "c12d47695dc898c01c34973a8233fc17b1d9f950b20dccadf1cfb8f4d893abb7"
 metafile = true
 
 [[files]]
@@ -801,6 +806,11 @@ hash = "64b45b4da9b8cd26fcdfbe26c10f99d4779b094259387f01004a4c378ad978c6"
 metafile = true
 
 [[files]]
+file = "mods/letthemtalk.pw.toml"
+hash = "9542fbeda98ee1aa9956cfd9327d0b51c271753a0f00a0802a1350eb4ffad165"
+metafile = true
+
+[[files]]
 file = "mods/lithostitched-1-7-10-beta4-neoforge-21-1.pw.toml"
 hash = "9afc51f3bc26caee2b087cafa23bd211b2d18b7e638f65830331969d4957c61d"
 metafile = true
@@ -998,6 +1008,11 @@ metafile = true
 [[files]]
 file = "mods/sable-player-ragdoll-1-21-1-0-7-5.pw.toml"
 hash = "f6e9c053fe037c49c8fa6ae294253e1394ad46d867c783b0009336b63da11d9d"
+metafile = true
+
+[[files]]
+file = "mods/sablecoolrain.pw.toml"
+hash = "3edb1e17121789283371ae4b0eec2cd6fe46be6dc11f3af715ead9d6315ac029"
 metafile = true
 
 [[files]]
@@ -1248,7 +1263,7 @@ hash = "22f28227f57537cdba075123994df3d6e39a5ccd5d86103125fa2c4fb31f2f4d"
 
 [[files]]
 file = "overrides/config/coffeesaerosmp_core-client.toml"
-hash = "4ed347715263ba46d0f5148c698898873aae4f53a4f08fd70d8fc2e9da40c104"
+hash = "000a419bc970baf145cc44d88b12fa51f08bc835afeee1ac39e89f6518b19a0f"
 
 [[files]]
 file = "overrides/config/entity_texture_features.json"

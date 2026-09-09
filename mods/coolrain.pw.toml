@@ -1,0 +1,13 @@
+name = "cool-rain-reforged 1.0.2"
+filename = "coolrain-1.21.1-NeoForge-1.0.2.jar"
+side = "client"
+
+[download]
+url = "https://cdn.modrinth.com/data/IgftU6Mn/versions/SwSSfJQQ/coolrain-1.21.1-NeoForge-1.0.2.jar"
+hash-format = "sha512"
+hash = "bd463f60ac2ab9f22bc7b7c35656e3e174b2db5bde95f3c7d404b07f085bdbd550774e9bf7ff81310a0f4eea5348398d2a8f617a1d1644db6e38c8eb83245328"
+
+[update]
+[update.modrinth]
+mod-id = "IgftU6Mn"
+version = "SwSSfJQQ"
