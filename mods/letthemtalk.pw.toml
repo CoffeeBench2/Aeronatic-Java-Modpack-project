@@ -1,0 +1,13 @@
+name = "let-them-talk 1.0.1+1.21.1+neoforge"
+filename = "let-them-talk-1.0.1+1.21.1+neoforge.jar"
+side = "client"
+
+[download]
+url = "https://cdn.modrinth.com/data/SZ1DDiij/versions/NCoshPYH/let-them-talk-1.0.1%2B1.21.1%2Bneoforge.jar"
+hash-format = "sha512"
+hash = "9600af35fbdaa37d73a907470c63f9386eb13779e6b2cfcff502e773cf8dec1cd3d578941409e18b876660b86f76b988f1a99456bd5c9149c5d110e4e46fdff2"
+
+[update]
+[update.modrinth]
+mod-id = "SZ1DDiij"
+version = "NCoshPYH"
