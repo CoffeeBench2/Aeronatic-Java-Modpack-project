@@ -72,3 +72,9 @@ server-secrets/
 # so unlike the entries above they would not 404 — they would be worse: silently downloaded into
 # every player's instance, where a server datapack and a server_scripts file have no business being.
 server-assets/
+
+# Claude Code / MCP tooling config. Untracked, so packwiz indexing it makes every updater client
+# 404 AFTER passing the integrity gate - the same failure as the *.bak-* (2026-08-13), the
+# client-mods-temp (2026-08-17) and Releases/ cases above. Hit again 2026-09-09 in pack 1.10.13.
+.mcp.json
+.mcp/

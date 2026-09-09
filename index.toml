@@ -1,10 +1,6 @@
 hash-format = "sha256"
 
 [[files]]
-file = ".mcp.json"
-hash = "97edc7a1e77555c8201dbc71e578978eb84f831c8f908c438e6d533426a8bf04"
-
-[[files]]
 file = "mods/abyssal-decor-1-21-1-0-10-0-neoforge.pw.toml"
 hash = "65c3c2cec5011984f5b0c11956c9860ea33abb5c7ccf72bd54e204d7acb7f6ab"
 metafile = true
