@@ -1,4 +1,24 @@
 """
+RETIRED 2026-09-10 -- SUPERSEDED BY scripts/build_cf_discord_slim.py. This script now refuses
+to run. Everything below the guard is kept only as the record of why.
+
+WHY IT IS RETIRED. It writes `manualUpdateOnly = true` into the client config (see step 3 and the
+config-stamping block further down), which makes AeroTitleScreen.openUpdateTarget() route "you are
+outdated" to StoreUpdateScreen -- the "grab the newest version from CurseForge or Modrinth, then
+reinstall from your launcher" wall. That was a deliberate splint over this script's REFERENCE model:
+CF-referenced mods arrive as CurseForge's bytes, our packwiz index hashes Modrinth's, so the updater
+saw almost every jar as stale and the first update tried to pull hundreds of files from GitHub raw
+-> 429 -> silent failure.
+
+`build_cf_discord_slim.py` removes the underlying cause instead of splinting it: it references a mod
+ONLY when CF's copy is byte-identical (sha1) AND stored under the same filename, so the updater sees
+a clean install and `manualUpdateOnly` can stay false. Same audience, same ~91 MB, and it updates.
+
+🔴 WHY THIS GUARD EXISTS RATHER THAN JUST A DOC NOTE. On 2026-09-09 the replacement scripts were
+written and verified against 1.10.12 -- and then 1.10.14 and 1.10.16 were cut by running THIS script,
+which silently re-created the exact bug and shipped it to Discord. A fix that a routine rebuild can
+undo is not a fix. Leaving this file runnable was the actual defect.
+
 Build the LIGHT CurseForge import zip handed to players directly (CF app -> Import).
 
 Starts from the fingerprinted store zip, which is already mostly CF *references* rather than bundled
@@ -18,6 +38,16 @@ bundled by the fingerprint pass, so the profile BOOTS as imported. That matters:
 in-game, so a profile that cannot reach the title screen can never repair itself.
 """
 import json, os, re, shutil, sys, tempfile, urllib.request, zipfile
+
+sys.exit(
+    "\nbuild_cf_import.py is RETIRED -- it produced the 'Update Available / reinstall from your\n"
+    "launcher' screen by writing manualUpdateOnly = true.\n\n"
+    "    Use:  py scripts/build_cf_discord_slim.py\n\n"
+    "Same purpose (a light zip handed to players, CF app -> Import), same size (~91 MB), but it\n"
+    "references a mod only when CurseForge's copy is byte-identical AND identically named, so the\n"
+    "in-client updater works and manualUpdateOnly stays false.\n\n"
+    "If you genuinely need the old behaviour, delete this sys.exit deliberately -- do not remove it\n"
+    "to 'get a build out'. Shipping this zip is what put that screen in front of players twice.\n")
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RELEASES = r"D:\MC Project\Releases"
