@@ -9,6 +9,7 @@ import java.net.http.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
+import static com.coffeesaerosmp.auth.util.Repeating.guard;
 
 /**
  * Minimal Discord Gateway (WebSocket) client.
@@ -318,7 +319,9 @@ public class DiscordGateway {
         heartbeatIntervalMs = intervalMs;
         lastAckAt = System.currentTimeMillis();             // fresh session — nothing owed yet
         long jitter = (long)(intervalMs * Math.random());   // initial jitter per Discord docs
-        heartbeatTask = sender.scheduleAtFixedRate(this::sendHeartbeatNow, jitter, intervalMs, TimeUnit.MILLISECONDS);
+        heartbeatTask = sender.scheduleAtFixedRate(
+                guard("discord-heartbeat", this::sendHeartbeatNow),
+                jitter, intervalMs, TimeUnit.MILLISECONDS);
     }
 
     private void stopHeartbeat() {

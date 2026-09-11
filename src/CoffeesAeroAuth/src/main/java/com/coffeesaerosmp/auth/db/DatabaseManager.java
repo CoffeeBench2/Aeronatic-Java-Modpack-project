@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+import static com.coffeesaerosmp.auth.util.Repeating.guard;
 
 public class DatabaseManager {
 
@@ -114,7 +115,7 @@ public class DatabaseManager {
             t.setDaemon(true);
             return t;
         });
-        scheduler.scheduleAtFixedRate(this::checkHealth, 30, 30, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(guard("db-health", this::checkHealth), 30, 30, TimeUnit.SECONDS);
     }
 
     private void checkHealth() {

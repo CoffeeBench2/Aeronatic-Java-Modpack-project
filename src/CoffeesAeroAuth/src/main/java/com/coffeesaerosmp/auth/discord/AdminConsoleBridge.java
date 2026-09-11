@@ -26,6 +26,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import static com.coffeesaerosmp.auth.util.Repeating.guard;
 
 /**
  * Feature B — Discord ⇄ server admin console bridge.
@@ -88,7 +89,7 @@ public class AdminConsoleBridge {
                 t.setDaemon(true);
                 return t;
             });
-            flusher.scheduleWithFixedDelay(this::flush, 2, 2, TimeUnit.SECONDS);
+            flusher.scheduleWithFixedDelay(guard("console-flush", this::flush), 2, 2, TimeUnit.SECONDS);
             mirrorEnabled = true;
             CoffeesAeroAuth.LOGGER.info("[Discord] Admin console mirror active → channel {}", channelId);
         } catch (Exception e) {

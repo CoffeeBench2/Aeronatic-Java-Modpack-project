@@ -18,6 +18,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
+import static com.coffeesaerosmp.auth.util.Repeating.guard;
 
 public class WatchdogManager {
 
@@ -83,13 +84,16 @@ public class WatchdogManager {
         loadPremiumNames(profileStore);
 
         // Audit checksum every 60s
-        scheduler.scheduleAtFixedRate(this::runAuditCheck, 60, 60, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(
+                guard("audit-integrity", this::runAuditCheck), 60, 60, TimeUnit.SECONDS);
         // Server health every 10s
-        scheduler.scheduleAtFixedRate(this::checkServerHealth, 10, 10, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(
+                guard("server-health", this::checkServerHealth), 10, 10, TimeUnit.SECONDS);
         // Reset pre-auth packet counters every second
-        scheduler.scheduleAtFixedRate(preAuthBlocked::clear, 1, 1, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(guard("preauth-reset", preAuthBlocked::clear), 1, 1, TimeUnit.SECONDS);
         // Persist daily stats every 60s (restart-proof digest; losing ≤60s of counts on a crash is fine)
-        scheduler.scheduleWithFixedDelay(this::persistDailyStats, 60, 60, TimeUnit.SECONDS);
+        scheduler.scheduleWithFixedDelay(
+                guard("daily-stats", this::persistDailyStats), 60, 60, TimeUnit.SECONDS);
         // Schedule daily digest
         scheduleDigest();
     }

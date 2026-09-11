@@ -5,6 +5,7 @@ import com.coffeesaerosmp.auth.watchdog.Severity;
 
 import java.util.*;
 import java.util.concurrent.*;
+import static com.coffeesaerosmp.auth.util.Repeating.guard;
 
 /**
  * Rate-limited dispatch queue for Discord webhooks.
@@ -41,16 +42,6 @@ public class WebhookQueue {
         scheduler.scheduleAtFixedRate(guard("flushLow", this::flushLow), 30, 30, TimeUnit.SECONDS);
     }
 
-    /** Wraps a repeating task so a throw is logged instead of silently killing the schedule. */
-    private static Runnable guard(String name, Runnable body) {
-        return () -> {
-            try {
-                body.run();
-            } catch (Throwable t) {
-                CoffeesAeroAuth.LOGGER.error("[Discord] {} tick failed (schedule kept alive)", name, t);
-            }
-        };
-    }
 
     public void enqueue(String url, String json, Severity severity) {
         if (url == null || url.isBlank() || json == null) return;
