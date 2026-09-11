@@ -11,7 +11,7 @@ import com.coffeesaerosmp.auth.discord.DiscordBridge;
 import com.coffeesaerosmp.auth.discord.DiscordGateway;
 import com.coffeesaerosmp.auth.discord.WebhookQueue;
 import com.coffeesaerosmp.auth.lobby.NameApprovalQueue;
-import com.coffeesaerosmp.auth.lobby.PrivateRoomManager;
+import com.coffeesaerosmp.auth.lobby.LobbyManager;
 import com.coffeesaerosmp.auth.obsidian.ObsidianClient;
 import com.coffeesaerosmp.auth.obsidian.ObsidianExporter;
 import com.coffeesaerosmp.auth.util.EnvLoader;
@@ -58,7 +58,7 @@ public class CoffeesAeroAuth {
     public static volatile com.coffeesaerosmp.auth.discord.AdminConsoleBridge ADMIN_CONSOLE;
     public static volatile WebhookQueue       WEBHOOK_QUEUE;
     public static volatile ObsidianExporter   OBSIDIAN_EXPORTER;
-    public static volatile PrivateRoomManager ROOM_MANAGER;
+    public static volatile LobbyManager LOBBY_MANAGER;
     public static volatile NameApprovalQueue  APPROVAL_QUEUE;
     public static volatile com.coffeesaerosmp.auth.lobby.LobbyInventoryStash LOBBY_STASH;
     public static volatile com.coffeesaerosmp.auth.daily.DailyRewardManager DAILY_REWARDS;
@@ -69,6 +69,43 @@ public class CoffeesAeroAuth {
         net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("aerosmp", "auth");
     /** Verifier for gate-signed auth cookies — disabled until AERO_GATE_SECRET is set in .env. */
     public static volatile com.coffeesaerosmp.auth.auth.CookieAuth COOKIE_AUTH;
+
+    /**
+     * In-game UUID → the MOJANG UUID the gate verified, for premium players only.
+     *
+     * <p>Exists for the lobby → SMP handoff. On an offline-mode backend {@code player.getUUID()} is
+     * derived from the username (2d1532de…) while the gate's cookie carries the real Mojang UUID
+     * (98b33d4e…). The receiving server feeds the cookie's UUID to {@code SkinsHook.applyPremium},
+     * so a handoff cookie signed with the local UUID produces a broken skin for every premium
+     * player. Captured here at verification time because nothing else persists it.
+     *
+     * <p>⚠️ Deliberately NOT read from {@code PremiumReconnectGrace}: that is a time-boxed window
+     * which an admin can set to 0, and a handoff must not silently depend on a tuning knob that can
+     * disable it. Cleared on logout.
+     */
+    public static final java.util.Map<java.util.UUID, java.util.UUID> VERIFIED_PREMIUM_UUID =
+        new java.util.concurrent.ConcurrentHashMap<>();
+
+    /**
+     * Players who arrived carrying a cryptographically VALID gate cookie — premium and offline alike.
+     *
+     * <h2>What this does and does not prove</h2>
+     * It proves the arrival came through our own chain rather than straight off the internet: the
+     * cookie is HMAC-signed with {@code AERO_GATE_SECRET}, single-use by nonce, and time-limited. On
+     * the split topology the only thing that transfers a player to the SMP is the lobby's
+     * {@code LobbyHandoff.tryTransfer}, and that is reachable only from {@code /spawn}, which requires
+     * {@code isAuthenticated} — so in practice a cookie here means "the lobby already logged this
+     * person in".
+     *
+     * <p>🔴 It is NOT a password check in itself, and it must not be treated as one anywhere except
+     * the split-architecture bypass in {@code enterOfflineFlow}. A direct connection with no cookie is
+     * deliberately absent from this set and still has to log in normally, which is the boundary that
+     * makes the bypass safe.
+     *
+     * <p>Cleared on logout, same as {@link #VERIFIED_PREMIUM_UUID}.
+     */
+    public static final java.util.Set<java.util.UUID> GATE_VERIFIED =
+        java.util.concurrent.ConcurrentHashMap.newKeySet();
 
     public CoffeesAeroAuth(IEventBus modBus, ModContainer container) {
         container.registerConfig(ModConfig.Type.SERVER, AuthConfig.SERVER_SPEC);
@@ -111,7 +148,12 @@ public class CoffeesAeroAuth {
         com.coffeesaerosmp.auth.compat.SkinsHook.install();
 
         // Restrictions: movement, interaction, inventory
-        NeoForge.EVENT_BUS.addListener(PlayerRestrictEvents::onLivingTick);
+        // 🔴 ENTITY tick, NOT player tick. This handler TELEPORTS (the unauth freeze), and a teleport
+        // performed inside ServerPlayer.doTick() is reverted by absMoveTo on the next line while
+        // leaving awaitingPositionFromClient armed — which makes the server discard every movement
+        // packet the client sends. Moving it to PlayerTickEvent on 2026-09-07 froze the whole lobby.
+        // See the note on onPlayerTick before touching this again.
+        NeoForge.EVENT_BUS.addListener(PlayerRestrictEvents::onPlayerTick);
         NeoForge.EVENT_BUS.addListener(PlayerRestrictEvents::onRightClickBlock);
         NeoForge.EVENT_BUS.addListener(PlayerRestrictEvents::onRightClickItem);
         NeoForge.EVENT_BUS.addListener(PlayerRestrictEvents::onEntityInteract);
@@ -126,6 +168,10 @@ public class CoffeesAeroAuth {
         NeoForge.EVENT_BUS.addListener(PlayerRestrictEvents::onLobbyDeath);
         NeoForge.EVENT_BUS.addListener(PlayerRestrictEvents::onLobbyRespawn);
         NeoForge.EVENT_BUS.addListener(PlayerRestrictEvents::onLobbyCommand);
+
+        // Standalone lobby: no portal leads anywhere. Filtered by DESTINATION so it cannot block our
+        // own teleport INTO the lobby dimension — see the note on onTravelToDimension. No-op on the SMP.
+        NeoForge.EVENT_BUS.addListener(PlayerRestrictEvents::onTravelToDimension);
 
 
 
@@ -218,6 +264,12 @@ public class CoffeesAeroAuth {
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.tick.ServerTickEvent.Post e) ->
             com.coffeesaerosmp.auth.util.RestartWarning.onServerTick(e.getServer()));
 
+        // Arms that same countdown automatically before the HOST'S daily restart (panel-scheduled,
+        // 10:30 Asia/Colombo, previously silent). Self-throttles to 1Hz; fires on crossing, not
+        // equality, so a stalled tick can delay it but never skip it.
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.tick.ServerTickEvent.Post e) ->
+            com.coffeesaerosmp.auth.util.DailyRestartSchedule.onServerTick(e.getServer()));
+
         // Vote reminder: tells a player the moment their vote cooldown elapses (throttled to ~30s
         // internally, and once per cooldown rather than once per sweep).
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.tick.ServerTickEvent.Post e) -> {
@@ -248,7 +300,7 @@ public class CoffeesAeroAuth {
 
         // Watchdog: command velocity, movement, death, advancements
         NeoForge.EVENT_BUS.addListener(WatchdogEvents::onCommand);
-        NeoForge.EVENT_BUS.addListener(WatchdogEvents::onLivingTick);
+        NeoForge.EVENT_BUS.addListener(WatchdogEvents::onPlayerTick);   // PLAYER tick, not entity tick
         NeoForge.EVENT_BUS.addListener(WatchdogEvents::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(WatchdogEvents::onAdvancement);
 
@@ -354,10 +406,10 @@ public class CoffeesAeroAuth {
         com.coffeesaerosmp.auth.watchdog.StallWatchdog.start(event.getServer(), dataDir);
         com.coffeesaerosmp.auth.watchdog.LagAttributor.start(event.getServer());
 
-        // ── Private room + name approval ──────────────────────────────────────
-        ROOM_MANAGER   = new PrivateRoomManager(event.getServer());
-        APPROVAL_QUEUE = new NameApprovalQueue(PROFILE_STORE, WEBHOOK_QUEUE, DISCORD_REST, event.getServer(), ROOM_MANAGER);
-        ROOM_MANAGER.runStartupCleanup(PROFILE_STORE);
+        // ── Lobby + name approval ─────────────────────────────────────────────
+        LOBBY_MANAGER   = new LobbyManager(event.getServer());
+        APPROVAL_QUEUE = new NameApprovalQueue(PROFILE_STORE, WEBHOOK_QUEUE, DISCORD_REST, event.getServer(), LOBBY_MANAGER);
+        LOBBY_MANAGER.runStartup(PROFILE_STORE);
 
         // Disable vanilla's advancement chat broadcast (it uses the account username); our
         // WatchdogEvents.onAdvancement re-emits it with the display name instead.
@@ -397,11 +449,25 @@ public class CoffeesAeroAuth {
             }
         }
 
+        // Lobby-side: watch whether the SMP is actually reachable, and hold players here while it
+        // is not. No-ops entirely on the SMP (isLobbyRole() is false there).
+        com.coffeesaerosmp.auth.lobby.LobbyWaitingRoom.attach(event.getServer());
+        com.coffeesaerosmp.auth.lobby.SmpLiveness.start();
+        // Both roles: the LOBBY reads the flag to decide whether to hand players over, and the SMP
+        // reads it so `/authmod lockdown status` tells the truth rather than echoing local state.
+        com.coffeesaerosmp.auth.lobby.LockdownState.attach(event.getServer());
+        com.coffeesaerosmp.auth.lobby.LockdownState.start();
+
         LOGGER.info("CoffeesAeroAuth started. DB: {} | Data: {}",
             DB_MANAGER.getState(), dataDir);
     }
 
     private static void onServerStopping(ServerStoppingEvent event) {
+        // Stop the liveness poller first: it holds a socket and a scheduled thread, and neither
+        // should outlive the server it belongs to.
+        com.coffeesaerosmp.auth.lobby.SmpLiveness.stop();
+        com.coffeesaerosmp.auth.lobby.LockdownState.stop();
+        com.coffeesaerosmp.auth.lobby.LobbyWaitingRoom.detach();
         // FIRST LINE ON PURPOSE: from here on ticks stop legitimately, so the tick-stall rule must
         // give way to the shutdown deadline. Everything below this point is part of the shutdown
         // that is now being supervised — including the player-session close, which goes to MySQL in
@@ -434,7 +500,7 @@ public class CoffeesAeroAuth {
         if (DB_MANAGER != null)     { DB_MANAGER.shutdown();    DB_MANAGER = null; }
         DISPLAY_NAMES = null;
         AUTH_MANAGER  = null;
-        ROOM_MANAGER  = null;
+        LOBBY_MANAGER  = null;
         LOBBY_STASH   = null;
     }
 
@@ -443,6 +509,113 @@ public class CoffeesAeroAuth {
      * (see {@code ServerCommonCookieMixin}). Verifies it and resolves premium/offline. No / bad /
      * expired / replayed cookie → OFFLINE, never premium.
      */
+    /**
+     * Refuses a player who reached the SMP without coming through the lobby.
+     *
+     * <h3>How "came through the lobby" is proved</h3>
+     * By the signed cookie. The lobby (and the gate) store one on the client immediately before
+     * transferring; a direct connection has none. That is the same single signal that already stops
+     * a direct connection claiming premium, so this adds no new trust mechanism — it just makes the
+     * existing one mandatory instead of advisory.
+     *
+     * <p>🔑 <b>The op exemption is automatically per-server.</b> {@code ops.json} is not shared, so
+     * {@code hasPermissions(4)} evaluated here means "an operator of the SMP". An operator of the
+     * LOBBY who is not also one here gets no exemption — which is exactly the rule that was asked
+     * for, and it falls out of vanilla rather than needing a second list to maintain.
+     *
+     * <p>⚠️ This necessarily closes the premium reconnect-grace path too: that path exists to rescue
+     * a launcher auto-reconnect after a kick, and such a reconnect is BY DEFINITION direct. With this
+     * on, a player whose cookie was spent goes back through the front door, one hop away.
+     *
+     * @return true if the player was disconnected and the caller must stop.
+     */
+    public static boolean refuseDirectEntry(net.minecraft.server.level.ServerPlayer player) {
+        boolean required;
+        try { required = com.coffeesaerosmp.auth.config.AuthConfig.REQUIRE_LOBBY_ENTRY.get(); }
+        catch (Exception e) { return false; }                       // config not loaded -> never refuse
+        if (!required) return false;
+        if (com.coffeesaerosmp.auth.lobby.LobbyHandoff.isLobbyRole()) return false;  // SMP only
+        if (player.hasPermissions(4)) return false;                 // operators of THIS server
+
+        String where = "";
+        try { where = com.coffeesaerosmp.auth.config.AuthConfig.LOBBY_ENTRY_ADDRESS.get().trim(); }
+        catch (Exception ignored) {}
+
+        String who = player.getGameProfile().getName();
+        String ip  = com.coffeesaerosmp.auth.util.NetUtil.getPlayerIP(player);
+        LOGGER.info("[Entry] Refused DIRECT connection from {} ({}) — no lobby/gate cookie.", who, ip);
+        alertDirectEntry(who, ip);
+
+        net.minecraft.network.chat.Component msg = net.minecraft.network.chat.Component.literal(
+            "§c§lWrong door.\n\n"
+            + "§7This is the survival server. Everyone joins through the lobby first —\n"
+            + "§7that is what verifies your account and carries your rank across.\n\n"
+            + (where.isEmpty()
+                ? "§7Please reconnect using the server address from Discord."
+                : "§7Connect to: §a" + where));
+        try { player.connection.disconnect(msg); } catch (Exception ignored) {}
+        return true;
+    }
+
+    // ── Direct-entry alerting ─────────────────────────────────────────────────
+    /** Last alert per player name, so one person retrying does not become a Discord flood. */
+    private static final java.util.Map<String, Long> lastEntryAlert = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final java.util.concurrent.atomic.AtomicInteger entryAlertsInWindow =
+        new java.util.concurrent.atomic.AtomicInteger();
+    private static volatile long entryAlertWindowStart = 0L;
+
+    private static final long ENTRY_ALERT_COOLDOWN_MS = 10 * 60_000L;  // per name
+    private static final int  ENTRY_ALERT_WINDOW_MAX  = 6;             // per 10 min, all names
+
+    /**
+     * Raises a watchdog alert for a refused direct connection.
+     *
+     * <h3>🔴 Rate limited on purpose — this is a security surface, and security surfaces get hammered</h3>
+     * A refusal is exactly the event an attacker or a port scanner generates repeatedly. Alerting per
+     * event would hand anyone with a loop the ability to flood the Discord webhook queue — and that is
+     * not hypothetical here: the movement watchdog alerted per event at MEDIUM, one session was enough
+     * to rate limit the whole bridge, and it took CHAT DELIVERY down with it. So: one alert per player
+     * name per 10 minutes, and at most {@value #ENTRY_ALERT_WINDOW_MAX} alerts in any 10-minute window
+     * across all names. Suppressed refusals are still logged in full — the log is the record, the
+     * alert is the notification.
+     */
+    private static void alertDirectEntry(String who, String ip) {
+        try {
+            if (WATCHDOG == null) return;
+            long now = System.currentTimeMillis();
+
+            synchronized (lastEntryAlert) {
+                if (now - entryAlertWindowStart > ENTRY_ALERT_COOLDOWN_MS) {
+                    entryAlertWindowStart = now;
+                    entryAlertsInWindow.set(0);
+                }
+                Long last = lastEntryAlert.get(who);
+                if (last != null && now - last < ENTRY_ALERT_COOLDOWN_MS) return;   // same person retrying
+                if (entryAlertsInWindow.get() >= ENTRY_ALERT_WINDOW_MAX) {
+                    LOGGER.warn("[Entry] Alert suppressed for {} — more than {} refusals in 10 minutes. "
+                        + "Something is scanning or misconfigured; check the log, not Discord.",
+                        who, ENTRY_ALERT_WINDOW_MAX);
+                    return;
+                }
+                lastEntryAlert.put(who, now);
+                entryAlertsInWindow.incrementAndGet();
+                if (lastEntryAlert.size() > 512) lastEntryAlert.clear();   // unbounded-growth guard
+            }
+
+            WATCHDOG.alert(com.coffeesaerosmp.auth.watchdog.WatchdogEvent.of(
+                com.coffeesaerosmp.auth.watchdog.Severity.HIGH,
+                "Direct connection refused",
+                "Player was disconnected — they bypassed the lobby",
+                "Player", who,
+                "IP", ip,
+                "Why", "No lobby/gate cookie presented",
+                "Note", "Expected occasionally (old server entry saved in a client's list). "
+                      + "Repeated hits from one IP are worth looking at."));
+        } catch (Throwable t) {
+            LOGGER.debug("[Entry] alert failed: {}", t.toString());
+        }
+    }
+
     public static void handleAuthCookie(net.minecraft.server.level.ServerPlayer player, byte[] payload) {
         if (AUTH_MANAGER == null) return;
         String name = player.getGameProfile().getName();
@@ -451,6 +624,7 @@ public class CoffeesAeroAuth {
             return;
         }
         if (payload == null) {                               // direct connect / not via the gate
+            if (refuseDirectEntry(player)) return;           // requireLobbyEntry: wrong door
             if (resolveViaReconnectGrace(player, name, "no cookie")) return;
             AUTH_MANAGER.resolvePlayerType(player, false);
             return;
@@ -460,6 +634,7 @@ public class CoffeesAeroAuth {
             // A spent cookie is NORMAL on a direct reconnect (launcher auto-reconnect after a kick):
             // the nonce is single-use. Same name + same IP inside the grace window still counts as
             // the gate-verified premium player; everything else stays OFFLINE as before.
+            if (refuseDirectEntry(player)) return;        // a spent/forged cookie is not an arrival
             if (resolveViaReconnectGrace(player, name, "cookie invalid/expired/replay")) return;
             LOGGER.warn("[Gate] Cookie REJECTED for {} (invalid/expired/replay) — treating as OFFLINE.", name);
             AUTH_MANAGER.resolvePlayerType(player, false);
@@ -467,9 +642,36 @@ public class CoffeesAeroAuth {
         }
         LOGGER.info("[Gate] Cookie OK: {} -> {} (verified UUID {}).",
             name, v.premium() ? "PREMIUM" : "OFFLINE", v.uuid());
+        // Recorded for BOTH premium and offline: the offline case is the one that matters, because it
+        // is what lets the SMP skip a second /login for somebody the lobby already authenticated.
+        GATE_VERIFIED.add(player.getUUID());
         if (v.premium()) {
             com.coffeesaerosmp.auth.auth.PremiumReconnectGrace.record(
                 name, v.uuid(), com.coffeesaerosmp.auth.util.NetUtil.getPlayerIP(player));
+            // Remember the Mojang UUID for the lobby → SMP handoff, which must re-sign THIS value
+            // rather than player.getUUID(). See VERIFIED_PREMIUM_UUID.
+            VERIFIED_PREMIUM_UUID.put(player.getUUID(), v.uuid());
+
+            // ── automatic rename handling ────────────────────────────────────────────────
+            // A Mojang uuid NEVER changes; our primary key does, because it is
+            // md5("OfflinePlayer:"+name). So a profile filed under this Mojang uuid but a
+            // DIFFERENT local uuid is proof this human renamed — not a guess.
+            //
+            // We do NOT migrate here. The player is already logged in, holding their (empty,
+            // freshly-created) playerdata open, and vanilla rewrites it on disconnect — moving
+            // files under a live player is silently undone. So: disconnect them with an honest
+            // message, migrate once they are actually gone, and let them walk back into their
+            // own account. One reconnect, no admin, no data loss.
+            java.util.UUID prior =
+                com.coffeesaerosmp.auth.admin.AccountTransfer.previousIdentity(v.uuid(), player.getUUID());
+            if (prior != null) {
+                com.coffeesaerosmp.auth.admin.RenameHealer.scheduleFor(player, prior, name);
+                return;   // nothing below should run for a session that is about to end
+            }
+            // No rename: just keep the mapping current so the NEXT one is detectable. Cheap, async,
+            // and self-backfilling — existing premium players gain a mojang_uuid the first time they
+            // log in after this build, with no migration step.
+            com.coffeesaerosmp.auth.admin.AccountTransfer.rememberMojangUuid(player.getUUID(), v.uuid());
         }
         AUTH_MANAGER.resolvePlayerType(player, v.premium());
         // Premium: show their REAL Mojang skin (fetched by the gate-verified UUID) on this offline server.

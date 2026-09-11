@@ -142,6 +142,35 @@ public class ProfileCommands {
             .then(Commands.literal("duplicates")
                 .executes(ctx -> listDuplicates(ctx.getSource()))
             )
+            // /authmod transferaccount <old> <new> [confirm]
+            //
+            // Moves an account to the uuid of a new Minecraft name. Needed because the backend is
+            // online-mode=false and the gate connects clients DIRECTLY, so every uuid is
+            // md5("OfflinePlayer:"+name) — derived from the name. A rename mints a new player.
+            //
+            // Premium renames are normally healed automatically (RenameHealer, driven by the
+            // never-changing Mojang uuid in the gate cookie). This command is the manual path for
+            // the cases that cannot be: an account that predates the mojang_uuid backfill, or one
+            // whose automatic run refused and logged "Run: /authmod transferaccount ...".
+            //
+            // Name-based, never EntityArgument: both accounts MUST be offline for the file moves to
+            // stick, so an argument type that only resolves online players would reject every valid
+            // use of this command.
+            .then(Commands.literal("transferaccount")
+                .then(Commands.argument("oldname", StringArgumentType.word())
+                    .then(Commands.argument("newname", StringArgumentType.word())
+                        // No "confirm" => dry run. This is destructive and irreversible from chat,
+                        // so seeing the plan is the default and running it is the opt-in.
+                        .executes(ctx -> transferAccount(ctx.getSource(),
+                            StringArgumentType.getString(ctx, "oldname"),
+                            StringArgumentType.getString(ctx, "newname"), false))
+                        .then(Commands.literal("confirm")
+                            .executes(ctx -> transferAccount(ctx.getSource(),
+                                StringArgumentType.getString(ctx, "oldname"),
+                                StringArgumentType.getString(ctx, "newname"), true)))
+                    )
+                )
+            )
             .then(Commands.literal("info")
                 .then(Commands.argument("player", EntityArgument.player())
                     .executes(ctx -> adminInfo(ctx.getSource(), EntityArgument.getPlayer(ctx, "player")))
@@ -153,6 +182,27 @@ public class ProfileCommands {
                 .then(Commands.argument("name", StringArgumentType.word())
                     .suggests(ONLINE_NAMES)
                     .executes(ctx -> adminResetPassword(ctx.getSource(), StringArgumentType.getString(ctx, "name")))
+                )
+            )
+            // The SMP "closed for business" switch. Raised automatically by the restart countdown,
+            // lowered ONLY here — a countdown ending does not mean a 40 GB world is ready, and an SLP
+            // going green does not either. Only a person can say that.
+            .then(Commands.literal("lockdown")
+                .then(Commands.literal("on")
+                    .executes(ctx -> setLockdown(ctx.getSource(), true, "manual")))
+                .then(Commands.literal("off")
+                    .executes(ctx -> setLockdown(ctx.getSource(), false, "")))
+                .then(Commands.literal("status")
+                    .executes(ctx -> lockdownStatus(ctx.getSource())))
+                .executes(ctx -> lockdownStatus(ctx.getSource()))
+            )
+            // Gives a player their /skin allowance back. Name-based for the same reason as
+            // resetpassword — the player asking is usually offline when the admin gets round to it.
+            .then(Commands.literal("resetskins")
+                .then(Commands.argument("name", StringArgumentType.word())
+                    .suggests(ONLINE_NAMES)
+                    .executes(ctx -> adminResetSkinChanges(ctx.getSource(),
+                        StringArgumentType.getString(ctx, "name")))
                 )
             )
             // Full admin player card (works for offline players; also usable from the Discord
@@ -206,6 +256,16 @@ public class ProfileCommands {
                         }
                         ctx.getSource().sendSuccess(() -> Component.literal(TextUtil.PREFIX
                             + (was ? "§aCountdown cancelled." : "§7No countdown was running.")), true);
+                        // Deliberately does NOT clear the lockdown — only `/authmod lockdown off`
+                        // does, and quietly reopening here would reintroduce exactly the
+                        // "something else decided for you" behaviour the manual-only switch exists
+                        // to avoid. But a cancelled restart with the door still shut is a silent
+                        // outage waiting to happen, so say so rather than leave it to be discovered.
+                        if (com.coffeesaerosmp.auth.lobby.LockdownState.isLocked()) {
+                            ctx.getSource().sendSuccess(() -> Component.literal(TextUtil.PREFIX
+                                + "§e⚠ Survival is still CLOSED to lobby arrivals.§7 Cancelling the "
+                                + "countdown does not reopen it — run §f/authmod lockdown off§7."), true);
+                        }
                         return 1;
                     })
                 )
@@ -497,6 +557,45 @@ public class ProfileCommands {
      * shows the damage. `>` marks the record {@link ProfileStore#findByAnyName} now treats as
      * canonical.
      */
+    /**
+     * {@code /authmod transferaccount <old> <new> [confirm]} — move an account onto a new name.
+     *
+     * <p>Without {@code confirm} this only prints the plan. The operation re-keys a primary key and
+     * moves world files; being able to read exactly what will happen, from the same code path that
+     * will do it, is worth more than the saved keystroke.
+     */
+    private static int transferAccount(CommandSourceStack source, String oldName, String newName,
+                                       boolean confirm) {
+        var server = source.getServer();
+        var result = confirm
+            ? com.coffeesaerosmp.auth.admin.AccountTransfer.execute(server, oldName, newName)
+            : com.coffeesaerosmp.auth.admin.AccountTransfer.plan(server, oldName, newName);
+
+        if (!result.ok()) {
+            for (String line : result.lines()) {
+                source.sendFailure(Component.literal(line.startsWith("§") ? line : "§c" + line));
+            }
+            return 0;
+        }
+
+        source.sendSuccess(() -> Component.literal(confirm
+            ? "§8[§bAero§8] §aTransfer complete."
+            : "§8[§bAero§8] §ePLAN ONLY §7— nothing has been changed."), false);
+        for (String line : result.lines()) {
+            source.sendSuccess(() -> Component.literal("  " + line), false);
+        }
+        if (!confirm) {
+            source.sendSuccess(() -> Component.literal(
+                "§7Run §f/authmod transferaccount " + oldName + " " + newName + " confirm§7 to apply."),
+                false);
+        } else {
+            // Said plainly because it is the one part the command genuinely cannot do.
+            source.sendSuccess(() -> Component.literal(
+                "§7Have them rejoin and check inventory, claims, FTB team, quests and balance."), false);
+        }
+        return 1;
+    }
+
     private static int listDuplicates(CommandSourceStack source) {
         try {
             // PROFILE_STORE, not AUTH_MANAGER.getStore() — the latter is typed as the
@@ -753,6 +852,91 @@ public class ProfileCommands {
             online.connection.disconnect(Component.literal(
                 "§eYour password was reset by an admin.\n§7Reconnect and use §a/register§7 to set a new one."
             ));
+        }
+        return 1;
+    }
+
+    /** /authmod lockdown on|off — closes or opens the SMP to lobby transfers. */
+    private static int setLockdown(CommandSourceStack source, boolean lock, String why) {
+        String who = source.getTextName();
+        com.coffeesaerosmp.auth.lobby.LockdownState.set(lock, who, why);
+        source.sendSuccess(() -> Component.literal(TextUtil.PREFIX + (lock
+            ? "§eSurvival is now CLOSED§7 — the lobby will hold arrivals and tell them it is still "
+              + "under process. Open it with §f/authmod lockdown off§7."
+            : "§aSurvival is now OPEN§7 — the lobby will start letting players through again.")), true);
+        // The write is async, so say so rather than implying it has already landed.
+        source.sendSuccess(() -> Component.literal(
+            "§8(written to the shared database; the lobby picks it up within ~10s)"), false);
+        return 1;
+    }
+
+    /** /authmod lockdown status — is the door shut, and can we even tell? */
+    private static int lockdownStatus(CommandSourceStack source) {
+        boolean locked = com.coffeesaerosmp.auth.lobby.LockdownState.isLocked();
+        boolean backed = com.coffeesaerosmp.auth.lobby.LockdownState.isBacked();
+        String why = com.coffeesaerosmp.auth.lobby.LockdownState.reason();
+        source.sendSuccess(() -> Component.literal(TextUtil.PREFIX
+            + (locked ? "§eSurvival CLOSED" : "§aSurvival OPEN")
+            + (why == null || why.isBlank() ? "" : " §7(" + why + ")")), false);
+        if (!backed) {
+            // Distinguish "open" from "we have never managed to read the flag", because they look
+            // identical from the outside and only one of them is trustworthy.
+            source.sendSuccess(() -> Component.literal(
+                "§c⚠ The lock has never been read from the database — this is a DEFAULT, not a fact. "
+                + "Transfers are being allowed because refusing everyone on no information is worse."), false);
+        }
+        return 1;
+    }
+
+    /** /authmod resetskins &lt;name&gt; — puts a player's {@code /skin} allowance back to 0 used.
+     *
+     *  <p>The counter is a LIFETIME total ({@link PlayerProfile#skinChangesUsed}, column
+     *  {@code skin_changes_used}), so without this there is no way to give someone their changes back
+     *  — the usual case being a skin that failed to apply, or an admin handing out an extra as a
+     *  reward.</p>
+     *
+     *  <p>Safe for an ONLINE player, and that is not accidental: CoffeesAeroSkins reads the count
+     *  through {@code SkinsHook} → {@code AUTH_MANAGER.getStore().get(uuid)}, and
+     *  {@link com.coffeesaerosmp.auth.db.ProfileStore#findByAnyName} resolves through the same
+     *  cache-first {@code get()} on the same {@code ProfileStore} instance
+     *  ({@code AUTH_MANAGER} is constructed with {@code PROFILE_STORE}). So this mutates the very
+     *  object the skins mod will read — there is no detached copy to go stale, and no relog needed.</p>
+     *
+     *  <p>Written through {@code ProfileStore.save}, which is AsyncIo-backed. ⚠️ Never turn this into
+     *  a synchronous remote-MySQL call — that is the 07-18 freeze vector.</p>
+     *
+     *  <p>Name-based rather than EntityArgument so it works on offline players, matching
+     *  {@code resetpassword}.</p> */
+    private static int adminResetSkinChanges(CommandSourceStack source, String name) {
+        PlayerProfile p = CoffeesAeroAuth.PROFILE_STORE != null
+            ? CoffeesAeroAuth.PROFILE_STORE.findByAnyName(name) : null;
+        if (p == null) {
+            source.sendFailure(Component.literal(
+                "§cNo profile found for '" + name + "' (username or display name)."));
+            return 0;
+        }
+
+        int before = p.skinChangesUsed;
+        if (before == 0) {
+            source.sendSuccess(() -> Component.literal(TextUtil.PREFIX
+                + "§7" + p.displayName + " has not used any skin changes — nothing to reset."), false);
+            return 0;
+        }
+
+        p.skinChangesUsed = 0;
+        CoffeesAeroAuth.PROFILE_STORE.save(p);
+
+        int max = com.coffeesaerosmp.skins.server.SkinCommands.MAX_SKIN_CHANGES;
+        source.sendSuccess(() -> Component.literal(TextUtil.PREFIX
+            + "§aSkin changes reset for §f" + p.displayName
+            + "§a — was §f" + before + "§a used, now §f0/" + max + "§a."), true);
+
+        // Tell them if they are connected; otherwise they find out from /profile next login.
+        ServerPlayer online = source.getServer().getPlayerList().getPlayer(p.getUUID());
+        if (online != null) {
+            online.sendSystemMessage(Component.literal(TextUtil.PREFIX
+                + "§aAn admin restored your skin changes §7— you have §f" + max + "§7 again. Use §a/skin§7."));
+            Sounds.success(online);
         }
         return 1;
     }
@@ -1042,8 +1226,8 @@ public class ProfileCommands {
         // If they are connected right now, move them out immediately; otherwise the stale position
         // is still live in this session and their logout would write it straight back.
         ServerPlayer online = source.getServer().getPlayerList().getPlayer(p.getUUID());
-        if (online != null && CoffeesAeroAuth.ROOM_MANAGER != null) {
-            CoffeesAeroAuth.ROOM_MANAGER.teleportToSpawn(online);
+        if (online != null && CoffeesAeroAuth.LOBBY_MANAGER != null) {
+            CoffeesAeroAuth.LOBBY_MANAGER.teleportToSpawn(online);
             online.sendSystemMessage(Component.literal(
                 "§eAn admin moved you to spawn and cleared your saved return position."));
             source.sendSuccess(() -> Component.literal(
@@ -1097,9 +1281,6 @@ public class ProfileCommands {
         sb.append("Name       : ").append(nameState)
           .append("  |  rejections: ").append(p.nameRejectionCount)
           .append("  |  changes used: ").append(p.nameChangesUsed).append('\n');
-        sb.append("Room slot  : ").append(p.roomSlot)
-          .append("  |  skin changes: ").append(p.skinChangesUsed)
-          .append("  |  cape: ").append(p.capeEnabled).append('\n');
         if (p.returnDim != null)
             sb.append("Return pos : ").append(p.returnDim).append(" ")
               .append(Math.round(p.returnX)).append(", ").append(Math.round(p.returnY))
@@ -1158,11 +1339,30 @@ public class ProfileCommands {
         // "restarting shortly" has no end point, and a bar with no deadline is just clutter.
         if (minutes > 0) RestartWarning.start(server, minutes);
 
+        // 🔴 THE LOCKDOWN IS RAISED HERE, and ONLY here.
+        //
+        // It briefly lived inside RestartWarning.startSeconds, which meant the UNATTENDED 10:30
+        // restart raised it too — and because the lock only clears by hand, every night would have
+        // ended with the lobby refusing everyone until somebody noticed. Tying it to this command
+        // keeps it to what was actually asked for: a human warns, the door shuts.
+        //
+        // Not raised on the LOBBY (nothing to lock) and not on a bare "restart shortly" with no
+        // countdown, since that is used for chatter as much as for a real restart.
+        if (minutes > 0 && !com.coffeesaerosmp.auth.lobby.LobbyHandoff.isLobbyRole()) {
+            com.coffeesaerosmp.auth.lobby.LockdownState.set(
+                true, source.getTextName(), "restarting");
+        }
+
         int online = server.getPlayerList().getPlayerCount();
         CoffeesAeroAuth.LOGGER.info("[Restart] {} warned {} player(s): restart {}",
             source.getTextName(), online, when);
         source.sendSuccess(() -> Component.literal(
             TextUtil.PREFIX + "§aWarned §f" + online + "§a player(s): restart §f" + when + "§a."), true);
+        if (minutes > 0 && !com.coffeesaerosmp.auth.lobby.LobbyHandoff.isLobbyRole()) {
+            source.sendSuccess(() -> Component.literal(TextUtil.PREFIX
+                + "§eSurvival is now CLOSED to lobby arrivals.§7 It stays closed until you run "
+                + "§f/authmod lockdown off§7 — the restart finishing does NOT reopen it."), true);
+        }
         return 1;
     }
 
@@ -1416,7 +1616,7 @@ public class ProfileCommands {
         add.accept("First IP",    p.firstIp);
         add.accept("Name",        nameState + " • " + p.nameRejectionCount + " rejections • "
                                   + p.nameChangesUsed + " changes used");
-        add.accept("Room / Skin", "slot " + p.roomSlot + " • " + p.skinChangesUsed
+        add.accept("Skin",        p.skinChangesUsed
                                   + " skin changes • cape " + (p.capeEnabled ? "on" : "off"));
         add.accept("Discord",     p.discordId != null && !p.discordId.isBlank()
                                   ? "linked (<@" + p.discordId + ">)" : "not linked");

@@ -13,6 +13,21 @@ public class PlayerAuthEvents {
 
     public static void onPlayerJoin(PlayerEvent.PlayerLoggedInEvent event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
+
+        // Repair a stuck Invulnerable flag out of saved playerdata. Deliberately the FIRST thing in
+        // this method: everything below can kick and return early, and this must run for every join.
+        // It does not depend on AUTH_MANAGER, so it also sits above that null check.
+        //
+        // 🔑 THIS IS THE FIX FOR AN APT/AUTH-LOBBY INTERACTION, not a hypothetical. Adaptive
+        // Performance Tweaks' player_login_protection grants "invisibility + invulnerability on
+        // login UNTIL THEY MOVE (or until the timeout expires)" — and an offline player is FROZEN by
+        // AuthManager on their lobby pad until they /login, so the release condition cannot fire.
+        // Log out inside that window and vanilla persists Invulnerable:1b into playerdata, where it
+        // survives every relog: an unkillable survival player. Confirmed live 2026-09-07 on three
+        // accounts, one of them still standing in coffees_aero_auth:auth_lobby.
+        // See InvulnerableRepair for why a datapack cannot undo this.
+        com.coffeesaerosmp.auth.protect.InvulnerableRepair.onJoin(player);
+
         if (CoffeesAeroAuth.AUTH_MANAGER == null) return;
 
         boolean isOffline = !UUIDUtil.isPremiumUUID(player.getUUID());
@@ -140,8 +155,23 @@ public class PlayerAuthEvents {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         if (CoffeesAeroAuth.AUTH_MANAGER == null) return;
 
+        // A session we disconnected on purpose because the account was renamed. Vanilla has now
+        // finished writing their (empty, throwaway) playerdata out, which is the moment the real
+        // account can be folded in safely — a file move under a live player is silently undone.
+        // Runs BEFORE the playtime/Obsidian/Discord work below, because none of it should be
+        // attributed to the throwaway identity we are about to delete.
+        if (com.coffeesaerosmp.auth.admin.RenameHealer.isPending(player.getUUID())) {
+            com.coffeesaerosmp.auth.admin.RenameHealer.onDisconnect(
+                player.getServer(), player.getUUID());
+            return;
+        }
+
         // Update playtime FIRST, then let Obsidian read the updated profile
         CoffeesAeroAuth.AUTH_MANAGER.onPlayerLeave(player);
+
+        // Drop the session's gate-verified Mojang UUID. Bounded by logout rather than by a timer:
+        // it is only meaningful for the connection it was captured on.
+        com.coffeesaerosmp.auth.lobby.LobbyHandoff.forget(player.getUUID());
 
         PlayerProfile profile = CoffeesAeroAuth.PROFILE_STORE != null
             ? CoffeesAeroAuth.PROFILE_STORE.get(player.getUUID()) : null;

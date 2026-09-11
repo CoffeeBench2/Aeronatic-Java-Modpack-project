@@ -157,6 +157,22 @@ public class ProfileStore implements CredentialStore {
 
     // ── Display name index ────────────────────────────────────────────────────
 
+    /**
+     * Drop a uuid from the in-memory cache so the next {@link #get} re-reads it.
+     *
+     * <p>Exists for {@code AccountTransfer}, which re-keys a row in MySQL behind the store's back.
+     * Reads are cache-first, so without this the old uuid would keep answering from memory and the
+     * new one would look like it does not exist — for the rest of the server's uptime.
+     */
+    public void evict(UUID uuid) {
+        if (uuid != null) cache.remove(uuid);
+    }
+
+    /** Flat-file location for a profile. The fallback store is {@code profiles/<uuid>.json}. */
+    public Path profileFile(UUID uuid) {
+        return profilesDir.resolve(uuid + ".json");
+    }
+
     public boolean isDisplayNameTaken(String name) {
         return nameIndex.containsKey(name.toLowerCase(Locale.ROOT));
     }
@@ -272,9 +288,9 @@ public class ProfileStore implements CredentialStore {
         "(uuid,username,display_name,account_type,password_hash,password_salt," +
         " name_approved,first_join,last_seen,total_playtime,bio,skin_url," +
         " name_approval_pending,pending_display_name,name_rejection_count," +
-        " name_changes_used,room_slot,room_created_at,first_join_complete,startup_bonus_given," +
+        " name_changes_used,first_join_complete,startup_bonus_given," +
         " first_ip,cape_enabled,return_dim,return_x,return_y,return_z,skin_changes_used,discord_id)" +
-        " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)" +
+        " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)" +
         " ON DUPLICATE KEY UPDATE" +
         "  username=VALUES(username),display_name=VALUES(display_name)," +
         "  account_type=VALUES(account_type),password_hash=VALUES(password_hash)," +
@@ -285,7 +301,6 @@ public class ProfileStore implements CredentialStore {
         "  pending_display_name=VALUES(pending_display_name)," +
         "  name_rejection_count=VALUES(name_rejection_count)," +
         "  name_changes_used=VALUES(name_changes_used)," +
-        "  room_slot=VALUES(room_slot),room_created_at=VALUES(room_created_at)," +
         "  first_join_complete=VALUES(first_join_complete)," +
         "  startup_bonus_given=VALUES(startup_bonus_given)," +
         "  cape_enabled=VALUES(cape_enabled)," +
@@ -318,18 +333,16 @@ public class ProfileStore implements CredentialStore {
             ps.setString(14, p.pendingDisplayName);
             ps.setInt(15,    p.nameRejectionCount);
             ps.setInt(16,    p.nameChangesUsed);
-            ps.setInt(17,    p.roomSlot);
-            ps.setLong(18,   p.roomCreatedAt);
-            ps.setBoolean(19, p.firstJoinComplete);
-            ps.setBoolean(20, p.startupBonusGiven);
-            ps.setString(21, p.firstIp);   // only persisted on initial INSERT (not in ON DUPLICATE UPDATE)
-            ps.setBoolean(22, p.capeEnabled);
-            ps.setString(23, p.returnDim);
-            ps.setDouble(24, p.returnX);
-            ps.setDouble(25, p.returnY);
-            ps.setDouble(26, p.returnZ);
-            ps.setInt(27, p.skinChangesUsed);
-            ps.setString(28, p.discordId);
+            ps.setBoolean(17, p.firstJoinComplete);
+            ps.setBoolean(18, p.startupBonusGiven);
+            ps.setString(19, p.firstIp);   // only persisted on initial INSERT (not in ON DUPLICATE UPDATE)
+            ps.setBoolean(20, p.capeEnabled);
+            ps.setString(21, p.returnDim);
+            ps.setDouble(22, p.returnX);
+            ps.setDouble(23, p.returnY);
+            ps.setDouble(24, p.returnZ);
+            ps.setInt(25, p.skinChangesUsed);
+            ps.setString(26, p.discordId);
             ps.executeUpdate();
         }
     }
@@ -359,8 +372,6 @@ public class ProfileStore implements CredentialStore {
         p.pendingDisplayName   = rs.getString("pending_display_name");
         p.nameRejectionCount   = rs.getInt("name_rejection_count");
         p.nameChangesUsed      = rs.getInt("name_changes_used");
-        p.roomSlot             = rs.getInt("room_slot");
-        p.roomCreatedAt        = rs.getLong("room_created_at");
         p.firstJoinComplete    = rs.getBoolean("first_join_complete");
         p.startupBonusGiven    = rs.getBoolean("startup_bonus_given");
         p.returnDim            = rs.getString("return_dim");

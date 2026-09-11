@@ -206,9 +206,24 @@ public class DatabaseManager {
                 "  return_x              DOUBLE                       NOT NULL DEFAULT 0," +
                 "  return_y              DOUBLE                       NOT NULL DEFAULT 0," +
                 "  return_z              DOUBLE                       NOT NULL DEFAULT 0," +
-                "  discord_id            VARCHAR(32)                  NULL" +
+                "  discord_id            VARCHAR(32)                  NULL," +
+                // Stable across a Minecraft rename, unlike the primary key. See the ALTER below.
+                "  mojang_uuid           CHAR(36)                     NULL," +
+                "  INDEX idx_players_mojang (mojang_uuid)" +
                 ")");
             // Forward-compat: add columns missing on pre-existing tables (MySQL lacks ADD COLUMN IF NOT EXISTS).
+            // The player's MOJANG uuid — stable across a Minecraft name change, unlike the primary
+            // key, which is md5("OfflinePlayer:"+name) and therefore moves when they rename. Written
+            // on every gate-verified premium join (AccountTransfer.rememberMojangUuid), so it
+            // backfills itself with no migration. This column is the ONLY thing that makes an
+            // automatic rename detectable: a row filed under this mojang_uuid but a different
+            // primary key is PROOF the human renamed, not a heuristic.
+            // Indexed because the join path looks up by it; NULL for offline accounts, which have no
+            // Mojang identity and cannot rename (their name IS their identity).
+            try { s.executeUpdate("ALTER TABLE players ADD COLUMN mojang_uuid CHAR(36) NULL"); }
+            catch (SQLException ignored) { }   // MySQL has no ADD COLUMN IF NOT EXISTS
+            try { s.executeUpdate("CREATE INDEX idx_players_mojang ON players (mojang_uuid)"); }
+            catch (SQLException ignored) { }
             try { s.executeUpdate("ALTER TABLE players ADD COLUMN startup_bonus_given BOOLEAN NOT NULL DEFAULT FALSE"); }
             catch (SQLException dupCol) { /* column already present — fine */ }
             try { s.executeUpdate("ALTER TABLE players ADD COLUMN first_ip VARCHAR(45) NULL"); }
@@ -262,6 +277,16 @@ public class DatabaseManager {
                 "  reason      VARCHAR(255) NULL," +
                 "  banned_at   BIGINT       NOT NULL," +
                 "  expires_at  BIGINT       NOT NULL" +
+                ")");
+            // Cross-server flags. The lobby and the SMP are separate processes on separate hosts and
+            // share exactly one thing: this database. That makes it the only honest channel for
+            // "is the SMP accepting players right now" — see LockdownState.
+            s.executeUpdate(
+                "CREATE TABLE IF NOT EXISTS server_flags (" +
+                "  name        VARCHAR(64)  NOT NULL PRIMARY KEY," +
+                "  value       VARCHAR(255) NOT NULL," +
+                "  set_by      VARCHAR(64)  NULL," +
+                "  updated_at  BIGINT       NOT NULL" +
                 ")");
             CoffeesAeroAuth.LOGGER.info("[DB] Schema verified.");
         } catch (SQLException e) {
