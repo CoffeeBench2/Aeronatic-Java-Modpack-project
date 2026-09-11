@@ -162,7 +162,7 @@ metafile = true
 
 [[files]]
 file = "mods/coffeesaerocore.pw.toml"
-hash = "c653960baa0e11884560d1486bf66bf43f94d336ea4ab1a8dd43cac52f14f3f4"
+hash = "9b76f03afb772e6d85cd47139be999aafeb9a7544e085c431521193ba56a0968"
 metafile = true
 
 [[files]]
@@ -1116,8 +1116,8 @@ hash = "05f877c149aaa8cb38c861c0d937a80ed553682cb080ebfb12f14c489e7cb12b"
 metafile = true
 
 [[files]]
-file = "mods/sophisticatedbackpackscreateintegration-1-21-1-0-2-0-168.pw.toml"
-hash = "5e560d691fa28829f22cfea117c9c5797abedbd640a56ede24492178c11d4189"
+file = "mods/sophisticatedbackpackscreateintegration-1-21-1-0-1-8-134.pw.toml"
+hash = "c390bfd87591d9473d1c1953fe5f51a9bf77abf21001e91be07426e01bee3fca"
 metafile = true
 
 [[files]]
@@ -1308,7 +1308,7 @@ hash = "22f28227f57537cdba075123994df3d6e39a5ccd5d86103125fa2c4fb31f2f4d"
 
 [[files]]
 file = "overrides/config/coffeesaerosmp_core-client.toml"
-hash = "109bafe36b2da31c791c69d5ec8bbf647defd2624feb707216955072d25701d8"
+hash = "6948eaa314338708820a567c49ead17cf4b7d508d7a88e5b10729ce1a0db5d5c"
 
 [[files]]
 file = "overrides/config/entity_texture_features.json"

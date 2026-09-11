@@ -1,0 +1,13 @@
+name = "sophisticatedbackpackscreateintegration-1.21.1-0.1.8.134"
+filename = "sophisticatedbackpackscreateintegration-1.21.1-0.1.8.134.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/s85zLEDe/versions/ljF9gEMb/sophisticatedbackpackscreateintegration-1.21.1-0.1.8.134.jar"
+hash-format = "sha512"
+hash = "6b331668d85f421d64e85adce71ba3952b80c4ffecc38b86268d87dfcf16447c20e060b110c398ede4e5b95e18d8e59dd7304eab8a51860b1c82cb01ca6c6c9d"
+
+[update]
+[update.modrinth]
+mod-id = "s85zLEDe"
+version = "ljF9gEMb"
