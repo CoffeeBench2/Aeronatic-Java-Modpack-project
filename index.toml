@@ -162,7 +162,7 @@ metafile = true
 
 [[files]]
 file = "mods/coffeesaerocore.pw.toml"
-hash = "9b76f03afb772e6d85cd47139be999aafeb9a7544e085c431521193ba56a0968"
+hash = "8a6240d3dd4c3482fe8e2b2016f86edbe49f0ce59c56139388491a124a3cc284"
 metafile = true
 
 [[files]]
@@ -1186,11 +1186,6 @@ hash = "4825a784218a378b792c979f706aa0304358403324247c3b5eb07395bcf994df"
 metafile = true
 
 [[files]]
-file = "mods/tracks-in-bogs-1-1-0-neoforge-1-21-1.pw.toml"
-hash = "c0f5194fa037bc8847c3dfafae3ba84cb444c8e1f6bae67fcca903ed631ea0a9"
-metafile = true
-
-[[files]]
 file = "mods/tracks-neoforge-1-21-1-1-0-1.pw.toml"
 hash = "6862311ebba652630c728b4c4b4556a79fb4079707d0e640aae679b15f0f1a69"
 metafile = true
@@ -1308,7 +1303,7 @@ hash = "22f28227f57537cdba075123994df3d6e39a5ccd5d86103125fa2c4fb31f2f4d"
 
 [[files]]
 file = "overrides/config/coffeesaerosmp_core-client.toml"
-hash = "6948eaa314338708820a567c49ead17cf4b7d508d7a88e5b10729ce1a0db5d5c"
+hash = "47b09ad8c28108604593d7f8df02d5bc2292fa40562fb3720e97c932dce22ea8"
 
 [[files]]
 file = "overrides/config/entity_texture_features.json"
