@@ -1,0 +1,13 @@
+name = "tracks_in_bogs-1.1.0-neoforge-1.21.1"
+filename = "tracks_in_bogs-1.1.0-neoforge-1.21.1.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/ulhbmNld/versions/2zeH4y87/tracks_in_bogs-1.1.0-neoforge-1.21.1.jar"
+hash-format = "sha512"
+hash = "3a8e25c30c38768f9a7178c72c3389cdd16a2fa101543078d0ea75e7e5934ad86996253852b3cb25bee98122de85d0c4107302a61963d38c92bb06f1f583242c"
+
+[update]
+[update.modrinth]
+mod-id = "ulhbmNld"
+version = "2zeH4y87"
