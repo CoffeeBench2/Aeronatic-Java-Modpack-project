@@ -668,12 +668,21 @@ public class CoffeesAeroAuth {
                 com.coffeesaerosmp.auth.admin.RenameHealer.scheduleFor(player, prior, name);
                 return;   // nothing below should run for a session that is about to end
             }
-            // No rename: just keep the mapping current so the NEXT one is detectable. Cheap, async,
-            // and self-backfilling — existing premium players gain a mojang_uuid the first time they
-            // log in after this build, with no migration step.
-            com.coffeesaerosmp.auth.admin.AccountTransfer.rememberMojangUuid(player.getUUID(), v.uuid());
         }
         AUTH_MANAGER.resolvePlayerType(player, v.premium());
+        if (v.premium()) {
+            // No rename detected: keep the mapping current so the NEXT one is detectable. Cheap,
+            // async, and self-backfilling — a premium player gains a mojang_uuid on their first
+            // gate-verified login after this build, with no migration step.
+            //
+            // 🔴 MUST RUN AFTER resolvePlayerType, not beside the detection above. This is an
+            // UPDATE, and resolvePlayerType -> getOrCreate is what INSERTS the row. Called earlier,
+            // a brand-new premium player's UPDATE matches ZERO rows, the stamp is silently lost,
+            // and they stay unprotected until their second login — exactly the account most likely
+            // to rename soon. Ordering holds because AsyncIo is a single-thread executor, so the
+            // insert submitted by resolvePlayerType always runs before this update.
+            com.coffeesaerosmp.auth.admin.AccountTransfer.rememberMojangUuid(player.getUUID(), v.uuid());
+        }
         // Premium: show their REAL Mojang skin (fetched by the gate-verified UUID) on this offline server.
         if (v.premium()) com.coffeesaerosmp.auth.compat.SkinsHook.applyPremium(player, v.uuid());
     }
