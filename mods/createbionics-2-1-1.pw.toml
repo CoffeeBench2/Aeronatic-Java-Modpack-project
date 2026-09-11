@@ -1,0 +1,13 @@
+name = "createbionics-2.1.1"
+filename = "createbionics-2.1.1.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/lCwu0vBo/versions/IB3jhYul/createbionics-2.1.1.jar"
+hash-format = "sha512"
+hash = "026a10b3c220aaf5d784a847f914acb1a2e4b7b974e4c2b8e69a5555bbf4e70ce0517214438e9d3621dc2c87ebe573f1ae9dd357a6002739e0641601bcc0b28f"
+
+[update]
+[update.modrinth]
+mod-id = "lCwu0vBo"
+version = "IB3jhYul"

@@ -1,0 +1,13 @@
+name = "wakes-1.21.1-NeoForge-1.3.0"
+filename = "wakes-1.21.1-NeoForge-1.3.0.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/E0SdeAoH/versions/NfL7pKoK/wakes-1.21.1-NeoForge-1.3.0.jar"
+hash-format = "sha512"
+hash = "0f1346da2f6069c54c0f8014d40fcb0ed765044c7d7b95d83c7d582183f5cf46e00e007c083d1ddc963408dbadabf6cbc6985d4dac461f5d8f6ab58b1df729ad"
+
+[update]
+[update.modrinth]
+mod-id = "E0SdeAoH"
+version = "NfL7pKoK"

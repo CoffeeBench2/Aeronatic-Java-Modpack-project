@@ -1,0 +1,13 @@
+name = "createwingsplus-1.4.5"
+filename = "createwingsplus-1.4.5.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/Nrxm0WXj/versions/NmJER9Ru/createwingsplus-1.4.5.jar"
+hash-format = "sha512"
+hash = "140e4ac40a4411fce82111ad51c98443764a8ded2f14a8857b3f9e5a733a5b6afebb39983def0b87f72bf5f6bf7c835eed7542d31e68c59d39fc654efab3e7e2"
+
+[update]
+[update.modrinth]
+mod-id = "Nrxm0WXj"
+version = "NmJER9Ru"

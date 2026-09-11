@@ -1,0 +1,13 @@
+name = "linktablet-1.14.0"
+filename = "linktablet-1.14.0.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/hovmfNG2/versions/6lwtQzJP/linktablet-1.14.0.jar"
+hash-format = "sha512"
+hash = "236cf1eaf902cbd84080666fa9e567f9093eec299dd9cbd863ac6c1c75aecb243c47f135f553c4900892b96251747199944c85270eaf81725a457077bb5cb841"
+
+[update]
+[update.modrinth]
+mod-id = "hovmfNG2"
+version = "6lwtQzJP"
