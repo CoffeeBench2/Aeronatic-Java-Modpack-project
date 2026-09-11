@@ -84,8 +84,50 @@ public final class RenameHealer {
         Pending p = PENDING.remove(localUuid);
         if (p == null) return;
 
-        com.coffeesaerosmp.auth.util.AsyncIo.submit(() -> {
-            PlayerProfile old = CoffeesAeroAuth.PROFILE_STORE.get(p.priorUuid());
+        // 🔴 WHY server.execute AND NOT AsyncIo.submit — verified against the NeoForge-patched
+        // PlayerList source, not assumed:
+        //
+        //     public void remove(ServerPlayer p) {
+        //         EventHooks.firePlayerLoggedOut(p);   // <-- we are HERE
+        //         ...
+        //         this.save(p);                        // playerdata written AFTER us
+        //         this.players.remove(p);              // still in the list while we run
+        //         this.stats.remove(uuid);             // stats/advancements flushed AFTER us
+        //     }
+        //
+        // PlayerLoggedOutEvent is the FIRST statement of remove(). So at this instant the player is
+        // still in PlayerList and their data has NOT been written yet. Handing the migration to a
+        // worker thread here caused two separate faults:
+        //
+        //   1. the both-offline gate saw them ONLINE and refused every migration — and because it
+        //      raced with remove(), it refused only *sometimes*, which is worse than always;
+        //   2. when the worker won the race, it moved <old>.dat onto <new>.dat and vanilla then
+        //      wrote the departing player's EMPTY data over it — destroying the restored account
+        //      and the original in one step, since the source had already been moved.
+        //
+        // Queuing onto the server thread fixes both by construction: a task submitted from inside
+        // remove() cannot run until remove() has returned, so save(), players.remove() and the
+        // stats/advancements flush have all completed. No polling, no sleep, no race.
+        //
+        // The transfer then runs ON the server thread, which is also what AccountTransfer now
+        // requires. It costs one brief hitch on a rare event; the alternative is the data loss above.
+        server.execute(() -> {
+          // Nothing in here may throw. This body runs as a task ON THE TICK LOOP, and an escaping
+          // exception there is a server crash, not a failed migration — so the whole thing is
+          // wrapped and the worst case degrades to "they reconnect as a new account and the log
+          // says why". AccountTransfer.plan() also throws IllegalStateException off-thread by
+          // design, which makes an unguarded body here a crash waiting on a refactor.
+          try {
+            // PROFILE_STORE is volatile and null before init / after shutdown. Read it ONCE into a
+            // local: re-reading a volatile field can return null on the second read.
+            com.coffeesaerosmp.auth.db.ProfileStore store = CoffeesAeroAuth.PROFILE_STORE;
+            if (store == null) {
+                CoffeesAeroAuth.LOGGER.error(
+                    "[Rename] profile store unavailable — {} NOT migrated. "
+                  + "Run: /authmod transferaccount <oldname> {}", p.newName(), p.newName());
+                return;
+            }
+            PlayerProfile old = store.get(p.priorUuid());
             if (old == null) {
                 CoffeesAeroAuth.LOGGER.warn("[Rename] prior profile {} vanished — nothing migrated.",
                                             p.priorUuid());
@@ -111,6 +153,15 @@ public final class RenameHealer {
                     r.lines().isEmpty() ? "(no reason given)" : r.lines().get(0),
                     old.username, p.newName());
             }
+          } catch (Throwable t) {
+            CoffeesAeroAuth.LOGGER.error(
+                "[Rename] migration threw for {} — reconnect will land on a NEW account. "
+              + "Run: /authmod transferaccount <oldname> {}", p.newName(), p.newName(), t);
+          } finally {
+            // Normally cleared by LobbyHandoff.forget() in onPlayerLeave, but the rename path
+            // returns before that runs, so this entry would otherwise live until restart.
+            CoffeesAeroAuth.VERIFIED_PREMIUM_UUID.remove(localUuid);
+          }
         });
     }
 

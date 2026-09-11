@@ -83,6 +83,17 @@ public final class AccountTransfer {
     public static Result plan(MinecraftServer server, String oldName, String newName) {
         List<String> out = new ArrayList<>();
 
+        // 🔴 SERVER THREAD ONLY. The both-offline gate below reads PlayerList, whose `players` list
+        // and `playersByUUID` map are plain collections mutated by the server thread. Reading them
+        // from a worker is a data race, and the value it races on is the ONE safety invariant of
+        // this class — a stale "nobody is online" is what lets files move under a live player.
+        // Fail loudly rather than silently sample a torn view.
+        if (!server.isSameThread()) {
+            throw new IllegalStateException(
+                "AccountTransfer must run on the server thread (PlayerList is not thread-safe). "
+              + "Wrap the call in server.execute(...).");
+        }
+
         if (oldName.equalsIgnoreCase(newName)) {
             return Result.fail("Old and new names are the same — nothing to transfer.");
         }
