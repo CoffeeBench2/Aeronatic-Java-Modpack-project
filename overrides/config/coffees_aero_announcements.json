@@ -2,6 +2,39 @@
   "_comment": "LIVE pack changelog for the main-menu Announcements screen (Core reads this; overrides the jar-bundled fallback). Newest entry first. Edit per release. Keep it short, warm and player-facing — write like a person, no mod names, no filler. Entries whose version does NOT start with a digit render as a TEASER ('On the horizon' instead of 'Added', no v prefix).",
   "entries": [
     {
+      "version": "1.10.22",
+      "date": "September 2026",
+      "title": "Back in the Air",
+      "tag": "HOTFIX",
+      "body": "If you have been getting kicked out with an “Incompatible client” message, this is the fix. Three mods were taken out of the pack a couple of updates ago — Create Deep Seas, Wakes and Easy Building — but they were never actually removed from your game, and Deep Seas refuses to connect to a server that no longer has it. That is what was blocking the door. They are properly gone now. Nothing else in the pack has changed.",
+      "added": [],
+      "fixed": [
+        "The “Incompatible client” error that was stopping everyone joining",
+        "Dropped mods now actually uninstall instead of sitting in your mods folder"
+      ],
+      "removed": [
+        "Create Deep Seas, Wakes and Easy Building — left over from an earlier update"
+      ],
+      "link": {
+        "label": "Full changelog on GitHub",
+        "url": "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/tag/v1.10.22"
+      }
+    },
+    {
+      "version": "On the horizon…",
+      "date": "",
+      "title": "Still in the workshop",
+      "added": [
+        "Speak in proximity voice and watch your words appear above your head",
+        "Chat with anyone — we'll translate across languages for you",
+        "…and a few more secrets we're keeping rolled up for now"
+      ],
+      "fixed": [],
+      "removed": [],
+      "tag": "SOON",
+      "body": "A few things we're still building. No dates promised — they land when they're good enough to land."
+    },
+    {
       "version": "1.10.12",
       "date": "September 2026",
       "title": "Steady Hands",
@@ -18,20 +51,6 @@
         "label": "Full changelog on GitHub",
         "url": "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/tag/v1.10.12"
       }
-    },
-    {
-      "version": "On the horizon…",
-      "date": "",
-      "title": "Still in the workshop",
-      "added": [
-        "Speak in proximity voice and watch your words appear above your head",
-        "Chat with anyone — we'll translate across languages for you",
-        "…and a few more secrets we're keeping rolled up for now"
-      ],
-      "fixed": [],
-      "removed": [],
-      "tag": "SOON",
-      "body": "A few things we're still building. No dates promised — they land when they're good enough to land."
     },
     {
       "version": "1.10.11",
