@@ -1,8 +1,8 @@
 {
-  "version": "1.10.21",
+  "version": "1.10.22",
   "url": "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/latest",
   "neoforge": "21.1.249",
   "minecraft": "1.21.1",
-  "notes": "1.10.12 - Create: Aeroworks has been rolled back from 1.5.0 to 1.4.1. Note that the control stand and the two copycat control desk/stand blocks only exist in 1.5.0, so any of those you had placed will be gone after this update. Nothing else has changed.",
+  "notes": "1.10.22 - Fixes the \"Incompatible client\" error that was blocking everyone from joining. Create Deep Seas, Wakes and Easy Building were removed from the server in 1.10.21, but the update did not actually delete them from your game, and Deep Seas refuses to connect to a server that no longer has it. This update removes them properly. No other content has changed.",
   "lodReset": "season1"
 }
