@@ -29,6 +29,7 @@ updater then fails with "hash mismatch after download".
 Exit code 0 = safe to push. 1 = do not push.
 """
 import hashlib
+import json
 import os
 import re
 import sys
@@ -120,7 +121,39 @@ def main():
     except (AttributeError, OSError) as e:
         problems.append(f"could not verify the Core metafile: {e}")
 
+    # ── News freshness ────────────────────────────────────────────────────────
+    # WARNING, never a block. The What's New popup keys on the newest RELEASE entry in
+    # announcements.json; if nobody adds an entry, the popup correctly decides there is nothing
+    # new and stays silent. That is how it went quiet for ten releases (1.10.12 -> 1.10.22) while
+    # the code was working perfectly and everyone assumed the popup was broken.
+    #
+    # Deliberately non-blocking: today proved emergency hotfixes happen, and refusing to ship a
+    # lockout fix because the release-notes copy is not written would be worse than a silent popup.
+    news_warning = None
+    try:
+        news_path = os.path.join(ROOT, "overrides", "config", "coffees_aero_announcements.json")
+        with open(news_path, encoding="utf-8-sig") as fh:
+            entries = json.load(fh)["entries"]
+        # A teaser is any entry whose version does not start with a digit; only real releases count.
+        newest = next((e["version"] for e in entries
+                       if str(e.get("version", "")).strip()[:1].isdigit()), None)
+        if newest is None:
+            news_warning = "announcements.json has no release entries at all - the popup can never fire"
+        elif newest != found.get("pack.toml"):
+            news_warning = (f"announcements.json newest release is {newest}, "
+                            f"pack is {found.get('pack.toml')}"
+                            f" - What's New will show nothing for this release")
+        else:
+            print(f"news:    announcements.json has a {newest} entry")
+    except (OSError, ValueError, KeyError) as e:
+        news_warning = f"could not read announcements.json: {e}"
+
     print()
+    if news_warning:
+        print(f"WARNING: {news_warning}")
+        print("         (not a blocker - add an entry to overrides/config/"
+              "coffees_aero_announcements.json)")
+        print()
     if problems:
         print("BLOCKED - do not push:")
         for p in problems:
