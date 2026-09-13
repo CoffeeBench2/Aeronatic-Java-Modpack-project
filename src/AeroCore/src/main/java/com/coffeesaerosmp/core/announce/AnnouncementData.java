@@ -68,6 +68,8 @@ public final class AnnouncementData {
 
     private static volatile List<Entry> entries;
     private static volatile boolean githubTried = false;
+    /** True once the live fetch has finished — succeeded, failed, or was never attempted. */
+    private static volatile boolean githubSettled = false;
     private static volatile Runnable onUpdated;   // screen sets this to re-layout when live news lands
 
     private AnnouncementData() {}
@@ -77,14 +79,66 @@ public final class AnnouncementData {
         return entries;
     }
 
-    /** Newest entry, or {@code null} if the changelog is empty/unreadable. */
+    /** Newest entry of ANY kind — including a teaser. Use for DISPLAY order only, never as a key. */
     public static Entry latest() {
         List<Entry> e = entries();
         return e.isEmpty() ? null : e.get(0);
     }
 
+    /**
+     * True when this entry is a shipped release rather than a forward-looking teaser.
+     *
+     * <p>The convention has always been documented in the JSON ("entries whose version does NOT start
+     * with a digit render as a TEASER") but was never expressed in code, so every consumer treated
+     * {@code "On the horizon…"} as if it were a version number.
+     */
+    public static boolean isRelease(Entry e) {
+        if (e == null) return false;
+        String v = e.version();
+        return v != null && !v.isBlank() && Character.isDigit(v.trim().charAt(0));
+    }
+
+    /**
+     * Newest REAL release, skipping teasers — the only thing safe to use as the seen-state key.
+     *
+     * <h2>🔴 Why this exists (bug found 2026-09-09)</h2>
+     * The "What's New" popup and the NEW badge keyed off {@link #latest()}, i.e. {@code entries[0]},
+     * and {@code entries[0]} is frequently a <b>teaser</b> whose version is a fixed label. Dismissing
+     * the popup wrote {@code "On the horizon…"} into the seen-file — and because a teaser's version
+     * string never changes, {@code hasUnseen()} compared equal on every subsequent launch, forever.
+     * The popup was permanently dead and <b>every real release after it was silently skipped</b>.
+     * Confirmed from a live client: seen-file held {@code "On the horizon…"} and so did
+     * {@code entries[0]}.
+     *
+     * <p>Keying on the newest real release also self-heals those poisoned seen-files: the stored
+     * teaser label can never equal a release version, so the next launch shows the popup once and
+     * writes a proper version.
+     *
+     * @return the newest entry with a digit-leading version, or {@code null} if there is none
+     */
+    public static Entry latestRelease() {
+        for (Entry e : entries()) if (isRelease(e)) return e;
+        return null;
+    }
+
     /** Force a re-read (e.g. after a pack update swaps the config file mid-session). */
-    public static void reload() { entries = null; githubTried = false; }
+    public static void reload() { entries = null; githubTried = false; githubSettled = false; }
+
+    /**
+     * True once the live-news fetch has finished — succeeded, failed, or was never started.
+     *
+     * <h2>Why the What's New popup must wait for this</h2>
+     * The popup used to decide during the title screen's {@code init()}, which reliably beat the
+     * off-thread GitHub fetch. So the decision was always made from the LOCAL config, and the local
+     * config can be badly stale — on a real client (2026-09-09) it was still on 1.8.0 while the live
+     * news had 1.10.12. Combined with a teaser sitting at {@code entries[0]}, that is how "nothing
+     * shows up" happened. Waiting for the fetch means the player is shown the release they actually
+     * have, not whatever their config file last happened to contain.
+     *
+     * <p>The caller pairs this with its own deadline so an offline or slow client still gets the
+     * popup from the local copy rather than never getting one.
+     */
+    public static boolean newsSettled() { return githubSettled; }
 
     /** Called by the screen so it can relayout when the async GitHub news arrives. */
     public static void setOnUpdated(Runnable r) { onUpdated = r; }
@@ -105,8 +159,9 @@ public final class AnnouncementData {
         if (githubTried) return;
         githubTried = true;
         String url = AeroConfig.NEWS_URL.get();
-        if (url == null || url.isBlank()) return;
-        Thread t = new Thread(() -> fetchGitHub(url), "AeroCore-News");
+        if (url == null || url.isBlank()) { githubSettled = true; return; }
+        Thread t = new Thread(() -> { try { fetchGitHub(url); } finally { githubSettled = true; } },
+            "AeroCore-News");
         t.setDaemon(true);
         t.start();
     }

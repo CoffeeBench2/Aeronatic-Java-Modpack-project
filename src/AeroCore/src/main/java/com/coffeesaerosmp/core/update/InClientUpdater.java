@@ -533,7 +533,25 @@ public final class InClientUpdater {
         "longerchathistory-fabric",
         "more_armor_trims-1.",                       // new build is more_armor_trims-neoforge-
         "dynamic-fps-3.11.4+minecraft-1.21.0-fabric",
-        "continuity-3.0.0+1.21.jar");                // new build is continuity-3.0.0+1.21.neoforge
+        "continuity-3.0.0+1.21.jar",                 // new build is continuity-3.0.0+1.21.neoforge
+        // ── Season 2 removals, 2026-09-13 ──────────────────────────────────────────
+        // 🔴 THESE WERE ALL DROPPED FROM THE PACK AND NONE OF THEM LEFT THE PLAYERS.
+        // Removing a mod from the packwiz index does NOT uninstall it: the updater only deletes an
+        // OLDER VERSION OF A MOD THE PACK STILL MANAGES, or a prefix listed here. A mod that simply
+        // stops being mentioned is left on disk forever. Four releases in a row shipped a removal
+        // that did nothing, and two of them were CRASH FIXES that therefore never reached anyone:
+        //   wanna_play_chess  (1.10.15) — StackOverflowError on startup, every client
+        //   easybuilding      (1.10.17) — NPE on join, the report that started it
+        //   DistantHorizons   (1.10.18) — left running ALONGSIDE the Voxy helper
+        //   tracks_in_bogs    (1.10.20) — the one the owner caught
+        // A removal is not complete until its prefix is listed here and a new Core ships.
+        "wanna_play_chess",
+        "easybuilding",
+        "tracks_in_bogs",
+        "wakes-1.21.1",          // Wakes Reforged — pulled 09-13
+        "crawl-0.",              // Crawl — pulled 09-13; narrow, nothing kept starts "crawl-0."
+        "create_submarine",      // Create Deep Seas — pulled 09-13 (7-10% of the server thread)
+        "vss-0.");               // Voxy Server Side — useless, Voxy itself has no 1.21.1 build
 
     /**
      * Loose files, outside {@code mods/}, that the pack once installed and no longer wants.

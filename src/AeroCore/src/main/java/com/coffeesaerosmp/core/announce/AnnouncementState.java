@@ -24,17 +24,27 @@ public final class AnnouncementState {
 
     private AnnouncementState() {}
 
-    /** True when the newest bundled announcement hasn't been opened yet → badge the button. */
+    /**
+     * True when the newest RELEASE hasn't been opened yet → badge the button.
+     *
+     * <h2>🔴 Must key on {@link AnnouncementData#latestRelease()}, never {@code latest()}</h2>
+     * {@code latest()} is {@code entries[0]}, which is routinely a <b>teaser</b> ("On the horizon…",
+     * "Coming Soon…") whose version string is a fixed label rather than a number. Keying on it wrote
+     * that label into the seen-file, and since it never changes, this method returned false on every
+     * launch thereafter — permanently killing the What's New popup and the NEW badge, and silently
+     * skipping every real release. Verified on a live client 2026-09-09: both the seen-file and
+     * {@code entries[0]} read "On the horizon…".
+     */
     public static boolean hasUnseen() {
-        AnnouncementData.Entry latest = AnnouncementData.latest();
+        AnnouncementData.Entry latest = AnnouncementData.latestRelease();
         if (latest == null || latest.version() == null || latest.version().isBlank()) return false;
         return !latest.version().equals(currentSeen());
     }
 
     /** Call when the player opens the Announcements screen — clears the badge for this version. */
     public static void markLatestSeen() {
-        AnnouncementData.Entry latest = AnnouncementData.latest();
-        if (latest == null) return;
+        AnnouncementData.Entry latest = AnnouncementData.latestRelease();
+        if (latest == null) return;      // teasers only: nothing to mark, so the badge stays honest
         write(latest.version());
     }
 

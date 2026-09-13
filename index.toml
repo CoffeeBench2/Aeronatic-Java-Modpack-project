@@ -162,7 +162,7 @@ metafile = true
 
 [[files]]
 file = "mods/coffeesaerocore.pw.toml"
-hash = "8a6240d3dd4c3482fe8e2b2016f86edbe49f0ce59c56139388491a124a3cc284"
+hash = "a5337666a125d1a18533c4d1df17167409f559d6e0b2c8f67ca9c8d59dffcf71"
 metafile = true
 
 [[files]]
@@ -353,11 +353,6 @@ metafile = true
 [[files]]
 file = "mods/create-stuff-additions1-21-1-v2-1-4a.pw.toml"
 hash = "9828370cab4612a18c79d67e29cfc05916fcba0d61a80801097aba57ab6b5dee"
-metafile = true
-
-[[files]]
-file = "mods/create-submarine-2-2-4.pw.toml"
-hash = "0534d0d2dde212c55f435f8d340a518838165f588144981b449797c1dbff2f79"
 metafile = true
 
 [[files]]
@@ -1246,11 +1241,6 @@ hash = "f6085b247783ccabd521156caa9b59088ebc36decf5b5f43762d2d49cd9add45"
 metafile = true
 
 [[files]]
-file = "mods/wakes-1-21-1-neoforge-1-3-0.pw.toml"
-hash = "f152253af5cb6ed5883f1d49ad3d8fcf02193959edc5d305f3be30eeb053e195"
-metafile = true
-
-[[files]]
 file = "mods/watermedia-2-1-37.pw.toml"
 hash = "290be86a8544e12a9924ee60148980bfb4d5bc0a8b5773556fc794692ba89740"
 metafile = true
@@ -1303,7 +1293,7 @@ hash = "22f28227f57537cdba075123994df3d6e39a5ccd5d86103125fa2c4fb31f2f4d"
 
 [[files]]
 file = "overrides/config/coffeesaerosmp_core-client.toml"
-hash = "47b09ad8c28108604593d7f8df02d5bc2292fa40562fb3720e97c932dce22ea8"
+hash = "49e9df268b3be56e712da9d2d62c6da85d97872d59695da29a71fc428c9fcf0f"
 
 [[files]]
 file = "overrides/config/entity_texture_features.json"

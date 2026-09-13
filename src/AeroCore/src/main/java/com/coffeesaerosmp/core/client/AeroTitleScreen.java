@@ -67,6 +67,11 @@ public class AeroTitleScreen extends Screen {
      * itself is recreated constantly; "once per launch" is the honest scope.
      */
     private static boolean whatsNewChecked;
+    /** Separate from whatsNewChecked: the post-exit audit must still run once at init, not on a timer. */
+    private static boolean postExitAudited;
+    /** Fires the popup even if the live news never settles, so an offline client still sees it. */
+    private static final long WHATS_NEW_WAIT_MS = 4000L;
+    private long whatsNewDeadlineMs;
 
     private static long lastManualCheck;
     /** Wall-clock ms until the transient "Up to date ✓" label reverts to "Updates". */
@@ -164,15 +169,19 @@ public class AeroTitleScreen extends Screen {
         // ⚠ Guarded by whatsNewChecked so it fires ONCE per session, not on every init() — init
         // re-runs on every window resize, and a popup that reappears when you drag the window is
         // worse than no popup. Dismissing it writes the seen-state, which also clears the NEW badge.
-        if (!whatsNewChecked) {
-            whatsNewChecked = true;
+        if (!postExitAudited) {
+            postExitAudited = true;
             // Before anything cosmetic: say out loud if last session's post-exit helper failed.
             // Four features finish their work after the game closes and each logs into its own
             // dot-directory that nobody reads — which is how a broken cleaner went unnoticed while
             // the player could not join. This puts it in latest.log instead.
             com.coffeesaerosmp.core.util.PostExitAudit.run();
-            com.coffeesaerosmp.core.screen.WhatsNewScreen.showIfUnseen(this.minecraft, this);
         }
+        // 🔴 The What's New check moved OUT of init() and into tick() on 2026-09-09. Deciding here
+        // always beat the off-thread live-news fetch, so the popup was judged against the LOCAL
+        // config — which on a real client was still on 1.8.0 while the live news had 1.10.12. See
+        // tickWhatsNew().
+        if (whatsNewDeadlineMs == 0L) whatsNewDeadlineMs = System.currentTimeMillis() + WHATS_NEW_WAIT_MS;
 
         // ── Manual update check ───────────────────────────────────────────────────────────
         // Directly under News, in the RESERVED top-right utility column. Deliberately NOT in the
@@ -457,9 +466,38 @@ public class AeroTitleScreen extends Screen {
      */
     private static boolean audioPromptChecked = false;
 
+    /**
+     * Shows the What's New popup once per session, after the live news has settled.
+     *
+     * <h2>Why this is not in {@code init()}</h2>
+     * It was, until 2026-09-09, and that is half of why the popup appeared to be broken. {@code init()}
+     * runs long before the off-thread GitHub fetch returns, so the decision was always taken against
+     * the LOCAL config file — which on a real client was still advertising 1.8.0 while the live news
+     * had 1.10.12. Waiting means the player is shown the release they actually have.
+     *
+     * <p>The deadline is the other half of the contract: an offline client, or one whose fetch hangs
+     * until its 8 s timeout, still gets the popup from the local copy instead of never getting one.
+     * Better a slightly stale card than silence — silence is the bug being fixed.
+     *
+     * <p>Guarded by the static {@code whatsNewChecked} so it fires once per SESSION, not once per
+     * screen: {@code init()} re-runs on every window resize, and a popup that reappears when you drag
+     * the window is worse than no popup.
+     */
+    private void tickWhatsNew() {
+        if (whatsNewChecked) return;
+        if (whatsNewDeadlineMs == 0L) return;               // init() has not run yet
+        boolean settled = com.coffeesaerosmp.core.announce.AnnouncementData.newsSettled();
+        if (!settled && System.currentTimeMillis() < whatsNewDeadlineMs) return;
+        whatsNewChecked = true;
+        com.coffeesaerosmp.core.screen.WhatsNewScreen.showIfUnseen(this.minecraft, this);
+    }
+
     @Override
     public void tick() {
         super.tick();
+        // ⚠ MUST come before the audioPromptChecked early-return below, which would otherwise skip it
+        // on every tick after the first.
+        tickWhatsNew();
         if (audioPromptChecked) return;
         audioPromptChecked = true;
         if (ModList.get().isLoaded("analogaudio")) {

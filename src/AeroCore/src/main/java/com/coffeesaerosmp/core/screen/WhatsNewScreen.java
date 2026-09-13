@@ -73,7 +73,9 @@ public class WhatsNewScreen extends Screen {
     public static boolean showIfUnseen(net.minecraft.client.Minecraft mc, Screen parent) {
         try {
             if (!AnnouncementState.hasUnseen()) return false;
-            AnnouncementData.Entry latest = AnnouncementData.latest();
+            // 🔴 latestRelease(), not latest(): entries[0] is often a TEASER, and showing/marking one
+            // poisons the seen-state permanently — see AnnouncementData.latestRelease().
+            AnnouncementData.Entry latest = AnnouncementData.latestRelease();
             // A version-only entry has nothing worth interrupting someone for. The badge still
             // appears on the News button, which is the right weight for "something changed".
             if (latest == null || latest.isEmpty()) return false;
