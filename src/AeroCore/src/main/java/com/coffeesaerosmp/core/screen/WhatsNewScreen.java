@@ -124,7 +124,21 @@ public class WhatsNewScreen extends Screen {
         g.fill(x, y, x + 3, y + cardH, tagColor(entry.tag()));
 
         body(g, x, y, true);
-        super.render(g, mouseX, mouseY, partial);
+
+        // 🔴 DO NOT call super.render() here. Screen#render repaints the background, so calling it
+        // last wiped everything above — the dim AND the whole card — and left only the widgets it
+        // draws afterwards. The popup rendered as two buttons floating over an undimmed title
+        // screen, which reads as "the popup is broken" when the news data was always fine.
+        // Caught 2026-09-14 from a screenshot: the full-screen 0xC0000000 fill above was not
+        // visible, and the only thing that can erase it is the background repaint below.
+        //
+        // AnnouncementsScreen and AeroSettingsScreen both call super.render() FIRST and paint over
+        // it. That ordering cannot work here because the buttons sit INSIDE the card, so the card
+        // would cover them. Drawing the widgets explicitly is the only order that satisfies both:
+        // background -> dim -> card -> widgets.
+        for (var widget : this.renderables) {
+            widget.render(g, mouseX, mouseY, partial);
+        }
     }
 
     /**

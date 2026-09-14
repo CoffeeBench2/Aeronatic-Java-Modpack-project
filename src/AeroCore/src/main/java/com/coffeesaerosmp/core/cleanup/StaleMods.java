@@ -42,7 +42,7 @@ public final class StaleMods {
      * {@code continuity-3.0.0+1.21.neoforge.jar} share a prefix, so the entry carries the {@code .jar}
      * to pin it to the old one. Get this wrong and the sweep deletes the mod it just installed.
      */
-    static final List<String> RETIRED = List.of(
+    public static final List<String> RETIRED = List.of(
         // dropped outright
         "zoomify", "simulatedcoasters", "create_parachute", "grand-teleport", "cameraoverhaul",
         "waystones", "waystonessable", "balm-", "balm_", "railwaysuntold",
@@ -53,7 +53,20 @@ public final class StaleMods {
         "longerchathistory-fabric",
         "more_armor_trims-1.",                        // replacement is more_armor_trims-neoforge-
         "dynamic-fps-3.11.4+minecraft-1.21.0-fabric",
-        "continuity-3.0.0+1.21.jar"                   // replacement is continuity-3.0.0+1.21.neoforge
+        "continuity-3.0.0+1.21.jar",                  // replacement is continuity-3.0.0+1.21.neoforge
+        // ── Season 2 removals ─────────────────────────────────────────────────────
+        // 🔴 2026-09-13: these were added to InClientUpdater's list ONLY, which is version-gated and
+        // does not run at startup, so none of them were ever swept. `create_submarine` registers six
+        // REQUIRED network channels, so every player that kept it was refused by the lobby with
+        // "Incompatible client" — a total lockout that this list, had it been maintained, would have
+        // cleared on the next launch with no release at all. THIS is the list that must be updated.
+        "wanna_play_chess",
+        "easybuilding",
+        "tracks_in_bogs",        // NOT tracks-neoforge-* — that is Create Tracks, still shipped
+        "wakes-1.21.1",
+        "crawl-0.",              // narrow on purpose; nothing kept starts "crawl-0."
+        "create_submarine",      // Create Deep Seas
+        "vss-0."                 // Voxy Server Side
     );
 
     private static final String DIR = ".aero-cleanup";
@@ -71,9 +84,15 @@ public final class StaleMods {
             try (var s = Files.list(mods)) {
                 for (Path p : (Iterable<Path>) s::iterator) {
                     String name = p.getFileName().toString();
-                    String low = name.toLowerCase(Locale.ROOT);
-                    // Only real mod files. Anything already disabled is the player's or Potato
-                    // mode's business, not ours.
+                    // Also match Potato-disabled copies. A mod the pack has DROPPED must go whether
+                    // or not it is currently switched off, otherwise flipping back to Normal quietly
+                    // reinstates content the server no longer has — and for a mod with required
+                    // network channels that is an instant lockout, not a cosmetic leftover.
+                    String bare = name.endsWith(com.coffeesaerosmp.core.mode.ClientMode.DISABLED_SUFFIX)
+                        ? name.substring(0, name.length()
+                            - com.coffeesaerosmp.core.mode.ClientMode.DISABLED_SUFFIX.length())
+                        : name;
+                    String low = bare.toLowerCase(Locale.ROOT);
                     if (!low.endsWith(".jar")) continue;
                     for (String prefix : RETIRED) {
                         if (low.startsWith(prefix)) { doomed.add(name); break; }
@@ -112,7 +131,24 @@ public final class StaleMods {
             Path work = gameDir.resolve(DIR);
             Files.createDirectories(work);
             Files.write(work.resolve(QUEUE), doomed, StandardCharsets.UTF_8);
-            launch(gameDir, work);
+
+            // 🔴 SPAWN AT SHUTDOWN, NOT HERE. This sweep runs from the mod constructor, i.e. at
+            // game START. Launching the helper here left it blocked in waitForExit() for the whole
+            // session, and a helper that waits that long does not survive to see the exit.
+            //
+            // Measured on a real instance 2026-09-13: sweep spawned the cleaner at 20:05, the game
+            // ran until 20:24, and `cleanup.log` stayed 0 bytes while `apply.log` — from the
+            // updater's Applier, spawned SECONDS before the same exit with byte-identical
+            // ProcessBuilder code — recorded "update applied". Same launcher, same javaw, same
+            // redirect: the only difference was how long the child sat waiting. Both Prism and the
+            // Modrinth app behaved identically, so this is not one launcher's quirk.
+            //
+            // A shutdown hook puts us in the Applier's shoes: spawn late, wait seconds, exit. If
+            // the game is hard-killed the hook is skipped, which costs nothing — the sweep re-runs
+            // next launch and re-queues whatever is still on disk.
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                try { launch(gameDir, work); } catch (Exception ignored) {}
+            }, "AeroCore-StaleMods-Spawn"));
         } catch (Exception ignored) {
             // Never let a cleanup failure stop the game from starting.
         }

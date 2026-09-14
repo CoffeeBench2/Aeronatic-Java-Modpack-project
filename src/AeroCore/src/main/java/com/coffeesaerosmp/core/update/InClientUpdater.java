@@ -494,64 +494,6 @@ public final class InClientUpdater {
      * managed — which still solves the case this was written for (an old CoffeesAeroCore next to the
      * new one, same mod id, FML silently loading the old file) while leaving personal mods alone.
      */
-    /**
-     * Mod-id prefixes the pack has retired, matched against the jars actually on disk.
-     *
-     * <p>Matched on the FILENAME PREFIX, lowercased, not on an exact filename — the same mod reaches
-     * players under several names depending on channel and how they downloaded it
-     * ({@code waystones-neoforge-1.21.1-21.1.34.jar}, a CurseForge copy with spaces, a browser's
-     * {@code " (1)"} duplicate). An exact-name list would miss most of them.
-     *
-     * <p>Entries must be specific enough not to shadow a mod that is KEPT. Verified against the 1.8.4
-     * index at the time of writing: nothing the pack still ships starts with any of these.
-     *
-     * <p>1.8.4 (Season 2) retirements:
-     * <ul>
-     *   <li>{@code waystones} + {@code waystonessable} + {@code balm} — Waystones removed; balm was
-     *       its only consumer (dependency sweep of all 237 jars found no other required edge).</li>
-     *   <li>{@code createdeliveryrequired} — removed.</li>
-     *   <li>{@code create aeronautics gyroscope} — removed.</li>
-     * </ul>
-     */
-    private static final List<String> RETIRED_MOD_PREFIXES = List.of(
-        "waystones", "waystonessable", "balm-", "balm_",
-        "createdeliveryrequired", "create aeronautics gyroscope",
-        // dropped in 1.8.5
-        "railwaysuntold",
-        // dropped in 1.10.x
-        "zoomify", "simulatedcoasters", "create_parachute", "grand-teleport", "cameraoverhaul",
-        // replaced by an older build on purpose, so modKey() sees the same mod and keeps both
-        "justzoom_neoforge_2.1.0",
-        // 🔴 LOADER SWAPS — the case that actually broke clients on 2026-09-03.
-        // When a mod moves from its Fabric build to its NeoForge build the FILENAME changes in a
-        // way modKey() does not normalise ("longerchathistory-fabric" vs "longerchathistory-
-        // neoforge" are different keys), so duplicateModJars() never fires. Orphan tracking does
-        // not save it either, because an mrpack or CurseForge import writes no manifest at all.
-        // Both jars therefore survive side by side and FML refuses to load the Fabric one:
-        // "File mods\LongerChatHistory-fabric-1.7.jar is a Fabric mod and cannot be loaded".
-        // These are matched by a prefix that CANNOT also match their NeoForge replacement.
-        "longerchathistory-fabric",
-        "more_armor_trims-1.",                       // new build is more_armor_trims-neoforge-
-        "dynamic-fps-3.11.4+minecraft-1.21.0-fabric",
-        "continuity-3.0.0+1.21.jar",                 // new build is continuity-3.0.0+1.21.neoforge
-        // ── Season 2 removals, 2026-09-13 ──────────────────────────────────────────
-        // 🔴 THESE WERE ALL DROPPED FROM THE PACK AND NONE OF THEM LEFT THE PLAYERS.
-        // Removing a mod from the packwiz index does NOT uninstall it: the updater only deletes an
-        // OLDER VERSION OF A MOD THE PACK STILL MANAGES, or a prefix listed here. A mod that simply
-        // stops being mentioned is left on disk forever. Four releases in a row shipped a removal
-        // that did nothing, and two of them were CRASH FIXES that therefore never reached anyone:
-        //   wanna_play_chess  (1.10.15) — StackOverflowError on startup, every client
-        //   easybuilding      (1.10.17) — NPE on join, the report that started it
-        //   DistantHorizons   (1.10.18) — left running ALONGSIDE the Voxy helper
-        //   tracks_in_bogs    (1.10.20) — the one the owner caught
-        // A removal is not complete until its prefix is listed here and a new Core ships.
-        "wanna_play_chess",
-        "easybuilding",
-        "tracks_in_bogs",
-        "wakes-1.21.1",          // Wakes Reforged — pulled 09-13
-        "crawl-0.",              // Crawl — pulled 09-13; narrow, nothing kept starts "crawl-0."
-        "create_submarine",      // Create Deep Seas — pulled 09-13 (7-10% of the server thread)
-        "vss-0.");               // Voxy Server Side — useless, Voxy itself has no 1.21.1 build
 
     /**
      * Loose files, outside {@code mods/}, that the pack once installed and no longer wants.
@@ -589,7 +531,20 @@ public final class InClientUpdater {
         return out;
     }
 
-    /** Jars in {@code mods/} whose name matches a retired prefix. Returns index-relative paths. */
+    /**
+     * Jars in {@code mods/} whose name matches a retired prefix. Returns index-relative paths.
+     *
+     * <p>🔴 <b>The list lives in {@link com.coffeesaerosmp.core.cleanup.StaleMods#RETIRED} and ONLY
+     * there.</b> This class used to keep its own copy, and on 2026-09-13 the Season 2 removals were
+     * added to that copy instead of to StaleMods — so the sweep that actually runs every launch (from
+     * the mod constructor) never saw them, and `create_submarine` stayed on every client. Because it
+     * registers required network channels, that was a total lockout. Two lists means one of them is
+     * wrong; there is now one.
+     *
+     * <p>This path still exists because it prunes during an update for players who are updating
+     * anyway, one launch earlier than the constructor sweep would. It is the optimisation, not the
+     * guarantee — {@code StaleMods} is the guarantee.
+     */
     private static List<String> retiredMods(Path gameDir) {
         List<String> out = new ArrayList<>();
         Path mods = gameDir.resolve("mods");
@@ -606,7 +561,7 @@ public final class InClientUpdater {
                     : name;
                 if (!bare.toLowerCase(Locale.ROOT).endsWith(".jar")) continue;
                 String low = bare.toLowerCase(Locale.ROOT);
-                for (String prefix : RETIRED_MOD_PREFIXES) {
+                for (String prefix : com.coffeesaerosmp.core.cleanup.StaleMods.RETIRED) {
                     if (low.startsWith(prefix)) {
                         out.add("mods/" + name);
                         LOGGER.info("[Updater] retiring dropped mod: {}", name);
