@@ -22,6 +22,16 @@ Miss #5 and every updater client 404s on the Core, because the tag in that URL i
 jar was uploaded to. It is the place that gets forgotten when a release is renumbered or folded
 into another one — #1-#4 are all "the version", but #5 is "the tag", and they only look the same.
 
+🔴 A SIXTH site exists and it is the only BINARY one: the built mrpack. All five text sites can
+agree and the zip can still bundle a different build of the Core, because it is a separate artifact
+cut at its own moment in time. On 2026-09-14 the mrpack was zipped at 00:53 and the Core rebuilt at
+00:56; they differed in exactly one class, so fresh installers would have received the broken
+What's New popup while updater users received the fix — both calling themselves 1.10.23.
+So this also opens the mrpack (when one exists for the current version) and checks that it bundles
+a Core byte-identical to the metafile hash, stamps the right version inside, carries no BOM, and
+bundles nothing listed in StaleMods.RETIRED (a retired mod in the bundle is a fresh-install lockout,
+because the sweep only removes it after the first launch).
+
 Also verifies pack.toml's [index] hash against sha256(index.toml). packwiz refresh maintains this;
 any hand-edit of index.toml, or an overrides/ edit without a refresh, breaks it and the in-client
 updater then fails with "hash mismatch after download".
@@ -35,6 +45,7 @@ import re
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+RELEASES = r"D:\MC Project\Releases"
 
 # path -> (regex with ONE capturing group, human label)
 PLACES = {
@@ -56,6 +67,27 @@ def read(rel):
     # how options.txt got silently voided once already.
     with open(os.path.join(ROOT, rel), encoding="utf-8-sig") as fh:
         return fh.read()
+
+
+def load_retired():
+    """The retired-mod prefixes, read from StaleMods.java — the one list that is authoritative.
+
+    Deliberately parsed from source rather than duplicated here. A second copy of this list is
+    exactly the bug that locked every player out on 2026-09-13: InClientUpdater kept its own copy,
+    the removals were added to that one, and the list that actually runs never saw them.
+    Returns [] if it cannot be parsed, so this check degrades to a no-op instead of a false block.
+    """
+    src = os.path.join(ROOT, "src", "AeroCore", "src", "main", "java", "com", "coffeesaerosmp",
+                       "core", "cleanup", "StaleMods.java")
+    try:
+        with open(src, encoding="utf-8") as fh:
+            text = fh.read()
+        block = re.search(r"RETIRED\s*=\s*List\.of\((.*?)\);", text, re.S).group(1)
+        # Strip // comments so a commented-out example cannot become a live prefix.
+        block = re.sub(r"//[^\n]*", "", block)
+        return [s.lower() for s in re.findall(r'"([^"]+)"', block)]
+    except (OSError, AttributeError):
+        return []
 
 
 def main():
@@ -101,10 +133,14 @@ def main():
 
     # The Core metafile hash must match the jar actually bundled in overrides/mods, or the two
     # delivery channels (mrpack bundle vs updater download) ship different bytes.
+    # Kept in its OWN name, not the `declared` used by the index check above: if this block throws
+    # before assigning, a later reader would silently compare against the index hash instead.
+    core_hash = None
     try:
         meta = read("mods/coffeesaerocore.pw.toml")
         filename = re.search(r'filename\s*=\s*"([^"]+)"', meta).group(1)
         declared = re.search(r'^hash\s*=\s*"([0-9a-f]+)"', meta, re.M).group(1)
+        core_hash = declared
         jar = os.path.join(ROOT, "overrides", "mods", filename)
         if not os.path.isfile(jar):
             problems.append(f"Core metafile names {filename}, which is not in overrides/mods/")
@@ -120,6 +156,83 @@ def main():
                     f"    jar on disk      : {actual}")
     except (AttributeError, OSError) as e:
         problems.append(f"could not verify the Core metafile: {e}")
+
+    # ── The mrpack: a SIXTH site, and the only binary one ─────────────────────
+    # 🔴 Every check above reads TEXT. On 2026-09-14 all five text sites agreed on 1.10.23 and the
+    # mrpack still bundled a DIFFERENT build of Core 1.3.49 - the zip was cut at 00:53 and the jar
+    # rebuilt at 00:56, differing in exactly one class. Fresh installers would have received the
+    # broken What's New popup while updater users received the fix, both calling themselves 1.10.23.
+    #
+    # A green preflight proved nothing about the bytes players actually install, so check them.
+    # Absent mrpack is fine (not built yet); a PRESENT one that disagrees is a blocker.
+    mrpack_version = found.get("pack.toml")
+    mrpack = os.path.join(RELEASES, f"CoffeesAeroSMP-{mrpack_version}.mrpack")
+    if not mrpack_version:
+        pass
+    elif not os.path.isfile(mrpack):
+        print(f"mrpack:  not built yet ({os.path.basename(mrpack)}) - build it before the release")
+    else:
+        try:
+            import zipfile
+            with zipfile.ZipFile(mrpack) as z:
+                names = z.namelist()
+
+                # 1. The bundled Core must be byte-identical to what the metafile hashes, or the
+                #    two delivery channels ship different code under one version.
+                cores = [n for n in names
+                         if n.startswith("overrides/mods/")
+                         and os.path.basename(n).lower().startswith("coffeesaerocore")
+                         and n.lower().endswith(".jar")]
+                if len(cores) != 1:
+                    problems.append(f"mrpack bundles {len(cores)} CoffeesAeroCore jars: {cores}")
+                elif core_hash is None:
+                    problems.append("cannot check the mrpack's Core: the metafile hash did not read")
+                else:
+                    bundled = hashlib.sha256(z.read(cores[0])).hexdigest()
+                    if bundled != core_hash:
+                        problems.append(
+                            "mrpack bundles a DIFFERENT Core than the metafile hashes\n"
+                            "    (rebuild the mrpack - it was almost certainly zipped before the "
+                            "last jar build)\n"
+                            f"    metafile declares: {core_hash}\n"
+                            f"    mrpack bundles   : {bundled}")
+                    else:
+                        print(f"mrpack:  bundles {os.path.basename(cores[0])}, "
+                              "byte-identical to the metafile")
+
+                # 2. Stamped version inside the zip.
+                idx = json.loads(z.read("modrinth.index.json"))
+                if str(idx.get("versionId")) != mrpack_version:
+                    problems.append(f"mrpack modrinth.index.json versionId is "
+                                    f"{idx.get('versionId')}, pack is {mrpack_version}")
+                cfg_path = "overrides/config/coffeesaerosmp_core-client.toml"
+                if cfg_path in names:
+                    raw = z.read(cfg_path)
+                    if raw[:3] == b"\xef\xbb\xbf":
+                        problems.append("mrpack's client config has a UTF-8 BOM - NeoForge will "
+                                        "silently ignore it")
+                    m = re.search(r'^packVersion\s*=\s*"([\d.]+)"',
+                                  raw.decode("utf-8", "replace"), re.M)
+                    if not m or m.group(1) != mrpack_version:
+                        problems.append(f"mrpack's bundled config says packVersion "
+                                        f"{m.group(1) if m else '?'}, pack is {mrpack_version}")
+
+                # 3. A retired mod inside the bundle is a FRESH-INSTALL lockout: the sweep removes
+                #    it only after the first launch, and a mod with required network channels
+                #    (create_submarine) refuses the server before that ever happens.
+                retired = load_retired()
+                if retired:
+                    jars = [os.path.basename(n) for n in names
+                            if n.startswith("overrides/mods/") and n.lower().endswith(".jar")]
+                    bad = sorted({j for j in jars for p in retired
+                                  if j.lower().startswith(p)})
+                    if bad:
+                        problems.append("mrpack bundles mods listed in StaleMods.RETIRED "
+                                        f"(fresh-install lockout): {bad}")
+                    else:
+                        print(f"mrpack:  {len(jars)} jars, none retired")
+        except Exception as e:
+            problems.append(f"could not verify the mrpack: {e}")
 
     # ── News freshness ────────────────────────────────────────────────────────
     # WARNING, never a block. The What's New popup keys on the newest RELEASE entry in
