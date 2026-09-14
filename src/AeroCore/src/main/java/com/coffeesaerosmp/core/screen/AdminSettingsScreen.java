@@ -47,11 +47,15 @@ public class AdminSettingsScreen extends Screen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        this.renderBackground(graphics, mouseX, mouseY, partialTick);
+        // 🔴 super.render() FIRST, then paint on top. Screen#render calls renderBackground() and
+        // then draws the widgets, so doing it last repainted the background over the title and both
+        // labels — they have been invisible on this screen, leaving two unlabelled edit boxes.
+        // Exactly the bug that made the What's New popup look broken; this was the only other screen
+        // in the mod with the order inverted. Every sibling screen already does it this way.
+        super.render(graphics, mouseX, mouseY, partialTick);
         graphics.drawCenteredString(this.font, this.title, this.width / 2, 30, 0xFFFFFF);
         graphics.drawString(this.font, "Server IP:", this.width / 2 - 100, 75, 0xAAAAAA, false);
         graphics.drawString(this.font, "Admin Username:", this.width / 2 - 100, 125, 0xAAAAAA, false);
-        super.render(graphics, mouseX, mouseY, partialTick);
     }
 
     @Override

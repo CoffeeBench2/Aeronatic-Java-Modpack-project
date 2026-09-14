@@ -36,6 +36,9 @@ import java.util.List;
  */
 public class WhatsNewScreen extends Screen {
 
+    private static final org.slf4j.Logger LOGGER =
+        org.slf4j.LoggerFactory.getLogger("CoffeesAeroCore-Announce");
+
     // Palette — identical to AnnouncementsScreen so the two read as one feature.
     private static final int CARD_BG   = 0xF0191109;
     private static final int EDGE      = 0xFFC9973B;
@@ -72,17 +75,38 @@ public class WhatsNewScreen extends Screen {
      */
     public static boolean showIfUnseen(net.minecraft.client.Minecraft mc, Screen parent) {
         try {
-            if (!AnnouncementState.hasUnseen()) return false;
             // 🔴 latestRelease(), not latest(): entries[0] is often a TEASER, and showing/marking one
             // poisons the seen-state permanently — see AnnouncementData.latestRelease().
             AnnouncementData.Entry latest = AnnouncementData.latestRelease();
+            String seen = AnnouncementState.seen();
+
+            if (latest == null) {
+                LOGGER.info("[WhatsNew] not shown: no release entry in the news "
+                    + "({} entries, all teasers?)", AnnouncementData.entries().size());
+                return false;
+            }
+            if (!AnnouncementState.hasUnseen()) {
+                LOGGER.info("[WhatsNew] not shown: already seen — latest release {} == seen {}",
+                    latest.version(), seen.isEmpty() ? "<none>" : seen);
+                return false;
+            }
             // A version-only entry has nothing worth interrupting someone for. The badge still
             // appears on the News button, which is the right weight for "something changed".
-            if (latest == null || latest.isEmpty()) return false;
+            if (latest.isEmpty()) {
+                LOGGER.info("[WhatsNew] not shown: entry {} has no body, bullets or media",
+                    latest.version());
+                return false;
+            }
+            LOGGER.info("[WhatsNew] showing {} (seen was {})",
+                latest.version(), seen.isEmpty() ? "<none>" : seen);
             mc.setScreen(new WhatsNewScreen(parent, latest));
             return true;
         } catch (Throwable t) {
-            // A cosmetic popup must never be the reason the title screen fails to appear.
+            // A cosmetic popup must never be the reason the title screen fails to appear — but it
+            // must never fail INVISIBLY either. This returned false and logged nothing for three
+            // sessions, which is why "the popup is broken" could not be told apart from "the popup
+            // correctly had nothing to say". Swallow the failure, never the evidence.
+            LOGGER.error("[WhatsNew] suppressed by an exception — popup skipped this session", t);
             return false;
         }
     }

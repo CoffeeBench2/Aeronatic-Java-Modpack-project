@@ -41,6 +41,15 @@ public final class AnnouncementState {
         return !latest.version().equals(currentSeen());
     }
 
+    /**
+     * The version string currently on disk, for diagnostics only.
+     *
+     * <p>Exists because "the popup did not show" is indistinguishable from "the popup correctly
+     * decided there was nothing new" without seeing both sides of the comparison
+     * {@link #hasUnseen()} makes. Returns {@code ""} when no seen-file has been written yet.
+     */
+    public static String seen() { return currentSeen(); }
+
     /** Call when the player opens the Announcements screen — clears the badge for this version. */
     public static void markLatestSeen() {
         AnnouncementData.Entry latest = AnnouncementData.latestRelease();

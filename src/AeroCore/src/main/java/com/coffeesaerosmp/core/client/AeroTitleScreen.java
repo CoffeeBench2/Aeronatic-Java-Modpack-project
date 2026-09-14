@@ -483,13 +483,15 @@ public class AeroTitleScreen extends Screen {
      * screen: {@code init()} re-runs on every window resize, and a popup that reappears when you drag
      * the window is worse than no popup.
      */
-    private void tickWhatsNew() {
-        if (whatsNewChecked) return;
-        if (whatsNewDeadlineMs == 0L) return;               // init() has not run yet
+    private boolean tickWhatsNew() {
+        if (whatsNewChecked) return false;
+        if (whatsNewDeadlineMs == 0L) return false;         // init() has not run yet
         boolean settled = com.coffeesaerosmp.core.announce.AnnouncementData.newsSettled();
-        if (!settled && System.currentTimeMillis() < whatsNewDeadlineMs) return;
+        if (!settled && System.currentTimeMillis() < whatsNewDeadlineMs) return false;
         whatsNewChecked = true;
-        com.coffeesaerosmp.core.screen.WhatsNewScreen.showIfUnseen(this.minecraft, this);
+        org.slf4j.LoggerFactory.getLogger("CoffeesAeroCore-Announce")
+            .info("[WhatsNew] deciding now (live news {})", settled ? "settled" : "timed out");
+        return com.coffeesaerosmp.core.screen.WhatsNewScreen.showIfUnseen(this.minecraft, this);
     }
 
     @Override
@@ -497,7 +499,14 @@ public class AeroTitleScreen extends Screen {
         super.tick();
         // ⚠ MUST come before the audioPromptChecked early-return below, which would otherwise skip it
         // on every tick after the first.
-        tickWhatsNew();
+        //
+        // 🔴 And it must RETURN when it opens the popup. setScreen() does not stop this method, so
+        // everything below used to keep running in the same tick and could call setScreen() again —
+        // silently destroying the popup a few lines after it was created, with whatsNewChecked
+        // already consumed so it never retried. Returning here defers the audio prompt until the
+        // player dismisses the popup, which is the correct order anyway: this screen stops ticking
+        // while the popup owns it, and tick() resumes on the way back.
+        if (tickWhatsNew()) return;
         if (audioPromptChecked) return;
         audioPromptChecked = true;
         if (ModList.get().isLoaded("analogaudio")) {
