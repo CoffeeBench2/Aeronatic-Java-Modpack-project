@@ -2,6 +2,37 @@
   "_comment": "LIVE pack changelog for the main-menu Announcements screen (Core reads this; overrides the jar-bundled fallback). Newest entry first. Edit per release. Keep it short, warm and player-facing — write like a person, no mod names, no filler. Entries whose version does NOT start with a digit render as a TEASER ('On the horizon' instead of 'Added', no v prefix).",
   "entries": [
     {
+      "version": "1.10.23",
+      "date": "September 2026",
+      "title": "Taking Out the Trash",
+      "tag": "HOTFIX",
+      "body": "A follow-up to the join fix. Some of you still had Create Deep Seas sitting in your game even after updating — that happened if you were more than one update behind, because the cleanup could not reach that far back. The pack now clears leftover mods out by itself, every launch, no matter how old your copy was. Close the game once after updating and they will be gone.",
+      "added": [],
+      "fixed": [
+        "Leftover mods from old updates now remove themselves automatically",
+        "Players who were several updates behind are no longer stuck"
+      ],
+      "removed": [],
+      "link": {
+        "label": "Full changelog on GitHub",
+        "url": "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/tag/v1.10.23"
+      }
+    },
+    {
+      "version": "On the horizon…",
+      "date": "",
+      "title": "Still in the workshop",
+      "added": [
+        "Speak in proximity voice and watch your words appear above your head",
+        "Chat with anyone — we'll translate across languages for you",
+        "…and a few more secrets we're keeping rolled up for now"
+      ],
+      "fixed": [],
+      "removed": [],
+      "tag": "SOON",
+      "body": "A few things we're still building. No dates promised — they land when they're good enough to land."
+    },
+    {
       "version": "1.10.22",
       "date": "September 2026",
       "title": "Back in the Air",
@@ -19,20 +50,6 @@
         "label": "Full changelog on GitHub",
         "url": "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/tag/v1.10.22"
       }
-    },
-    {
-      "version": "On the horizon…",
-      "date": "",
-      "title": "Still in the workshop",
-      "added": [
-        "Speak in proximity voice and watch your words appear above your head",
-        "Chat with anyone — we'll translate across languages for you",
-        "…and a few more secrets we're keeping rolled up for now"
-      ],
-      "fixed": [],
-      "removed": [],
-      "tag": "SOON",
-      "body": "A few things we're still building. No dates promised — they land when they're good enough to land."
     },
     {
       "version": "1.10.12",

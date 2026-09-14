@@ -1,8 +1,8 @@
 {
-  "version": "1.10.22",
+  "version": "1.10.23",
   "url": "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/latest",
   "neoforge": "21.1.249",
   "minecraft": "1.21.1",
-  "notes": "1.10.22 - Fixes the \"Incompatible client\" error that was blocking everyone from joining. Create Deep Seas, Wakes and Easy Building were removed from the server in 1.10.21, but the update did not actually delete them from your game, and Deep Seas refuses to connect to a server that no longer has it. This update removes them properly. No other content has changed.",
+  "notes": "1.10.23 - Dropped mods now actually uninstall themselves. If Create Deep Seas, Wakes or Easy Building are still sitting in your game from an older update, this removes them on their own: close the game once after updating and they will be gone on the next launch. This also fixes it for anyone who was several updates behind, where the previous fix could not reach. No other content has changed.",
   "lodReset": "season1"
 }
