@@ -2,6 +2,22 @@
   "_comment": "LIVE pack changelog for the main-menu Announcements screen (Core reads this; overrides the jar-bundled fallback). Newest entry first. Edit per release. Keep it short, warm and player-facing — write like a person, no mod names, no filler. Entries whose version does NOT start with a digit render as a TEASER ('On the horizon' instead of 'Added', no v prefix).",
   "entries": [
     {
+      "version": "1.10.24",
+      "date": "September 2026",
+      "title": "A Round of Tune-Ups",
+      "tag": "UPDATE",
+      "body": "A quiet one. Five of the parts the pack is built from moved up to their newest builds, which brings along a pile of small fixes from the people who make them. Your backpacks and everything packed inside them come along untouched. Nothing was taken out and there is nothing new to go looking for — things should just behave a little better.",
+      "added": [],
+      "fixed": [
+        "Storage, escalators and the airship workshop parts are all on their latest builds"
+      ],
+      "removed": [],
+      "link": {
+        "label": "Full changelog on GitHub",
+        "url": "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/tag/v1.10.24"
+      }
+    },
+    {
       "version": "1.10.23",
       "date": "September 2026",
       "title": "Taking Out the Trash",
