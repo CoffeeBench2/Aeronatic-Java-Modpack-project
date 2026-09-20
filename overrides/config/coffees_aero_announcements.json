@@ -2,6 +2,22 @@
   "_comment": "LIVE pack changelog for the main-menu Announcements screen (Core reads this; overrides the jar-bundled fallback). Newest entry first. Edit per release. Keep it short, warm and player-facing — write like a person, no mod names, no filler. Entries whose version does NOT start with a digit render as a TEASER ('On the horizon' instead of 'Added', no v prefix).",
   "entries": [
     {
+      "version": "1.10.25",
+      "date": "September 2026",
+      "title": "The Long View",
+      "tag": "UPDATE",
+      "body": "The bit of the pack that draws the land far off in the distance has left beta behind and reached its first proper release. Looking out across the world should feel steadier, and it asks a little less of your machine while doing it. Everything you have already explored stays exactly as it is — nothing needs redrawing, and nothing else in the pack changed.",
+      "added": [],
+      "fixed": [
+        "Distant terrain is on its first stable build, out of beta at last"
+      ],
+      "removed": [],
+      "link": {
+        "label": "Full changelog on GitHub",
+        "url": "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/tag/v1.10.25"
+      }
+    },
+    {
       "version": "1.10.24",
       "date": "September 2026",
       "title": "A Round of Tune-Ups",

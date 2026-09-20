@@ -1,8 +1,8 @@
 {
-  "version": "1.10.24",
+  "version": "1.10.25",
   "url": "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/latest",
   "neoforge": "21.1.249",
   "minecraft": "1.21.1",
-  "notes": "1.10.24 - Housekeeping update. Backpacks, escalators and the aeroworks parts all move up to their newest builds, which brings a pile of small fixes from their authors. Your backpacks and everything in them carry over. Nothing has been removed and no content has changed.",
+  "notes": "1.10.25 - The distant terrain renderer moves up to its first stable release. Views into the far distance should be steadier and a little kinder on your frame rate. Your existing distant terrain is kept as-is, nothing needs regenerating, and nothing else in the pack has changed.",
   "lodReset": "season1"
 }
