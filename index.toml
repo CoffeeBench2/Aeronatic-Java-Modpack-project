@@ -162,7 +162,7 @@ metafile = true
 
 [[files]]
 file = "mods/coffeesaerocore.pw.toml"
-hash = "13d6e4ba027f2908fa1c672286b79703739872637ad67c64352c45e81807e574"
+hash = "f5acc64d1ede5aed3821dae5900084fdf4ad784b07a80b2f6cda5e6b2c0a56ce"
 metafile = true
 
 [[files]]
@@ -242,7 +242,7 @@ metafile = true
 
 [[files]]
 file = "mods/create-aeroworks.pw.toml"
-hash = "c50831e793e5c16695d608bd69f5fcd498ab6663a1d8bcbd29358f1e58d24cf0"
+hash = "faba6363c40f04f41773f1f07ccd38920c1e16939e679077e29cb8444ebaee14"
 metafile = true
 
 [[files]]
@@ -606,8 +606,8 @@ hash = "1d6180d52424ba407d4697937710933db58289ad48868617445f8ffc2e0615b0"
 metafile = true
 
 [[files]]
-file = "mods/escalated-1-3-1-mc-1-21-1.pw.toml"
-hash = "96a2c7dad3cee9a57d9bc53f19d00355a0e0cb56814611a1ff96e9ff05d29548"
+file = "mods/escalated-1-3-2-mc-1-21-1.pw.toml"
+hash = "23f2310206f21161515bcca5a6bfd6651309c24cfa2c632382cdc3f5d75260f5"
 metafile = true
 
 [[files]]
@@ -1106,18 +1106,18 @@ hash = "dd8873ef3f2e20d2c3e69cb3e258fada709d1a132e9152ccc817888e1e4c2d6d"
 metafile = true
 
 [[files]]
-file = "mods/sophisticatedbackpacks-1-21-1-3-25-64-1919.pw.toml"
-hash = "05f877c149aaa8cb38c861c0d937a80ed553682cb080ebfb12f14c489e7cb12b"
+file = "mods/sophisticatedbackpacks-1-21-1-3-26-3-2158.pw.toml"
+hash = "bdad83d6342a03025d19e6c64e9cdc7a44bb49ce352b6c2ad99be2e8608408b4"
 metafile = true
 
 [[files]]
-file = "mods/sophisticatedbackpackscreateintegration-1-21-1-0-1-8-134.pw.toml"
-hash = "c390bfd87591d9473d1c1953fe5f51a9bf77abf21001e91be07426e01bee3fca"
+file = "mods/sophisticatedbackpackscreateintegration-1-21-1-0-2-0-168.pw.toml"
+hash = "1f40025ae0cbae122c865cada73192d2868750c4302a8299a63880420b1965b4"
 metafile = true
 
 [[files]]
-file = "mods/sophisticatedcore-1-21-1-1-4-59-2032.pw.toml"
-hash = "5cb2e9c524608eb03180e0e703c3da30375514fe9211b7a955ba6385959bc4f2"
+file = "mods/sophisticatedcore-1-21-1-1-5-1-2341.pw.toml"
+hash = "17ed0ecd12e3b10dc2600ab69f1163b32698571de513946affe67ee9714b702c"
 metafile = true
 
 [[files]]
@@ -1289,11 +1289,11 @@ hash = "ff15da34b5f6f825dcc32399ab150c2462393031a41c8ea6938d6dd61b11fb04"
 
 [[files]]
 file = "overrides/config/coffees_aero_announcements.json"
-hash = "7d72504a9832bd14bbfc649a4c823821413f63d8fbbd2789cc8d8cfd421c8da0"
+hash = "0ff3f564fcca3dd114a88b9da7cf057343faf523807e2850603f418f97a07801"
 
 [[files]]
 file = "overrides/config/coffeesaerosmp_core-client.toml"
-hash = "809babac99be7847dfa271f86919837760dd417198f4d27c2fcf6ed5c7026aaf"
+hash = "cbbd0ee113bde0bdab9148cfefb18a5bcad56fecfa977f27bb8c7fcb96a7f384"
 
 [[files]]
 file = "overrides/config/entity_texture_features.json"

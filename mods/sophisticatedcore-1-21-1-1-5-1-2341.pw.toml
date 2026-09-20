@@ -1,0 +1,13 @@
+name = "1.21.1-1.5.1.2341"
+filename = "sophisticatedcore-1.21.1-1.5.1.2341.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/nmoqTijg/versions/PXl6rB3q/sophisticatedcore-1.21.1-1.5.1.2341.jar"
+hash-format = "sha512"
+hash = "0cb1ea870d3e76591935b8e6b0239c3cce598c57ac8cedcbc4e91a7b611d45df984b6b7d82037e5cf490b2c0731709b1efcb9455d2699eda0a8c378a857999dd"
+
+[update]
+[update.modrinth]
+mod-id = "nmoqTijg"
+version = "PXl6rB3q"

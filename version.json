@@ -1,8 +1,8 @@
 {
-  "version": "1.10.23",
+  "version": "1.10.24",
   "url": "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/latest",
   "neoforge": "21.1.249",
   "minecraft": "1.21.1",
-  "notes": "1.10.23 - Dropped mods now actually uninstall themselves. If Create Deep Seas, Wakes or Easy Building are still sitting in your game from an older update, this removes them on their own: close the game once after updating and they will be gone on the next launch. This also fixes it for anyone who was several updates behind, where the previous fix could not reach. No other content has changed.",
+  "notes": "1.10.24 - Housekeeping update. Backpacks, escalators and the aeroworks parts all move up to their newest builds, which brings a pile of small fixes from their authors. Your backpacks and everything in them carry over. Nothing has been removed and no content has changed.",
   "lodReset": "season1"
 }
