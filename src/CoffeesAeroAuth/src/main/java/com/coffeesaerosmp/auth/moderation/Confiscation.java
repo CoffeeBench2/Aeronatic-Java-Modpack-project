@@ -23,7 +23,14 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public final class Confiscation {
 
-    /** One held player. {@code reason} may be null; {@code actor} is the admin who ran the command. */
+    /**
+     * One held player.
+     *
+     * @param uuid         the held player
+     * @param reason       why, as typed by the admin; may be null for a system-initiated hold
+     * @param actor        the admin who placed the hold, or "system"
+     * @param startedEpoch when the hold was placed, in epoch MILLISECONDS (System.currentTimeMillis)
+     */
     public record Hold(UUID uuid, String reason, String actor, long startedEpoch) {}
 
     private static final Map<UUID, Hold> HELD = new ConcurrentHashMap<>();
@@ -56,17 +63,24 @@ public final class Confiscation {
     }
 
     /**
-     * Replaces the entire set from storage at boot. Deliberately REPLACES rather than merges — the
-     * database is authoritative at startup, and a merge would resurrect a hold that was released
-     * while this process was down.
+     * Replaces the entire set from storage. Deliberately REPLACES rather than merges — the database
+     * is authoritative at startup, and a merge would resurrect a hold that was released while this
+     * process was down.
+     *
+     * <p>🔴 <b>BOOT ONLY. Must not be called once players can tick.</b> The clear-then-refill is NOT
+     * atomic: every {@link #isHeld} call landing between the clear and that uuid's re-insert answers
+     * "not held", for as long as the refill loop runs. At boot nothing observes that window. From a
+     * hot "reload holds" command it would briefly UNFREEZE every held player — which is exactly the
+     * failure this whole feature exists to prevent. If a hot reload is ever wanted, build the new map
+     * off to the side and swap a volatile reference instead of mutating this one in place.
      */
     public static void loadAll(Collection<Hold> holds) {
         HELD.clear();
         for (Hold h : holds) HELD.put(h.uuid(), h);
     }
 
-    /** Test seam, and used by nothing in production. */
-    public static void clearAll() {
+    /** Test seam — package-private on purpose, so nothing outside this package can unfreeze everyone. */
+    static void clearAll() {
         HELD.clear();
     }
 }

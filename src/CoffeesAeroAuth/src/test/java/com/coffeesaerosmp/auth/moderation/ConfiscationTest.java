@@ -95,4 +95,15 @@ class ConfiscationTest {
     void releaseAlsoClearsTheNullCaseSafely() {
         assertNull(Confiscation.release(null));
     }
+
+    /** The javadoc says reason may be null — a system-initiated hold has no human explanation. */
+    @Test
+    void aHoldWithNoReasonIsStillAValidHold() {
+        Confiscation.hold(new Confiscation.Hold(A, null, "system", 5L));
+        assertTrue(Confiscation.isHeld(A));
+        assertNotNull(Confiscation.get(A));
+        assertNull(Confiscation.get(A).reason());
+        assertEquals("system", Confiscation.get(A).actor());
+        assertEquals(1, Confiscation.all().size());
+    }
 }
