@@ -401,6 +401,9 @@ public class CoffeesAeroAuth {
         WATCHDOG = new WatchdogManager(event.getServer(), ipBans, trustedIps, auditLog, watchdogLog, WEBHOOK_QUEUE, dataDir);
         WATCHDOG.start(PROFILE_STORE);
 
+        // Restore confiscation holds. Must be after the schema exists and before players can join.
+        com.coffeesaerosmp.auth.moderation.ConfiscationStore.loadInto();
+
         // Hung-tick detector. Started AFTER WATCHDOG so its alerts have somewhere to go, and it
         // watches from its own thread so a wedged tick loop cannot stop it from noticing.
         com.coffeesaerosmp.auth.watchdog.StallWatchdog.start(event.getServer(), dataDir);
