@@ -2,6 +2,7 @@ package com.coffeesaerosmp.auth.tracking;
 
 import com.coffeesaerosmp.auth.CoffeesAeroAuth;
 import com.coffeesaerosmp.auth.util.AsyncIo;
+import com.coffeesaerosmp.auth.util.TextUtil;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -28,8 +29,7 @@ public final class InfractionLog {
     public static void record(UUID uuid, String type, String detail, String actor) {
         if (uuid == null || type == null) return;
         long now = System.currentTimeMillis();
-        String trimmed = detail == null ? null
-            : detail.length() > MAX_DETAIL ? detail.substring(0, MAX_DETAIL) : detail;
+        String trimmed = TextUtil.clampChars(detail, MAX_DETAIL);
         AsyncIo.submit(() -> {
             if (CoffeesAeroAuth.DB_MANAGER == null || !CoffeesAeroAuth.DB_MANAGER.isAvailable()) return;
             try (Connection c = CoffeesAeroAuth.DB_MANAGER.getConnection();
@@ -45,27 +45,5 @@ public final class InfractionLog {
                 CoffeesAeroAuth.LOGGER.error("[Infraction] write failed: {}", e.toString());
             }
         });
-    }
-
-    /**
-     * How many infractions this player has.
-     *
-     * <p>🔴 BLOCKING. Never call from the server thread — wrap it in {@code AsyncIo.submit} and post
-     * the result back with {@code server.execute}.
-     */
-    public static int count(UUID uuid) {
-        if (uuid == null) return 0;
-        if (CoffeesAeroAuth.DB_MANAGER == null || !CoffeesAeroAuth.DB_MANAGER.isAvailable()) return 0;
-        try (Connection c = CoffeesAeroAuth.DB_MANAGER.getConnection();
-             PreparedStatement ps = c.prepareStatement(
-                 "SELECT COUNT(*) FROM infractions WHERE uuid = ?")) {
-            ps.setString(1, uuid.toString());
-            try (var rs = ps.executeQuery()) {
-                return rs.next() ? rs.getInt(1) : 0;
-            }
-        } catch (Exception e) {
-            CoffeesAeroAuth.LOGGER.error("[Infraction] count failed: {}", e.toString());
-            return 0;
-        }
     }
 }
