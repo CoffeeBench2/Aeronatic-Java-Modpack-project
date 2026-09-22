@@ -184,6 +184,18 @@ public final class SeasonMigration {
      * the live one pays players out in the wrong world and marks them as already paid.
      */
     private static void rewardPass(Statement s) throws SQLException {
+        // 🔴 SMP ONLY. The standalone lobby shares this exact database, and this pass WRITES to it —
+        // it re-arms startup_bonus_given and stamps season_rewarded for every profile at once. Run it
+        // from the lobby and it consumes the reward stamp for the whole player base in a world where
+        // nothing can be paid out, exactly the failure the class docs already warn about for the
+        // creative test server. Same hazard, second server.
+        if (com.coffeesaerosmp.auth.lobby.LobbyHandoff.isLobbyRole()) {
+            CoffeesAeroAuth.LOGGER.warn(
+                "[Season] Reward pass REFUSED — this process is serverRole=LOBBY and shares the SMP's "
+                    + "database. One-time grants are the SMP's job. Nothing was written.");
+            UNCLAIMED.clear();
+            return;
+        }
         if (!AuthConfig.SEASON_GRANT_REWARDS.get()) {
             CoffeesAeroAuth.LOGGER.info(
                 "[Season] Reward pass DISABLED (seasonGrantRewards=false) - no starter bonus re-arm, "

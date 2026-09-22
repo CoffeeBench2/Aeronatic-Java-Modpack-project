@@ -45,8 +45,6 @@ public class PlayerProfile {
     public boolean nameApprovalPending;  // true = name submitted, awaiting admin decision
     public String  pendingDisplayName;   // proposed name while in approval queue
     public int     nameRejectionCount;   // rejections this account lifetime (not reset on reconnect)
-    public int     roomSlot;             // assigned room slot index (-1 = unassigned)
-    public long    roomCreatedAt;        // epoch ms when room was first built
 
     // Last position in the MAIN world (never the lobby) — restored on /spawn so a returning player
     // resumes where they logged off instead of being dumped at world spawn. null dim = never entered
@@ -57,7 +55,6 @@ public class PlayerProfile {
     public transient UUID uuid;
 
     public PlayerProfile() {
-        this.roomSlot = -1;
     }
 
     public PlayerProfile(UUID uuid, String username, AccountType type) {
@@ -76,8 +73,6 @@ public class PlayerProfile {
         this.nameApproved         = (type == AccountType.PREMIUM); // premium players auto-approved
         this.nameApprovalPending  = false;
         this.nameRejectionCount   = 0;
-        this.roomSlot             = -1;
-        this.roomCreatedAt        = 0;
     }
 
     public UUID getUUID() {

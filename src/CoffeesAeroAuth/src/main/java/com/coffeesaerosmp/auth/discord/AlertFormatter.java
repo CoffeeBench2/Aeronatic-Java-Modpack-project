@@ -36,6 +36,17 @@ public final class AlertFormatter {
         embed.addProperty("color", event.severity().color());
 
         JsonArray fields = new JsonArray();
+        // 🔴 Which server raised this. Both the SMP and the LOBBY post into the same watchdog
+        // channel, and since the lobby split the lobby is the ONLY place a new offline player can
+        // register — so a stream of identical-looking alerts from two processes is otherwise
+        // impossible to tell apart. First field so it reads before the detail.
+        {
+            JsonObject origin = new JsonObject();
+            origin.addProperty("name", "Server");
+            origin.addProperty("value", com.coffeesaerosmp.auth.lobby.NameApprovalQueue.originTag());
+            origin.addProperty("inline", true);
+            fields.add(origin);
+        }
         for (Map.Entry<String, String> e : event.fields().entrySet()) {
             JsonObject f = new JsonObject();
             f.addProperty("name", e.getKey());

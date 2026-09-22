@@ -44,6 +44,23 @@ public class DiscordInteractions {
             // Slash commands are PUBLIC (everyone may /uptime and /link themselves) — handled
             // before the admin-role gate below, which only guards moderation buttons/modals.
             if (type == 2) {
+                // 🔴 THE SMP ANSWERS SLASH COMMANDS; THE LOBBY MUST NOT.
+                //
+                // Both processes share one bot token, so both receive EVERY INTERACTION_CREATE.
+                // Buttons and modals carry an origin in their custom_id and are filtered by forUs(),
+                // but a slash command's payload has nowhere to put one — so if both processes are
+                // listening, both answer, and Discord keeps whichever reply lands first while the
+                // loser logs an "already acknowledged" failure.
+                //
+                // This never bit us only because the lobby shipped with discord.enabled = false —
+                // which is also why name approvals vanished after the lobby split (the lobby is the
+                // only process where an offline player can register, and it was posting nothing).
+                // Turning the lobby's Discord on to fix that is what makes this guard necessary.
+                //
+                // The SMP owns them because that is what they report on: /leaderboard, /uptime and
+                // /link are all survival-side data. If the SMP is down, a slash command goes
+                // unanswered — the same as before this change, when the lobby was never listening.
+                if ("LOBBY".equals(com.coffeesaerosmp.auth.lobby.NameApprovalQueue.originTag())) return;
                 handleSlash(d, data, id, token);
                 return;
             }
@@ -67,12 +84,17 @@ public class DiscordInteractions {
             }
 
             if (type == 3 && customId.startsWith("nameapprove:")) {
-                doApprove(customId.substring("nameapprove:".length()), clicker, id, token);
+                String p = forUs(customId.substring("nameapprove:".length()));
+                if (p == null) return;
+                doApprove(p, clicker, id, token);
             } else if (type == 3 && customId.startsWith("namereject:")) {
-                openRejectModal(customId.substring("namereject:".length()), id, token);
+                String p = forUs(customId.substring("namereject:".length()));
+                if (p == null) return;
+                openRejectModal(p, id, token);
             } else if (type == 5 && customId.startsWith("rejectmodal:")) {
-                String mcName = customId.substring("rejectmodal:".length());
-                doReject(mcName, extractModalValue(data, "reason"), clicker, id, token);
+                String p = forUs(customId.substring("rejectmodal:".length()));
+                if (p == null) return;
+                doReject(p, extractModalValue(data, "reason"), clicker, id, token);
             } else if (type == 3 && customId.startsWith("wdban:")) {
                 doWatchdogBan(customId.substring("wdban:".length()), clicker, id, token);
             } else if (type == 3 && customId.startsWith("wdunban:")) {
@@ -276,6 +298,35 @@ public class DiscordInteractions {
             if (d.has("user")) return d.getAsJsonObject("user").get("id").getAsString();
         } catch (Exception ignored) {}
         return "";
+    }
+
+    /**
+     * Decides whether a button click belongs to THIS server, and returns the player name if so.
+     *
+     * <p>🔴 Both servers share a bot token, so both receive every INTERACTION_CREATE from the shared
+     * watchdog channel. Before origin tagging, a click was handled twice: the server holding the
+     * player approved it while the other answered "no longer in the queue" from its own empty
+     * in-memory queue — and Discord showed whichever response arrived first. The approval applied
+     * correctly and looked like it had failed.
+     *
+     * <p>New ids are {@code <action>:<ORIGIN>:<mcName>}; a click for the other server returns null and
+     * we stay completely silent, leaving the owning server to answer. Exactly one process must
+     * respond — if BOTH ignored a click, Discord would show "interaction failed" instead.
+     *
+     * <p>⚠️ Old ids are {@code <action>:<mcName>} with no origin. Buttons already sitting in the
+     * channel from before this change still use them, so those are accepted unconditionally: only
+     * the SMP ever posted them, and refusing them would strand approvals that are already pending.
+     */
+    private String forUs(String payload) {
+        int i = payload.indexOf(':');
+        if (i < 0) return payload;                       // legacy id, no origin — handle as before
+        String origin = payload.substring(0, i);
+        if (!origin.equals("LOBBY") && !origin.equals("SURVIVAL")) {
+            return payload;                              // not an origin tag; a name containing ':'
+        }
+        String mine = com.coffeesaerosmp.auth.lobby.NameApprovalQueue.originTag();
+        if (!origin.equals(mine)) return null;           // the other server owns this one
+        return payload.substring(i + 1);
     }
 
     private void doApprove(String mcName, String clicker, String id, String token) {

@@ -12,7 +12,7 @@ import it.unimi.dsi.fastutil.longs.LongSet;
  *
  * <h2>Why this class exists — the cost nobody accounted for</h2>
  *
- * {@link PrivateRoomManager#initSpawnArea} force-loads {@code spawnForceloadRadiusChunks} (default
+ * {@link LobbyManager#initSpawnArea} force-loads {@code spawnForceloadRadiusChunks} (default
  * 7) around the world spawn so that joining and {@code /spawn} are instant. That was the right fix
  * for the 9–75 s join stalls, and it is cheap <b>as long as spawn stays empty</b>.
  *

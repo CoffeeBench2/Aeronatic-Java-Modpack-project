@@ -94,11 +94,33 @@ public final class TpsHud {
         }
 
         try {
-            TickStats.Reading r = TickStats.read();
+            // Prefer SPARK's numbers. Ours measure Pre->Post work time and derive TPS from a
+            // Post->Post interval that floors at ~50ms whenever the server keeps up, so they can
+            // never quite agree with spark — and spark is the figure everyone quotes, including
+            // Lagless support. Two different "correct" numbers on one screen is worse than one.
+            // Falls back to our own counters when spark is absent or still warming up, so the bar
+            // never goes blank. (Owner's call, 2026-09-07.)
+            double msptMean, msptWorst, tps;
+            int seconds;
+            com.coffeesaerosmp.auth.watchdog.SparkStats.Reading s =
+                com.coffeesaerosmp.auth.watchdog.SparkStats.available()
+                    ? com.coffeesaerosmp.auth.watchdog.SparkStats.read() : null;
+            if (s != null) {
+                tps       = s.tps();
+                msptMean  = s.msptMean();
+                msptWorst = s.msptMax();
+                seconds   = 10;                 // spark's window, so the "over Ns" label stays honest
+            } else {
+                TickStats.Reading r = TickStats.read();
+                tps       = r.tps();
+                msptMean  = r.msptMean();
+                msptWorst = r.msptWorst();
+                seconds   = r.seconds();
+            }
             BAR.setName(Component.literal(
-                TpsHudFormat.title(r.msptMean(), r.msptWorst(), r.tps(), r.seconds())));
-            BAR.setProgress(TpsHudFormat.progress(r.msptMean()));
-            BAR.setColor(switch (TpsHudFormat.severity(r.msptMean())) {
+                TpsHudFormat.title(msptMean, msptWorst, tps, seconds)));
+            BAR.setProgress(TpsHudFormat.progress(msptMean));
+            BAR.setColor(switch (TpsHudFormat.severity(msptMean)) {
                 case GOOD -> BossEvent.BossBarColor.GREEN;
                 case WARN -> BossEvent.BossBarColor.YELLOW;
                 case BAD  -> BossEvent.BossBarColor.RED;

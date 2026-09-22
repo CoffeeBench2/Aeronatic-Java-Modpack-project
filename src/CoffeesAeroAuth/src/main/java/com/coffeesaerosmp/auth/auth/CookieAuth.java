@@ -74,6 +74,62 @@ public final class CookieAuth {
         }
     }
 
+    /**
+     * Signs a cookie in the SAME wire format {@link #verify} accepts, for the lobby → SMP handoff.
+     *
+     * <p>The standalone lobby is a second consumer of the gate's identity decision: it verifies the
+     * gate's cookie, then has to hand the player to the SMP with that decision intact. Re-signing
+     * with the same shared secret means the SMP verifies it through the identical code path it
+     * already uses for the gate — no second trust mechanism, no SMP-side change.
+     *
+     * <p>🔴 <b>{@code uuid} MUST be the MOJANG uuid for a premium player, not {@code player.getUUID()}.</b>
+     * On an offline-mode backend those differ (98b33d4e… vs 2d1532de… for the same account), and the
+     * receiving side feeds this value to {@code SkinsHook.applyPremium} to fetch the real skin. Sign
+     * the local one and every transferred premium player arrives with a broken skin. For an OFFLINE
+     * player there is no Mojang uuid and the local one is correct.
+     *
+     * <p>A fresh 16-byte nonce is generated per call, so each handoff cookie is single-use exactly
+     * like the gate's. {@code ttlMillis} should be long enough to cover a client disconnect and
+     * reconnect but no longer — a transfer takes seconds.
+     *
+     * @return the cookie bytes, or {@code null} if signing is disabled or the inputs are unusable.
+     */
+    public byte[] sign(boolean premium, UUID uuid, String username, long ttlMillis) {
+        if (!enabled() || uuid == null || username == null) return null;
+        byte[] name = username.getBytes(StandardCharsets.UTF_8);
+        if (name.length > 0xFFFF) return null;                 // cannot express the length in 2 bytes
+        try {
+            byte[] nonce = new byte[16];
+            new java.security.SecureRandom().nextBytes(nonce);
+
+            byte[] body = new byte[MIN_BODY + name.length];
+            int i = 0;
+            body[i++] = VERSION;
+            body[i++] = (byte) (premium ? 1 : 0);
+            i = writeLong(body, i, uuid.getMostSignificantBits());
+            i = writeLong(body, i, uuid.getLeastSignificantBits());
+            i = writeLong(body, i, System.currentTimeMillis() + ttlMillis);
+            System.arraycopy(nonce, 0, body, i, 16); i += 16;
+            body[i++] = (byte) ((name.length >> 8) & 0xFF);    // big-endian, matching verify()
+            body[i++] = (byte) (name.length & 0xFF);
+            System.arraycopy(name, 0, body, i, name.length);
+
+            byte[] mac = hmac(body);
+            byte[] out = new byte[body.length + MAC_LEN];
+            System.arraycopy(body, 0, out, 0, body.length);
+            System.arraycopy(mac, 0, out, body.length, MAC_LEN);
+            return out;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /** Big-endian, mirroring {@link #readLong}. Returns the new offset. */
+    private static int writeLong(byte[] b, int o, long v) {
+        for (int k = 7; k >= 0; k--) b[o + (7 - k)] = (byte) ((v >>> (k * 8)) & 0xFF);
+        return o + 8;
+    }
+
     private byte[] hmac(byte[] data) throws Exception {
         Mac m = Mac.getInstance("HmacSHA256");
         m.init(new SecretKeySpec(secret, "HmacSHA256"));

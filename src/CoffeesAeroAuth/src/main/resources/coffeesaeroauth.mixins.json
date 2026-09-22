@@ -16,7 +16,9 @@
         "ContraptionColliderNpeFixMixin",
         "GameProfileCacheDisplayNameMixin",
         "JoinMessageMixin",
-        "LeaveMessageMixin"
+        "LeaveMessageMixin",
+        "LobbyAdvancementMixin",
+        "RecipeAdvancementListenerMixin"
     ],
     "client": [],
     "injectors": {

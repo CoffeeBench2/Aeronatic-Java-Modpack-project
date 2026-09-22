@@ -47,7 +47,7 @@ public class AuthConfig {
     public static final ModConfigSpec.IntValue     TYPE_RESOLVE_TIMEOUT_SECONDS;
     public static final ModConfigSpec.BooleanValue TRUST_FORWARDED_UUID;
 
-    // ── Name approval / private room ──────────────────────────────────────────
+    // ── Name approval / login lobby ───────────────────────────────────────────
     public static final ModConfigSpec.IntValue     AUTO_APPROVE_MINUTES;
     public static final ModConfigSpec.ConfigValue<String>  BANNED_WORDS;
 
@@ -55,6 +55,8 @@ public class AuthConfig {
     public static final ModConfigSpec.DoubleValue  LOBBY_SPAWN_X;
     public static final ModConfigSpec.DoubleValue  LOBBY_SPAWN_Y;
     public static final ModConfigSpec.DoubleValue  LOBBY_SPAWN_Z;
+    public static final ModConfigSpec.DoubleValue  LOBBY_SPAWN_YAW;
+    public static final ModConfigSpec.DoubleValue  LOBBY_SPAWN_PITCH;
     public static final ModConfigSpec.IntValue      LOBBY_FLOOR_Y;
     public static final ModConfigSpec.IntValue      LOBBY_FALL_CATCH_DROP;
     public static final ModConfigSpec.IntValue      LOBBY_FORCELOAD_RADIUS_CHUNKS;
@@ -81,6 +83,7 @@ public class AuthConfig {
     public static final ModConfigSpec.BooleanValue         AFK_ENABLED;
     public static final ModConfigSpec.IntValue             AFK_TIMEOUT_MINUTES;
     public static final ModConfigSpec.BooleanValue         AFK_ANNOUNCE;
+    public static final ModConfigSpec.BooleanValue         AFK_SEND_TO_LOBBY;
     public static final ModConfigSpec.BooleanValue         AFK_KICK_ENABLED;
     public static final ModConfigSpec.IntValue             AFK_KICK_BAN_MINUTES;
     public static final ModConfigSpec.BooleanValue         AFK_KICK_EXEMPT_OPS;
@@ -105,6 +108,7 @@ public class AuthConfig {
     public static final ModConfigSpec.BooleanValue         RESOLVE_DISPLAY_NAMES;
     public static final ModConfigSpec.IntValue             WELCOME_INTERVAL_HOURS;
     public static final ModConfigSpec.BooleanValue         MASK_ADVANCEMENT_NAMES;
+    public static final ModConfigSpec.BooleanValue         SKIP_RECIPE_ADVANCEMENT_LISTENERS;
 
     // ── Watchdog ──────────────────────────────────────────────────────────────
     public static final ModConfigSpec.IntValue     LOGIN_STORM_FAILURES;
@@ -169,6 +173,35 @@ public class AuthConfig {
     public static final ModConfigSpec.IntValue     SHIPNAME_MAX_LENGTH;
 
     // ── Plot-space guard (Sable sub-level coords / ChunkMap crash) ────────────
+    public static final ModConfigSpec.BooleanValue CLEAR_STUCK_INVULNERABLE;
+
+    // ── Sable sub-level (ship) speed ceiling ──────────────────────────────────
+
+    // ── Standalone-lobby split (server role + lobby → SMP handoff) ────────────
+    public static final ModConfigSpec.ConfigValue<String> SERVER_ROLE;
+    public static final ModConfigSpec.BooleanValue HANDOFF_ENABLED;
+    public static final ModConfigSpec.ConfigValue<String> HANDOFF_HOST;
+    public static final ModConfigSpec.IntValue     HANDOFF_PORT;
+    public static final ModConfigSpec.IntValue     HANDOFF_COOKIE_TTL_SECONDS;
+    public static final ModConfigSpec.ConfigValue<String> LOBBY_RETURN_HOST;
+    public static final ModConfigSpec.IntValue     LOBBY_RETURN_PORT;
+    public static final ModConfigSpec.BooleanValue REQUIRE_LOBBY_ENTRY;
+    public static final ModConfigSpec.ConfigValue<String> LOBBY_ENTRY_ADDRESS;
+    public static final ModConfigSpec.BooleanValue SMP_LIVENESS_ENABLED;
+    public static final ModConfigSpec.IntValue     SMP_LIVENESS_POLL_SECONDS;
+    public static final ModConfigSpec.IntValue     SMP_LIVENESS_CONFIRM;
+    public static final ModConfigSpec.IntValue     SMP_LIVENESS_TIMEOUT_MS;
+    public static final ModConfigSpec.BooleanValue AUTO_READMIT;
+    public static final ModConfigSpec.IntValue     READMIT_STAGGER_MS;
+    public static final ModConfigSpec.BooleanValue GRACEFUL_RESTART_ENABLED;
+    public static final ModConfigSpec.IntValue     EVACUATE_SECONDS_BEFORE;
+
+    // ── Daily host restart warning ────────────────────────────────────────────
+    public static final ModConfigSpec.BooleanValue DAILY_RESTART_WARN_ENABLED;
+    public static final ModConfigSpec.ConfigValue<String> DAILY_RESTART_TIME;
+    public static final ModConfigSpec.ConfigValue<String> DAILY_RESTART_TIMEZONE;
+    public static final ModConfigSpec.IntValue     DAILY_RESTART_WARN_MINUTES;
+
     public static final ModConfigSpec.BooleanValue PLOTGUARD_ENABLED;
     public static final ModConfigSpec.BooleanValue PLOTGUARD_RESCUE;
     public static final ModConfigSpec.IntValue     PLOTGUARD_LIMIT;
@@ -376,6 +409,18 @@ public class AuthConfig {
                      "The AFK player is not sent their own announcement; they get a private line",
                      "about their playtime being paused instead.")
             .define("afkAnnounce", true);
+        AFK_SEND_TO_LOBBY = b
+            .comment("SMP ONLY: when a player goes AFK, TRANSFER them to the lobby server instead of",
+                     "kicking them. Idling is harmless there — the lobby holds no world, no entities and",
+                     "no ticking machinery — so this frees the SMP slot without disconnecting anybody,",
+                     "without a cooling-off ban, and without the full gate round trip a rejoin costs.",
+                     "",
+                     "Tried BEFORE afkKickEnabled. If the transfer cannot be made (no lobbyReturnHost,",
+                     "or the transfer is refused) it falls through to the kick, so turning this on never",
+                     "silently disables the AFK handling you already had.",
+                     "",
+                     "Ignored on serverRole = LOBBY: there is nowhere to send them and idling is the point.")
+            .define("afkSendToLobby", true);
         AFK_KICK_ENABLED = b
             .comment("Disconnect a player once they are marked AFK, and block re-entry briefly.",
                      "A bare kick is not a deterrent — the client reconnects in three seconds and",
@@ -856,6 +901,140 @@ public class AuthConfig {
                 "the destination on its first two lines, before any tick handler runs. Only a HEAD guard is early",
                 "enough. Blocked teleports leave the player where they were and tell them why.")
             .define("plotGuardBlockTeleports", true);
+        CLEAR_STUCK_INVULNERABLE = b.comment(
+                "Clear a stuck Invulnerable flag out of a player's SAVED DATA at join.",
+                "The vanilla Invulnerable tag is written by Entity.addAdditionalSaveData and read back by",
+                "Entity.load, so once something sets it on a player it lives in playerdata/<uuid>.dat and",
+                "survives every relog and restart — the player is immune to mobs, fall, fire, drowning and PvP",
+                "(everything except /kill-class damage and a creative player's hit).",
+                "A DATAPACK CANNOT FIX THIS: EntityDataAccessor.setData throws for any Player, so",
+                "/data modify entity <player> is refused for everyone, always. Detection still works, which is",
+                "what the aero-invuln-audit datapack does. This is the repair half.",
+                "Only ever CLEARS, never sets, and only at join — so it cannot fight an admin or a mod that",
+                "sets invulnerability deliberately during play. Creative and spectator are skipped (they use",
+                "abilities.invulnerable, a different field entirely). Every repair is logged with the name.",
+                "Turn OFF only if a mod in the pack legitimately persists Invulnerable on players.")
+            .define("clearStuckInvulnerableOnJoin", true);
+        b.pop();
+
+                b.comment("Standalone-lobby split. ONE JAR SERVES BOTH SERVERS — the role below is the only",
+                  "difference. Two builds is what produced the 1.7.51-vs-1.7.54 skew across a shared",
+                  "database on 2026-09-07, which makes every later bug ambiguous. Do not fork the jar.")
+            .push("split");
+        SERVER_ROLE = b.comment(
+                "SMP   = the survival backend. Unchanged behaviour; the in-process auth lobby still works.",
+                "LOBBY = the standalone login front door. /spawn TRANSFERS to the SMP instead of teleporting.",
+                "🔴 Defaults to SMP on purpose: an accidental deploy must never turn a survival server into",
+                "a lobby that ejects everyone who types /spawn. Anything unrecognised is treated as SMP.")
+            .define("serverRole", "SMP");
+        HANDOFF_ENABLED = b.comment(
+                "Master switch for the LOBBY -> SMP handoff. Ignored unless serverRole = LOBBY.",
+                "Turn this off to strand players on the lobby deliberately (maintenance on the SMP).")
+            .define("handoffEnabled", true);
+        HANDOFF_HOST = b.comment(
+                "Host the lobby transfers players TO — the SMP as players' clients must reach it.",
+                "🔴 This is a CLIENT-VISIBLE address, not an internal one: the vanilla transfer packet makes",
+                "the client disconnect and reconnect here itself. An internal/container address will look",
+                "like a working config and fail for every real player.",
+                "The SMP must also have accepts-transfers=true, or the reconnect is refused.")
+            .define("handoffHost", "");
+        HANDOFF_PORT = b.comment("Port on handoffHost. The SMP's public game port.")
+            .defineInRange("handoffPort", 25565, 1, 65535);
+        HANDOFF_COOKIE_TTL_SECONDS = b.comment(
+                "Lifetime of the handoff cookie the lobby signs for the SMP.",
+                "Must cover a client disconnect + reconnect and nothing more — it is a bearer token for a",
+                "verified identity. The cookie is single-use (nonce), so this is a ceiling, not a window",
+                "that stays open. 30s is generous for a transfer that normally takes 2-3s.")
+            .defineInRange("handoffCookieTtlSeconds", 30, 5, 300);
+        LOBBY_RETURN_HOST = b.comment(
+                "The REVERSE trip: where /lobby sends a player back to. Set this on the SMP.",
+                "Blank = disabled, and /lobby keeps its old meaning (admin preview of this server's own",
+                "auth_lobby). Like handoffHost this is a CLIENT-VISIBLE address — the client dials it.",
+                "The lobby server must have accepts-transfers=true.",
+                "🔑 The SMP signs a cookie for this trip, so premium survives it. Without one the player",
+                "would arrive at the lobby resolved as OFFLINE.")
+            .define("lobbyReturnHost", "");
+        LOBBY_RETURN_PORT = b.comment("Port of the lobby server for the /lobby return trip.")
+            .defineInRange("lobbyReturnPort", 25565, 1, 65535);
+        REQUIRE_LOBBY_ENTRY = b.comment(
+                "SMP ONLY: refuse players who connect DIRECTLY instead of arriving from the lobby.",
+                "Arrival is proved by the signed cookie the lobby (or the gate) stores on the client before",
+                "transferring — a direct connection has none, which is the same signal that already stops a",
+                "direct connection claiming premium. Refused players are disconnected with lobbyEntryAddress.",
+                "🔴 EXEMPT: operators of THIS server (permission 4). ops.json is per-server, so an op on the",
+                "lobby who is not an op here gets no exemption — which is the intended rule.",
+                "⚠️ This also closes the premium reconnect-grace path, because that path is BY DEFINITION a",
+                "direct connection. A player whose cookie was spent must go back through the front door.",
+                "Defaults to FALSE: switching this on with a wrong lobbyEntryAddress locks everyone out of",
+                "the survival server, so it must be an explicit, deliberate choice.")
+            .define("requireLobbyEntry", false);
+        LOBBY_ENTRY_ADDRESS = b.comment(
+                "The address shown to a refused player — what they should actually connect to.",
+                "This is the PUBLIC front door (the gate), not the lobby's internal address.")
+            .define("lobbyEntryAddress", "");
+
+        SMP_LIVENESS_ENABLED = b.comment(
+                "LOBBY ONLY: watch whether the SMP is actually up, by Server List Ping to handoffHost.",
+                "A heartbeat row in the shared MySQL would be easier and answers the WRONG question — it",
+                "can be stale-but-alive (writer thread died) or alive-but-not-joinable (mid-boot). An SLP",
+                "tests the only thing a player cares about: is the port answering the protocol.")
+            .define("smpLivenessEnabled", false);
+        SMP_LIVENESS_POLL_SECONDS = b.comment("Seconds between polls. Runs on its own thread, never the tick loop.")
+            .defineInRange("smpLivenessPollSeconds", 15, 5, 300);
+        SMP_LIVENESS_CONFIRM = b.comment(
+                "🔴 How many CONSECUTIVE identical polls flip the state. This is the sharp edge of the whole",
+                "feature: one false negative refuses everybody, one false positive fires players at a dead",
+                "port. Never set this to 1 — a single dropped packet is not an outage.")
+            .defineInRange("smpLivenessConfirmCount", 3, 2, 10);
+        SMP_LIVENESS_TIMEOUT_MS = b.comment("Socket timeout per poll.")
+            .defineInRange("smpLivenessTimeoutMs", 3000, 500, 15000);
+        AUTO_READMIT = b.comment(
+                "When the SMP returns, transfer waiting players automatically instead of only telling them.",
+                "OFF by default: it moves people without asking, and a wrong liveness reading would move them",
+                "into a server that is not ready.")
+            .define("autoReadmit", false);
+        READMIT_STAGGER_MS = b.comment(
+                "Milliseconds between automatic re-admissions. A restart can end with a room full of people;",
+                "transferring them at once hands the SMP the whole lobby's reconnects in one tick.")
+            .defineInRange("readmitStaggerMs", 750, 0, 10000);
+        GRACEFUL_RESTART_ENABLED = b.comment(
+                "SMP ONLY: at the end of the restart countdown, TRANSFER everyone to the lobby instead of",
+                "letting the restart drop them. They are never kicked and never asked to reconnect.",
+                "⚠️ This does NOT stop the server — the Pterodactyl panel still owns that. Two things",
+                "restarting one process gives you a stop landing on a server that is already starting.",
+                "",
+                "⚠️ Requires lobbyReturnHost/lobbyReturnPort to be set and AERO_GATE_SECRET present.",
+                "Without a return host, returnToLobby() declines and the evacuation quietly does nothing.",
+                "Default changed false -> true on 2026-09-09 at the owner's request.")
+            .define("gracefulRestartEnabled", true);
+        EVACUATE_SECONDS_BEFORE = b.comment(
+                "Seconds before the restart moment to evacuate. Transfers are asynchronous — the client",
+                "disconnects and reconnects itself — so evacuating AT the restart cuts transfers in flight.")
+            .defineInRange("evacuateSecondsBeforeRestart", 20, 5, 300);
+        b.pop();
+
+        b.comment("Warning for the HOST'S daily scheduled restart.",
+                  "The Lagless panel restarts this server on a timer and tells nobody, so players in a Create",
+                  "airship or mid-trade simply drop. This does NOT restart anything — it only counts down to a",
+                  "moment the panel decided, using the same boss bar as /authmod warn.",
+                  "🔴 IF YOU CHANGE THE PANEL'S SCHEDULE, CHANGE dailyRestartTime TOO. Nothing here can read the",
+                  "panel's timetable, and a countdown that ends at the wrong moment is worse than none.")
+            .push("daily_restart");
+        DAILY_RESTART_WARN_ENABLED = b.comment("Master switch for the automatic daily restart warning.")
+            .define("dailyRestartWarnEnabled", true);
+        DAILY_RESTART_TIME = b.comment(
+                "Time of the host's daily restart, 24-hour HH:mm, in dailyRestartTimezone.",
+                "Must match the panel's scheduled task exactly.")
+            .define("dailyRestartTime", "10:30");
+        DAILY_RESTART_TIMEZONE = b.comment(
+                "IANA zone id the above time is expressed in, e.g. Asia/Colombo, UTC, Europe/London.",
+                "Deliberately NOT the JVM default: the container currently reports +05:30, which happens to",
+                "match Asia/Colombo, so a default-zone implementation would look right today and fire at the",
+                "wrong hour the moment the backend moves host — and it has moved three times already.")
+            .define("dailyRestartTimezone", "Asia/Colombo");
+        DAILY_RESTART_WARN_MINUTES = b.comment(
+                "How many minutes before the restart the countdown appears.")
+            .defineInRange("dailyRestartWarnMinutes", 10, 1, 120);
         b.pop();
 
         b.comment("Transfer-gate reconnect grace").push("gate");
@@ -878,6 +1057,19 @@ public class AuthConfig {
         LOBBY_SPAWN_Z = b
             .comment("Lobby spawn pad Z.")
             .defineInRange("lobbySpawnZ", 5.5, -30000000.0, 30000000.0);
+        LOBBY_SPAWN_YAW = b.comment(
+                "Which way a player faces when placed on the lobby spawn pad.",
+                "Minecraft yaw: 0 = +Z (south), 90 = -X (west), 180 = -Z (north), -90 = +X (east).",
+                "Default 180 is the pre-2026-09-08 hardcoded behaviour (due north), so leaving it alone",
+                "changes nothing on the SMP's in-process lobby.",
+                "To face a specific point from the pad:  yaw = -atan2(dx, dz) in degrees.")
+            .defineInRange("lobbySpawnYaw", 180.0, -180.0, 180.0);
+        LOBBY_SPAWN_PITCH = b.comment(
+                "Vertical facing on the lobby spawn pad. POSITIVE IS DOWN (Minecraft convention).",
+                "To face a point:  pitch = -atan2(dy, sqrt(dx*dx + dz*dz)) in degrees, where dy is measured",
+                "from the player's EYE height (pad Y + 1.62), not from their feet — miss that and the aim",
+                "sits about a block high at close range.")
+            .defineInRange("lobbySpawnPitch", 0.0, -90.0, 90.0);
         LOBBY_FLOOR_Y = b
             .comment("Reference island floor Y for the fall-catch.")
             .defineInRange("lobbyFloorY", 100, -64, 320);
@@ -901,9 +1093,11 @@ public class AuthConfig {
             .comment("Chunks (square radius) around the lobby anchor to permanently force-load. Cover the whole build.")
             .defineInRange("lobbyForceloadRadiusChunks", 8, 1, 32);
         LOBBY_PREPLACED_BUILD = b
-            .comment("The lobby build is pre-placed in the auth_lobby dimension (e.g. a map dropped into its",
-                     "region folder) rather than a bundled template. When true, the mod places NO template or",
-                     "platform and never touches the map — it only force-loads the region and spawns players in.")
+            .comment("DEPRECATED and ignored since 2026-09-09 — kept only so the key does not vanish from",
+                     "existing configs. The mod no longer has ANY code that writes blocks into the lobby, so",
+                     "there is nothing left for this to switch off. It used to gate a template and platform",
+                     "placer; that placer was deleted rather than left behind a flag, because a flag that must",
+                     "stay set to avoid damaging a hand-built map is a weaker guarantee than no code at all.")
             .define("lobbyPreplacedBuild", true);
         OVERWORLD_SPAWN_X = b
             .comment("Overworld spawn X — where /spawn and the lobby exit paper send players.")
@@ -931,6 +1125,23 @@ public class AuthConfig {
                      "When true, vanilla's announceAdvancements chat broadcast is disabled at startup and replaced",
                      "by a display-name version. The earner's own toast popup is unaffected.")
             .define("maskAdvancementNames", true);
+        SKIP_RECIPE_ADVANCEMENT_LISTENERS = b
+            .comment("Do not register criteria listeners for recipe-unlock advancements.",
+                     "",
+                     "MEASURED 2026-09-08 on a 180s spark profile of the live server: the advancement",
+                     "system was 9.39% of the server thread, and 7.89% (14,188 ms) of that was a single",
+                     "path - ServerPlayer$2.slotChanged -> InventoryChangeTrigger.trigger. Every slot",
+                     "change linearly scans every registered inventory_changed listener. The pack ships",
+                     "10,018 advancements of which 9,195 are recipe unlocks, and 9,168 of those carry an",
+                     "inventory_changed criterion - so 98% of that scan exists only to fill the recipe book.",
+                     "",
+                     "Safe here because doLimitedCrafting is false (recipes never gate crafting) and the",
+                     "pack ships EMI for browsing and auto-fill. Already-unlocked recipes are kept: they",
+                     "live in the player's recipeBook NBT, not in advancements. Fully reversible - set this",
+                     "false and listeners register again on the next join.",
+                     "",
+                     "COST: the recipe book stops filling in as players pick up new ingredients.")
+            .define("skipRecipeAdvancementListeners", true);
         b.pop();
 
 

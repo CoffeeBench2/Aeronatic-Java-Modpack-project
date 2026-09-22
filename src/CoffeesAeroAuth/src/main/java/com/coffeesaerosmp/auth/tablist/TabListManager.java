@@ -217,7 +217,7 @@ public final class TabListManager {
     /** True while the player is in the auth lobby dimension. */
     private static boolean inLobby(ServerPlayer player) {
         return player.level().dimension()
-            == com.coffeesaerosmp.auth.lobby.PrivateRoomManager.LOBBY_DIMENSION;
+            == com.coffeesaerosmp.auth.lobby.LobbyManager.LOBBY_DIMENSION;
     }
 
     private static Component header(boolean lobby) {

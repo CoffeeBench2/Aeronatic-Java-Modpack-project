@@ -68,7 +68,7 @@ public class MigrationRunner {
                         for (Map.Entry<String, List<String>> e : raw.entrySet()) {
                             for (String ip : e.getValue()) {
                                 try (PreparedStatement ps = conn.prepareStatement(
-                                    "INSERT IGNORE INTO trusted_ips (uuid, ip_address, added_at) VALUES (?,?,?)")) {
+                                    "INSERT IGNORE INTO trusted_ips (uuid, ip_address, added_at) VALUES (?)")) {
                                     ps.setString(1, e.getKey());
                                     ps.setString(2, ip);
                                     ps.setLong(3, System.currentTimeMillis());
@@ -104,8 +104,8 @@ public class MigrationRunner {
             "(uuid,username,display_name,account_type,password_hash,password_salt," +
             " name_approved,first_join,last_seen,total_playtime,bio,skin_url," +
             " name_approval_pending,pending_display_name,name_rejection_count," +
-            " name_changes_used,room_slot,room_created_at,first_join_complete,startup_bonus_given)" +
-            " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)" +
+            " name_changes_used,first_join_complete,startup_bonus_given)" +
+            " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)" +
             " ON DUPLICATE KEY UPDATE" +
             "  username=VALUES(username),display_name=VALUES(display_name)," +
             "  account_type=VALUES(account_type),password_hash=VALUES(password_hash)," +
@@ -115,7 +115,6 @@ public class MigrationRunner {
             "  pending_display_name=VALUES(pending_display_name)," +
             "  name_rejection_count=VALUES(name_rejection_count)," +
             "  name_changes_used=VALUES(name_changes_used)," +
-            "  room_slot=VALUES(room_slot),room_created_at=VALUES(room_created_at)," +
             "  first_join_complete=VALUES(first_join_complete)," +
             "  startup_bonus_given=VALUES(startup_bonus_given)";
 
@@ -137,10 +136,8 @@ public class MigrationRunner {
             ps.setString(14, str(o, "pendingDisplayName", null));
             ps.setInt(15,    num(o, "nameRejectionCount", 0));
             ps.setInt(16,    num(o, "nameChangesUsed", 0));
-            ps.setInt(17,    num(o, "roomSlot", -1));
-            ps.setLong(18,   lng(o, "roomCreatedAt", 0));
-            ps.setBoolean(19, bool(o, "firstJoinComplete", false));
-            ps.setBoolean(20, bool(o, "startupBonusGiven", true)); // existing/migrated players: no surprise bonus
+            ps.setBoolean(17, bool(o, "firstJoinComplete", false));
+            ps.setBoolean(18, bool(o, "startupBonusGiven", true)); // existing/migrated players: no surprise bonus
             ps.executeUpdate();
         }
     }

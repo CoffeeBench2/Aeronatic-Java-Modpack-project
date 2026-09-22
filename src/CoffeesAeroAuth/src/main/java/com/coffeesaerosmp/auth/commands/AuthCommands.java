@@ -2,6 +2,7 @@ package com.coffeesaerosmp.auth.commands;
 
 import com.coffeesaerosmp.auth.CoffeesAeroAuth;
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -149,25 +150,39 @@ public class AuthCommands {
             .requires(src -> src.hasPermission(2))
             .executes(ctx -> {
                 ServerPlayer player = ctx.getSource().getPlayerOrException();
-                if (CoffeesAeroAuth.ROOM_MANAGER == null) {
+                // With lobbyReturnHost configured, /lobby means "send me to the standalone lobby
+                // SERVER" — the natural reading once the lobby is a separate machine. It signs a
+                // cookie on the way so premium survives the trip; see LobbyHandoff.returnToLobby.
+                // Unconfigured, it keeps its original meaning (admin preview of THIS server's own
+                // auth_lobby), which is still how the SMP's in-process lobby gets decorated.
+                // `/lobby preview` forces the old behaviour either way.
+                if (com.coffeesaerosmp.auth.lobby.LobbyHandoff.returnToLobby(player)) {
+                    return 1;
+                }
+                if (CoffeesAeroAuth.LOBBY_MANAGER == null) {
                     player.sendSystemMessage(Component.literal("§cLobby system not ready."));
                     return 0;
                 }
-                CoffeesAeroAuth.ROOM_MANAGER.teleportToPreview(player);
+                CoffeesAeroAuth.LOBBY_MANAGER.teleportToLobby(player);
                 player.sendSystemMessage(Component.literal(
-                    "§6[Lobby] §7Previewing the lobby room — decorate it, then §a/lobby save§7. §a/spawn§7 to leave."));
+                    "§6[Lobby] §7Dropped you on the lobby spawn pad. §a/spawn§7 to leave."));
                 return 1;
             })
-            .then(Commands.literal("save")
-                .executes(ctx -> {
-                    ServerPlayer player = ctx.getSource().getPlayerOrException();
-                    boolean ok = CoffeesAeroAuth.ROOM_MANAGER != null && CoffeesAeroAuth.ROOM_MANAGER.saveTemplate();
-                    player.sendSystemMessage(Component.literal(ok
-                        ? "§a[Lobby] Saved this room as the template for ALL lobbies — existing rooms rebuild on next visit."
-                        : "§c[Lobby] Save failed — use §e/lobby§c first so the preview room is loaded, then retry."));
-                    return ok ? 1 : 0;
-                })
-            )
+            // Cleanup for smooth stone the old placement code stamped into the lobby. Deleting that
+            // code (2026-09-09) stops NEW platforms but cannot undo what is already written.
+            // Explicit and op-only on purpose — see clearSpawnPlatform: it matches on block type, so
+            // if the build's own floor is smooth stone at that layer it takes those too.
+            // ⚠️ Deliberately does NOT require a player. It operates on the lobby dimension through
+            // the lobby manager and the server, so getPlayerOrException() only ever added a
+            // restriction — and it blocked the CONSOLE, which is where an admin most naturally runs a
+            // one-off cleanup ("A player is required to run this command here", 2026-09-08).
+            // Optional radius, because the emergency 5×5 was placed wherever a player happened to be
+            // floating rather than on the pad, so the default 3 will not always reach it.
+            .then(Commands.literal("clearplatform")
+                .executes(ctx -> clearPlatform(ctx.getSource(), 3))
+                .then(Commands.argument("radius", IntegerArgumentType.integer(1, 32))
+                    .executes(ctx -> clearPlatform(ctx.getSource(),
+                        IntegerArgumentType.getInteger(ctx, "radius")))))
             .then(Commands.literal("greeter")
                 // "dialog" is a literal, and Brigadier matches literals before the greedy text
                 // argument — so a greeter's floating text can never be the single word "dialog".
@@ -253,7 +268,7 @@ public class AuthCommands {
      */
     private static boolean requireLobby(ServerPlayer player, String action) {
         if (player.level().dimension()
-                == com.coffeesaerosmp.auth.lobby.PrivateRoomManager.LOBBY_DIMENSION) {
+                == com.coffeesaerosmp.auth.lobby.LobbyManager.LOBBY_DIMENSION) {
             return true;
         }
         player.sendSystemMessage(Component.literal(
@@ -290,6 +305,25 @@ public class AuthCommands {
 
     /** /lobby greeter &lt;text&gt; — tag the nearest NPC/armor stand as the spawn greeter and set the
      *  floating text above it. */
+    /** /lobby clearplatform [radius] — removes leftover smooth stone on the spawn-pad floor layer. */
+    private static int clearPlatform(CommandSourceStack src, int radius) {
+        if (CoffeesAeroAuth.LOBBY_MANAGER == null || src.getServer() == null) {
+            src.sendFailure(Component.literal("§cLobby system not ready."));
+            return 0;
+        }
+        int n = CoffeesAeroAuth.LOBBY_MANAGER.clearSpawnPlatform(src.getServer(), radius);
+        if (n < 0) {
+            src.sendFailure(Component.literal("§c[Lobby] Lobby dimension not loaded — nothing done."));
+            return 0;
+        }
+        final int removed = n;
+        src.sendSuccess(() -> Component.literal(removed == 0
+            ? "§6[Lobby] §7No smooth stone found on the spawn pad layer within " + radius + " — already clean."
+            : "§6[Lobby] §aRemoved " + removed + " smooth stone block(s) §7within " + radius + " of the spawn pad."),
+            true);
+        return 1;
+    }
+
     private static int setGreeter(ServerPlayer player, String text) {
         net.minecraft.world.entity.Entity target = findGreeterTarget(player);
         if (target == null) {

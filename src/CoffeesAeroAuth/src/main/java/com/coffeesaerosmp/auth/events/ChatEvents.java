@@ -72,10 +72,10 @@ public class ChatEvents {
                 .append(Component.literal(" §8(" + realName + ")§r §8» §r" + rawText))
             : formatted;
         boolean senderInLobby =
-            player.level().dimension() == com.coffeesaerosmp.auth.lobby.PrivateRoomManager.LOBBY_DIMENSION;
+            player.level().dimension() == com.coffeesaerosmp.auth.lobby.LobbyManager.LOBBY_DIMENSION;
         for (ServerPlayer viewer : player.getServer().getPlayerList().getPlayers()) {
             boolean viewerInLobby =
-                viewer.level().dimension() == com.coffeesaerosmp.auth.lobby.PrivateRoomManager.LOBBY_DIMENSION;
+                viewer.level().dimension() == com.coffeesaerosmp.auth.lobby.LobbyManager.LOBBY_DIMENSION;
             if (viewerInLobby != senderInLobby) continue;   // lobby and world are separate chat channels
             viewer.sendSystemMessage(viewer.hasPermissions(2) ? adminVariant : formatted);
         }
