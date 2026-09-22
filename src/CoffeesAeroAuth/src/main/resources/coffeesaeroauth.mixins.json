@@ -15,7 +15,8 @@
         "ServerPlayerTeleportGuardMixin",
         "ContraptionColliderNpeFixMixin",
         "GameProfileCacheDisplayNameMixin",
-        "JoinMessageMixin"
+        "JoinMessageMixin",
+        "LeaveMessageMixin"
     ],
     "client": [],
     "injectors": {
