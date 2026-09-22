@@ -157,6 +157,7 @@ public class CoffeesAeroAuth {
         NeoForge.EVENT_BUS.addListener(PlayerRestrictEvents::onRightClickBlock);
         NeoForge.EVENT_BUS.addListener(PlayerRestrictEvents::onRightClickItem);
         NeoForge.EVENT_BUS.addListener(PlayerRestrictEvents::onEntityInteract);
+        NeoForge.EVENT_BUS.addListener(PlayerRestrictEvents::onEntityInteractSpecific);
         NeoForge.EVENT_BUS.addListener(PlayerRestrictEvents::onLeftClickBlock);
         NeoForge.EVENT_BUS.addListener(PlayerRestrictEvents::onAttackEntity);
         NeoForge.EVENT_BUS.addListener(PlayerRestrictEvents::onBlockBreak);

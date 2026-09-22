@@ -14,6 +14,23 @@ import net.neoforged.neoforge.event.entity.player.AttackEntityEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
 
+/**
+ * Enforcement for auth-lockdown and confiscation: blocks actions, freezes position, and locks out
+ * commands for players who are unauthenticated or held.
+ *
+ * <h3>Confiscation — known, deliberately accepted gaps</h3>
+ * <ul>
+ *   <li><b>Bow/charged-item release.</b> Only the START of item use ({@code RightClickItem}) is
+ *   blocked. A player who had already fully drawn a bow (or was mid-charge on some other item) in
+ *   the exact tick a hold lands can still release that single shot — the release packet is a
+ *   separate path this does not gate. Too narrow (needs a completed draw at the exact moment of
+ *   confiscation) to justify intercepting another packet path for it.</li>
+ *   <li><b>Portal travel on the SMP role.</b> Not explicitly gated. In practice this is academic:
+ *   a held player cannot walk to a portal (position is pinned every tick — see {@link #onPlayerTick}),
+ *   so only an already-standing-in-a-portal case could apply, and the damage immunity added for
+ *   confiscation removes the only way that case could hurt them.</li>
+ * </ul>
+ */
 public class PlayerRestrictEvents {
 
     /** Where each held player was pinned, so they cannot drift. Cleared the moment the hold lifts. */
@@ -69,6 +86,9 @@ public class PlayerRestrictEvents {
         com.coffeesaerosmp.auth.moderation.Confiscation.Hold held =
             com.coffeesaerosmp.auth.moderation.Confiscation.get(player.getUUID());
         if (held != null) {
+            // Riding while frozen is undefined — the vehicle would keep moving under a player whose
+            // own position is being pinned every tick. Dismount rather than leave it ambiguous.
+            if (player.isPassenger()) player.stopRiding();
             double[] at = HELD_POS.computeIfAbsent(player.getUUID(),
                 k -> new double[]{player.getX(), player.getY(), player.getZ()});
             player.teleportTo(at[0], at[1], at[2]);
@@ -183,6 +203,17 @@ public class PlayerRestrictEvents {
         // has its own owner/op edit-protection, so this exposes only dialogs, never editing.
         if (isEasyNpc(event.getTarget())) return;
         // Lobby decor (item frames, armor stands, etc.) is untouchable for everyone but ops.
+        if (shouldBlock(event.getEntity()) || lobbyLocked(event.getEntity())) event.setCanceled(true);
+    }
+
+    /**
+     * Precise entity interaction — armour-stand slot swaps in particular.
+     *
+     * <p>Needed because {@code EntityInteract} does NOT fire when {@code interactAt} returns
+     * SUCCESS, which is exactly what an armour-stand swap does. Without this a held player can
+     * still strip and re-equip an armour stand standing next to them.
+     */
+    public static void onEntityInteractSpecific(PlayerInteractEvent.EntityInteractSpecific event) {
         if (shouldBlock(event.getEntity()) || lobbyLocked(event.getEntity())) event.setCanceled(true);
     }
 
@@ -337,20 +368,32 @@ public class PlayerRestrictEvents {
     /** No damage of any kind in the lobby (fall/PvP/drown/mob). Covers the fall-catch window and the
      *  "can't hit each other" rule for melee AND projectiles. Ops included — the lobby is a safe zone. */
     public static void onIncomingDamage(net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent event) {
-        if (event.getEntity() instanceof ServerPlayer sp
-                && sp.level().dimension() == LobbyManager.LOBBY_DIMENSION) {
+        if (!(event.getEntity() instanceof ServerPlayer sp)) return;
+        // A confiscated player cannot move, fight or flee. Letting a mob or a fall kill them while
+        // they are frozen would scatter their inventory through no fault of their own — and destroy
+        // whatever an admin froze them to look at. Immunity lasts exactly as long as the hold.
+        if (com.coffeesaerosmp.auth.moderation.Confiscation.isHeld(sp.getUUID())) {
+            event.setCanceled(true);
+            return;
+        }
+        if (sp.level().dimension() == LobbyManager.LOBBY_DIMENSION) {
             event.setCanceled(true);
         }
     }
 
     /** No item pickup in the lobby (belt-and-braces; there should be no ground items anyway). */
     public static void onItemPickup(net.neoforged.neoforge.event.entity.player.ItemEntityPickupEvent.Pre event) {
-        if (event.getPlayer() instanceof ServerPlayer sp
-                && sp.level().dimension() == LobbyManager.LOBBY_DIMENSION
-                // Ops exempt (perm 4), matching lobbyLocked() everywhere else. An admin building the
-                // lobby needs to be able to pick their own blocks back up — without this, anything
-                // dropped or broken while building is unrecoverable and just despawns.
-                && !sp.hasPermissions(4)) {
+        if (!(event.getPlayer() instanceof ServerPlayer sp)) return;
+        // No op exemption here, unlike the lobby rule below: an op cannot be confiscated at all,
+        // so an exemption would be dead code that becomes a bypass if that ever changes.
+        if (com.coffeesaerosmp.auth.moderation.Confiscation.isHeld(sp.getUUID())) {
+            event.setCanPickup(net.neoforged.neoforge.common.util.TriState.FALSE);
+            return;
+        }
+        // Ops exempt (perm 4), matching lobbyLocked() everywhere else. An admin building the
+        // lobby needs to be able to pick their own blocks back up — without this, anything
+        // dropped or broken while building is unrecoverable and just despawns.
+        if (sp.level().dimension() == LobbyManager.LOBBY_DIMENSION && !sp.hasPermissions(4)) {
             event.setCanPickup(net.neoforged.neoforge.common.util.TriState.FALSE);
         }
     }
