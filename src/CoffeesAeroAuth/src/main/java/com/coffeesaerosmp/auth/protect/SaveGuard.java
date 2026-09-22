@@ -133,6 +133,10 @@ public final class SaveGuard {
      * the remainder since the last bank.
      */
     private static void bankPlaytime(MinecraftServer server) {
+        // 🔴 PLAYTIME IS SMP-ONLY (owner decision 2026-09-22). This is the 60-second banker, so
+        // without this guard the lobby quietly accrued play for anyone sitting at the login prompt
+        // or waiting on name approval — and the sidebar level is playtime-only, so it inflated too.
+        if (com.coffeesaerosmp.auth.lobby.LobbyHandoff.isLobbyRole()) return;
         var store = CoffeesAeroAuth.PROFILE_STORE;
         if (store == null) return;
         long now = System.currentTimeMillis();

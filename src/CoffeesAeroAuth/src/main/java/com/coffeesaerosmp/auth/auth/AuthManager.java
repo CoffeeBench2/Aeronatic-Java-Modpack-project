@@ -536,8 +536,16 @@ public class AuthManager {
         PlayerProfile profile = store.get(uuid);
         if (profile != null) {
             if (profile.sessionStartEpoch > 0) {
-                long secs = (System.currentTimeMillis() - profile.sessionStartEpoch) / 1000;
-                profile.totalPlaytimeSeconds += secs;
+                // 🔴 PLAYTIME IS SMP-ONLY (owner decision 2026-09-22). The lobby is a waiting room:
+                // time spent queueing, registering or waiting for name approval is not play, and
+                // counting it inflated the sidebar level, which is playtime-only.
+                //
+                // The session stamp is still cleared here even on the lobby — leaving it set would
+                // let a later SMP bank swallow the lobby interval as if it were play.
+                if (!com.coffeesaerosmp.auth.lobby.LobbyHandoff.isLobbyRole()) {
+                    long secs = (System.currentTimeMillis() - profile.sessionStartEpoch) / 1000;
+                    profile.totalPlaytimeSeconds += secs;
+                }
                 profile.sessionStartEpoch = 0;
             }
             // Remember the logoff spot in the MAIN world so /spawn resumes the player here on their next
