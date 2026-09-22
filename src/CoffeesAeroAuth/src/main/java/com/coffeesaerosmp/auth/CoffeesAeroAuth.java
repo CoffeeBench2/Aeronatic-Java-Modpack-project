@@ -716,6 +716,7 @@ public class CoffeesAeroAuth {
     private static void onRegisterCommands(RegisterCommandsEvent event) {
         AuthCommands.register(event.getDispatcher());
         ProfileCommands.register(event.getDispatcher());
+        com.coffeesaerosmp.auth.commands.InvseeCommands.register(event.getDispatcher());
         com.coffeesaerosmp.auth.pvp.CombatGuard.registerCommands(event.getDispatcher());
         com.coffeesaerosmp.auth.commands.TpaCommands.register(event.getDispatcher());
         com.coffeesaerosmp.auth.commands.RtpCommand.register(event.getDispatcher());

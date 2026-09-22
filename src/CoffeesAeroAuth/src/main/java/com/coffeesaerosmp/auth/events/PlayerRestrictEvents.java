@@ -123,7 +123,12 @@ public class PlayerRestrictEvents {
         if (player.containerMenu != player.inventoryMenu
                 && (lobbyLocked(player)
                     || com.coffeesaerosmp.auth.moderation.Confiscation.isHeld(player.getUUID()))
-                && !isEasyNpcMenu(player.containerMenu)) {
+                && !isEasyNpcMenu(player.containerMenu)
+                // An admin's /invsee is not the player's own menu, so this guard would slam it shut
+                // on the very next tick — silently, looking like the command simply did nothing.
+                // Exempting it holds no player items: the menu belongs to the VIEWER, and the guard
+                // above is about what a locked-down player can reach, not what an admin can open.
+                && !(player.containerMenu instanceof com.coffeesaerosmp.auth.invsee.InvseeMenu.Marker)) {
             player.closeContainer();
         }
     }
@@ -512,6 +517,17 @@ public class PlayerRestrictEvents {
     public static void onPlayerLoggedOut(
             net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerLoggedOutEvent event) {
         HELD_POS.remove(event.getEntity().getUUID());
+
+        // Close any /invsee menu pointed AT this player: a live view is backed by their real
+        // Inventory, which vanilla is about to discard, so an admin left holding it would be
+        // editing an object that no longer belongs to anyone. PlayerLoggedOutEvent firing BEFORE
+        // the save is exactly what we want here — closing first is the point.
+        java.util.UUID gone = event.getEntity().getUUID();
+        com.coffeesaerosmp.auth.invsee.InvseeManager.closeViewersOf(
+            event.getEntity().getServer(), gone);
+        // And drop THIS player from any watch list they were on as a viewer, so the map cannot
+        // grow without bound across restarts' worth of admin activity.
+        com.coffeesaerosmp.auth.invsee.InvseeManager.forgetViewer(gone);
     }
 
     private static boolean lobbyLocked(net.minecraft.world.entity.player.Player player) {
