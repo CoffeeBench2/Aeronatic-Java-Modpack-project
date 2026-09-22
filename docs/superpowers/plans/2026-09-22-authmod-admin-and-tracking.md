@@ -66,7 +66,7 @@
 | `tracking/InfractionLog.java` | Append-only infraction rows |
 | `admin/FreshStart.java` | Backup → delete → reset, mirroring `AccountTransfer` |
 
-**Modified:** `CoffeesAeroAuth.java` · `db/DatabaseManager.java` · `config/AuthConfig.java` · `events/PlayerRestrictEvents.java` · `events/ChatEvents.java` · `commands/ProfileCommands.java` · `mixin/JoinMessageMixin.java` · `coffees_aero_auth.mixins.json` · `gradle.properties`
+**Modified:** `CoffeesAeroAuth.java` · `db/DatabaseManager.java` · `config/AuthConfig.java` · `events/PlayerRestrictEvents.java` · `events/ChatEvents.java` · `commands/ProfileCommands.java` · `mixin/JoinMessageMixin.java` · `coffeesaeroauth.mixins.json` · `gradle.properties`
 
 ---
 
@@ -75,7 +75,7 @@
 **Files:**
 - Create: `src/main/java/com/coffeesaerosmp/auth/mixin/LeaveMessageMixin.java`
 - Modify: `src/main/java/com/coffeesaerosmp/auth/mixin/JoinMessageMixin.java` (`require = 0` → `1`)
-- Modify: `src/main/resources/coffees_aero_auth.mixins.json`
+- Modify: `src/main/resources/coffeesaeroauth.mixins.json`
 
 **Context:** `display/HiddenOps.isHidden(UUID)` already exists and persists across restarts. `mixin/JoinMessageMixin` already swallows the JOIN line for hidden ops, and `discord/DiscordBridge.onPlayerJoin`/`onPlayerLeave` already gate the PUBLIC feed on `isHidden(player)`. **The only gap is the in-game leave line** — vanilla `PlayerList.remove` broadcasts it with no guard.
 
@@ -103,24 +103,34 @@ import org.spongepowered.asm.mixin.injection.Redirect;
  * server by logging out, which defeated {@code /authmod hide} entirely. The public Discord feed was
  * already gated ({@code DiscordBridge.isHidden}); only the in-game line was not.
  *
- * <p>There is no cancellable event — {@code PlayerList#remove} calls {@code broadcastSystemMessage}
- * directly — so the call is redirected, exactly as the join line is.
+ * <h3>Why this targets the packet listener and not {@code PlayerList}</h3>
+ * The join line lives in {@code PlayerList#placeNewPlayer}, so the obvious symmetry would be
+ * {@code PlayerList#remove}. That is WRONG: {@code PlayerList} never broadcasts the leave message.
+ * {@code "multiplayer.player.left"} appears exactly once in the whole server, inside the private
+ * no-arg {@code ServerGamePacketListenerImpl#removePlayerFromWorld()}, which broadcasts it BEFORE
+ * calling {@code PlayerList#remove}. Targeting {@code remove} finds no injection point at all.
+ *
+ * <p>There is no cancellable event for it either, so the call is redirected.
  *
  * <p>🔴 {@code require = 1}, deliberately, unlike the join mixin's original {@code require = 0}.
  * A silently-unapplied mixin here means hidden ops ARE announced, with no error anywhere and no way
  * for the person relying on being invisible to know. Silent exposure is worse than a loud boot
- * failure. The accepted cost is a refused boot if a NeoForge update moves {@code remove}.
+ * failure — and that strictness is exactly what caught the wrong target above before it shipped.
  */
-@Mixin(PlayerList.class)
+@Mixin(ServerGamePacketListenerImpl.class)
 public abstract class LeaveMessageMixin {
 
+    @Shadow
+    public ServerPlayer player;
+
     @Redirect(
-        method = "remove",
+        method = "removePlayerFromWorld",
         at = @At(value = "INVOKE",
                  target = "Lnet/minecraft/server/players/PlayerList;broadcastSystemMessage(Lnet/minecraft/network/chat/Component;Z)V"),
         require = 1)
-    private void aeroauth$leaveLine(PlayerList list, Component message, boolean overlay,
-                                    ServerPlayer player) {
+    private void aeroauth$leaveLine(PlayerList list, Component message, boolean overlay) {
+        ServerPlayer player = this.player;
+        if (player == null) { list.broadcastSystemMessage(message, overlay); return; }
         if (HiddenOps.isHidden(player.getUUID())) return;   // swallow the announcement entirely
 
         try {
@@ -148,7 +158,7 @@ public abstract class LeaveMessageMixin {
 
 - [ ] **Step 2: Register it and raise the join mixin to `require = 1`**
 
-In `src/main/resources/coffees_aero_auth.mixins.json`, add `"LeaveMessageMixin"` to the `"server"` array immediately after `"JoinMessageMixin"`:
+In `src/main/resources/coffeesaeroauth.mixins.json`, add `"LeaveMessageMixin"` to the `"server"` array immediately after `"JoinMessageMixin"`:
 
 ```json
     "server": [
@@ -196,7 +206,7 @@ This is the only verification that exists for this task:
 ```bash
 git add src/main/java/com/coffeesaerosmp/auth/mixin/LeaveMessageMixin.java \
         src/main/java/com/coffeesaerosmp/auth/mixin/JoinMessageMixin.java \
-        src/main/resources/coffees_aero_auth.mixins.json
+        src/main/resources/coffeesaeroauth.mixins.json
 git commit -m "feat(display): hidden ops are anonymous on leave, not just on join
 
 The in-game leave line had no HiddenOps guard, so a hidden op could join
@@ -240,8 +250,10 @@ In `createSchema()`, immediately before the `CoffeesAeroAuth.LOGGER.info("[DB] S
                 "  ip           VARCHAR(45)  NULL," +
                 "  server_role  VARCHAR(8)   NOT NULL," +
                 "  reason       VARCHAR(32)  NULL," +
-                "  INDEX idx_session_uuid (uuid)," +
-                "  INDEX idx_session_logout (logout_epoch)" +
+                // Composite, not two single-column indexes: the only read is
+                // "WHERE uuid=? ORDER BY logout_epoch DESC LIMIT n", and one index
+                // covering filter+sort avoids a filesort. Nothing wants logout_epoch alone.
+                "  INDEX idx_session_uuid_logout (uuid, logout_epoch DESC)" +
                 ")");
 
             // Sampled every 5 minutes and on logout — never written per event.
@@ -286,8 +298,9 @@ In `createSchema()`, immediately before the `CoffeesAeroAuth.LOGGER.info("[DB] S
                 "  detail  VARCHAR(512) NULL," +
                 "  actor   VARCHAR(64)  NULL," +
                 "  epoch   BIGINT       NOT NULL," +
-                "  INDEX idx_infraction_uuid (uuid)," +
-                "  INDEX idx_infraction_epoch (epoch)" +
+                // Same reasoning as session_log: the only read is
+                // "WHERE uuid=? ORDER BY epoch DESC LIMIT n".
+                "  INDEX idx_infraction_uuid_epoch (uuid, epoch DESC)" +
                 ")");
 ```
 
@@ -1168,7 +1181,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 - Create: `src/main/java/com/coffeesaerosmp/auth/exploit/AssemblyScanner.java`
 - Create: `src/main/java/com/coffeesaerosmp/auth/mixin/SimAssemblyContraptionMixin.java`
 - Create: `src/main/java/com/coffeesaerosmp/auth/mixin/CreateContraptionMixin.java`
-- Modify: `src/main/resources/coffees_aero_auth.mixins.json`
+- Modify: `src/main/resources/coffeesaeroauth.mixins.json`
 
 **Verified hook points (checked with `javap` against the shipped jars):**
 
@@ -1434,7 +1447,7 @@ public abstract class CreateContraptionMixin {
 
 - [ ] **Step 4: Register both mixins**
 
-In `src/main/resources/coffees_aero_auth.mixins.json`, add to the `"server"` array after `"LeaveMessageMixin"`:
+In `src/main/resources/coffeesaeroauth.mixins.json`, add to the `"server"` array after `"LeaveMessageMixin"`:
 
 ```json
         "SimAssemblyContraptionMixin",
@@ -1463,7 +1476,7 @@ Expected: `BUILD SUCCESSFUL`. If it fails on the Simulated cast, apply the refle
 git add src/main/java/com/coffeesaerosmp/auth/exploit/AssemblyScanner.java \
         src/main/java/com/coffeesaerosmp/auth/mixin/SimAssemblyContraptionMixin.java \
         src/main/java/com/coffeesaerosmp/auth/mixin/CreateContraptionMixin.java \
-        src/main/resources/coffees_aero_auth.mixins.json
+        src/main/resources/coffeesaeroauth.mixins.json
 git commit -m "feat(exploit): alert admins when an Item Drain is assembled on a Swivel Bearing
 
 Two hooks on searchMovedStructure, both firing before any block moves.
