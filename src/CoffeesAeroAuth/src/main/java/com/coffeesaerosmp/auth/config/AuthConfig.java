@@ -150,6 +150,12 @@ public class AuthConfig {
     // ── Confiscation (moderation freeze) ──────────────────────────────────────
     public static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> CONFISCATE_ALLOWED_COMMANDS;
 
+    public static final ModConfigSpec.BooleanValue EXPLOIT_DETECT_ENABLED;
+    public static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> EXPLOIT_FLAGGED_BLOCKS;
+    public static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> EXPLOIT_ASSEMBLER_BLOCKS;
+    public static final ModConfigSpec.IntValue     EXPLOIT_SCAN_MAX_BLOCKS;
+    public static final ModConfigSpec.IntValue     EXPLOIT_ALERT_COOLDOWN_SECONDS;
+
     // ── /daily streak reward ──────────────────────────────────────────────────
     public static final ModConfigSpec.BooleanValue DAILY_REWARD_ENABLED;
     public static final ModConfigSpec.IntValue     DAILY_REWARD_INTERVAL_HOURS;
@@ -1132,6 +1138,40 @@ public class AuthConfig {
                 java.util.List.<String>of(),
                 () -> "msg",
                 o -> o instanceof String s && !s.isBlank());
+        b.pop();
+
+        b.push("exploit");
+        EXPLOIT_DETECT_ENABLED = b
+            .comment("Alert admins when a flagged block is assembled onto a watched bearing.",
+                     "ALERT ONLY — nothing is blocked and no assembly is ever refused.")
+            .define("exploitDetectEnabled", true);
+        EXPLOIT_FLAGGED_BLOCKS = b
+            .comment("Block ids that raise an alert when found in an assembling structure.",
+                     "Empty disables detection. NO '*' wildcard here — it would alert on every",
+                     "block of every contraption. Unknown ids are logged once at boot and ignored.")
+            .defineListAllowEmpty("exploitFlaggedBlocks",
+                java.util.List.of("create:item_drain"),
+                () -> "create:item_drain",
+                o -> o instanceof String s && !s.isBlank());
+        EXPLOIT_ASSEMBLER_BLOCKS = b
+            .comment("Anchor block ids to watch. The literal \"*\" watches every assembler.",
+                     "simulated:swivel_bearing is the Swivel Bearing — note it comes from the",
+                     "'simulated' mod nested inside the Create: Aeronautics bundle, not Create,",
+                     "and it assembles a Sable sub-level rather than a Create contraption.")
+            .defineListAllowEmpty("exploitAssemblerBlocks",
+                java.util.List.of("simulated:swivel_bearing"),
+                () -> "simulated:swivel_bearing",
+                o -> o instanceof String s && !s.isBlank());
+        EXPLOIT_SCAN_MAX_BLOCKS = b
+            .comment("Stop scanning an assembling structure after this many blocks.",
+                     "Bounds the tick cost on very large ships; a capped scan is logged once.")
+            .defineInRange("exploitScanMaxBlocks", 20000, 100, 500000);
+        EXPLOIT_ALERT_COOLDOWN_SECONDS = b
+            .comment("Minimum seconds between alerts for the same anchor + block.",
+                     "A bearing on a redstone clock would otherwise ping admins continuously.",
+                     "A suppressed alert does not extend the window, so the next one still fires",
+                     "on schedule rather than being pushed back forever by constant re-assembly.")
+            .defineInRange("exploitAlertCooldownSeconds", 600, 0, 86400);
         b.pop();
 
         b.push("advancements");
