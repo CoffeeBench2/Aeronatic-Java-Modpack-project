@@ -67,7 +67,14 @@ public final class ConfiscationStore {
         CoffeesAeroAuth.LOGGER.info("[Confiscate] Loaded {} active hold(s).", out.size());
     }
 
-    /** Persists a hold. The caller updates memory first, so enforcement is immediate. */
+    /**
+     * Persists a hold. The caller updates memory first, so enforcement is immediate.
+     *
+     * <p>Returns quietly when the DB is unavailable — deliberately, unlike {@link #delete}. Losing
+     * this write just means the hold does not survive a restart, and a player who is not proven held
+     * is left free, which is the documented fail-open policy. That is not true of a lost {@code
+     * delete}, so do not "harmonise" the two early returns; the asymmetry is the point.
+     */
     public static void persist(Confiscation.Hold hold) {
         AsyncIo.submit(() -> {
             if (CoffeesAeroAuth.DB_MANAGER == null || !CoffeesAeroAuth.DB_MANAGER.isAvailable()) return;
@@ -107,26 +114,34 @@ public final class ConfiscationStore {
      */
     public static void delete(UUID uuid) {
         AsyncIo.submit(() -> {
-            if (CoffeesAeroAuth.DB_MANAGER == null || !CoffeesAeroAuth.DB_MANAGER.isAvailable()) return;
             String lastError = null;
             for (int attempt = 1; attempt <= DELETE_ATTEMPTS; attempt++) {
-                try (Connection c = CoffeesAeroAuth.DB_MANAGER.getConnection();
-                     PreparedStatement ps = c.prepareStatement(
-                         "DELETE FROM confiscations WHERE uuid = ?")) {
-                    ps.setString(1, uuid.toString());
-                    ps.executeUpdate();
-                    return;   // success
-                } catch (Exception e) {
-                    lastError = e.toString();
-                    CoffeesAeroAuth.LOGGER.error("[Confiscate] delete attempt {}/{} failed for {}: {}",
+                if (CoffeesAeroAuth.DB_MANAGER == null || !CoffeesAeroAuth.DB_MANAGER.isAvailable()) {
+                    // Deliberately NOT an early return. A release lost to an outage is the whole
+                    // reason this method retries and escalates — returning quietly here would skip
+                    // the alert in the most likely failure case of all.
+                    lastError = "database unavailable";
+                    CoffeesAeroAuth.LOGGER.error("[Confiscate] delete attempt {}/{} for {}: {}",
                         attempt, DELETE_ATTEMPTS, uuid, lastError);
-                    if (attempt < DELETE_ATTEMPTS) {
-                        try {
-                            Thread.sleep(DELETE_RETRY_DELAY_MS);
-                        } catch (InterruptedException ie) {
-                            Thread.currentThread().interrupt();
-                            break;
-                        }
+                } else {
+                    try (Connection c = CoffeesAeroAuth.DB_MANAGER.getConnection();
+                         PreparedStatement ps = c.prepareStatement(
+                             "DELETE FROM confiscations WHERE uuid = ?")) {
+                        ps.setString(1, uuid.toString());
+                        ps.executeUpdate();
+                        return;   // success
+                    } catch (Exception e) {
+                        lastError = e.toString();
+                        CoffeesAeroAuth.LOGGER.error("[Confiscate] delete attempt {}/{} failed for {}: {}",
+                            attempt, DELETE_ATTEMPTS, uuid, lastError);
+                    }
+                }
+                if (attempt < DELETE_ATTEMPTS) {
+                    try {
+                        Thread.sleep(DELETE_RETRY_DELAY_MS);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        break;
                     }
                 }
             }
