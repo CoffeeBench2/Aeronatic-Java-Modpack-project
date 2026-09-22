@@ -3,6 +3,9 @@ package com.coffeesaerosmp.auth.commands;
 import com.coffeesaerosmp.auth.CoffeesAeroAuth;
 import com.coffeesaerosmp.auth.db.PlayerProfile;
 import com.coffeesaerosmp.auth.lobby.NameApprovalQueue;
+import com.coffeesaerosmp.auth.moderation.Confiscation;
+import com.coffeesaerosmp.auth.moderation.ConfiscationStore;
+import com.coffeesaerosmp.auth.tracking.InfractionLog;
 import com.coffeesaerosmp.auth.util.TextUtil;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.DoubleArgumentType;
@@ -485,6 +488,24 @@ public class ProfileCommands {
                 .then(Commands.literal("now")
                     .executes(ctx -> itemClearNow(ctx.getSource())))
             )
+            // /authmod confiscate <player> [reason]  ·  /authmod confiscate list
+            //
+            // Held state persists to MySQL and reloads at boot, so it survives a relog AND a
+            // restart. Release is manual and only manual — owner decision, 2026-09-22.
+            .then(Commands.literal("confiscate")
+                .then(Commands.literal("list")
+                    .executes(ctx -> confiscateList(ctx.getSource())))
+                .then(Commands.argument("player", EntityArgument.player())
+                    .executes(ctx -> confiscate(ctx.getSource(),
+                        EntityArgument.getPlayer(ctx, "player"), null))
+                    .then(Commands.argument("reason", StringArgumentType.greedyString())
+                        .executes(ctx -> confiscate(ctx.getSource(),
+                            EntityArgument.getPlayer(ctx, "player"),
+                            StringArgumentType.getString(ctx, "reason"))))))
+            .then(Commands.literal("release")
+                .then(Commands.argument("name", StringArgumentType.word())
+                    .executes(ctx -> release(ctx.getSource(),
+                        StringArgumentType.getString(ctx, "name")))))
         );
     }
 
@@ -543,6 +564,111 @@ public class ProfileCommands {
             source.sendFailure(Component.literal("§cShip census failed: " + e));
             return 0;
         }
+    }
+
+    /**
+     * Freezes a player completely until an admin releases them.
+     *
+     * <p>🔴 An op (permission 4) can NEVER be confiscated. Without this an admin could freeze
+     * themselves or a colleague out of their own server, and the enforcement layer deliberately has
+     * no op bypass anywhere — so a held op would be locked out of every command with no self-rescue.
+     */
+    private static int confiscate(CommandSourceStack src, ServerPlayer target, String reason) {
+        if (target.hasPermissions(4)) {
+            src.sendFailure(Component.literal(
+                "§cRefusing: §f" + target.getGameProfile().getName()
+                + "§c is an op. The freeze has no op bypass, so they would be locked out "
+                + "of every command with no way to free themselves."));
+            return 0;
+        }
+        if (Confiscation.isHeld(target.getUUID())) {
+            src.sendFailure(Component.literal("§f" + target.getGameProfile().getName()
+                + "§c is already confiscated. Use §f/authmod confiscate list§c to see details."));
+            return 0;
+        }
+
+        String actor = src.getTextName();
+        // Memory first, then the store — enforcement is immediate, persistence catches up.
+        Confiscation.Hold hold = new Confiscation.Hold(
+            target.getUUID(),   // uuid
+            reason,             // reason (nullable)
+            actor,              // actor
+            System.currentTimeMillis());
+        Confiscation.hold(hold);
+        ConfiscationStore.persist(hold);
+        InfractionLog.record(target.getUUID(), "CONFISCATE",
+            reason == null ? "(no reason given)" : reason, actor);
+
+        target.sendSystemMessage(Component.literal(
+            "§c§lYou have been CONFISCATED by " + actor + "."
+            + (reason == null || reason.isBlank() ? "" : "\n§7Reason: §f" + reason)
+            + "\n§7You cannot move or interact. You CAN talk — speak to the admin."));
+        String name = target.getGameProfile().getName();
+        src.sendSuccess(() -> Component.literal("§a" + name
+            + " is now confiscated. Release with §f/authmod release " + name), true);
+        return 1;
+    }
+
+    /**
+     * Lifts a hold. Takes a NAME, not an online player, because a held player can log out and an
+     * admin must still be able to free them.
+     */
+    private static int release(CommandSourceStack src, String name) {
+        var store = CoffeesAeroAuth.PROFILE_STORE;
+        if (store == null) {
+            src.sendFailure(Component.literal("§cProfile store is not initialised yet."));
+            return 0;
+        }
+        PlayerProfile profile = store.findByAnyName(name);
+        if (profile == null) {
+            src.sendFailure(Component.literal("§cNo profile matches §f" + name
+                + "§c — check the spelling."));
+            return 0;
+        }
+        java.util.UUID uuid = profile.getUUID();
+
+        Confiscation.Hold was = Confiscation.release(uuid);
+        if (was == null) {
+            src.sendFailure(Component.literal("§f" + profile.username
+                + "§c is not confiscated."));
+            return 0;
+        }
+        ConfiscationStore.delete(uuid);
+        InfractionLog.record(uuid, "RELEASE",
+            "held " + ((System.currentTimeMillis() - was.startedEpoch()) / 1000L) + "s",
+            src.getTextName());
+
+        ServerPlayer online = src.getServer().getPlayerList().getPlayer(uuid);
+        if (online != null) {
+            online.sendSystemMessage(Component.literal(
+                "§aYou have been released. Normal play resumes."));
+        }
+        String username = profile.username;
+        boolean isOffline = online == null;
+        src.sendSuccess(() -> Component.literal("§aReleased §f" + username
+            + (isOffline ? " §7(offline — takes effect immediately)" : "")), true);
+        return 1;
+    }
+
+    private static int confiscateList(CommandSourceStack src) {
+        var holds = Confiscation.all();
+        if (holds.isEmpty()) {
+            src.sendSuccess(() -> Component.literal("§7Nobody is confiscated."), false);
+            return 1;
+        }
+        src.sendSuccess(() -> Component.literal("§6Confiscated (" + holds.size() + "):"), false);
+        long now = System.currentTimeMillis();
+        var store = CoffeesAeroAuth.PROFILE_STORE;
+        for (Confiscation.Hold h : holds) {
+            PlayerProfile p = store == null ? null : store.get(h.uuid());
+            String who = p != null ? p.username : h.uuid().toString();
+            long mins = (now - h.startedEpoch()) / 60000L;
+            String line = "§7 · §f" + who + " §7by §f" + h.actor()
+                + " §7(" + mins + "m ago)"
+                + (h.reason() == null || h.reason().isBlank() ? "" : " §8— " + h.reason());
+            src.sendSuccess(() -> Component.literal(line), false);
+        }
+        return 1;
     }
 
     // ── Command handlers ──────────────────────────────────────────────────────
