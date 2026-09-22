@@ -314,6 +314,14 @@ public class CoffeesAeroAuth {
         NeoForge.EVENT_BUS.addListener(com.coffeesaerosmp.auth.pvp.CombatGuard::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(com.coffeesaerosmp.auth.pvp.CombatGuard::onPlayerLoggedOut);
         NeoForge.EVENT_BUS.addListener(com.coffeesaerosmp.auth.pvp.CombatGuard::onCommand);
+
+        // Confiscation enforcement: command blocking, on-join notice, and cleaning up the pinned
+        // freeze position when a held player disconnects. The freeze itself lives in
+        // PlayerRestrictEvents::onPlayerTick (already registered above) — it must NOT get a second
+        // handler here, see that method's javadoc.
+        NeoForge.EVENT_BUS.addListener(com.coffeesaerosmp.auth.moderation.ConfiscationEvents::onCommand);
+        NeoForge.EVENT_BUS.addListener(com.coffeesaerosmp.auth.moderation.ConfiscationEvents::onPlayerLoggedIn);
+        NeoForge.EVENT_BUS.addListener(PlayerRestrictEvents::onPlayerLoggedOut);
     }
 
     private static void onServerStarting(ServerStartingEvent event) {

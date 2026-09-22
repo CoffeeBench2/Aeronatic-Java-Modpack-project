@@ -147,6 +147,9 @@ public class AuthConfig {
     public static final ModConfigSpec.IntValue     SPAWN_TP_COOLDOWN_MINUTES;
     public static final ModConfigSpec.IntValue     HOME_TP_COOLDOWN_MINUTES;
 
+    // ── Confiscation (moderation freeze) ──────────────────────────────────────
+    public static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> CONFISCATE_ALLOWED_COMMANDS;
+
     // ── /daily streak reward ──────────────────────────────────────────────────
     public static final ModConfigSpec.BooleanValue DAILY_REWARD_ENABLED;
     public static final ModConfigSpec.IntValue     DAILY_REWARD_INTERVAL_HOURS;
@@ -1117,6 +1120,18 @@ public class AuthConfig {
         HOME_TP_COOLDOWN_MINUTES = b
             .comment("Cooldown in minutes for /home (teleport to your bed/respawn point). 0 = no cooldown. Ops exempt.")
             .defineInRange("homeTeleportCooldownMinutes", 5, 0, 1440);
+        b.pop();
+
+        b.push("moderation");
+        CONFISCATE_ALLOWED_COMMANDS = b
+            .comment("Root command literals a CONFISCATED player may still run (lowercase, no slash,",
+                     "no namespace prefix — 'back', not '/ftbessentials:back').",
+                     "Everything else is blocked. Empty by default: a confiscated player is meant to",
+                     "talk to the admin holding them, and chat is never blocked.")
+            .defineListAllowEmpty("confiscateAllowedCommands",
+                java.util.List.<String>of(),
+                () -> "msg",
+                o -> o instanceof String s && !s.isBlank());
         b.pop();
 
         b.push("advancements");

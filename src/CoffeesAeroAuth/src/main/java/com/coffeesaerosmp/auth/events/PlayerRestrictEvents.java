@@ -16,6 +16,10 @@ import net.neoforged.neoforge.event.level.BlockEvent;
 
 public class PlayerRestrictEvents {
 
+    /** Where each held player was pinned, so they cannot drift. Cleared the moment the hold lifts. */
+    private static final java.util.Map<java.util.UUID, double[]> HELD_POS =
+        new java.util.concurrent.ConcurrentHashMap<>();
+
     /**
      * Fires every tick for every ticking entity; we act only on players.
      * For unauthenticated players: freezes position and checks auth timeout.
@@ -53,6 +57,33 @@ public class PlayerRestrictEvents {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         if (CoffeesAeroAuth.AUTH_MANAGER == null) return;
         CoffeesAeroAuth.AUTH_MANAGER.onTick(player);
+
+        // Confiscation freeze — same mechanism AuthManager already uses for unauthenticated
+        // players: pin the position and zero the velocity every tick.
+        //
+        // 🔴 THIS IS WHY THIS HANDLER MUST STAY ON EntityTickEvent (see the class javadoc above).
+        // A teleport inside PlayerTickEvent is reverted by absMoveTo on the next line of
+        // ServerGamePacketListenerImpl.tick() while leaving awaitingPositionFromClient armed,
+        // which permanently breaks movement. That froze the whole lobby on 2026-09-07. The
+        // unauthenticated freeze and this one now BOTH depend on it.
+        com.coffeesaerosmp.auth.moderation.Confiscation.Hold held =
+            com.coffeesaerosmp.auth.moderation.Confiscation.get(player.getUUID());
+        if (held != null) {
+            double[] at = HELD_POS.computeIfAbsent(player.getUUID(),
+                k -> new double[]{player.getX(), player.getY(), player.getZ()});
+            player.teleportTo(at[0], at[1], at[2]);
+            player.setDeltaMovement(0, 0, 0);
+            player.fallDistance = 0;
+            if (player.tickCount % 200 == 0) {
+                player.sendSystemMessage(net.minecraft.network.chat.Component.literal(
+                    "§c§lCONFISCATED §7— you cannot act until an admin releases you."
+                    + (held.reason() == null || held.reason().isBlank()
+                        ? "" : "\n§7Reason: §f" + held.reason())
+                    + "\n§7You can still talk in chat."));
+            }
+        } else {
+            HELD_POS.remove(player.getUUID());
+        }
 
         // Lobby container lockdown: the inventory stash only clears the VANILLA inventory
         // (main+armor+offhand), so an equipped Sophisticated Backpack — which lives in an
@@ -413,6 +444,22 @@ public class PlayerRestrictEvents {
         return allowedCache;
     }
 
+    /**
+     * Drops the pinned position the moment a held player disconnects.
+     *
+     * <p>Without this, a player who is confiscated and then logs out (or is kicked) leaves their
+     * {@code HELD_POS} entry behind forever: {@link #onPlayerTick}'s own cleanup branch only runs
+     * while the player is still ticking, so it never fires again for someone who is offline. If an
+     * admin then releases them while they're offline, nothing ever removes the stale entry — a
+     * permanent, if tiny, per-ever-held-player leak. Unconditional removal here is safe either way:
+     * a released player has no hold to resume, and a still-held player gets a fresh pin (their
+     * position on reconnect) from {@link #onPlayerTick} on their very first tick back.
+     */
+    public static void onPlayerLoggedOut(
+            net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerLoggedOutEvent event) {
+        HELD_POS.remove(event.getEntity().getUUID());
+    }
+
     private static boolean lobbyLocked(net.minecraft.world.entity.player.Player player) {
         return player instanceof ServerPlayer sp
             && sp.level().dimension() == LobbyManager.LOBBY_DIMENSION
@@ -421,6 +468,11 @@ public class PlayerRestrictEvents {
 
     private static boolean shouldBlock(net.minecraft.world.entity.Entity entity) {
         if (!(entity instanceof ServerPlayer player)) return false;
+        // A confiscated player is blocked by every handler already registered against this
+        // predicate — block break/place, right-click block/item, attack, pickup, drop, container
+        // open. One line here rather than a second "may not act" implementation that would drift
+        // out of sync with this one.
+        if (com.coffeesaerosmp.auth.moderation.Confiscation.isHeld(player.getUUID())) return true;
         return CoffeesAeroAuth.AUTH_MANAGER != null
             && !CoffeesAeroAuth.AUTH_MANAGER.isAuthenticated(player.getUUID());
     }
