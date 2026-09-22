@@ -619,18 +619,37 @@ public class ProfileCommands {
             src.sendFailure(Component.literal("§cProfile store is not initialised yet."));
             return 0;
         }
-        PlayerProfile profile = store.findByAnyName(name);
-        if (profile == null) {
-            src.sendFailure(Component.literal("§cNo profile matches §f" + name
-                + "§c — check the spelling."));
-            return 0;
+        // A raw uuid is always accepted and always wins. /authmod confiscate list prints one for
+        // every hold precisely so an admin has an unambiguous handle when a name does not resolve.
+        java.util.UUID uuid = null;
+        PlayerProfile profile = null;
+        try {
+            uuid = java.util.UUID.fromString(name);
+        } catch (IllegalArgumentException notAUuid) {
+            // 🔴 Prefer a name match that is ACTUALLY HELD.
+            //
+            // findByAnyName ranks duplicates by premium-then-playtime, which is right for most
+            // admin commands and wrong for this one. This server genuinely has duplicate names
+            // across premium and offline accounts — /authmod duplicates exists to find them. If
+            // the cracked "Bob" is the one frozen and the premium "Bob" is not, the ranking picks
+            // the premium account, Confiscation.release returns null, and the admin is told
+            // "Bob is not confiscated" while the real Bob stays frozen with no way out.
+            for (PlayerProfile candidate : store.matchesByName(name)) {
+                if (Confiscation.isHeld(candidate.getUUID())) { profile = candidate; break; }
+            }
+            if (profile == null) profile = store.findByAnyName(name);   // none held — normal ranking
+            if (profile == null) {
+                src.sendFailure(Component.literal("§cNo profile matches §f" + name
+                    + "§c — check the spelling, or pass the uuid from §f/authmod confiscate list§c."));
+                return 0;
+            }
+            uuid = profile.getUUID();
         }
-        java.util.UUID uuid = profile.getUUID();
 
+        String label = profile != null ? profile.username : uuid.toString();
         Confiscation.Hold was = Confiscation.release(uuid);
         if (was == null) {
-            src.sendFailure(Component.literal("§f" + profile.username
-                + "§c is not confiscated."));
+            src.sendFailure(Component.literal("§f" + label + "§c is not confiscated."));
             return 0;
         }
         ConfiscationStore.delete(uuid);
@@ -643,7 +662,7 @@ public class ProfileCommands {
             online.sendSystemMessage(Component.literal(
                 "§aYou have been released. Normal play resumes."));
         }
-        String username = profile.username;
+        String username = label;
         boolean isOffline = online == null;
         src.sendSuccess(() -> Component.literal("§aReleased §f" + username
             + (isOffline ? " §7(offline — takes effect immediately)" : "")), true);
@@ -661,10 +680,12 @@ public class ProfileCommands {
         var store = CoffeesAeroAuth.PROFILE_STORE;
         for (Confiscation.Hold h : holds) {
             PlayerProfile p = store == null ? null : store.get(h.uuid());
-            String who = p != null ? p.username : h.uuid().toString();
+            String who = p != null ? p.username : "(unknown)";
             long mins = (now - h.startedEpoch()) / 60000L;
-            String line = "§7 · §f" + who + " §7by §f" + h.actor()
-                + " §7(" + mins + "m ago)"
+            // The uuid is always printed, never only the name: on a duplicate name it is the only
+            // unambiguous handle, and /authmod release accepts it directly for exactly that reason.
+            String line = "§7 · §f" + who + " §8" + h.uuid()
+                + "\n§7    by §f" + h.actor() + " §7(" + mins + "m ago)"
                 + (h.reason() == null || h.reason().isBlank() ? "" : " §8— " + h.reason());
             src.sendSuccess(() -> Component.literal(line), false);
         }
