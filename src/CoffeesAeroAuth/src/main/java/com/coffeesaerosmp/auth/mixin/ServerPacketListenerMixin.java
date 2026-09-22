@@ -24,6 +24,12 @@ public abstract class ServerPacketListenerMixin {
     @Inject(method = "handleContainerClick", at = @At("HEAD"), cancellable = true)
     private void coffees_aero_auth$blockContainerClick(ServerboundContainerClickPacket packet, CallbackInfo ci) {
         if (player == null) return;
+        // Confiscated players are frozen in every sense, including their own inventory — otherwise
+        // they can still drop, sort and stash items while "held".
+        if (com.coffeesaerosmp.auth.moderation.Confiscation.isHeld(player.getUUID())) {
+            ci.cancel();
+            return;
+        }
         if (CoffeesAeroAuth.AUTH_MANAGER != null && !CoffeesAeroAuth.AUTH_MANAGER.isAuthenticated(player.getUUID())) {
             ci.cancel();
         }

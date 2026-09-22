@@ -100,7 +100,9 @@ public class PlayerRestrictEvents {
         // for, brand-new players in the lobby, are exactly the people this closed it on. Found
         // 2026-08-19 when an NPC could not be opened in the lobby. An Easy NPC menu holds no player
         // items, so exempting it does not re-open the backpack hole this guard was built for.
-        if (player.containerMenu != player.inventoryMenu && lobbyLocked(player)
+        if (player.containerMenu != player.inventoryMenu
+                && (lobbyLocked(player)
+                    || com.coffeesaerosmp.auth.moderation.Confiscation.isHeld(player.getUUID()))
                 && !isEasyNpcMenu(player.containerMenu)) {
             player.closeContainer();
         }
@@ -305,11 +307,20 @@ public class PlayerRestrictEvents {
     // (Operators are exempt so admins can design the lobby via /lobby.)
 
     public static void onBlockBreak(BlockEvent.BreakEvent event) {
-        if (lobbyLocked(event.getPlayer())) event.setCanceled(true);
+        // shouldBlock covers confiscated AND unauthenticated players; lobbyLocked covers the
+        // lobby-grief rule for everyone else. A confiscated player is held out in the world,
+        // where lobbyLocked is false — without shouldBlock here they could keep mining.
+        // (This also now blocks an unauthenticated player from mining outside the lobby, which
+        // they could technically do before — intentional and strictly more correct: a frozen,
+        // unauthenticated player has no business editing the world.)
+        if (shouldBlock(event.getPlayer()) || lobbyLocked(event.getPlayer())) event.setCanceled(true);
     }
 
     public static void onBlockPlace(BlockEvent.EntityPlaceEvent event) {
-        if (event.getEntity() instanceof ServerPlayer p && lobbyLocked(p)) event.setCanceled(true);
+        // Same reasoning as onBlockBreak above — shouldBlock closes the confiscated/unauthenticated
+        // hole, lobbyLocked keeps the existing lobby-grief rule for everyone else.
+        if (event.getEntity() instanceof ServerPlayer p
+                && (shouldBlock(p) || lobbyLocked(p))) event.setCanceled(true);
     }
 
     /** No Q-dropping in the lobby (or while unauthenticated): a tossed spawn-paper would strand the
