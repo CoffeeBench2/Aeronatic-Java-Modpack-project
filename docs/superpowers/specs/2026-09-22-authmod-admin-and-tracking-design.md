@@ -164,8 +164,9 @@ CREATE TABLE IF NOT EXISTS session_log (
   ip           VARCHAR(45)  NULL,
   server_role  VARCHAR(8)   NOT NULL,   -- 'SMP' or 'LOBBY'
   reason       VARCHAR(32)  NULL,       -- QUIT / KICK / TIMEOUT / TRANSFER / AFK
-  INDEX idx_session_uuid (uuid),
-  INDEX idx_session_logout (logout_epoch)
+  -- Composite: the only read is WHERE uuid=? ORDER BY logout_epoch DESC LIMIT n.
+  -- Two single-column indexes cannot serve filter and sort together.
+  INDEX idx_session_uuid_logout (uuid, logout_epoch DESC)
 );
 ```
 
@@ -238,7 +239,7 @@ CREATE TABLE IF NOT EXISTS infractions (
   detail  VARCHAR(512) NULL,
   actor   VARCHAR(64)  NULL,      -- admin name, or 'system'
   epoch   BIGINT       NOT NULL,
-  INDEX idx_infraction_uuid (uuid)
+  INDEX idx_infraction_uuid_epoch (uuid, epoch DESC)
 );
 ```
 
@@ -386,7 +387,8 @@ WatchdogEvent.of(Severity.HIGH, "Flagged block assembled", "None — alert only"
     "Flagged",   "create:item_drain ×3",
     "Assembler", "simulated:swivel_bearing",
     "Location",  "minecraft:overworld  -1421, 78, 305",
-    "Nearby",    "coffee, GeneralBronze",
+    "Nearest",   "coffee — 4.2m away",
+    "Nearby",    "coffee 4.2m, GeneralBronze 18.7m, SweetYuzu 27.1m",
     "Claim",     "<team or ->");
 ```
 
@@ -405,9 +407,20 @@ loop must not be able to spam-ping the admin role.
 or `assembleNextTick`, and the `AssemblePacket` path is only one of several. There is no reliable
 "who did this" at the hook.
 
-The alert therefore reports **players within 32 blocks** and **the claim owner**, under field names
-that say exactly that (`Nearby`, `Claim`). It never names a culprit. An admin gets a location and a
-short list of who to ask, which is what the request actually needs.
+The alert therefore reports **who was around when it happened**, under field names that say exactly
+that. It never names a culprit. An admin gets a location and a ranked list of who to ask.
+
+- **`Nearest`** — the single closest player in that dimension, with distance, **at any range**. Not
+  capped at the 32-block radius: if the closest person was 180 m away that is itself the finding,
+  because it means the assembly was almost certainly redstone-driven rather than hand-triggered.
+- **`Nearby`** — every player within 32 blocks, **sorted nearest first with distances**. An unsorted
+  list makes an admin guess; the ordering is the actual signal about who to talk to.
+- **`Claim`** — the claim owner at that position, which is often more useful than proximity because
+  the builder may be offline entirely.
+
+Distances are rounded to one decimal and measured from the anchor block centre. If nobody is online
+in that dimension, both player fields read `—` rather than being omitted, so the absence is explicit
+rather than looking like a formatting failure.
 
 ### Config — `defaultconfigs/coffees_aero_auth-server.toml`
 
