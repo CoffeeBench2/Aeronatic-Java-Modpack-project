@@ -306,8 +306,11 @@ public class DatabaseManager {
                 "  ip           VARCHAR(45)  NULL," +
                 "  server_role  VARCHAR(8)   NOT NULL," +
                 "  reason       VARCHAR(32)  NULL," +
-                "  INDEX idx_session_uuid (uuid)," +
-                "  INDEX idx_session_logout (logout_epoch)" +
+                // Composite, not two single-column indexes: the only read is
+                // "WHERE uuid=? ORDER BY logout_epoch DESC LIMIT n", and one index
+                // covering filter+sort avoids a filesort. There is no query that
+                // wants logout_epoch on its own.
+                "  INDEX idx_session_uuid_logout (uuid, logout_epoch DESC)" +
                 ")");
 
             // Sampled every 5 minutes and on logout — never written per event.
@@ -352,8 +355,9 @@ public class DatabaseManager {
                 "  detail  VARCHAR(512) NULL," +
                 "  actor   VARCHAR(64)  NULL," +
                 "  epoch   BIGINT       NOT NULL," +
-                "  INDEX idx_infraction_uuid (uuid)," +
-                "  INDEX idx_infraction_epoch (epoch)" +
+                // Same reasoning as session_log: the only read is
+                // "WHERE uuid=? ORDER BY epoch DESC LIMIT n".
+                "  INDEX idx_infraction_uuid_epoch (uuid, epoch DESC)" +
                 ")");
 
             CoffeesAeroAuth.LOGGER.info("[DB] Schema verified.");
