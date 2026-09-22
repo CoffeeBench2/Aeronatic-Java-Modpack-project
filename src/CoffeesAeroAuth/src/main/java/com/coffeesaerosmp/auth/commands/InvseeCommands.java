@@ -43,6 +43,59 @@ public final class InvseeCommands {
             .then(Commands.argument("player", StringArgumentType.word())
                 .executes(ctx -> open(ctx.getSource(),
                     StringArgumentType.getString(ctx, "player"), true))));
+
+        dispatcher.register(Commands.literal("invsee_curios")
+            .requires(src -> src.hasPermission(3))
+            .then(Commands.argument("player", StringArgumentType.word())
+                .executes(ctx -> openCurios(ctx.getSource(),
+                    StringArgumentType.getString(ctx, "player")))));
+    }
+
+    /**
+     * Curios and Accessories, read-only.
+     *
+     * <p>Gear here is invisible to {@code /invsee}, which reads the vanilla inventory only — a
+     * backpack in an accessory slot is exactly the thing an admin would otherwise miss.
+     *
+     * <p>Online players only: both mod APIs need a live entity, and their offline data sits in each
+     * mod's own private NBT. Saying so is better than showing an empty box, which would read as
+     * "nothing equipped".
+     */
+    private static int openCurios(CommandSourceStack src, String name) {
+        ServerPlayer viewer;
+        try {
+            viewer = src.getPlayerOrException();
+        } catch (Exception e) {
+            src.sendFailure(Component.literal("§cOnly a player can open an inventory view."));
+            return 0;
+        }
+        if (CoffeesAeroAuth.WATCHDOG != null) {
+            CoffeesAeroAuth.WATCHDOG.recordAdminCommand(viewer, "/invsee_curios " + name);
+        }
+
+        ServerPlayer target = src.getServer().getPlayerList().getPlayerByName(name);
+        if (target == null) {
+            src.sendFailure(Component.literal("§f" + name
+                + "§c is not online. Curios and Accessories can only be read from a live player — "
+                + "their offline data lives inside each mod's own storage."));
+            return 0;
+        }
+
+        var result = com.coffeesaerosmp.auth.invsee.CuriosSnapshot.of(target);
+        if (result.total() == 0) {
+            src.sendSuccess(() -> Component.literal("§7" + target.getGameProfile().getName()
+                + " has nothing equipped in Curios or Accessories."), false);
+            return 1;
+        }
+
+        String title = "§c[READ-ONLY] §7" + target.getGameProfile().getName()
+            + " — Curios " + result.curios() + " / Accessories " + result.accessories();
+        openMenu(viewer, result.container(), title, result.container().getContainerSize() <= 27, true);
+        viewer.sendSystemMessage(Component.literal(
+            "§7Read-only snapshot — these are copies. Remove items via the player's own screen; "
+            + "editing third-party slots by reflection is how gear gets voided."));
+        InvseeManager.trackOpen(target.getUUID(), viewer.getUUID());
+        return 1;
     }
 
     private static int open(CommandSourceStack src, String name, boolean enderChest) {
