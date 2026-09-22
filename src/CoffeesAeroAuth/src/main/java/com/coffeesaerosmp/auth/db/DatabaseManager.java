@@ -329,12 +329,17 @@ public class DatabaseManager {
                 "  sampled_epoch BIGINT   NOT NULL DEFAULT 0" +
                 ")");
 
+            // Claim SLOTS, not ships. AeroClaims exposes exactly three per-player accessors —
+            // getUsedSlots / getFreeSlots / getMigratedSlots, all (ServerLevel, UUID) -> int. There
+            // is no public owner -> ships listing: Claim carries an owner and a shipId, but the maps
+            // holding them are private to AeroClaimSavedData. Recording what the API can actually
+            // answer beats recording a "ships_owned" column that would have been silently zero.
             s.executeUpdate(
                 "CREATE TABLE IF NOT EXISTS player_footprint (" +
-                "  uuid           CHAR(36) NOT NULL PRIMARY KEY," +
-                "  ships_owned    INT      NOT NULL DEFAULT 0," +
-                "  chunks_claimed INT      NOT NULL DEFAULT 0," +
-                "  sampled_epoch  BIGINT   NOT NULL DEFAULT 0" +
+                "  uuid              CHAR(36) NOT NULL PRIMARY KEY," +
+                "  claim_slots_used  INT      NOT NULL DEFAULT 0," +
+                "  claim_slots_free  INT      NOT NULL DEFAULT 0," +
+                "  sampled_epoch     BIGINT   NOT NULL DEFAULT 0" +
                 ")");
 
             // A row present means HELD. Release deletes the row and writes a RELEASE

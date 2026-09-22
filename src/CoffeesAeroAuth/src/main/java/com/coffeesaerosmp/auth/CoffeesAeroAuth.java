@@ -233,6 +233,7 @@ public class CoffeesAeroAuth {
             if (e.getParseResults().getContext().getSource().getEntity()
                     instanceof net.minecraft.server.level.ServerPlayer sp) {
                 com.coffeesaerosmp.auth.afk.AfkTracker.touch(sp);
+                com.coffeesaerosmp.auth.tracking.ActivitySampler.onCommand(sp.getUUID());
             }
         });
         // BreakEvent is not a PlayerEvent, so it needs its own unwrap rather than onPlayerActivity.
@@ -290,6 +291,12 @@ public class CoffeesAeroAuth {
         // the JVM with no shutdown and no world save — see SaveGuard for the 2026-08-08 data loss.
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.tick.ServerTickEvent.Post e) ->
             com.coffeesaerosmp.auth.protect.SaveGuard.onServerTick(e.getServer()));
+
+        // Player-activity and claim-footprint sampling, every 5 minutes on the server thread.
+        // Sampled rather than event-hooked on purpose: a per-event listener here is the shape that
+        // cost 7.89% of the server thread on recipe advancements.
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.tick.ServerTickEvent.Post e) ->
+            com.coffeesaerosmp.auth.tracking.TrackingSampler.onServerTick(e.getServer()));
 
         // Sustained-lag warning, so players stop blaming their own connection. Deliberately hard to
         // trigger — see LagMonitor for why warning on this pack's routine spikes would be worse.

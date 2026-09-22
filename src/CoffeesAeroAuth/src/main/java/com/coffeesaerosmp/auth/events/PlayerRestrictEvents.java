@@ -523,6 +523,18 @@ public class PlayerRestrictEvents {
         // editing an object that no longer belongs to anyone. PlayerLoggedOutEvent firing BEFORE
         // the save is exactly what we want here — closing first is the point.
         java.util.UUID gone = event.getEntity().getUUID();
+
+        // Final activity sample + the session row, while the player object is still intact.
+        // Order matters: sample BEFORE the session row, because sampleAll drains the chat/command
+        // deltas and we want this session's messages counted against this session.
+        if (event.getEntity() instanceof ServerPlayer leaving) {
+            if (!com.coffeesaerosmp.auth.tracking.ActivitySampler.disabledHere()) {
+                com.coffeesaerosmp.auth.tracking.ActivitySampler.sample(leaving);
+            }
+            com.coffeesaerosmp.auth.tracking.PlayerSessionLog.recordLogout(leaving, "QUIT");
+        }
+        com.coffeesaerosmp.auth.tracking.ActivitySampler.forget(gone);
+
         com.coffeesaerosmp.auth.invsee.InvseeManager.closeViewersOf(
             event.getEntity().getServer(), gone);
         // And drop THIS player from any watch list they were on as a viewer, so the map cannot
