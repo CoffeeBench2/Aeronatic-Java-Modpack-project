@@ -289,6 +289,73 @@ public class DatabaseManager {
                 "  set_by      VARCHAR(64)  NULL," +
                 "  updated_at  BIGINT       NOT NULL" +
                 ")");
+            // ── 1.11.0: admin tooling & player tracking ──────────────────────────────
+            // ⚠ Shared with the creative test server, which points at the same database.
+            // `confiscations` matters most: a player held on live is also held on test.
+            // That fails safe, but it is deliberate, not a bug.
+
+            // One row per session, written on logout. Epochs are UTC millis everywhere —
+            // the lobby runs UTC and the SMP runs +05:30, so only rendering is localised.
+            s.executeUpdate(
+                "CREATE TABLE IF NOT EXISTS session_log (" +
+                "  id           BIGINT AUTO_INCREMENT PRIMARY KEY," +
+                "  uuid         CHAR(36)     NOT NULL," +
+                "  login_epoch  BIGINT       NOT NULL," +
+                "  logout_epoch BIGINT       NOT NULL," +
+                "  duration_s   INT          NOT NULL," +
+                "  ip           VARCHAR(45)  NULL," +
+                "  server_role  VARCHAR(8)   NOT NULL," +
+                "  reason       VARCHAR(32)  NULL," +
+                "  INDEX idx_session_uuid (uuid)," +
+                "  INDEX idx_session_logout (logout_epoch)" +
+                ")");
+
+            // Sampled every 5 minutes and on logout — never written per event.
+            // Values OVERWRITE on upsert; a /authmod freshstart legitimately zeroes them.
+            s.executeUpdate(
+                "CREATE TABLE IF NOT EXISTS player_stats (" +
+                "  uuid          CHAR(36) NOT NULL PRIMARY KEY," +
+                "  blocks_mined  BIGINT   NOT NULL DEFAULT 0," +
+                "  items_used    BIGINT   NOT NULL DEFAULT 0," +
+                "  deaths        INT      NOT NULL DEFAULT 0," +
+                "  mob_kills     INT      NOT NULL DEFAULT 0," +
+                "  player_kills  INT      NOT NULL DEFAULT 0," +
+                "  distance_cm   BIGINT   NOT NULL DEFAULT 0," +
+                "  chat_messages BIGINT   NOT NULL DEFAULT 0," +
+                "  commands_run  BIGINT   NOT NULL DEFAULT 0," +
+                "  sampled_epoch BIGINT   NOT NULL DEFAULT 0" +
+                ")");
+
+            s.executeUpdate(
+                "CREATE TABLE IF NOT EXISTS player_footprint (" +
+                "  uuid           CHAR(36) NOT NULL PRIMARY KEY," +
+                "  ships_owned    INT      NOT NULL DEFAULT 0," +
+                "  chunks_claimed INT      NOT NULL DEFAULT 0," +
+                "  sampled_epoch  BIGINT   NOT NULL DEFAULT 0" +
+                ")");
+
+            // A row present means HELD. Release deletes the row and writes a RELEASE
+            // infraction, so history lives in `infractions` rather than a dead flag column.
+            s.executeUpdate(
+                "CREATE TABLE IF NOT EXISTS confiscations (" +
+                "  uuid          CHAR(36)     NOT NULL PRIMARY KEY," +
+                "  reason        VARCHAR(256) NULL," +
+                "  actor         VARCHAR(64)  NOT NULL," +
+                "  started_epoch BIGINT       NOT NULL" +
+                ")");
+
+            s.executeUpdate(
+                "CREATE TABLE IF NOT EXISTS infractions (" +
+                "  id      BIGINT AUTO_INCREMENT PRIMARY KEY," +
+                "  uuid    CHAR(36)     NOT NULL," +
+                "  type    VARCHAR(24)  NOT NULL," +
+                "  detail  VARCHAR(512) NULL," +
+                "  actor   VARCHAR(64)  NULL," +
+                "  epoch   BIGINT       NOT NULL," +
+                "  INDEX idx_infraction_uuid (uuid)," +
+                "  INDEX idx_infraction_epoch (epoch)" +
+                ")");
+
             CoffeesAeroAuth.LOGGER.info("[DB] Schema verified.");
         } catch (SQLException e) {
             CoffeesAeroAuth.LOGGER.error("[DB] Schema creation failed", e);
