@@ -1437,7 +1437,108 @@ public class ProfileCommands {
 
         String card = sb.toString();
         source.sendSuccess(() -> Component.literal(card), false);
+        appendStatSheet(source, p.getUUID(), secs);
         return 1;
+    }
+
+    /**
+     * Appends the 1.11.0 tracking section to the player card: activity, claim footprint, recent
+     * sessions and infractions.
+     *
+     * <p>🔴 Four SELECTs. They run on the AsyncIo thread and the formatted result is posted back
+     * with {@code server.execute} — an admin command must not stall the tick loop on the database,
+     * even one that now lives on the same host. The card above is already sent by the time this
+     * lands, so the section simply arrives a moment later rather than delaying the whole reply.
+     *
+     * @param playtimeSecs the same figure the card printed, reused so the level cannot disagree
+     */
+    private static void appendStatSheet(CommandSourceStack source, java.util.UUID uuid,
+                                        long playtimeSecs) {
+        if (CoffeesAeroAuth.DB_MANAGER == null || !CoffeesAeroAuth.DB_MANAGER.isAvailable()) return;
+        MinecraftServer server = source.getServer();
+        com.coffeesaerosmp.auth.util.AsyncIo.submit(() -> {
+            StringBuilder out = new StringBuilder();
+            out.append("§6Level      : §f").append(
+                com.coffeesaerosmp.auth.tracking.StatSheet.level(playtimeSecs))
+               .append(" §7(SMP playtime only)");
+            try (java.sql.Connection c = CoffeesAeroAuth.DB_MANAGER.getConnection()) {
+
+                try (java.sql.PreparedStatement ps = c.prepareStatement(
+                        "SELECT blocks_mined, items_used, deaths, mob_kills, player_kills, " +
+                        "distance_cm, chat_messages, commands_run FROM player_stats WHERE uuid=?")) {
+                    ps.setString(1, uuid.toString());
+                    try (java.sql.ResultSet rs = ps.executeQuery()) {
+                        if (rs.next()) {
+                            out.append("\n§6Activity   : §7mined §f")
+                               .append(com.coffeesaerosmp.auth.tracking.StatSheet.count(rs.getLong(1)))
+                               .append(" §7· used §f")
+                               .append(com.coffeesaerosmp.auth.tracking.StatSheet.count(rs.getLong(2)))
+                               .append(" §7· deaths §f").append(rs.getInt(3))
+                               .append(" §7· mobs §f").append(rs.getInt(4))
+                               .append(" §7· PvP §f").append(rs.getInt(5))
+                               .append("\n§7             travelled §f")
+                               .append(com.coffeesaerosmp.auth.tracking.StatSheet.distance(rs.getLong(6)))
+                               .append(" §7· chat §f")
+                               .append(com.coffeesaerosmp.auth.tracking.StatSheet.count(rs.getLong(7)))
+                               .append(" §7· commands §f")
+                               .append(com.coffeesaerosmp.auth.tracking.StatSheet.count(rs.getLong(8)));
+                        } else {
+                            out.append("\n§8No activity sampled yet (sampler runs every 5 min).");
+                        }
+                    }
+                }
+
+                // Claim SLOTS — AeroClaims exposes no per-player ship count, see FootprintSampler.
+                try (java.sql.PreparedStatement ps = c.prepareStatement(
+                        "SELECT claim_slots_used, claim_slots_free FROM player_footprint WHERE uuid=?")) {
+                    ps.setString(1, uuid.toString());
+                    try (java.sql.ResultSet rs = ps.executeQuery()) {
+                        if (rs.next()) {
+                            out.append("\n§6Claims     : §7used §f").append(rs.getInt(1))
+                               .append(" §7· free §f").append(rs.getInt(2));
+                        }
+                    }
+                }
+
+                try (java.sql.PreparedStatement ps = c.prepareStatement(
+                        "SELECT duration_s, server_role, reason, logout_epoch FROM session_log " +
+                        "WHERE uuid=? ORDER BY logout_epoch DESC LIMIT 5")) {
+                    ps.setString(1, uuid.toString());
+                    try (java.sql.ResultSet rs = ps.executeQuery()) {
+                        boolean any = false;
+                        while (rs.next()) {
+                            if (!any) { out.append("\n§6Sessions   §7(last 5):"); any = true; }
+                            out.append("\n§7  · §f")
+                               .append(com.coffeesaerosmp.auth.tracking.StatSheet.duration(rs.getInt(1)))
+                               .append(" §8").append(rs.getString(2))
+                               .append(rs.getString(3) == null ? "" : " / " + rs.getString(3))
+                               .append(" §8").append(DATETIME_FMT.format(
+                                   Instant.ofEpochMilli(rs.getLong(4))));
+                        }
+                    }
+                }
+
+                try (java.sql.PreparedStatement ps = c.prepareStatement(
+                        "SELECT type, detail, epoch FROM infractions WHERE uuid=? " +
+                        "ORDER BY epoch DESC LIMIT 3")) {
+                    ps.setString(1, uuid.toString());
+                    try (java.sql.ResultSet rs = ps.executeQuery()) {
+                        boolean any = false;
+                        while (rs.next()) {
+                            if (!any) { out.append("\n§cInfractions §7(last 3):"); any = true; }
+                            out.append("\n§7  · §f").append(rs.getString(1))
+                               .append(" §8").append(rs.getString(2) == null ? "" : rs.getString(2));
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                out.append("\n§cStat lookup failed: ").append(e.getMessage());
+            }
+            String text = out.toString();
+            // Back on the server thread: sendSuccess touches the command source, which is not
+            // safe to use from the IO thread.
+            server.execute(() -> source.sendSuccess(() -> Component.literal(text), false));
+        });
     }
 
     /**
