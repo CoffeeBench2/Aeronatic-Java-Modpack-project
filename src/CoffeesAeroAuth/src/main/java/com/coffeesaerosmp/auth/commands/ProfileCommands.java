@@ -3,6 +3,7 @@ package com.coffeesaerosmp.auth.commands;
 import com.coffeesaerosmp.auth.CoffeesAeroAuth;
 import com.coffeesaerosmp.auth.db.PlayerProfile;
 import com.coffeesaerosmp.auth.lobby.NameApprovalQueue;
+import com.coffeesaerosmp.auth.admin.FreshStart;
 import com.coffeesaerosmp.auth.moderation.Confiscation;
 import com.coffeesaerosmp.auth.moderation.ConfiscationStore;
 import com.coffeesaerosmp.auth.tracking.InfractionLog;
@@ -492,6 +493,20 @@ public class ProfileCommands {
             //
             // Held state persists to MySQL and reloads at boot, so it survives a relog AND a
             // restart. Release is manual and only manual — owner decision, 2026-09-22.
+            // /authmod freshstart <player> [confirm]
+            //
+            // Name-based, never EntityArgument: the target must be OFFLINE for the wipe to stick,
+            // so an argument type that only resolves online players would reject every valid use.
+            // Same shape as transferaccount, which refuses for the same reason.
+            .then(Commands.literal("freshstart")
+                .then(Commands.argument("player", StringArgumentType.word())
+                    // No "confirm" => dry run. This is the only command in the mod that deletes
+                    // player data, so seeing the plan is the default and running it is the opt-in.
+                    .executes(ctx -> freshStart(ctx.getSource(),
+                        StringArgumentType.getString(ctx, "player"), false))
+                    .then(Commands.literal("confirm")
+                        .executes(ctx -> freshStart(ctx.getSource(),
+                            StringArgumentType.getString(ctx, "player"), true)))))
             .then(Commands.literal("confiscate")
                 .then(Commands.literal("list")
                     .executes(ctx -> confiscateList(ctx.getSource())))
@@ -667,6 +682,49 @@ public class ProfileCommands {
         src.sendSuccess(() -> Component.literal("§aReleased §f" + username
             + (isOffline ? " §7(offline — takes effect immediately)" : "")), true);
         return 1;
+    }
+
+    /**
+     * Wipes a player's progress, keeping their account.
+     *
+     * <p>If the target is online this KICKS them and stops, asking the admin to re-run. It
+     * deliberately does not kick-and-wait: vanilla rewrites playerdata on disconnect, so the wipe
+     * must happen after they are fully gone, and the only ways to wait are sleeping on the server
+     * thread (stalls the tick loop) or a polling scheduler (a timing race for a destructive
+     * operation). Two explicit invocations have neither problem.
+     */
+    private static int freshStart(CommandSourceStack src, String name, boolean confirm) {
+        var server = src.getServer();
+
+        if (!confirm) {
+            FreshStart.Result r = FreshStart.plan(server, name);
+            r.lines().forEach(l -> src.sendSuccess(() -> Component.literal(l), false));
+            return r.ok() ? 1 : 0;
+        }
+
+        var store = CoffeesAeroAuth.PROFILE_STORE;
+        PlayerProfile p = store == null ? null : store.findByAnyName(name);
+        if (p != null) {
+            ServerPlayer online = server.getPlayerList().getPlayer(p.getUUID());
+            if (online != null) {
+                online.connection.disconnect(Component.literal(
+                    "§eYour progress is being reset by an admin. Reconnect in a moment."));
+                String who = p.username;
+                src.sendSuccess(() -> Component.literal(
+                    "§eKicked §f" + who + "§e. Re-run §f/authmod freshstart " + who
+                    + " confirm§e now that they are offline — vanilla rewrites their playerdata on "
+                    + "disconnect, so wiping before that would be undone."), true);
+                return 1;
+            }
+        }
+
+        FreshStart.Result r = FreshStart.execute(server, name);
+        r.lines().forEach(l -> src.sendSuccess(() -> Component.literal(l), false));
+        if (r.ok() && CoffeesAeroAuth.WATCHDOG != null) {
+            CoffeesAeroAuth.WATCHDOG.recordModAction(
+                "FRESHSTART " + name + " by " + src.getTextName());
+        }
+        return r.ok() ? 1 : 0;
     }
 
     private static int confiscateList(CommandSourceStack src) {
