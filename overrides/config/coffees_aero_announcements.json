@@ -2,6 +2,22 @@
   "_comment": "LIVE pack changelog for the main-menu Announcements screen (Core reads this; overrides the jar-bundled fallback). Newest entry first. Edit per release. Keep it short, warm and player-facing — write like a person, no mod names, no filler. Entries whose version does NOT start with a digit render as a TEASER ('On the horizon' instead of 'Added', no v prefix).",
   "entries": [
     {
+      "version": "1.11.1",
+      "date": "September 2026",
+      "tag": "HOTFIX",
+      "title": "Tidying the Old End Away",
+      "body": "The old End overhaul left its mod file behind on some installs even after 1.11.0 removed it, and while it sat there it kept overriding the End sky and a few effects — so the new End was not showing up the way it should. It cleans itself up on your next launch.",
+      "added": [],
+      "fixed": [
+        "The leftover End overhaul now removes itself, so the new End looks right"
+      ],
+      "removed": [],
+      "link": {
+        "label": "Full changelog on GitHub",
+        "url": "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/tag/v1.11.1"
+      }
+    },
+    {
       "version": "1.11.0",
       "date": "September 2026",
       "tag": "MAJOR",
