@@ -74,7 +74,20 @@ public final class StaleMods {
         // this entry is only for installs with NO manifest — an original mrpack import. Harmless if
         // it survives (lowcodefml, no registry entries, no network channels), but it keeps overriding
         // the End sky, dragon-breath particles and nine core shaders, which fights Nullscape's look.
-        "stellarity"
+        "stellarity",
+        // ── 1.11.2 — Distant Horizons finally becomes updater-managed ──────────────
+        // DH shipped for months in overrides/mods with NO metafile, so it was bundled
+        // for fresh installs and invisible to the updater: not an orphan, not a
+        // duplicate, never updated. Real clients were still on 3.2.0-b while the bundle
+        // had moved to 3.3.1. 1.11.2 adds mods/distanthorizons.pw.toml, so the pack now
+        // manages it — but the stale copy already on disk still has to be swept, and
+        // these prefixes are what does that.
+        //
+        // Deliberately version-pinned, NOT a bare "distanthorizons": a bare prefix would
+        // match the 3.3.2 jar the updater is installing and delete the mod outright.
+        "distanthorizons-3.2.0",
+        "distanthorizons-3.3.0",
+        "distanthorizons-3.3.1"
     );
 
     private static final String DIR = ".aero-cleanup";

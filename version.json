@@ -1,8 +1,8 @@
 {
-  "version": "1.11.1",
+  "version": "1.11.2",
   "url": "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/latest",
   "neoforge": "21.1.249",
   "minecraft": "1.21.1",
-  "notes": "1.11.1 - Housekeeping. The old End overhaul was removed in 1.11.0, but the mod file itself stayed behind on installs that were never set up by the updater, and it kept overriding the End sky and a few effects - so the new End did not look quite right. It now removes itself on your next launch. Nothing else has changed.",
+  "notes": "1.11.2 - Two leftovers cleared out. The old End overhaul finally removes itself, and the distant terrain mod moves up to its newest build - it had been stuck for months because the updater was never told to manage it, so your copy was several versions behind without anyone noticing. Both are handled on your next launch. Your distant terrain is kept as-is.",
   "lodReset": "season1"
 }
