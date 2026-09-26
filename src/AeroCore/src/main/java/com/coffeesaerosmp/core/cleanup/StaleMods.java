@@ -87,7 +87,17 @@ public final class StaleMods {
         // match the 3.3.2 jar the updater is installing and delete the mod outright.
         "distanthorizons-3.2.0",
         "distanthorizons-3.3.0",
-        "distanthorizons-3.3.1"
+        "distanthorizons-3.3.1",
+        // ── 1.11.3 — SSRD dropped, forced by Distant Horizons ─────────────────────
+        // DH 3.3.2 declares a HARD incompatibility with ssrd up to and including
+        // 1.8.6 ("SSRD needs to use DH's API to get the correct GL depth rendering,
+        // otherwise DH rendering will be corrupted"), so the pack would not boot with
+        // both. ⚠ SSRD registers REQUIRED network channels, so this jar surviving on a
+        // client while the server has dropped it is a refused handshake, not a cosmetic
+        // leftover — it must be swept, and removed from the live servers in the same
+        // restart. Removing it also closes the unpatched /ssrd forceload list
+        // server-kill, which had no permission gate in any of its 37 classes.
+        "ssrd-1."
     );
 
     private static final String DIR = ".aero-cleanup";

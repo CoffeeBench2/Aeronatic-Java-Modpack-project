@@ -1,8 +1,8 @@
 {
-  "version": "1.11.2",
+  "version": "1.11.3",
   "url": "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/latest",
   "neoforge": "21.1.249",
   "minecraft": "1.21.1",
-  "notes": "1.11.2 - Two leftovers cleared out. The old End overhaul finally removes itself, and the distant terrain mod moves up to its newest build - it had been stuck for months because the updater was never told to manage it, so your copy was several versions behind without anyone noticing. Both are handled on your next launch. Your distant terrain is kept as-is.",
+  "notes": "1.11.3 - Required fix. Separate Sable Render Distance has been removed: the new distant terrain build refuses to run alongside it and the game would not start. Ship render distance now follows your normal render distance. It removes itself on your next launch.",
   "lodReset": "season1"
 }
