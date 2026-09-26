@@ -3,6 +3,7 @@ package com.coffeesaerosmp.guard;
 import com.coffeesaerosmp.guard.config.GuardConfig;
 import com.coffeesaerosmp.guard.protect.AdminBypass;
 import com.coffeesaerosmp.guard.protect.DimensionLock;
+import com.coffeesaerosmp.guard.protect.DragonDamageScale;
 import com.coffeesaerosmp.guard.protect.PublicInteract;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
@@ -48,6 +49,12 @@ public class CoffeesAeroGuard {
 
         // Dimension gate.
         NeoForge.EVENT_BUS.addListener(DimensionLock::onTravelToDimension);
+
+        // Ender dragon damage scaling. Plain (not LOWEST) priority and NOT receiveCanceled: if
+        // something else cancels the damage there is nothing to scale, and running before other
+        // listeners would make our divided figure the one they see. Must be pre-application —
+        // see DragonDamageScale for why a datapack cannot do this.
+        NeoForge.EVENT_BUS.addListener(DragonDamageScale::onIncomingDamage);
 
 
         // ── Un-cancelling handlers ────────────────────────────────────────────────

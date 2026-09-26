@@ -51,17 +51,22 @@ public final class PublicInteract {
         BlockState state = event.getLevel().getBlockState(event.getPos());
         boolean tagged = state.is(PUBLIC_INTERACT);
 
-        // ── TEMPORARY DIAGNOSTIC (1.0.1) ────────────────────────────────────────────
+        // ── DIAGNOSTIC, OFF BY DEFAULT (gated 2026-09-09) ───────────────────────────
         // Every static check passed while the feature still did nothing, so this prints
-        // the actual runtime state instead of us inferring it. Fires only for TAGGED
-        // blocks on the server, so it cannot spam. Read it like this:
+        // the actual runtime state instead of us inferring it. Read it like this:
         //   no line at all      -> the event never reaches us for this block; the denial
         //                          is NOT PlayerInteractEvent.RightClickBlock
         //   canceled=false      -> nobody cancelled it; something else blocks the click
         //   canceled=true       -> we un-cancel it below; if the block STILL won't open,
         //                          something downstream denies it again
-        // Remove this block once the cause is known.
-        if (tagged && !event.getLevel().isClientSide()) {
+        //
+        // 🔴 It used to run unconditionally, on the reasoning that it "fires only for TAGGED
+        // blocks on the server, so it cannot spam". That was wrong: a Numismatics vendor IS
+        // tagged, and one player clicking one produced 20 lines PER SECOND (measured
+        // 2026-09-09) — string formatting on the server thread, on a server already at 44ms
+        // of a 50ms tick budget. A diagnostic that costs tick time must be opt-in.
+        if (tagged && !event.getLevel().isClientSide()
+                && com.coffeesaerosmp.guard.config.GuardConfig.DEBUG_INTERACT_LOGGING.get()) {
             com.coffeesaerosmp.guard.CoffeesAeroGuard.LOGGER.info(
                 "[PublicInteract] block={} pos={} player={} canceled={} useBlock={} useItem={}",
                 net.minecraft.core.registries.BuiltInRegistries.BLOCK.getKey(state.getBlock()),
