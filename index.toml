@@ -162,7 +162,7 @@ metafile = true
 
 [[files]]
 file = "mods/coffeesaerocore.pw.toml"
-hash = "a788a54dcda3f25999c88cb0cfc26a8e80860676bb2d3ca13f62d2a444a5c4a0"
+hash = "5a9bb7479c4ae3730ef2e25ee116415cb3774e73370c3ab6e36dfa5b1e2b972f"
 metafile = true
 
 [[files]]
@@ -546,6 +546,11 @@ hash = "f4e5ffe02bf5022452f6ef18b652b9a00a0230750d7aac20366e2a543a3da0cc"
 metafile = true
 
 [[files]]
+file = "mods/edf-remastered.pw.toml"
+hash = "85cc33cf600b22328bab36d206d7bfe165162b8cf644d25972eca2cd0a673707"
+metafile = true
+
+[[files]]
 file = "mods/emi-1-1-24-1-21-1-neoforge.pw.toml"
 hash = "8937fbf368984c277ca487fc0c6eec66826ec0aad91cb4078c3b04a9ef7625a2"
 metafile = true
@@ -926,6 +931,11 @@ hash = "1e9b17c8271cb9c9f8c8a34c34aff413120bae1d3a8db0be7fc683f5413952fd"
 metafile = true
 
 [[files]]
+file = "mods/nullscape.pw.toml"
+hash = "62db0ab9cfb73f1e47d16368d35f51e46645b51a1def5b4331ee17193f3812c6"
+metafile = true
+
+[[files]]
 file = "mods/oceansdelight-neoforge-1-0-4-1-21-1.pw.toml"
 hash = "a3a5323816c296ac9647f68cd09c8069a679c11d77e4e5b42bf19a6642800b92"
 metafile = true
@@ -1146,11 +1156,6 @@ hash = "1709ff10a3376dacd7e19cd54064d8d47a12723a4bd7ecdc019e15b87df1de94"
 metafile = true
 
 [[files]]
-file = "mods/stellarity-3-0-6-1.pw.toml"
-hash = "a9f77619fd38b4de93591420eaa10405be1f62f805461d6206adc99d66043c19"
-metafile = true
-
-[[files]]
 file = "mods/storagedelight-26-07-01a-1-21-neoforge.pw.toml"
 hash = "8bbd405f537ccc8dcd419b3c461e1089b1a924eb30152c4a5fbe0ec3c4bebeb4"
 metafile = true
@@ -1276,6 +1281,16 @@ hash = "e4f06ff0a0d81a300771a8f12ade2729ad7f81d8d03088cacc42672f9a2aacf2"
 metafile = true
 
 [[files]]
+file = "mods/yungs-api.pw.toml"
+hash = "9655e4361cf545a6b08894d8de17307f1f7fd1deb008716aae9165194d8dd0ed"
+metafile = true
+
+[[files]]
+file = "mods/yungs-better-end-island.pw.toml"
+hash = "cc0b25d8e8491140f10b47fe023f49ed4c21444989462febf1c49da74c37645f"
+metafile = true
+
+[[files]]
 file = "overrides/.analogaudio/internal/analogplayer-1.0.2.jar"
 hash = "5b53779dca71a5d9f9e15cf9137a6b44d4ca3bb578c9027b30c30578819cebd7"
 
@@ -1289,11 +1304,11 @@ hash = "ff15da34b5f6f825dcc32399ab150c2462393031a41c8ea6938d6dd61b11fb04"
 
 [[files]]
 file = "overrides/config/coffees_aero_announcements.json"
-hash = "4c4f4ca6634f2da24b107f181fcfa75ff93ea0900c5f3b65b79ad925767697df"
+hash = "2a293253d1fb5b9cea17b686eca0d69158f3dc7867e850f2b4d05137f265d55f"
 
 [[files]]
 file = "overrides/config/coffeesaerosmp_core-client.toml"
-hash = "1af6b514b6f6e5bc326ba0c77bcae8cf49f346025f8edc2b9bb3664dfd573a46"
+hash = "638c6138c415c50bba084c61460d20043a5c8fb54f18c28399028479fb7a192c"
 
 [[files]]
 file = "overrides/config/entity_texture_features.json"
