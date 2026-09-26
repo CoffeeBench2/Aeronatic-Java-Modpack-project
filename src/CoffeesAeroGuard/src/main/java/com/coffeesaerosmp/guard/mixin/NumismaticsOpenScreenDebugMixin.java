@@ -37,6 +37,11 @@ public class NumismaticsOpenScreenDebugMixin {
     private static void aero$logOpenScreen(ServerPlayer player, MenuProvider provider,
                                            Consumer<?> extraData, CallbackInfo ci) {
         try {
+            // 🔴 Gated 2026-09-09. Unconditional, this fired on every vendor screen open and was
+            // half of a 20-line-per-second burst on the live server. The config read is a cheap
+            // volatile compared with formatting three arguments, and it fails safe: if the config
+            // is not loaded yet the exception below swallows it and nothing is logged.
+            if (!com.coffeesaerosmp.guard.config.GuardConfig.DEBUG_INTERACT_LOGGING.get()) return;
             CoffeesAeroGuard.LOGGER.info(
                 "[Numismatics] openScreen REACHED — player={} provider={} pos={}",
                 player == null ? "?" : player.getName().getString(),

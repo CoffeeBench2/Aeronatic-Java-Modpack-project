@@ -2,6 +2,28 @@
   "_comment": "LIVE pack changelog for the main-menu Announcements screen (Core reads this; overrides the jar-bundled fallback). Newest entry first. Edit per release. Keep it short, warm and player-facing — write like a person, no mod names, no filler. Entries whose version does NOT start with a digit render as a TEASER ('On the horizon' instead of 'Added', no v prefix).",
   "entries": [
     {
+      "version": "1.11.0",
+      "date": "September 2026",
+      "tag": "MAJOR",
+      "title": "The End Opens",
+      "body": "The gate that has stayed shut all season is coming open. What is behind it is not the End you remember — the ground out there is alien and hollow and goes on a very long way, and the island at the centre has been rebuilt from the ground up. The thing waiting on that island has been rebuilt too, and it is not going down in an afternoon. Bring friends. Bring cannons.",
+      "added": [
+        "The End is open — every portal, every route, all of it",
+        "A completely redesigned island at the centre to land on and fight over",
+        "Strange hollow country stretching out past the island, with new things to find in it",
+        "A dragon with a genuine million points of health, counted down on its own bar so you can watch it fall",
+        "It attacks three times as often as it used to, and brings three times the company when it does"
+      ],
+      "fixed": [],
+      "removed": [
+        "The old End overhaul has left the pack to make room for the new one. Anything you are still carrying from it turns back into an ordinary item, so move what you care about out of your pockets before you update."
+      ],
+      "link": {
+        "label": "Full changelog on GitHub",
+        "url": "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/tag/v1.11.0"
+      }
+    },
+    {
       "version": "1.10.25",
       "date": "September 2026",
       "title": "The Long View",

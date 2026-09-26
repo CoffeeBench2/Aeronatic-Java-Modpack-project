@@ -1,8 +1,8 @@
 {
-  "version": "1.10.25",
+  "version": "1.11.0",
   "url": "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/latest",
   "neoforge": "21.1.249",
   "minecraft": "1.21.1",
-  "notes": "1.10.25 - The distant terrain renderer moves up to its first stable release. Views into the far distance should be steadier and a little kinder on your frame rate. Your existing distant terrain is kept as-is, nothing needs regenerating, and nothing else in the pack has changed.",
+  "notes": "1.11.0 - THE END OPENS. The gateway that has been sealed all season is coming unlocked, and what is behind it is not the End you remember: alien, hollow terrain stretching out past a completely rebuilt central island. The dragon waiting on it has been rebuilt too. It hits three times as often, it brings three times the company, and it is going to take a great deal more than one afternoon and a good bow. Bring friends. Bring cannons. Heads up: Stellarity has been removed to make room for the new End, so any Stellarity weapons, tools or enchanted gear you are still carrying will revert to ordinary items - move anything you care about out of your hotbar before you update.",
   "lodReset": "season1"
 }

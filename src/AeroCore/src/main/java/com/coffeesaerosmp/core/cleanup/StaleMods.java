@@ -66,7 +66,15 @@ public final class StaleMods {
         "wakes-1.21.1",
         "crawl-0.",              // narrow on purpose; nothing kept starts "crawl-0."
         "create_submarine",      // Create Deep Seas
-        "vss-0."                 // Voxy Server Side
+        "vss-0.",                // Voxy Server Side
+        // ── 1.11.0, the End release ───────────────────────────────────────────────
+        // Dropped for Nullscape: both override minecraft:dimension/the_end, noise_settings/end and
+        // every End biome, so they cannot coexist — last one loaded wins and the End comes out a mix.
+        // Updater clients lose it to orphan tracking (it is a de-indexed, manifest-tracked file), so
+        // this entry is only for installs with NO manifest — an original mrpack import. Harmless if
+        // it survives (lowcodefml, no registry entries, no network channels), but it keeps overriding
+        // the End sky, dragon-breath particles and nine core shaders, which fights Nullscape's look.
+        "stellarity"
     );
 
     private static final String DIR = ".aero-cleanup";
