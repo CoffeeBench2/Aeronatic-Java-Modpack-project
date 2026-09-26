@@ -2,6 +2,24 @@
   "_comment": "LIVE pack changelog for the main-menu Announcements screen (Core reads this; overrides the jar-bundled fallback). Newest entry first. Edit per release. Keep it short, warm and player-facing — write like a person, no mod names, no filler. Entries whose version does NOT start with a digit render as a TEASER ('On the horizon' instead of 'Added', no v prefix).",
   "entries": [
     {
+      "version": "1.11.3",
+      "date": "September 2026",
+      "tag": "HOTFIX",
+      "title": "A Render Mod Had To Go",
+      "body": "The newest distant terrain build refuses to run alongside Separate Sable Render Distance - with both installed the game would not start at all. SSRD has been removed. Ships now draw at your normal render distance.",
+      "added": [],
+      "fixed": [
+        "The game starts again on the newest distant terrain build"
+      ],
+      "removed": [
+        "Separate Sable Render Distance"
+      ],
+      "link": {
+        "label": "Full changelog on GitHub",
+        "url": "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/tag/v1.11.3"
+      }
+    },
+    {
       "version": "1.11.2",
       "date": "September 2026",
       "tag": "HOTFIX",
