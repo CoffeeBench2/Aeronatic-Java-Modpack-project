@@ -2,6 +2,23 @@
   "_comment": "LIVE pack changelog for the main-menu Announcements screen (Core reads this; overrides the jar-bundled fallback). Newest entry first. Edit per release. Keep it short, warm and player-facing — write like a person, no mod names, no filler. Entries whose version does NOT start with a digit render as a TEASER ('On the horizon' instead of 'Added', no v prefix).",
   "entries": [
     {
+      "version": "1.11.2",
+      "date": "September 2026",
+      "tag": "HOTFIX",
+      "title": "Clearing Out the Leftovers",
+      "body": "Two things that should have gone quietly and did not. The old End overhaul is finally removing itself, and the distant terrain mod jumps to its newest build - it had been stuck on an old version for months because the updater was never managing it.",
+      "added": [],
+      "fixed": [
+        "The old End overhaul removes itself on your next launch",
+        "Distant terrain is on its newest build, and will actually update from now on"
+      ],
+      "removed": [],
+      "link": {
+        "label": "Full changelog on GitHub",
+        "url": "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/tag/v1.11.2"
+      }
+    },
+    {
       "version": "1.11.1",
       "date": "September 2026",
       "tag": "HOTFIX",
