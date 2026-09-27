@@ -88,16 +88,25 @@ public final class StaleMods {
         "distanthorizons-3.2.0",
         "distanthorizons-3.3.0",
         "distanthorizons-3.3.1",
-        // ── 1.11.3 — SSRD dropped, forced by Distant Horizons ─────────────────────
-        // DH 3.3.2 declares a HARD incompatibility with ssrd up to and including
-        // 1.8.6 ("SSRD needs to use DH's API to get the correct GL depth rendering,
-        // otherwise DH rendering will be corrupted"), so the pack would not boot with
-        // both. ⚠ SSRD registers REQUIRED network channels, so this jar surviving on a
-        // client while the server has dropped it is a refused handshake, not a cosmetic
-        // leftover — it must be swept, and removed from the live servers in the same
-        // restart. Removing it also closes the unpatched /ssrd forceload list
-        // server-kill, which had no permission gate in any of its 37 classes.
-        "ssrd-1."
+        // ── 1.11.3/1.11.4 — SSRD, dropped and then brought back one version up ────
+        // DH 3.3.2 declares a HARD incompatibility with ssrd over the range [*,1.8.6]
+        // ("SSRD needs to use DH's API to get the correct GL depth rendering, otherwise
+        // DH rendering will be corrupted"), so 1.11.2 would not boot with both present
+        // and 1.11.3 dropped SSRD entirely with a bare "ssrd-1." prefix here.
+        //
+        // 🔴 1.11.4 ships SSRD **1.8.7**, which is OUTSIDE DH's forbidden range and also
+        // carries the fix for the /ssrd forceload list server-kill. A bare "ssrd-1."
+        // therefore became exactly the failure this list's header warns about: it matches
+        // ssrd-1.8.7-1.21.1.jar, so the sweep would delete the mod the updater had just
+        // installed, every single launch. Pinned to the two builds DH forbids instead —
+        // the same treatment the distanthorizons-3.3.x entries above get, and for the
+        // same reason.
+        //
+        // ⚠ SSRD registers REQUIRED network channels. A client whose SSRD version does
+        // not match the server's is a refused handshake, not a cosmetic leftover, so
+        // 1.8.7 must go ONTO both live servers in the same restart that takes 1.11.4.
+        "ssrd-1.8.5",       // the build that was live before 1.11.3
+        "ssrd-1.8.6"        // never shipped by the pack; swept in case it was side-loaded
     );
 
     private static final String DIR = ".aero-cleanup";
