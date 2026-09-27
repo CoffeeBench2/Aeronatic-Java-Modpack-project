@@ -1,8 +1,8 @@
 {
-  "version": "1.11.3",
+  "version": "1.11.4",
   "url": "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/latest",
   "neoforge": "21.1.249",
   "minecraft": "1.21.1",
-  "notes": "1.11.3 - Required fix. Separate Sable Render Distance has been removed: the new distant terrain build refuses to run alongside it and the game would not start. Ship render distance now follows your normal render distance. It removes itself on your next launch.",
+  "notes": "1.11.4 - Required update. Separate Sable Render Distance is BACK, on a new build that works alongside the newest distant terrain mod - ships draw far out again. This one is not optional: the server runs it too, so an out-of-date client will be refused at the door.",
   "lodReset": "season1"
 }

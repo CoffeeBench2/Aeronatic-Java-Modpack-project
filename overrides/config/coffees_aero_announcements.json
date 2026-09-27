@@ -2,6 +2,25 @@
   "_comment": "LIVE pack changelog for the main-menu Announcements screen (Core reads this; overrides the jar-bundled fallback). Newest entry first. Edit per release. Keep it short, warm and player-facing — write like a person, no mod names, no filler. Entries whose version does NOT start with a digit render as a TEASER ('On the horizon' instead of 'Added', no v prefix).",
   "entries": [
     {
+      "version": "1.11.4",
+      "date": "September 2026",
+      "tag": "REQUIRED",
+      "title": "Long-Range Ships Are Back",
+      "body": "1.11.3 had to drop Separate Sable Render Distance because the newest distant terrain build would not start alongside it. A new SSRD build fixes that, so it is back in - ships and contraptions draw far past your normal render distance again. The server runs this one too, so you must be on 1.11.4 to join.",
+      "added": [
+        "Separate Sable Render Distance is back - ships draw at distant-terrain range again"
+      ],
+      "fixed": [
+        "The distant terrain crash that forced SSRD out in 1.11.3 is resolved upstream",
+        "A force-load handling bug that could stall the server was fixed in the same build"
+      ],
+      "removed": [],
+      "link": {
+        "label": "Full changelog on GitHub",
+        "url": "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/tag/v1.11.4"
+      }
+    },
+    {
       "version": "1.11.3",
       "date": "September 2026",
       "tag": "HOTFIX",
