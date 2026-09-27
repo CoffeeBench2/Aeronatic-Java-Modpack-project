@@ -29,7 +29,18 @@ neoForge {
 }
 
 dependencies {
-    // No third-party APIs: this mod only reverses NeoForge interaction events.
+    // FTB Chunks claim guard for the End arena (EndArenaClaims). Its claim event is an ARCHITECTURY
+    // event rather than a NeoForge bus event, so architectury is needed on the compile classpath too,
+    // and ftb-library supplies ChunkDimPos which the event hands us.
+    //
+    // compileOnly + ModList-guarded: nothing is shaded, and the classes are only touched when
+    // ftbchunks is actually loaded. Jars are borrowed from auth's libs/ (which is gitignored — 19 MB
+    // of redistributed mods has no business in a public repo) and from the server mod set, the same
+    // arrangement CoffeesAeroRailguard uses.
+    compileOnly(files(
+        "../CoffeesAeroAuth/libs/ftb-chunks.jar",
+        "../CoffeesAeroAuth/libs/ftb-library.jar",
+        "../../server-mods/architectury-13.0.11-neoforge.jar"))
 }
 
 tasks.withType(JavaCompile).configureEach {

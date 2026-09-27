@@ -4,6 +4,7 @@ import com.coffeesaerosmp.guard.config.GuardConfig;
 import com.coffeesaerosmp.guard.protect.AdminBypass;
 import com.coffeesaerosmp.guard.protect.DimensionLock;
 import com.coffeesaerosmp.guard.protect.DragonDamageScale;
+import com.coffeesaerosmp.guard.protect.EndArenaClaims;
 import com.coffeesaerosmp.guard.protect.PublicInteract;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
@@ -55,6 +56,14 @@ public class CoffeesAeroGuard {
         // listeners would make our divided figure the one they see. Must be pre-application —
         // see DragonDamageScale for why a datapack cannot do this.
         NeoForge.EVENT_BUS.addListener(DragonDamageScale::onIncomingDamage);
+
+        // The dragon's island is unclaimable while the rest of the End is not. NOT a NeoForge
+        // listener — FTB Chunks' claim event is an Architectury event, so it is registered from
+        // inside a containment class that is only touched when ftbchunks is loaded.
+        EndArenaClaims.install();
+        // Confirmation of the EFFECTIVE radius/centre, logged once the per-world SERVER config is
+        // loaded. install() itself must not read config — see its javadoc.
+        NeoForge.EVENT_BUS.addListener(EndArenaClaims::onServerStarted);
 
 
         // ── Un-cancelling handlers ────────────────────────────────────────────────
