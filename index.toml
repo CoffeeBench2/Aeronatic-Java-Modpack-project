@@ -162,7 +162,7 @@ metafile = true
 
 [[files]]
 file = "mods/coffeesaerocore.pw.toml"
-hash = "50d05dd2ead5db4acae771e6c524d0d73ab12da9f3018bb2046fac4d93c0f49f"
+hash = "e29045e0abadf90315f0aac610138b0eb3aa9fb859612cacb23176e1d7eb1a2b"
 metafile = true
 
 [[files]]
@@ -1151,6 +1151,11 @@ hash = "46546590731a7cc20a62618042ea5f306a9e410ef66571be320f887d656059b9"
 metafile = true
 
 [[files]]
+file = "mods/ssrd-1-8-7-1-21-1.pw.toml"
+hash = "56a8343189e6816118b8b137bfca7d3726956bd57c2cd53c99d3a59120598f88"
+metafile = true
+
+[[files]]
 file = "mods/staaaaaaaaaaaack-neoforge-1-21-1-1-8.pw.toml"
 hash = "1709ff10a3376dacd7e19cd54064d8d47a12723a4bd7ecdc019e15b87df1de94"
 metafile = true
@@ -1304,11 +1309,11 @@ hash = "ff15da34b5f6f825dcc32399ab150c2462393031a41c8ea6938d6dd61b11fb04"
 
 [[files]]
 file = "overrides/config/coffees_aero_announcements.json"
-hash = "84ea0aff62f18a9bcaa7058e7f976eda044e0d8a6ec4bf4c9151615aac7d6617"
+hash = "1234ecedf090a3e10e0f1b282fe68f799a7bc593a56a599d02ca5ae4ee90d173"
 
 [[files]]
 file = "overrides/config/coffeesaerosmp_core-client.toml"
-hash = "7c4b565c9953325d4fd010e4f92c9e6db5ed332eb8a71e9aeff6fac2a0f3d7f5"
+hash = "8c714fa52e4ce44a0b8298752b6a040fcdc7402099e28db69e4d8daac8b58d56"
 
 [[files]]
 file = "overrides/config/entity_texture_features.json"
