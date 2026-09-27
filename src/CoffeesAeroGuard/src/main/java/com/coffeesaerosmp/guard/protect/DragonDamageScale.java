@@ -10,7 +10,12 @@ import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
 
 /**
  * Scales damage dealt to the ender dragon <b>before it is applied</b>, which is what lets the End
- * fight advertise 300,000 hit points on a mob whose real health can never exceed 1024.
+ * fight have a pool far larger than 1024 on a mob whose real health can never exceed that.
+ *
+ * <p><b>2026-09-27:</b> the {@code coffees_aero_end} datapack is disabled, so the dragon's real max
+ * health is now EDF Remastered's stock {@code DragonHealth} of <b>500</b> rather than the datapack's
+ * 300, and the divisor came down to 4 — a 2,000-point pool behind the ordinary vanilla boss bar. The
+ * divisor and whatever sets real health are a PAIR; see {@code GuardConfig} for the arithmetic.
  *
  * <h2>Why this is Java and not a datapack</h2>
  * {@code minecraft:max_health} is a {@code RangedAttribute} hard-capped at <b>1024.0</b>, so the

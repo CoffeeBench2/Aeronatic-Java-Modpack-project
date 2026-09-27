@@ -19,6 +19,10 @@ public final class GuardConfig {
     public static final ModConfigSpec.BooleanValue        DEBUG_INTERACT_LOGGING;
     public static final ModConfigSpec.IntValue            DRAGON_DAMAGE_DIVISOR;
     public static final ModConfigSpec.BooleanValue        DEBUG_DRAGON_SCALING;
+    public static final ModConfigSpec.BooleanValue        END_ARENA_NO_CLAIM;
+    public static final ModConfigSpec.IntValue            END_ARENA_RADIUS;
+    public static final ModConfigSpec.IntValue            END_ARENA_CENTER_X;
+    public static final ModConfigSpec.IntValue            END_ARENA_CENTER_Z;
 
     private GuardConfig() {}
 
@@ -61,9 +65,29 @@ public final class GuardConfig {
         b.comment("Ender dragon difficulty.").push("enderdragon");
         DRAGON_DAMAGE_DIVISOR = b
             .comment("Divide every point of damage dealt to the ender dragon by this, BEFORE it is",
-                     "applied. With the divisor at 1000 and the dragon's max health at 1000 (set by the",
-                     "coffees_aero_end datapack), killing it costs exactly 1000 x 1000 = 1,000,000",
-                     "points of damage. Set to 1 to disable and get an ordinary 1000 HP dragon.",
+                     "applied. Effective hit points = the dragon's real max health x this divisor.",
+                     "Set to 1 to disable and get an ordinary dragon.",
+                     "",
+                     "🔴 THE RIGHT VALUE DEPENDS ON WHO IS SETTING THE DRAGON'S REAL MAX HEALTH, and it",
+                     "is never this mod. Whatever sets it, effective HP = that health x this divisor.",
+                     "",
+                     "  * coffees_aero_end datapack LOADED: it writes DragonHealth EDFR.config = 300, so",
+                     "    at divisor 1000 a kill costs 300 x 1000 = 300,000 damage. That was the pairing",
+                     "    the datapack's own header documents; change one and the fight silently rescales.",
+                     "  * datapack DISABLED (the case since 2026-09-27): EDF Remastered still runs, and its",
+                     "    stock config/setup_config sets DragonHealth 500 — NOT vanilla's 200, because",
+                     "    EDF's dragon_init overwrites max_health from that score on every new dragon.",
+                     "    Verified by reading setup_config out of edf-remastered-5.0.2.jar. So effective",
+                     "    HP = 500 x divisor, and the divisor of 4 below is what makes that ~2,000.",
+                     "",
+                     "Do NOT leave a large divisor set with the datapack off. The datapack was also the",
+                     "only thing that could draw a NUMBER for the pool — vanilla's dragon bar renders no",
+                     "digits at all — so at divisor 1000 players would face 500,000 effective HP behind a",
+                     "bar that never visibly moves, which reads as an invincible, bugged boss rather than",
+                     "a hard one. At 500 x 4 the vanilla bar drains smoothly and needs no readout.",
+                     "",
+                     "EDF also derives MadThreshold = DragonHealth / DivisionConstant = 250, so MAD still",
+                     "begins at exactly the halfway point without anything on our side arranging it.",
                      "",
                      "🔑 This MUST be pre-application, which is why it is Java and not a datapack.",
                      "minecraft:max_health is capped at 1024.0 by the attribute itself, so the dragon's",
@@ -80,13 +104,56 @@ public final class GuardConfig {
                      "and fires no event, so it cannot be intercepted here — and leaving it unscaled is",
                      "the better fight anyway: it makes destroying the pillars' crystals first genuinely",
                      "mandatory rather than optional.")
-            .defineInRange("enderDragonDamageDivisor", 1000, 1, 1_000_000);
+            .defineInRange("enderDragonDamageDivisor", 4, 1, 1_000_000);
         DEBUG_DRAGON_SCALING = b
             .comment("Log every scaled dragon hit (raw -> scaled). OFF by default.",
                      "Exists because a scaling hook that silently does not fire is indistinguishable",
                      "from one that works until the dragon dies in 1000 damage instead of 1,000,000.",
                      "Turn it on for one fight to confirm the hook is live, then turn it off.")
             .define("debugEnderDragonScaling", false);
+        b.pop();
+
+        b.comment("The dragon's island — an unclaimable region inside an otherwise claimable End.").push("endarena");
+        END_ARENA_NO_CLAIM = b
+            .comment("Refuse FTB Chunks claims on the dragon's island while leaving the rest of the End",
+                     "claimable. Players may settle anywhere in the End EXCEPT here.",
+                     "",
+                     "🔑 This exists because FTB Chunks cannot express it. Its own setting,",
+                     "claiming.claim_dimension_blacklist, is per-DIMENSION: it closes all of the End or",
+                     "none of it. Opening the End for habitation means taking minecraft:the_end OUT of",
+                     "that blacklist, and this rule is what then carves the arena back out. If you turn",
+                     "this off, remember the blacklist is no longer protecting the fight either.",
+                     "",
+                     "Why the arena must stay unclaimed: the pillars, crystals, gateways and exit portal",
+                     "all sit inside it, so a team holding that ground can lock every other player out of",
+                     "the boss. Nobody is exempt, ops included — set the radius to 0 if an admin really",
+                     "must claim in there. Hot-reloadable; no restart.")
+            .define("endArenaNoClaim", true);
+        END_ARENA_RADIUS = b
+            .comment("Radius in BLOCKS around the centre below, inside which End chunks cannot be claimed.",
+                     "0 disables the rule (same as endArenaNoClaim = false).",
+                     "",
+                     "256 covers the island itself, all ten obsidian pillars and the gateway ring at",
+                     "radius 96, with room to spare for YUNG's Better End Island reshaping the centre.",
+                     "Players can still settle on the void platforms just outside it.",
+                     "",
+                     "NOTE a chunk is refused as soon as ANY part of it touches the circle, not when its",
+                     "centre does — otherwise 16-block slivers of the arena would stay claimable at the",
+                     "boundary. The effective zone is therefore up to one chunk diagonal (~22 blocks)",
+                     "wider than this number at the corners.",
+                     "",
+                     "For scale: the vanilla central island region runs out to 1024 blocks, beyond which",
+                     "the outer End islands begin. A radius of 1024 makes the entire central void",
+                     "unclaimable too.")
+            .defineInRange("endArenaRadius", 256, 0, 1_000_000);
+        END_ARENA_CENTER_X = b
+            .comment("Centre of the no-claim zone. The vanilla dragon fight is always built around 0, 0",
+                     "— the exit portal, the pillar ring and EDF Remastered's fixed-coordinate set",
+                     "pieces are all placed relative to it — so these should only move if you have",
+                     "relocated the fight itself.")
+            .defineInRange("endArenaCenterX", 0, -30_000_000, 30_000_000);
+        END_ARENA_CENTER_Z = b
+            .defineInRange("endArenaCenterZ", 0, -30_000_000, 30_000_000);
         b.pop();
 
 
