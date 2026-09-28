@@ -303,17 +303,115 @@ public final class AccountTransfer {
         }
     }
 
-    /** Record the Mojang uuid against a profile so a future rename is detectable. */
+    /**
+     * Record the Mojang uuid against a profile so a future rename is detectable — <b>binding only when
+     * the profile is unclaimed.</b>
+     *
+     * <h3>🔴 Why this is no longer an unconditional UPDATE</h3>
+     * Identity here is {@code md5("OfflinePlayer:" + name)}, so whoever holds a Mojang name inherits the
+     * profile filed under it. Two ways that happens: a stranger buys a still-free offline player's name,
+     * or a premium player renames, the old name is released, and a stranger buys it.
+     *
+     * <p>This method used to run {@code UPDATE players SET mojang_uuid=? WHERE uuid=?} with no guard, so
+     * the takeover <b>overwrote the only evidence that it had happened</b> — the stolen profile came out
+     * the far side looking legitimately the newcomer's, with nothing left to compare against. That made
+     * a detectable intrusion unrecoverable.
+     *
+     * <p>Now: bind if unclaimed, no-op if it is already ours, and on a genuine mismatch <b>leave the
+     * stored value alone and raise a HIGH alert</b>. A Mojang uuid never changes, so a different one
+     * arriving for the same profile means a different human — it is not a heuristic.
+     *
+     * <h3>⚠️ This DETECTS, it does not DENY</h3>
+     * Deliberately alert-only for now. The newcomer still logs in. Denying the profile is the next step
+     * and needs somewhere safe to put the old data first: the DB row is not the account — builds, claims
+     * and balances live in world files keyed by the same uuid, so a "fresh profile" that leaves
+     * {@code playerdata/<uuid>.dat} in place still hands over the base. Shipping the detection first is
+     * what makes it possible to find out whether this is already happening, at no risk to a valid login.
+     * See {@code planning/store-identity-risk.md}.
+     */
     public static void rememberMojangUuid(UUID offlineUuid, UUID mojangUuid) {
         if (offlineUuid == null || mojangUuid == null
                 || CoffeesAeroAuth.DB_MANAGER == null || !CoffeesAeroAuth.DB_MANAGER.isAvailable()) return;
         com.coffeesaerosmp.auth.util.AsyncIo.submit(() -> {
             try (Connection c = CoffeesAeroAuth.DB_MANAGER.getConnection()) {
-                exec(c, "UPDATE players SET mojang_uuid=? WHERE uuid=?",
-                     mojangUuid.toString(), offlineUuid.toString());
+                String stored = null, username = null;
+                try (PreparedStatement ps = c.prepareStatement(
+                        "SELECT mojang_uuid, username FROM players WHERE uuid=?")) {
+                    ps.setString(1, offlineUuid.toString());
+                    try (ResultSet rs = ps.executeQuery()) {
+                        if (!rs.next()) return;        // no row yet; the caller runs after getOrCreate
+                        stored   = rs.getString(1);
+                        username = rs.getString(2);
+                    }
+                }
+
+                switch (IdentityLink.classify(stored, mojangUuid)) {
+                    case ALREADY_OURS -> { /* the common case, every login of a linked player */ }
+                    case MISMATCH -> reportLinkMismatch(username, offlineUuid, stored, mojangUuid);
+                    case BIND -> {
+                        // The WHERE clause re-checks the null, so this is atomic against a concurrent
+                        // login binding the same row between our read and our write — the lobby and the
+                        // SMP are separate processes and both call this.
+                        int n;
+                        try (PreparedStatement ps = c.prepareStatement(
+                                "UPDATE players SET mojang_uuid=? " +
+                                "WHERE uuid=? AND (mojang_uuid IS NULL OR mojang_uuid='')")) {
+                            ps.setString(1, mojangUuid.toString());
+                            ps.setString(2, offlineUuid.toString());
+                            n = ps.executeUpdate();
+                        }
+                        if (n == 0) {
+                            // Lost the race. Re-read to see WHO won: the same account (harmless, the
+                            // other process bound it) or a different one (report it).
+                            try (PreparedStatement ps = c.prepareStatement(
+                                    "SELECT mojang_uuid FROM players WHERE uuid=?")) {
+                                ps.setString(1, offlineUuid.toString());
+                                try (ResultSet rs = ps.executeQuery()) {
+                                    String now = rs.next() ? rs.getString(1) : null;
+                                    if (IdentityLink.classify(now, mojangUuid) == IdentityLink.LinkAction.MISMATCH) {
+                                        reportLinkMismatch(username, offlineUuid, now, mojangUuid);
+                                    }
+                                }
+                            }
+                        } else {
+                            CoffeesAeroAuth.LOGGER.info(
+                                "[Identity] Linked profile {} ({}) to Mojang account {}.",
+                                username, offlineUuid, mojangUuid);
+                        }
+                    }
+                }
             } catch (SQLException e) {
                 CoffeesAeroAuth.LOGGER.warn("[Transfer] could not record mojang_uuid", e);
             }
         });
+    }
+
+    /**
+     * A different Mojang account just logged into a profile that is already linked.
+     *
+     * <p>Logged at ERROR and alerted at HIGH: {@code Severity.HIGH} is what makes WatchdogManager attach
+     * the admin role mention, and an embed alone notifies nobody. This is exactly the event that must not
+     * be noticed a week later.
+     */
+    private static void reportLinkMismatch(String username, UUID profileUuid, String stored, UUID arriving) {
+        CoffeesAeroAuth.LOGGER.error(
+            "[Identity] MISMATCH on profile {} ({}): stored Mojang {} but {} just logged in. "
+          + "Stored link left UNCHANGED. Possible account takeover — see planning/store-identity-risk.md",
+            username, profileUuid, stored, arriving);
+
+        if (CoffeesAeroAuth.WATCHDOG != null) {
+            CoffeesAeroAuth.WATCHDOG.alert(com.coffeesaerosmp.auth.watchdog.WatchdogEvent.of(
+                com.coffeesaerosmp.auth.watchdog.Severity.HIGH,
+                "Identity mismatch — possible account takeover",
+                "Alert only; the login was NOT blocked. Verify who owns the name before acting.",
+                "Profile",        username == null ? "(unknown)" : username,
+                "Profile uuid",   String.valueOf(profileUuid),
+                "Linked Mojang",  stored == null ? "(none)" : stored,
+                "Arriving Mojang", String.valueOf(arriving),
+                "Meaning",        "A different Mojang account is using this name. Either the name "
+                                + "changed hands, or someone bought a released/free name.",
+                "Check",          "https://api.mojang.com/users/profiles/minecraft/"
+                                + (username == null ? "" : username)));
+        }
     }
 }
