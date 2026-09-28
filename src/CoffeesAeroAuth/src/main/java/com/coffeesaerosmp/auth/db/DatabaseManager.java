@@ -225,6 +225,16 @@ public class DatabaseManager {
             catch (SQLException ignored) { }   // MySQL has no ADD COLUMN IF NOT EXISTS
             try { s.executeUpdate("CREATE INDEX idx_players_mojang ON players (mojang_uuid)"); }
             catch (SQLException ignored) { }
+            // HOW the mojang_uuid above came to be here, which decides how much it can be trusted.
+            //   GATE     — observed inside the gate's HMAC-signed cookie on a real login. Proof.
+            //   BACKFILL — inferred by asking Mojang who owns the name (scripts/backfill_mojang_links.py).
+            //              Sound only while the player still HOLDS that name; if the name had already
+            //              changed hands the inference names the wrong human, and Mojang removed the
+            //              name-history API, so that case cannot be ruled out automatically.
+            // A mismatch against a GATE link is evidence of a takeover; against a BACKFILL link it may
+            // just mean the inference was wrong. Same alert, different confidence — do not collapse them.
+            try { s.executeUpdate("ALTER TABLE players ADD COLUMN link_source ENUM('GATE','BACKFILL') NULL"); }
+            catch (SQLException dupCol) { /* column already present — fine */ }
             try { s.executeUpdate("ALTER TABLE players ADD COLUMN startup_bonus_given BOOLEAN NOT NULL DEFAULT FALSE"); }
             catch (SQLException dupCol) { /* column already present — fine */ }
             try { s.executeUpdate("ALTER TABLE players ADD COLUMN first_ip VARCHAR(45) NULL"); }

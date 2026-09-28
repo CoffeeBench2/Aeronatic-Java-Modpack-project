@@ -334,27 +334,51 @@ public final class AccountTransfer {
                 || CoffeesAeroAuth.DB_MANAGER == null || !CoffeesAeroAuth.DB_MANAGER.isAvailable()) return;
         com.coffeesaerosmp.auth.util.AsyncIo.submit(() -> {
             try (Connection c = CoffeesAeroAuth.DB_MANAGER.getConnection()) {
-                String stored = null, username = null;
+                String stored = null, username = null, source = null;
                 try (PreparedStatement ps = c.prepareStatement(
-                        "SELECT mojang_uuid, username FROM players WHERE uuid=?")) {
+                        "SELECT mojang_uuid, username, link_source FROM players WHERE uuid=?")) {
                     ps.setString(1, offlineUuid.toString());
                     try (ResultSet rs = ps.executeQuery()) {
                         if (!rs.next()) return;        // no row yet; the caller runs after getOrCreate
                         stored   = rs.getString(1);
                         username = rs.getString(2);
+                        source   = rs.getString(3);
                     }
                 }
 
                 switch (IdentityLink.classify(stored, mojangUuid)) {
-                    case ALREADY_OURS -> { /* the common case, every login of a linked player */ }
-                    case MISMATCH -> reportLinkMismatch(username, offlineUuid, stored, mojangUuid);
+                    case ALREADY_OURS -> {
+                        // The common case on every login of a linked player: nothing to do — EXCEPT when
+                        // the link was only ever INFERRED by the backfill. The same uuid has now been
+                        // observed inside the gate's signed cookie, which promotes a guess to a proof, so
+                        // record that. It makes a later mismatch unambiguous instead of leaving us
+                        // wondering whether the backfill simply named the wrong human.
+                        if (!"GATE".equalsIgnoreCase(String.valueOf(source))) {
+                            try (PreparedStatement up = c.prepareStatement(
+                                    "UPDATE players SET link_source='GATE' WHERE uuid=? AND mojang_uuid=?")) {
+                                up.setString(1, offlineUuid.toString());
+                                up.setString(2, stored);
+                                if (up.executeUpdate() > 0) {
+                                    CoffeesAeroAuth.LOGGER.info(
+                                        "[Identity] {} — backfilled link CONFIRMED by a real login "
+                                      + "(promoted BACKFILL to GATE).", username);
+                                }
+                            }
+                        }
+                    }
+                    case MISMATCH -> reportLinkMismatch(username, offlineUuid, stored, mojangUuid, source);
                     case BIND -> {
                         // The WHERE clause re-checks the null, so this is atomic against a concurrent
                         // login binding the same row between our read and our write — the lobby and the
                         // SMP are separate processes and both call this.
+                        //
+                        // Note it does NOT overwrite a BACKFILL link. A disagreement with one is still a
+                        // mismatch and must be reported, not silently corrected: if the name had already
+                        // changed hands, quietly rebinding would certify the takeover instead of flagging
+                        // it. The confidence of the stored link travels with the alert instead.
                         int n;
                         try (PreparedStatement ps = c.prepareStatement(
-                                "UPDATE players SET mojang_uuid=? " +
+                                "UPDATE players SET mojang_uuid=?, link_source='GATE' " +
                                 "WHERE uuid=? AND (mojang_uuid IS NULL OR mojang_uuid='')")) {
                             ps.setString(1, mojangUuid.toString());
                             ps.setString(2, offlineUuid.toString());
@@ -369,7 +393,7 @@ public final class AccountTransfer {
                                 try (ResultSet rs = ps.executeQuery()) {
                                     String now = rs.next() ? rs.getString(1) : null;
                                     if (IdentityLink.classify(now, mojangUuid) == IdentityLink.LinkAction.MISMATCH) {
-                                        reportLinkMismatch(username, offlineUuid, now, mojangUuid);
+                                        reportLinkMismatch(username, offlineUuid, now, mojangUuid, null);
                                     }
                                 }
                             }
@@ -393,7 +417,7 @@ public final class AccountTransfer {
      * the admin role mention, and an embed alone notifies nobody. This is exactly the event that must not
      * be noticed a week later.
      */
-    private static void reportLinkMismatch(String username, UUID profileUuid, String stored, UUID arriving) {
+    private static void reportLinkMismatch(String username, UUID profileUuid, String stored, UUID arriving, String linkSource) {
         CoffeesAeroAuth.LOGGER.error(
             "[Identity] MISMATCH on profile {} ({}): stored Mojang {} but {} just logged in. "
           + "Stored link left UNCHANGED. Possible account takeover — see planning/store-identity-risk.md",
@@ -407,6 +431,10 @@ public final class AccountTransfer {
                 "Profile",        username == null ? "(unknown)" : username,
                 "Profile uuid",   String.valueOf(profileUuid),
                 "Linked Mojang",  stored == null ? "(none)" : stored,
+                "Link source",    linkSource == null ? "(unknown)" : linkSource
+                                + ("BACKFILL".equalsIgnoreCase(linkSource)
+                                   ? " - INFERRED, so the stored link may itself be wrong"
+                                   : " - observed in a signed cookie, so the stored link is trustworthy"),
                 "Arriving Mojang", String.valueOf(arriving),
                 "Meaning",        "A different Mojang account is using this name. Either the name "
                                 + "changed hands, or someone bought a released/free name.",
