@@ -31,8 +31,11 @@ public final class PlayerDisplay {
     /**
      * Everything the renderer needs, already resolved to strings.
      *
-     * @param badge     account badge WITH its trailing space, e.g. {@code "§6✈ "}; may be empty
-     * @param staffTag  staff badge WITH its trailing space, e.g. {@code "§c[ADMIN] "}; may be empty
+     * @param badge     rank/account badge WITH its trailing space, e.g. {@code "§6✈ "}; may be empty.
+     *                  Renders AFTER {@code staffTag} — see {@link #segments} for why that is a
+     *                  security property once this slot becomes purchasable.
+     * @param staffTag  staff badge WITH its trailing space, e.g. {@code "§c[ADMIN] "}; may be empty.
+     *                  Always the leftmost element on every surface.
      * @param clanTag   clan tag WITH its trailing space, e.g. {@code "§7[§9AERO§7] "}; may be empty
      * @param name      the display name, INCLUDING its own colour code (e.g. "§fCoffee") — without
      *                  one it inherits the last code emitted by the decoration
@@ -55,8 +58,14 @@ public final class PlayerDisplay {
 
     public static Segments segments(Parts p, Surface surface, boolean viewerIsOp) {
         StringBuilder pre = new StringBuilder();
-        append(pre, p.badge());
+        // 🔴 STAFF TAG FIRST, ALWAYS — this order is a security property, not a layout preference.
+        // Once ranks are purchasable the `badge` slot holds a PAID badge, and a paying player must
+        // never be able to render something that reads as staff. With the badge first, an Admiral
+        // shows as "♛ [ADMIN] Name" to anyone skimming a chat line, which is exactly the
+        // impersonation the reserved staff colours exist to prevent. Staff first makes the staff
+        // marker the leftmost thing on every surface, so a rank can only ever appear after it.
         append(pre, p.staffTag());
+        append(pre, p.badge());
         append(pre, p.clanTag());
 
         // NAMEPLATE is a scoreboard team PREFIX — the client appends the scoreboard name after it,

@@ -642,9 +642,35 @@ public class AuthManager {
         if (isAuthenticated(uuid)) {
             if (nameHidden.remove(uuid)) {
                 PlayerProfile prof = store.get(uuid);
+                boolean premium = prof != null
+                    && prof.getAccountType() == PlayerProfile.AccountType.PREMIUM;
                 NameMask.apply(player);   // masked BEFORE reveal so the badge team keys on the display name
-                NameVisibility.reveal(player, prof != null
-                    && prof.getAccountType() == PlayerProfile.AccountType.PREMIUM);
+                NameVisibility.reveal(player, premium);
+
+                // Rank + cosmetics load OFF-THREAD, so this first reveal is necessarily unranked.
+                // Re-reveal once the snapshot lands, hopping back to the server thread because the
+                // scoreboard is not thread-safe. Without this a subscriber renders unranked until
+                // something else happens to refresh them, which looks exactly like a failed purchase.
+                var server = player.getServer();
+                com.coffeesaerosmp.auth.store.StoreState.loadAsync(uuid, () -> {
+                    // Still on the AsyncIo thread, which is where DB work belongs.
+                    //
+                    // A purchase made while this player had never joined as premium was PARKED, because
+                    // delivery needs players.mojang_uuid and that column only fills on a gate-verified
+                    // join. This join is the event that fills it, so this is the moment those orders
+                    // become deliverable. Applying them here is what stops a paid rank sitting in
+                    // store_pending_grants indefinitely.
+                    com.coffeesaerosmp.auth.store.MojangIds.toMojang(uuid).ifPresent(
+                        com.coffeesaerosmp.auth.store.StoreGrants::applyPending);
+
+                    if (server == null) return;
+                    server.execute(() -> {
+                        // They may have left in the interval — re-resolve rather than capturing the
+                        // ServerPlayer, which would be a stale object after a disconnect.
+                        ServerPlayer live = server.getPlayerList().getPlayer(uuid);
+                        if (live != null) NameVisibility.reveal(live, premium);
+                    });
+                });
             }
             // ── Standalone lobby: an authenticated player belongs IN the lobby, always ──
             //

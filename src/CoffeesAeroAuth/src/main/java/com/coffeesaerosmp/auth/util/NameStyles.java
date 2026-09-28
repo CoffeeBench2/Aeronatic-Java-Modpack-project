@@ -98,8 +98,18 @@ public final class NameStyles {
      */
     public static Component nameComponent(UUID uuid, String username, String displayName) {
         NameStyle s = liveStyle(uuid, username);
-        if (s == null || s.isPlain()) return null;
-        return render(s, displayName);
+        if (s != null && !s.isPlain()) return render(s, displayName);
+
+        // ── purchased cosmetics, as a FALLBACK ──────────────────────────────────────────
+        // Precedence is deliberate: an admin-applied /namecolor style wins over a purchased one.
+        // /namecolor has been op-only for every mutating branch since 2026-07-27, so an entry here is
+        // always a staff decision — the owner's seeded red scramble, or a correction applied to
+        // somebody. A paid cosmetic must not be able to overwrite a moderation action, and a player
+        // whose look was pinned by staff should not have it silently change when they subscribe.
+        //
+        // The store path is only consulted when staff have expressed no opinion, which is the normal
+        // case for everyone.
+        return com.coffeesaerosmp.auth.store.NameRender.styledName(uuid, displayName);
     }
 
     /** Renders {@code text} in the given style (also used for command previews). */

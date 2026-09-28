@@ -365,6 +365,12 @@ public class DatabaseManager {
                 "  INDEX idx_infraction_uuid_epoch (uuid, epoch DESC)" +
                 ")");
 
+            // ── Store: ranks, cosmetics, Beans ───────────────────────────────────────
+            // Separate class because this one is already long enough, and because those tables key on
+            // players.mojang_uuid rather than players.uuid — see StoreSchema for why that is forced
+            // rather than chosen.
+            com.coffeesaerosmp.auth.store.StoreSchema.create(c);
+
             CoffeesAeroAuth.LOGGER.info("[DB] Schema verified.");
         } catch (SQLException e) {
             CoffeesAeroAuth.LOGGER.error("[DB] Schema creation failed", e);

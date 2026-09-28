@@ -117,6 +117,20 @@ public class CoffeesAeroAuth {
         // datapack (coffees_aero_auth:loot_modifiers/rarity_nerf.json) so they are /reload-tunable.
         com.coffeesaerosmp.auth.loot.AeroLootModifiers.register(modBus);
 
+        // Re-apply a player's scoreboard team whenever their rank or cosmetics change. The tab list and
+        // chat re-render on their own, but the nametag above the head is a team prefix/colour that only
+        // changes when something rewrites it — see StoreState#setChangeListener. Resolved through
+        // ServerLifecycleHooks rather than a stored server field so nothing has to keep one alive.
+        com.coffeesaerosmp.auth.store.StoreState.setChangeListener(localUuid -> {
+            var srv = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
+            if (srv == null) return;
+            srv.execute(() -> {
+                net.minecraft.server.level.ServerPlayer p = srv.getPlayerList().getPlayer(localUuid);
+                // `premium` is unused by reveal() now; the offline marker comes from the profile.
+                if (p != null) com.coffeesaerosmp.auth.auth.NameVisibility.reveal(p, true);
+            });
+        });
+
         // Server lifecycle
         NeoForge.EVENT_BUS.addListener(CoffeesAeroAuth::onServerStarting);
         NeoForge.EVENT_BUS.addListener(CoffeesAeroAuth::onServerStopping);
@@ -729,5 +743,6 @@ public class CoffeesAeroAuth {
         com.coffeesaerosmp.auth.commands.RtpCommand.register(event.getDispatcher());
         com.coffeesaerosmp.auth.commands.ShipNameCommand.register(event.getDispatcher());
         com.coffeesaerosmp.auth.commands.NameColorCommands.register(event.getDispatcher());
+        com.coffeesaerosmp.auth.commands.StoreCommands.register(event.getDispatcher());
     }
 }

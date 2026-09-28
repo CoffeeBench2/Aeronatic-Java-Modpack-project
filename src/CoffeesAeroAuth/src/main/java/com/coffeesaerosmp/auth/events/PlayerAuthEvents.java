@@ -166,6 +166,12 @@ public class PlayerAuthEvents {
             return;
         }
 
+        // Drop the cached rank/cosmetic state and the rendered name. Bounded by logout on purpose:
+        // holding it would mean a purchase made while they were offline is invisible on their next
+        // join, and the cache is a render optimisation, not a source of truth.
+        com.coffeesaerosmp.auth.store.StoreState.forget(player.getUUID());
+        com.coffeesaerosmp.auth.store.NameRender.forget(player.getUUID());
+
         // Update playtime FIRST, then let Obsidian read the updated profile
         CoffeesAeroAuth.AUTH_MANAGER.onPlayerLeave(player);
 

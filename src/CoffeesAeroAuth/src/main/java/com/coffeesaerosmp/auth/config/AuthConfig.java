@@ -7,6 +7,9 @@ public class AuthConfig {
     public static final ModConfigSpec SERVER_SPEC;
 
     public static final ModConfigSpec.ConfigValue<String> DISCORD_INVITE_URL;
+    public static final ModConfigSpec.BooleanValue        STORE_ENABLED;
+    public static final ModConfigSpec.ConfigValue<String> STORE_URL;
+    public static final ModConfigSpec.ConfigValue<String> STORE_SUPPORT_EMAIL;
     public static final ModConfigSpec.BooleanValue BROADCAST_NEW_PLAYERS;
     public static final ModConfigSpec.BooleanValue LAG_WARN_ENABLED;
     public static final ModConfigSpec.IntValue     LAG_WARN_MSPT;
@@ -151,6 +154,7 @@ public class AuthConfig {
     public static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> CONFISCATE_ALLOWED_COMMANDS;
 
     public static final ModConfigSpec.BooleanValue EXPLOIT_DETECT_ENABLED;
+    public static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> EXPLOIT_RULES;
     public static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> EXPLOIT_FLAGGED_BLOCKS;
     public static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> EXPLOIT_ASSEMBLER_BLOCKS;
     public static final ModConfigSpec.IntValue     EXPLOIT_SCAN_MAX_BLOCKS;
@@ -1145,6 +1149,20 @@ public class AuthConfig {
             .comment("Alert admins when a flagged block is assembled onto a watched bearing.",
                      "ALERT ONLY — nothing is blocked and no assembly is ever refused.")
             .define("exploitDetectEnabled", true);
+        EXPLOIT_RULES = b
+            .comment("Exploit rules, one per line, as \"assembler|flagged\".",
+                     "\"*\" on either side means ANY. Malformed lines are dropped, not fatal.",
+                     "",
+                     "Pairing matters: an Item Drain is only an exploit on a Swivel Bearing, while",
+                     "string is an exploit on ANY bearing. A flat two-list cross-product could not",
+                     "express both, and would alert on every item drain on every bearing.",
+                     "",
+                     "NOTE: placing string produces the BLOCK minecraft:tripwire, not",
+                     "minecraft:string — the item id never appears inside a contraption.")
+            .defineListAllowEmpty("exploitRules",
+                com.coffeesaerosmp.auth.exploit.ExploitRules.DEFAULT_RULES,
+                () -> "*|minecraft:tripwire",
+                o -> o instanceof String s && s.indexOf('|') > 0);
         EXPLOIT_FLAGGED_BLOCKS = b
             .comment("Block ids that raise an alert when found in an assembling structure.",
                      "Empty disables detection. NO '*' wildcard here — it would alert on every",
@@ -1269,6 +1287,25 @@ public class AuthConfig {
             .comment("Log a WARN when a save blocks the server thread longer than this (ms). Tune the",
                      "intervals up if this fires often — a save that stalls the tick loop is its own problem.")
             .defineInRange("saveGuardSlowWarnMs", 1000, 100, 60_000);
+        b.pop();
+
+        b.comment("Rank and cosmetics store (Tebex).").push("store");
+        STORE_ENABLED = b
+            .comment("Master switch for the player-facing store commands (/buy, /cosmetics).",
+                     "",
+                     "OFF by default on purpose. The admin grant surface stays available either way, so",
+                     "a rank can be handed out and tested before anything is advertised to players — and",
+                     "a store that is half-configured should be invisible rather than broken.")
+            .define("storeEnabled", false);
+        STORE_URL = b
+            .comment("Public webstore URL, shown by /buy. Must be reachable without logging in:",
+                     "Mojang's rules require all content and prices to be visible before anyone signs up.")
+            .define("storeUrl", "");
+        STORE_SUPPORT_EMAIL = b
+            .comment("Support contact shown alongside the store link.",
+                     "🔑 Required by Mojang's rules, and a Discord or forum link explicitly does NOT",
+                     "count — it has to be an email address.")
+            .define("storeSupportEmail", "");
         b.pop();
 
         SERVER_SPEC = b.build();

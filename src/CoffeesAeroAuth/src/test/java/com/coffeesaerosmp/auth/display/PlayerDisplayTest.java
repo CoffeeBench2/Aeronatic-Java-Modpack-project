@@ -64,6 +64,43 @@ class PlayerDisplayTest {
         assertTrue(out.indexOf("[ADMIN]") < out.indexOf("AERO"), "wrong order: " + out);
     }
 
+    /**
+     * 🔴 The anti-spoof invariant. The {@code badge} slot is becoming a PURCHASABLE rank badge, so a
+     * paying player must never render anything that reads as staff. Staff is the leftmost element on
+     * every surface; a rank badge can only ever appear after it. If this test fails, someone has
+     * reordered {@code segments()} and reopened the impersonation the reserved staff colours exist to
+     * prevent.
+     */
+    @Test
+    void staffTagAlwaysPrecedesThePaidRankBadgeOnEverySurface() {
+        PlayerDisplay.Parts admiral =
+            new PlayerDisplay.Parts("§6♛ ", "§c[ADMIN] ", "§7[§9AERO§7] ", "Coffee", null);
+        for (PlayerDisplay.Surface s : PlayerDisplay.Surface.values()) {
+            String out = PlayerDisplay.compose(admiral, s, false);
+            int staff = out.indexOf("[ADMIN]");
+            int rank  = out.indexOf('♛');
+            assertTrue(staff >= 0 && rank >= 0, s + " dropped an element: " + out);
+            assertTrue(staff < rank, s + " renders the paid badge before the staff tag: " + out);
+        }
+    }
+
+    /** The same ordering must hold in the scoreboard-team prefix, which is a separate code path. */
+    @Test
+    void prefixAlsoPutsStaffBeforeTheRankBadge() {
+        PlayerDisplay.Parts admiral =
+            new PlayerDisplay.Parts("§6♛ ", "§c[ADMIN] ", "", "Coffee", null);
+        String out = PlayerDisplay.composePrefix(admiral);
+        assertTrue(out.indexOf("[ADMIN]") < out.indexOf('♛'), "wrong order in prefix: " + out);
+    }
+
+    /** A rank badge with no staff tag must not gain a leading gap from the empty staff slot. */
+    @Test
+    void rankBadgeWithoutStaffTagHasNoLeadingWhitespace() {
+        PlayerDisplay.Parts ranked =
+            new PlayerDisplay.Parts("§6♛ ", "", "", "Coffee", null);
+        assertEquals("§6♛ Coffee", PlayerDisplay.compose(ranked, TAB, false));
+    }
+
     /** A scoreboard team PREFIX must not contain the name — the client appends the scoreboard
      *  name itself, so including it would render the name twice. */
     @Test
@@ -112,9 +149,10 @@ class PlayerDisplayTest {
         assertFalse(PlayerDisplay.compose(full(), DISCORD, true).contains("MrCoffeeBench"));
     }
 
+    /** Staff tag leads, then the rank/account badge, then the clan tag. */
     @Test
     void opRevealFormatAndPositionArePinned() {
-        assertEquals("§6✈ §c[ADMIN] §7[§9AERO§7] Coffee §8(MrCoffeeBench)",
+        assertEquals("§c[ADMIN] §6✈ §7[§9AERO§7] Coffee §8(MrCoffeeBench)",
                      PlayerDisplay.compose(full(), TAB, true));
     }
 
