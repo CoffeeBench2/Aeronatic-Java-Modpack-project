@@ -84,6 +84,25 @@ public class PlayerProfile {
         return AccountType.valueOf(accountType);
     }
 
+    /**
+     * Whether this account is Mojang-verified — <b>the authoritative premium test</b>.
+     *
+     * <h3>🔴 Do not test the uuid version instead</h3>
+     * There used to be a {@code UUIDUtil.isPremiumUUID(uuid)} that returned {@code uuid.version() == 4}.
+     * It could never be true on this server: the backend is {@code online-mode=false} and the client
+     * connects to it directly, so every uuid — premium included — is the v3
+     * {@code md5("OfflinePlayer:" + name)}. All 403 rows are v3. Every caller of it was silently taking
+     * the offline branch, and the one in {@code PlayerAuthEvents} meant a documented exemption had never
+     * applied once. It was deleted in favour of this.
+     *
+     * <p>Null-safe and tolerant of a bad stored value, unlike {@link #getAccountType()}, which throws
+     * from {@code valueOf}. This is read on the join path and while rendering names, so it must not be
+     * able to fail on one malformed row.
+     */
+    public boolean isPremium() {
+        return accountType != null && AccountType.PREMIUM.name().equalsIgnoreCase(accountType.trim());
+    }
+
     public enum AccountType {
         PREMIUM, OFFLINE
     }

@@ -1,7 +1,6 @@
 package com.coffeesaerosmp.auth.db;
 
 import com.coffeesaerosmp.auth.CoffeesAeroAuth;
-import com.coffeesaerosmp.auth.auth.UUIDUtil;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -284,7 +283,7 @@ public class ProfileStore implements CredentialStore {
         }
         return matchesByName(name).stream()
             .max(Comparator
-                .comparing((PlayerProfile p) -> UUIDUtil.isPremiumUUID(p.getUUID()))
+                .comparing(PlayerProfile::isPremium)
                 .thenComparingLong(p -> p.totalPlaytimeSeconds)
                 .thenComparingLong(p -> p.lastSeen))
             .orElse(null);
@@ -313,7 +312,7 @@ public class ProfileStore implements CredentialStore {
         }
         byName.values().removeIf(l -> l.size() < 2);
         Comparator<PlayerProfile> best = Comparator
-            .comparing((PlayerProfile p) -> UUIDUtil.isPremiumUUID(p.getUUID()))
+            .comparing(PlayerProfile::isPremium)
             .thenComparingLong(p -> p.totalPlaytimeSeconds)
             .thenComparingLong(p -> p.lastSeen);
         byName.values().forEach(l -> l.sort(best.reversed()));

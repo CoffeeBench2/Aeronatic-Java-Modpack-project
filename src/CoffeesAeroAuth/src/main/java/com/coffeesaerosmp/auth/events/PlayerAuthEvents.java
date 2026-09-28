@@ -1,7 +1,6 @@
 package com.coffeesaerosmp.auth.events;
 
 import com.coffeesaerosmp.auth.CoffeesAeroAuth;
-import com.coffeesaerosmp.auth.auth.UUIDUtil;
 import com.coffeesaerosmp.auth.db.PlayerProfile;
 import com.coffeesaerosmp.auth.util.NetUtil;
 import com.coffeesaerosmp.auth.watchdog.IpBanManager;
@@ -30,8 +29,6 @@ public class PlayerAuthEvents {
 
         if (CoffeesAeroAuth.AUTH_MANAGER == null) return;
 
-        boolean isOffline = !UUIDUtil.isPremiumUUID(player.getUUID());
-
         // Offline accounts pick their own username, and nothing upstream validates it: the gate signs
         // whatever name the client sent, and an offline-mode backend derives a UUID from that string
         // rather than rejecting it. So a player literally called ' reached the auth lobby (2026-09-03).
@@ -40,9 +37,25 @@ public class PlayerAuthEvents {
         // profile row and a claimed display name by the time anyone notices. Rejecting here means
         // nothing is written — PROFILE_STORE has not been touched yet on this path.
         //
-        // Premium accounts are exempt on purpose: their name is Mojang-verified, and a handful of
-        // legacy accounts predate the current charset rule. Kicking one of those would be our bug,
-        // not theirs. Offline is where the free-text hole actually is.
+        // 🔴 THERE IS NO PREMIUM EXEMPTION HERE, AND THERE CANNOT BE ONE AT THIS POINT.
+        // This used to read `boolean isOffline = !UUIDUtil.isPremiumUUID(player.getUUID())`, with a
+        // comment promising premium names were exempt because they are Mojang-verified. That exemption
+        // never applied even once: every uuid on this server is the v3 md5("OfflinePlayer:"+name),
+        // premium included, so `isPremiumUUID` was always false and `isOffline` always true.
+        //
+        // Removing the call does not change behaviour — it removes a claim the code could not honour.
+        // The exemption is in fact IMPOSSIBLE to implement here, which is why it is not being repaired
+        // rather than deleted: premium-ness is only knowable from the gate's signed cookie, and that
+        // arrives ASYNCHRONOUSLY (AuthManager requests it, ServerCommonCookieMixin routes the reply
+        // back through server.execute), so it is not available during PlayerLoggedInEvent. A brand-new
+        // player has no profile to read account_type from either — and `existing == null` is precisely
+        // the branch that refuses, so any premium test would be unknowable exactly when it is consulted.
+        //
+        // ⚠️ Residual gap, accepted deliberately: a player who is new to this server AND premium AND
+        // holds a legacy Mojang name outside [A-Za-z0-9_]{3,16} is refused. They can rename, and they
+        // lose nothing because no profile exists yet. Closing it properly means deferring this check
+        // until the cookie resolves, which would mean letting the row be written first — the exact
+        // thing this placement exists to prevent. See planning/store-identity-risk.md.
         //
         // 🔑 So are players who ALREADY have a profile. The rule arrived after they did, and the
         // first build applied it to everyone — which locked established players out of their own
@@ -64,13 +77,13 @@ public class PlayerAuthEvents {
         String name = player.getGameProfile().getName();
         boolean badName = !com.coffeesaerosmp.auth.profile.DisplayNameManager.isValidName(name);
 
-        if (isOffline && badName && !canTellNewFromOld) {
+        if (badName && !canTellNewFromOld) {
             CoffeesAeroAuth.LOGGER.warn(
                 "[Auth] Allowing invalid offline username '{}' from {} — profile DB unavailable, "
                 + "cannot tell a new registration from an existing player.",
                 name, NetUtil.getPlayerIP(player));
         }
-        if (isOffline && badName && canTellNewFromOld && existing == null) {
+        if (badName && canTellNewFromOld && existing == null) {
             CoffeesAeroAuth.LOGGER.warn("[Auth] Refused NEW registration with invalid offline "
                 + "username {} from {}.", "'" + name + "'", NetUtil.getPlayerIP(player));
             player.connection.disconnect(Component.literal(
@@ -106,7 +119,7 @@ public class PlayerAuthEvents {
         }
 
         // Watchdog pre-join checks (IP ban, UUID switch, lookalike) — may kick and return early
-        if (CoffeesAeroAuth.WATCHDOG != null && CoffeesAeroAuth.WATCHDOG.checkJoin(player, isOffline)) return;
+        if (CoffeesAeroAuth.WATCHDOG != null && CoffeesAeroAuth.WATCHDOG.checkJoin(player)) return;
 
         CoffeesAeroAuth.AUTH_MANAGER.onPlayerJoin(player);
 

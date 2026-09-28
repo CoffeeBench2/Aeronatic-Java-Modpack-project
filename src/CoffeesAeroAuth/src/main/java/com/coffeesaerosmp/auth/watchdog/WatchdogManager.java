@@ -133,8 +133,25 @@ public class WatchdogManager {
 
     // ── Threat Detection ─────────────────────────────────────────────────────
 
-    /** Called by PlayerAuthEvents before auth setup. Checks IP ban, UUID switch, lookalike. */
-    public boolean checkJoin(ServerPlayer player, boolean isOffline) {
+    /**
+     * Called by PlayerAuthEvents before auth setup: IP ban, join blocking, same-name-different-uuid
+     * detection and lookalike detection.
+     *
+     * <p>The {@code isOffline} parameter was removed on 2026-09-29. It gated the uuid-switch check
+     * "offline only", and was computed from {@code UUIDUtil.isPremiumUUID}, which can never be true on
+     * this server — so the flag was permanently true and the gate never gated anything.
+     *
+     * <p>Dropping it rather than repairing it is correct, because the precondition the check actually
+     * needs is <b>"is this identity derived from the name"</b>, and here that is true for <i>every</i>
+     * account, premium included: the backend is {@code online-mode=false} and mints every uuid as
+     * {@code md5("OfflinePlayer:" + name)}. A parameter that can only ever hold one value is a lie
+     * waiting for someone to trust it.
+     *
+     * <p>Worth keeping the check for everyone, in fact: because the mapping is deterministic, the only
+     * way the same name yields a different uuid is a change of CASE — and two case-duplicate profile
+     * pairs already exist in the live database.
+     */
+    public boolean checkJoin(ServerPlayer player) {
         String ip     = NetUtil.getPlayerIP(player);
         UUID   uuid   = player.getUUID();
         String mcName = player.getGameProfile().getName();
@@ -152,8 +169,10 @@ public class WatchdogManager {
             return true;
         }
 
-        // 3. UUID switch detection (offline only — same name, different UUID vs last known)
-        if (isOffline) {
+        // 3. Same name, different uuid vs last known. Applies to EVERY account, because every uuid
+        //    here is derived from the name — see the note on this method. Given that derivation is
+        //    deterministic, the realistic trigger is a change of CASE in the name.
+        {
             UUID prev = usernameUUIDs.put(mcName, uuid);
             if (prev != null && !prev.equals(uuid)) {
                 alert(WatchdogEvent.of(Severity.CRITICAL, "UUID Switch Detected",

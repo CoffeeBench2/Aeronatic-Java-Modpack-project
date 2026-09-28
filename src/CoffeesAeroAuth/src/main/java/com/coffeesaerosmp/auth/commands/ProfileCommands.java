@@ -822,9 +822,13 @@ public class ProfileCommands {
                 sb.append("\n§e").append(name);
                 for (int i = 0; i < list.size(); i++) {
                     PlayerProfile p = list.get(i);
-                    boolean premium = com.coffeesaerosmp.auth.auth.UUIDUtil.isPremiumUUID(p.getUUID());
+                    // account_type, not the uuid version. Every uuid here is v3 (the backend is
+                    // offline-mode and mints them from the name), so the old "v4 PREMIUM / v3 offline"
+                    // label printed "v3 offline" for absolutely everyone — actively misleading in the
+                    // one command an admin runs to untangle a duplicate account.
+                    boolean premium = p.isPremium();
                     sb.append("\n  ").append(i == 0 ? "§a> " : "§8  ")
-                      .append(premium ? "§6v4 PREMIUM" : "§7v3 offline")
+                      .append(premium ? "§6PREMIUM" : "§7offline")
                       .append(" §8").append(p.getUUID())
                       .append(" §f").append(formatPlaytime(p.totalPlaytimeSeconds))
                       .append(p.discordId != null && !p.discordId.isBlank() ? " §9[discord]" : "");
