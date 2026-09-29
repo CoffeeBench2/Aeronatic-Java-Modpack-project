@@ -235,42 +235,42 @@ public class CoffeesAeroAuth {
         // accumulating a subtraction, so every consumer of playtime is corrected at once.
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.tick.ServerTickEvent.Post e) ->
             com.coffeesaerosmp.auth.afk.AfkTracker.onServerTick(e.getServer()));
-        // Deliberate actions that count as activity. Movement and looking around are picked up by
-        // the tracker's own tick, so these are only the things a player can do while standing
-        // perfectly still. ⚠ Damage taken and items picked up are NOT here on purpose — an AFK
+        // Deliberate actions that count as activity, each tagged with its kind so the macro detector
+        // can judge its rhythm separately. Movement and looking around are sampled by the tracker's
+        // own tick; hotbar, inventory, swings, sneak/sprint and steering come from AfkInputMixin. ⚠ Damage taken and items picked up are NOT here on purpose — an AFK
         // player parked in a mob farm generates both continuously, which is the exact case this
         // whole feature exists to catch.
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.ServerChatEvent e) ->
-            com.coffeesaerosmp.auth.afk.AfkTracker.touch(e.getPlayer()));
+            com.coffeesaerosmp.auth.afk.AfkTracker.input(e.getPlayer(), com.coffeesaerosmp.auth.afk.MacroDetector.Kind.CHAT));
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.CommandEvent e) -> {
             // Fires for the console and command blocks too, so the source must really be a player.
             if (e.getParseResults().getContext().getSource().getEntity()
                     instanceof net.minecraft.server.level.ServerPlayer sp) {
-                com.coffeesaerosmp.auth.afk.AfkTracker.touch(sp);
+                com.coffeesaerosmp.auth.afk.AfkTracker.input(sp, com.coffeesaerosmp.auth.afk.MacroDetector.Kind.COMMAND);
                 com.coffeesaerosmp.auth.tracking.ActivitySampler.onCommand(sp.getUUID());
             }
         });
         // BreakEvent is not a PlayerEvent, so it needs its own unwrap rather than onPlayerActivity.
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.level.BlockEvent.BreakEvent e) -> {
             if (e.getPlayer() instanceof net.minecraft.server.level.ServerPlayer sp) {
-                com.coffeesaerosmp.auth.afk.AfkTracker.touch(sp);
+                com.coffeesaerosmp.auth.afk.AfkTracker.input(sp, com.coffeesaerosmp.auth.afk.MacroDetector.Kind.BREAK);
             }
         });
         NeoForge.EVENT_BUS.addListener(
             (net.neoforged.neoforge.event.entity.player.PlayerInteractEvent.RightClickBlock e) ->
-                com.coffeesaerosmp.auth.afk.AfkTracker.onPlayerActivity(e));
+                com.coffeesaerosmp.auth.afk.AfkTracker.onPlayerActivity(e, com.coffeesaerosmp.auth.afk.MacroDetector.Kind.USE));
         NeoForge.EVENT_BUS.addListener(
             (net.neoforged.neoforge.event.entity.player.PlayerInteractEvent.RightClickItem e) ->
-                com.coffeesaerosmp.auth.afk.AfkTracker.onPlayerActivity(e));
+                com.coffeesaerosmp.auth.afk.AfkTracker.onPlayerActivity(e, com.coffeesaerosmp.auth.afk.MacroDetector.Kind.USE));
         NeoForge.EVENT_BUS.addListener(
             (net.neoforged.neoforge.event.entity.player.PlayerInteractEvent.EntityInteract e) ->
-                com.coffeesaerosmp.auth.afk.AfkTracker.onPlayerActivity(e));
+                com.coffeesaerosmp.auth.afk.AfkTracker.onPlayerActivity(e, com.coffeesaerosmp.auth.afk.MacroDetector.Kind.INTERACT));
         NeoForge.EVENT_BUS.addListener(
             (net.neoforged.neoforge.event.entity.player.AttackEntityEvent e) ->
-                com.coffeesaerosmp.auth.afk.AfkTracker.onPlayerActivity(e));
+                com.coffeesaerosmp.auth.afk.AfkTracker.onPlayerActivity(e, com.coffeesaerosmp.auth.afk.MacroDetector.Kind.ATTACK));
         NeoForge.EVENT_BUS.addListener(
             (net.neoforged.neoforge.event.entity.player.PlayerContainerEvent.Open e) ->
-                com.coffeesaerosmp.auth.afk.AfkTracker.onPlayerActivity(e));
+                com.coffeesaerosmp.auth.afk.AfkTracker.onPlayerActivity(e, com.coffeesaerosmp.auth.afk.MacroDetector.Kind.CONTAINER));
 
         // Periodic "the watchdog is watching" reminder + bark. Random interval, world chat only.
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.tick.ServerTickEvent.Post e) ->
@@ -354,6 +354,7 @@ public class CoffeesAeroAuth {
         // Start the save clocks from boot, so the first periodic save lands one interval from now
         // rather than immediately (a join burst is the worst moment to add disk I/O).
         com.coffeesaerosmp.auth.protect.SaveGuard.onServerStarted();
+        com.coffeesaerosmp.auth.afk.AfkInputSelfTest.run();
 
         // Gate cookie verifier — shared HMAC secret with the Velocity AeroGate plugin (secret.txt).
         COOKIE_AUTH = new com.coffeesaerosmp.auth.auth.CookieAuth(
@@ -753,5 +754,6 @@ public class CoffeesAeroAuth {
         com.coffeesaerosmp.auth.commands.NameColorCommands.register(event.getDispatcher());
         com.coffeesaerosmp.auth.commands.StoreCommands.register(event.getDispatcher());
         com.coffeesaerosmp.auth.commands.IdentityCommands.register(event.getDispatcher());
+        com.coffeesaerosmp.auth.commands.AfkCommands.register(event.getDispatcher());
     }
 }

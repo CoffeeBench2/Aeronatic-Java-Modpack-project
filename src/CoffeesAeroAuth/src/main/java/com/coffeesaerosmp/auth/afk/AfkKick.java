@@ -137,6 +137,17 @@ public final class AfkKick {
         }
     }
 
+    /** Whether going AFK now would actually move or kick this player — decides if they get warned first. */
+    static boolean wouldMove(ServerPlayer player) {
+        try {
+            if (player == null || com.coffeesaerosmp.auth.lobby.LobbyHandoff.isLobbyRole()) return false;
+            if (isExempt(player)) return false;
+            return AuthConfig.AFK_SEND_TO_LOBBY.get() || AuthConfig.AFK_KICK_ENABLED.get();
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     private static boolean isExempt(ServerPlayer player) {
         if (AuthConfig.AFK_KICK_EXEMPT_OPS.get() && player.hasPermissions(2)) return true;
 

@@ -9,6 +9,7 @@
     ],
     "server": [
         "ServerPacketListenerMixin",
+        "AfkInputMixin",
         "ServerCommonCookieMixin",
         "PlayerInfoPacketAccessor",
         "ServerPlayerPlotGuardMixin",

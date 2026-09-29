@@ -91,6 +91,8 @@ public class AuthConfig {
     public static final ModConfigSpec.BooleanValue         AFK_KICK_ENABLED;
     public static final ModConfigSpec.IntValue             AFK_KICK_BAN_MINUTES;
     public static final ModConfigSpec.BooleanValue         AFK_KICK_EXEMPT_OPS;
+    public static final ModConfigSpec.BooleanValue         AFK_MACRO_DETECTION;
+    public static final ModConfigSpec.IntValue             AFK_WARN_SECONDS;
     public static final ModConfigSpec.BooleanValue         RPM_CAP_ENABLED;
     public static final ModConfigSpec.IntValue             RPM_CAP_WORLD;
     public static final ModConfigSpec.IntValue             RPM_CAP_SUBLEVEL;
@@ -413,16 +415,20 @@ public class AuthConfig {
                      "farm levels a player up as fast as playing does. Implemented by rolling their",
                      "session clock forward while idle, so idle time never enters the playtime figure",
                      "in ANY of the places that show it (/profile, sidebar, Discord /leaderboard).",
-                     "Activity = moving, looking around, chat, commands, breaking, placing,",
-                     "right-clicking, attacking, opening a container. Taking damage and picking items",
-                     "up deliberately do NOT count — an AFK player in a mob farm does both nonstop.",
+                     "Activity is player INPUT: chat, commands, breaking, using/placing, attacking,",
+                     "interacting, containers, inventory clicks, hotbar, arm swings, sneak/sprint, vehicle",
+                     "steering, walking and looking around. Movement caused by something else does NOT",
+                     "count: position is ignored while riding, and on a Sable ship it is measured in the",
+                     "ship's own coordinates, so a drifting airship no longer keeps its crew 'active'.",
+                     "Taking damage and picking items up deliberately do NOT count — an AFK player in a",
+                     "mob farm does both nonstop.",
                      "Turning this OFF does not retroactively restore time already excluded.")
             .define("afkEnabled", true);
         AFK_TIMEOUT_MINUTES = b
             .comment("Minutes of no activity before a player counts as AFK.",
                      "When it expires the WHOLE idle stretch is excluded, not just the part after the",
                      "threshold — otherwise a twitch every few minutes buys a free window each time.")
-            .defineInRange("afkTimeoutMinutes", 5, 1, 120);
+            .defineInRange("afkTimeoutMinutes", 10, 1, 120);
         AFK_ANNOUNCE = b
             .comment("Tell the other players in chat when someone goes AFK or comes back.",
                      "Plain grey, no house prefix — it is ambient information ('don't wait for a",
@@ -461,6 +467,19 @@ public class AuthConfig {
                      "is doing their job. Unauthenticated players in the lobby are always exempt",
                      "regardless of this setting — they are mid-login, not idling in the world.")
             .define("afkKickExemptOps", true);
+        AFK_MACRO_DETECTION = b
+            .comment("Refuse machine-made input as activity: auto-clickers, a held key or a weight on the",
+                     "mouse (clockwork timing, judged per input kind), mouse jigglers (flicking between 2-3",
+                     "angles) and strafe macros (bouncing between 2 blocks). Refused input just doesn't",
+                     "reset the idle timer, so the player goes AFK normally; nothing is punished here.",
+                     "Staff get one MEDIUM alert when someone goes AFK while something kept firing.",
+                     "false = every input counts, as before 1.11.5.")
+            .define("afkMacroDetection", true);
+        AFK_WARN_SECONDS = b
+            .comment("Warn a player this many seconds before they would be moved to the lobby (or kicked)",
+                     "for being AFK - a title plus a chat line. Any input cancels it. 0 = no warning.",
+                     "Not shown to players who are exempt from being moved (ops).")
+            .defineInRange("afkWarnSeconds", 60, 0, 300);
 
         RPM_CAP_ENABLED = b
             .comment("Cap Create rotational speed, with a separate ceiling inside Sable sub-levels.",
