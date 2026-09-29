@@ -52,9 +52,25 @@ dependencies {
     // extract them from create's META-INF/jarjar/ if this ever needs refreshing.
     compileOnly(files("libs/create.jar", "libs/ponder.jar", "libs/flywheel.jar", "libs/Registrate.jar"))
 
+    // Sable 2.0.5 for the sub-level speed cap mixin. Same rule as Create above: the handler takes
+    // ServerSubLevel / RigidBodyHandle / SubLevelPhysicsSystem as REAL types, because an Object-typed
+    // parameter never matches the descriptor and under require=0 fails silently.
+    // ⚠️ RapierPhysicsPipeline is NOT in this jar — it lives in the JiJ nested jar
+    // META-INF/jarjar/dev.ryanhcode.sable.sable-sable_rapier-1.21.1-2.0.5.jar. Everything the cap
+    // needs (ServerSubLevel, RigidBodyHandle, the PhysicsPipeline API) is in the main jar, which is
+    // why the mixin targets ServerSubLevel and not the pipeline.
+    // sable-companion is extracted from Sable's own META-INF/jarjar. It is needed only to RESOLVE
+    // ServerSubLevel's supertype chain (SubLevelAccess) — without it javac cannot access any member
+    // of ServerSubLevel at all, not even getRuntimeId(). Both are compileOnly; neither is bundled.
+    compileOnly(files("libs/sable.jar", "libs/sable-companion.jar"))
+
     // CoffeesAeroSkins API for the skins backend bridge (SkinsHook). compileOnly + ModList-guarded,
     // same pattern as FTB. Build CoffeesAeroSkins first (sibling project).
-    compileOnly(files("../CoffeesAeroSkins/build/libs/CoffeesAeroSkins-1.0.1.jar"))
+    // 2026-09-20: was pinned to 1.0.1, a filename that no longer exists — the sibling project is on
+    // 1.1.0 (and 1.1.0 is what runs on live), so a clean checkout could not compile this mod at all:
+    // the whole com.coffeesaerosmp.skins package vanished from the classpath and SkinsHook failed
+    // with 11 "does not override" errors that look like an API change and are really a missing jar.
+    compileOnly(files("../CoffeesAeroSkins/build/libs/CoffeesAeroSkins-1.1.0.jar"))
 
     // Unit tests for the PURE display core only. PlayerDisplay/StaffBadges import no Minecraft
     // classes, so these run without a game. Anything needing a ServerPlayer is boot-tested instead.

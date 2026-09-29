@@ -45,8 +45,6 @@ public class PlayerProfile {
     public boolean nameApprovalPending;  // true = name submitted, awaiting admin decision
     public String  pendingDisplayName;   // proposed name while in approval queue
     public int     nameRejectionCount;   // rejections this account lifetime (not reset on reconnect)
-    public int     roomSlot;             // assigned room slot index (-1 = unassigned)
-    public long    roomCreatedAt;        // epoch ms when room was first built
 
     // Last position in the MAIN world (never the lobby) — restored on /spawn so a returning player
     // resumes where they logged off instead of being dumped at world spawn. null dim = never entered
@@ -56,8 +54,16 @@ public class PlayerProfile {
 
     public transient UUID uuid;
 
+    // Identity — READ-ONLY copies of players.mojang_uuid / link_source / identity_hold, loaded with the
+    // row so the join gate (admin/IdentityGate) needs no extra query. 🔴 Transient and deliberately
+    // absent from upsertPlayer: save() writes the whole row from a cached copy, and a stale cached
+    // link written back would undo a bind, or erase a hold, made by the other process. Only the
+    // guarded statements in AccountTransfer / IdentityCommands ever write these columns.
+    public transient String mojangLink;
+    public transient String linkSource;
+    public transient String identityHold;
+
     public PlayerProfile() {
-        this.roomSlot = -1;
     }
 
     public PlayerProfile(UUID uuid, String username, AccountType type) {
@@ -76,8 +82,6 @@ public class PlayerProfile {
         this.nameApproved         = (type == AccountType.PREMIUM); // premium players auto-approved
         this.nameApprovalPending  = false;
         this.nameRejectionCount   = 0;
-        this.roomSlot             = -1;
-        this.roomCreatedAt        = 0;
     }
 
     public UUID getUUID() {
@@ -87,6 +91,25 @@ public class PlayerProfile {
 
     public AccountType getAccountType() {
         return AccountType.valueOf(accountType);
+    }
+
+    /**
+     * Whether this account is Mojang-verified — <b>the authoritative premium test</b>.
+     *
+     * <h3>🔴 Do not test the uuid version instead</h3>
+     * There used to be a {@code UUIDUtil.isPremiumUUID(uuid)} that returned {@code uuid.version() == 4}.
+     * It could never be true on this server: the backend is {@code online-mode=false} and the client
+     * connects to it directly, so every uuid — premium included — is the v3
+     * {@code md5("OfflinePlayer:" + name)}. All 403 rows are v3. Every caller of it was silently taking
+     * the offline branch, and the one in {@code PlayerAuthEvents} meant a documented exemption had never
+     * applied once. It was deleted in favour of this.
+     *
+     * <p>Null-safe and tolerant of a bad stored value, unlike {@link #getAccountType()}, which throws
+     * from {@code valueOf}. This is read on the join path and while rendering names, so it must not be
+     * able to fail on one malformed row.
+     */
+    public boolean isPremium() {
+        return accountType != null && AccountType.PREMIUM.name().equalsIgnoreCase(accountType.trim());
     }
 
     public enum AccountType {

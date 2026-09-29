@@ -225,6 +225,24 @@ public class DatabaseManager {
             catch (SQLException ignored) { }   // MySQL has no ADD COLUMN IF NOT EXISTS
             try { s.executeUpdate("CREATE INDEX idx_players_mojang ON players (mojang_uuid)"); }
             catch (SQLException ignored) { }
+            // HOW the mojang_uuid above came to be here, which decides how much it can be trusted.
+            //   GATE     — observed inside the gate's HMAC-signed cookie on a real login. Proof.
+            //   BACKFILL — inferred by asking Mojang who owns the name (scripts/backfill_mojang_links.py).
+            //              Sound only while the player still HOLDS that name; if the name had already
+            //              changed hands the inference names the wrong human, and Mojang removed the
+            //              name-history API, so that case cannot be ruled out automatically.
+            // A mismatch against a GATE link is evidence of a takeover; against a BACKFILL link it may
+            // just mean the inference was wrong. Same alert, different confidence — do not collapse them.
+            try { s.executeUpdate("ALTER TABLE players ADD COLUMN link_source ENUM('GATE','BACKFILL') NULL"); }
+            catch (SQLException dupCol) { /* column already present — fine */ }
+            //   ADMIN    — bound by staff with /aeroid bind, after checking by hand. Added 2026-09-29.
+            // MODIFY is idempotent, and it only ever ADDS a value, so existing rows are untouched.
+            try { s.executeUpdate("ALTER TABLE players MODIFY COLUMN link_source ENUM('GATE','BACKFILL','ADMIN') NULL"); }
+            catch (SQLException e) { CoffeesAeroAuth.LOGGER.warn("[DB] link_source enum widen failed: {}", e.getMessage()); }
+            // Identity hold (admin/IdentityGate): non-null = nobody may log into this profile until staff
+            // release it. The text is the reason, shown to staff. Lock-don't-move: the data stays put.
+            try { s.executeUpdate("ALTER TABLE players ADD COLUMN identity_hold VARCHAR(255) NULL"); }
+            catch (SQLException dupCol) { /* column already present — fine */ }
             try { s.executeUpdate("ALTER TABLE players ADD COLUMN startup_bonus_given BOOLEAN NOT NULL DEFAULT FALSE"); }
             catch (SQLException dupCol) { /* column already present — fine */ }
             try { s.executeUpdate("ALTER TABLE players ADD COLUMN first_ip VARCHAR(45) NULL"); }
@@ -289,6 +307,88 @@ public class DatabaseManager {
                 "  set_by      VARCHAR(64)  NULL," +
                 "  updated_at  BIGINT       NOT NULL" +
                 ")");
+            // ── 1.11.0: admin tooling & player tracking ──────────────────────────────
+            // ⚠ Shared with the creative test server, which points at the same database.
+            // `confiscations` matters most: a player held on live is also held on test.
+            // That fails safe, but it is deliberate, not a bug.
+
+            // One row per session, written on logout. Epochs are UTC millis everywhere —
+            // the lobby runs UTC and the SMP runs +05:30, so only rendering is localised.
+            s.executeUpdate(
+                "CREATE TABLE IF NOT EXISTS session_log (" +
+                "  id           BIGINT AUTO_INCREMENT PRIMARY KEY," +
+                "  uuid         CHAR(36)     NOT NULL," +
+                "  login_epoch  BIGINT       NOT NULL," +
+                "  logout_epoch BIGINT       NOT NULL," +
+                "  duration_s   INT          NOT NULL," +
+                "  ip           VARCHAR(45)  NULL," +
+                "  server_role  VARCHAR(8)   NOT NULL," +
+                "  reason       VARCHAR(32)  NULL," +
+                // Composite, not two single-column indexes: the only read is
+                // "WHERE uuid=? ORDER BY logout_epoch DESC LIMIT n", and one index
+                // covering filter+sort avoids a filesort. There is no query that
+                // wants logout_epoch on its own.
+                "  INDEX idx_session_uuid_logout (uuid, logout_epoch DESC)" +
+                ")");
+
+            // Sampled every 5 minutes and on logout — never written per event.
+            // Values OVERWRITE on upsert; a /authmod freshstart legitimately zeroes them.
+            s.executeUpdate(
+                "CREATE TABLE IF NOT EXISTS player_stats (" +
+                "  uuid          CHAR(36) NOT NULL PRIMARY KEY," +
+                "  blocks_mined  BIGINT   NOT NULL DEFAULT 0," +
+                "  items_used    BIGINT   NOT NULL DEFAULT 0," +
+                "  deaths        INT      NOT NULL DEFAULT 0," +
+                "  mob_kills     INT      NOT NULL DEFAULT 0," +
+                "  player_kills  INT      NOT NULL DEFAULT 0," +
+                "  distance_cm   BIGINT   NOT NULL DEFAULT 0," +
+                "  chat_messages BIGINT   NOT NULL DEFAULT 0," +
+                "  commands_run  BIGINT   NOT NULL DEFAULT 0," +
+                "  sampled_epoch BIGINT   NOT NULL DEFAULT 0" +
+                ")");
+
+            // Claim SLOTS, not ships. AeroClaims exposes exactly three per-player accessors —
+            // getUsedSlots / getFreeSlots / getMigratedSlots, all (ServerLevel, UUID) -> int. There
+            // is no public owner -> ships listing: Claim carries an owner and a shipId, but the maps
+            // holding them are private to AeroClaimSavedData. Recording what the API can actually
+            // answer beats recording a "ships_owned" column that would have been silently zero.
+            s.executeUpdate(
+                "CREATE TABLE IF NOT EXISTS player_footprint (" +
+                "  uuid              CHAR(36) NOT NULL PRIMARY KEY," +
+                "  claim_slots_used  INT      NOT NULL DEFAULT 0," +
+                "  claim_slots_free  INT      NOT NULL DEFAULT 0," +
+                "  sampled_epoch     BIGINT   NOT NULL DEFAULT 0" +
+                ")");
+
+            // A row present means HELD. Release deletes the row and writes a RELEASE
+            // infraction, so history lives in `infractions` rather than a dead flag column.
+            s.executeUpdate(
+                "CREATE TABLE IF NOT EXISTS confiscations (" +
+                "  uuid          CHAR(36)     NOT NULL PRIMARY KEY," +
+                "  reason        VARCHAR(256) NULL," +
+                "  actor         VARCHAR(64)  NOT NULL," +
+                "  started_epoch BIGINT       NOT NULL" +
+                ")");
+
+            s.executeUpdate(
+                "CREATE TABLE IF NOT EXISTS infractions (" +
+                "  id      BIGINT AUTO_INCREMENT PRIMARY KEY," +
+                "  uuid    CHAR(36)     NOT NULL," +
+                "  type    VARCHAR(24)  NOT NULL," +
+                "  detail  VARCHAR(512) NULL," +
+                "  actor   VARCHAR(64)  NULL," +
+                "  epoch   BIGINT       NOT NULL," +
+                // Same reasoning as session_log: the only read is
+                // "WHERE uuid=? ORDER BY epoch DESC LIMIT n".
+                "  INDEX idx_infraction_uuid_epoch (uuid, epoch DESC)" +
+                ")");
+
+            // ── Store: ranks, cosmetics, Beans ───────────────────────────────────────
+            // Separate class because this one is already long enough, and because those tables key on
+            // players.mojang_uuid rather than players.uuid — see StoreSchema for why that is forced
+            // rather than chosen.
+            com.coffeesaerosmp.auth.store.StoreSchema.create(c);
+
             CoffeesAeroAuth.LOGGER.info("[DB] Schema verified.");
         } catch (SQLException e) {
             CoffeesAeroAuth.LOGGER.error("[DB] Schema creation failed", e);

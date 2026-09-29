@@ -27,6 +27,12 @@ public class ChatEvents {
 
         ServerPlayer player = event.getPlayer();
 
+        // Counted here because this handler already runs for every message — a long++ rather than
+        // a new subscription. Deliberately before the auth gate below: an unauthenticated player's
+        // blocked attempts are still activity, and counting only accepted messages would make the
+        // figure disagree with what an admin sees in the logs.
+        com.coffeesaerosmp.auth.tracking.ActivitySampler.onChat(player.getUUID());
+
         if (!CoffeesAeroAuth.AUTH_MANAGER.isAuthenticated(player.getUUID())) {
             event.setCanceled(true);
             player.sendSystemMessage(Component.literal(
@@ -72,10 +78,10 @@ public class ChatEvents {
                 .append(Component.literal(" §8(" + realName + ")§r §8» §r" + rawText))
             : formatted;
         boolean senderInLobby =
-            player.level().dimension() == com.coffeesaerosmp.auth.lobby.PrivateRoomManager.LOBBY_DIMENSION;
+            player.level().dimension() == com.coffeesaerosmp.auth.lobby.LobbyManager.LOBBY_DIMENSION;
         for (ServerPlayer viewer : player.getServer().getPlayerList().getPlayers()) {
             boolean viewerInLobby =
-                viewer.level().dimension() == com.coffeesaerosmp.auth.lobby.PrivateRoomManager.LOBBY_DIMENSION;
+                viewer.level().dimension() == com.coffeesaerosmp.auth.lobby.LobbyManager.LOBBY_DIMENSION;
             if (viewerInLobby != senderInLobby) continue;   // lobby and world are separate chat channels
             viewer.sendSystemMessage(viewer.hasPermissions(2) ? adminVariant : formatted);
         }

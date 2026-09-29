@@ -1,6 +1,9 @@
 package com.coffeesaerosmp.auth.auth;
 
 import com.coffeesaerosmp.auth.CoffeesAeroAuth;
+import com.coffeesaerosmp.auth.admin.IdentityEnforcer;
+import com.coffeesaerosmp.auth.admin.IdentityGate;
+import com.coffeesaerosmp.auth.db.ProfileStore;
 import com.coffeesaerosmp.auth.config.AuthConfig;
 import com.coffeesaerosmp.auth.db.DatabaseManager;
 import com.coffeesaerosmp.auth.db.PlayerProfile;
@@ -38,7 +41,18 @@ public class AuthManager {
     private final Map<UUID, Long>      joinTimes            = new ConcurrentHashMap<>();
     private final Map<UUID, Integer>   failedAttempts       = new ConcurrentHashMap<>();
     private final Set<UUID>            pendingLobbyTeleport = ConcurrentHashMap.newKeySet();
+    /**
+     * Players already placed on the lobby pad THIS session (standalone lobby only).
+     *
+     * <p>The lobby is a waiting room, not a place you keep a position in: wherever someone wandered
+     * to before disconnecting, their next arrival starts on the pad facing the exit. Session-scoped
+     * rather than persisted, so it resets naturally on rejoin and cannot go stale.
+     */
+    private final Set<UUID>            lobbyEntryDone       = ConcurrentHashMap.newKeySet();
     private final Set<UUID>            awaitingType         = ConcurrentHashMap.newKeySet();
+    /** Premium arrivals on an offline profile who must give its old password once (IdentityGate
+     *  CLAIM_REQUIRED) → the gate-verified Mojang uuid to bind when they do. */
+    private final Map<UUID, UUID>      pendingClaims        = new ConcurrentHashMap<>();
     private final Set<UUID>            nameHidden           = ConcurrentHashMap.newKeySet();
     private final SessionTokenManager  sessionTokens        = new SessionTokenManager();
 
@@ -100,9 +114,19 @@ public class AuthManager {
      * only the first call per join is honoured.
      */
     public void resolvePlayerType(ServerPlayer player, boolean premium) {
+        resolvePlayerType(player, premium, null);
+    }
+
+    /**
+     * @param mojangUuid the gate-verified Mojang uuid for a premium arrival (from the HMAC-signed cookie
+     *                   or the reconnect grace), or null when the path that resolved them does not carry one
+     * @return the identity verdict this login got, or null if it was not resolved here (already resolved,
+     *         or turned away by the name-conflict check). Callers must only bind/link on {@code ALLOW}.
+     */
+    public IdentityGate.Verdict resolvePlayerType(ServerPlayer player, boolean premium, UUID mojangUuid) {
         UUID uuid = player.getUUID();
-        if (!awaitingType.remove(uuid)) return;   // already resolved, or not awaiting
-        if (isAuthenticated(uuid)) return;
+        if (!awaitingType.remove(uuid)) return null;   // already resolved, or not awaiting
+        if (isAuthenticated(uuid)) return null;
 
         String mcName = player.getGameProfile().getName();
         CoffeesAeroAuth.LOGGER.info("[Auth] Resolving {} as {}.", mcName, premium ? "PREMIUM" : "OFFLINE");
@@ -147,13 +171,40 @@ public class AuthManager {
                 player.connection.disconnect(Component.literal(
                     "§cThe name §e" + mcName + "§c is reserved by (or too close to) a verified player §7(" + reservedBy + ")§c.\n" +
                     "§7Relaunch your account with a different name — for example §a" + suggestion + "§7."));
-                return;
+                return null;
             }
         }
 
         PlayerProfile.AccountType type = premium ? PlayerProfile.AccountType.PREMIUM : PlayerProfile.AccountType.OFFLINE;
         CredentialStore.GetOrCreateResult r = store.getOrCreate(uuid, mcName, type);
         PlayerProfile profile = r.profile();
+
+        // ── Identity gate (admin/IdentityGate) ────────────────────────────────────────────
+        // 🔴 MUST come before anything below writes to the profile: the firstIp stamp and the
+        // offline→premium upgrade both save(), and that upgrade IS the takeover of an unclaimed
+        // offline account. getOrCreate above only refreshed the row; it wrote nothing, and a new
+        // profile is never refused. The stored link came with that same row — no extra query.
+        boolean dbBacked = store instanceof ProfileStore ps && ps.isBacked();
+        IdentityGate.Verdict verdict = IdentityEnforcer.judge(profile, r.isNew(), premium, mojangUuid, dbBacked);
+        boolean enforce = IdentityEnforcer.enforcing();
+        if (verdict != IdentityGate.Verdict.ALLOW && !enforce) {
+            IdentityEnforcer.observe(profile, verdict, mojangUuid);   // alert-only: behave as before 1.11.4
+            verdict = IdentityGate.Verdict.ALLOW;
+        }
+        if (verdict.denies()) {
+            IdentityEnforcer.refuse(player, profile, verdict, mojangUuid);
+            return verdict;
+        }
+        if (verdict == IdentityGate.Verdict.CLAIM_REQUIRED) {
+            if (isSplitArchitecture()) {
+                // The SMP has no login room of its own (its lobby spawn is the unset void default), and
+                // the lobby only transfers after /login — so an unclaimed arrival here skipped the claim.
+                IdentityEnforcer.refuse(player, profile, verdict, mojangUuid);
+            } else {
+                enterClaimFlow(player, profile, mojangUuid);
+            }
+            return verdict;
+        }
 
         // Record the first IP this account ever logged in from (set once, never overwritten).
         if (profile.firstIp == null || profile.firstIp.isBlank()) {
@@ -178,6 +229,7 @@ public class AuthManager {
         } else {
             enterOfflineFlow(player, profile, mcName);
         }
+        return verdict;
     }
 
     private void enterPremiumFlow(ServerPlayer player, PlayerProfile profile, boolean isFirstJoin) {
@@ -185,6 +237,26 @@ public class AuthManager {
         // Premium players are Mojang-verified — auto-authenticated, no password.
         authStates.put(uuid, AuthState.AUTHENTICATED);
         com.coffeesaerosmp.auth.events.PlayerAuthEvents.onPremiumResolved(player, isFirstJoin);
+
+        // 🔴 SPLIT ARCHITECTURE: never route an arriving player into this server's OWN auth_lobby.
+        //
+        // Both branches below used to send players into the local auth_lobby to wait for /spawn. That
+        // was right when this server WAS the lobby. With the standalone lobby it is actively wrong:
+        // the player has already been through the real lobby and was transferred here to PLAY, and
+        // the SMP's lobbySpawnX/Y/Z are still the unset defaults (0,0,0) — which in a void dimension
+        // is nothing at all. So a first-join or long-absent player got handed to the old lobby and
+        // dropped into the void.
+        //
+        // Skipping the lobby is not enough on its own: the starter bonus, the veteran reward and the
+        // firstJoinComplete flag are paid by handleSpawn ONLY on the auth_lobby exit path — and
+        // handleSpawn diverts to handleWorldSpawnTeleport for anyone not in that dimension, so those
+        // grants would silently never be paid again. payWorldEntryGrants() pays exactly them.
+        if (isSplitArchitecture()) {
+            profile.sessionStartEpoch = System.currentTimeMillis();
+            onAuthenticated(player, profile, false);
+            payWorldEntryGrants(player, profile);
+            return;
+        }
 
         if (!profile.firstJoinComplete) {
             // First-ever join → orientation in their private lobby, then /spawn into the world.
@@ -201,6 +273,60 @@ public class AuthManager {
             onAuthenticated(player, profile, false);
         } else {
             onAuthenticated(player, profile, false);   // back within the window → straight into the world
+        }
+    }
+
+    /**
+     * True when a standalone lobby server is handling the login flow, so this server must never use
+     * its own {@code auth_lobby}.
+     *
+     * <p>Keyed on {@code lobbyReturnHost} being set rather than on a new switch: that value is what
+     * makes {@code /lobby} and the restart evacuation hand players to another server, so if it is
+     * configured then a real lobby exists and arrivals here have already passed through it. Fails
+     * CLOSED — anything unreadable means "no split", i.e. keep the original in-process behaviour,
+     * which is also the documented rollback path.
+     */
+    private static boolean isSplitArchitecture() {
+        try {
+            if (com.coffeesaerosmp.auth.lobby.LobbyHandoff.isLobbyRole()) return false;   // we ARE the lobby
+            return !AuthConfig.LOBBY_RETURN_HOST.get().trim().isEmpty();
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * Pays the one-time world-entry grants that {@code handleSpawn} pays when a player leaves the
+     * in-process auth_lobby.
+     *
+     * <p>🔴 Needed because those grants live on the lobby-exit branch of {@code handleSpawn}, and that
+     * branch is unreachable for a transferred player: {@code handleSpawn} diverts anyone not standing
+     * in {@code auth_lobby} to {@code handleWorldSpawnTeleport}, which pays nothing. Without this, a
+     * brand-new player on the split would join, get no starter bonus, and keep
+     * {@code firstJoinComplete = false} forever.
+     *
+     * <p>Deliberately does NOT restore the inventory stash or the saved return position. Both belong
+     * to the lobby round-trip: on the split the player's inventory was never stashed here, and vanilla
+     * already restores them to their logout position from playerdata, so re-teleporting would move
+     * them somewhere they did not ask to be.
+     *
+     * <p>Idempotent by the same flags as the original — {@code startupBonusGiven} and the season claim
+     * stamp — so a player who somehow reaches both paths is still paid exactly once.
+     */
+    private void payWorldEntryGrants(ServerPlayer player, PlayerProfile profile) {
+        if (profile == null) return;
+        boolean firstWorldEntry = !profile.startupBonusGiven;
+        if (!profile.startupBonusGiven) {
+            grantStartupBonus(player);
+            profile.startupBonusGiven = true;
+        }
+        com.coffeesaerosmp.auth.season.VeteranReward.grantIfOwed(player);
+        profile.firstJoinComplete = true;
+        store.save(profile);
+        if (firstWorldEntry) {
+            WelcomeMessages.firstSpawnBanner(player);
+            CoffeesAeroAuth.LOGGER.info("[Auth] {} paid first-world-entry grants on arrival "
+                + "(split architecture — no local lobby round trip).", player.getGameProfile().getName());
         }
     }
 
@@ -226,7 +352,50 @@ public class AuthManager {
         return awayMs >= bypassMinutes * 60_000L;
     }
 
+    /**
+     * A premium login arrived on an invested offline profile (IdentityGate CLAIM_REQUIRED). The real owner
+     * who bought the game and a stranger who bought the name are indistinguishable without a secret, so ask
+     * for the old password once — the returning-offline-player login, with the bind riding on success.
+     * Never reached for a premium profile: 276 of 284 have no password to give.
+     */
+    private void enterClaimFlow(ServerPlayer player, PlayerProfile profile, UUID mojangUuid) {
+        UUID uuid = player.getUUID();
+        pendingClaims.put(uuid, mojangUuid);
+        // A session token must not stand in for the claim: it proves an earlier offline login from this
+        // IP, not that this Mojang account is that person.
+        sessionTokens.invalidate(uuid);
+        routeToLobbyRoom(uuid, profile);
+        authStates.put(uuid, AuthState.PENDING);
+        CoffeesAeroAuth.LOGGER.info("[Identity] {} is premium on offline profile {} — claim required (/login).",
+            player.getGameProfile().getName(), uuid);
+        send(player, TextUtil.PREFIX + "§eThis name has an existing offline account on this server.");
+        send(player, TextUtil.PREFIX + "§eIf it's yours, prove it once with its old password: §a/login <password>");
+        send(player, TextUtil.PREFIX + "§7After that it's linked to your Minecraft account — no password ever again.");
+    }
+
     private void enterOfflineFlow(ServerPlayer player, PlayerProfile profile, String mcName) {
+        // 🔴 SPLIT ARCHITECTURE: an offline player who arrives here with a VALID gate cookie has
+        // already logged in on the lobby — the lobby only transfers from /spawn, which requires
+        // isAuthenticated. Running the register/login flow again would ask them for their password a
+        // second time AND park them in this server's legacy auth_lobby, whose spawn pad is the unset
+        // default (0,0,0) in a void dimension. That is the "sent to the old lobby on transfer" bug,
+        // and it hit OFFLINE players specifically because premium arrivals take enterPremiumFlow.
+        //
+        // The cookie is the whole basis for trusting this: HMAC-signed with AERO_GATE_SECRET,
+        // single-use by nonce and time-limited. A DIRECT connection carries no cookie, is therefore
+        // absent from GATE_VERIFIED, and still has to log in normally — that is the security
+        // boundary, and it is the same one the backend already uses to trust premium identity.
+        if (isSplitArchitecture() && CoffeesAeroAuth.GATE_VERIFIED.contains(player.getUUID())) {
+            authStates.put(player.getUUID(), AuthState.AUTHENTICATED);
+            profile.sessionStartEpoch = System.currentTimeMillis();
+            onAuthenticated(player, profile, false);
+            payWorldEntryGrants(player, profile);
+            CoffeesAeroAuth.LOGGER.info(
+                "[Auth] {} arrived OFFLINE with a valid gate cookie — already authenticated on the "
+                + "lobby, skipping the local login flow.", mcName);
+            return;
+        }
+
         UUID uuid = player.getUUID();
 
         // Legacy migration: offline players that fully completed join before room system existed
@@ -285,16 +454,7 @@ public class AuthManager {
             }
 
         } else {
-            // New or mid-approval offline player → private room flow
-            if (profile.roomSlot < 0) {
-                profile.roomSlot      = CoffeesAeroAuth.ROOM_MANAGER != null
-                    ? CoffeesAeroAuth.ROOM_MANAGER.assignSlot(uuid) : 0;
-                profile.roomCreatedAt = System.currentTimeMillis();
-                store.save(profile);
-            } else if (CoffeesAeroAuth.ROOM_MANAGER != null) {
-                // Re-register slot as in-use (room manager was reset on server restart)
-                // runStartupCleanup already does this, but guard here too
-            }
+            // New or mid-approval offline player → the shared lobby.
 
             if (profile.passwordHash == null) {
                 authStates.put(uuid, AuthState.LOBBY_REGISTER);
@@ -331,7 +491,7 @@ public class AuthManager {
     public boolean sendToLobby(ServerPlayer player) {
         PlayerProfile profile = store.get(player.getUUID());
         if (profile == null) return false;
-        if (player.level().dimension() == com.coffeesaerosmp.auth.lobby.PrivateRoomManager.LOBBY_DIMENSION) {
+        if (player.level().dimension() == com.coffeesaerosmp.auth.lobby.LobbyManager.LOBBY_DIMENSION) {
             return false;                       // already there — a second stash pass buys nothing
         }
         routeToLobbyRoom(player.getUUID(), profile);
@@ -342,14 +502,15 @@ public class AuthManager {
         return true;
     }
 
-    /** Assigns a private-room slot (if needed) and queues the deferred teleport into it. */
+    /**
+     * Queues the deferred teleport into the shared lobby.
+     *
+     * <p>Used to assign a per-player "room slot" first. The lobby has been a single SHARED room
+     * since the per-player rooms were retired — they scattered players from X=1,000,000 to 3,000,000
+     * and every login cold-loaded a far region, stalling the server 9-75s. The slot survived as dead
+     * data that was still being assigned, persisted and gated on; removed 2026-09-08.
+     */
     private void routeToLobbyRoom(UUID uuid, PlayerProfile profile) {
-        if (profile.roomSlot < 0) {
-            profile.roomSlot      = CoffeesAeroAuth.ROOM_MANAGER != null
-                ? CoffeesAeroAuth.ROOM_MANAGER.assignSlot(uuid) : 0;
-            profile.roomCreatedAt = System.currentTimeMillis();
-            store.save(profile);
-        }
         pendingLobbyTeleport.add(uuid);
     }
 
@@ -371,6 +532,25 @@ public class AuthManager {
      * cog=64, sprocket=16, bevel=8, spur=1 — e.g. 200 → 3 cogs + 1 bevel). No-op if Numismatics is absent.
      */
     private void grantStartupBonus(ServerPlayer player) {
+        // 🔴 ONE-TIME GRANTS ARE SMP-ONLY. HARD REFUSAL, NOT AN EARLY RETURN SOMEWHERE UPSTREAM.
+        //
+        // The standalone lobby shares the SMP's MySQL, so both processes can see and write the same
+        // startupBonusGiven flag. If a lobby ever paid this, a player bouncing between servers gets
+        // paid twice out of a shared wallet — and the second payment looks completely legitimate in
+        // every log. Owner's decision 2026-09-07: the starter bonus belongs to the SMP.
+        //
+        // This guard is deliberately HERE rather than relying on LobbyHandoff returning before
+        // handleSpawn reaches it. That early return is correct today, but it is a property of one
+        // call path; this is a property of the grant itself, and it holds no matter how the grant is
+        // reached in future.
+        if (com.coffeesaerosmp.auth.lobby.LobbyHandoff.isLobbyRole()) {
+            CoffeesAeroAuth.LOGGER.warn(
+                "[Grants] REFUSED to pay the starter bonus to {} — this process is serverRole=LOBBY. "
+                + "One-time grants are paid by the SMP only. If you are seeing this, something routed a "
+                + "grant to the wrong server; the player has NOT been shortchanged, the SMP still owes it.",
+                player.getGameProfile().getName());
+            return;
+        }
         int amount = AuthConfig.STARTUP_BONUS_SPURS.get();
         if (amount <= 0) return;
         int[]    values = {64, 16, 8, 1};
@@ -417,18 +597,29 @@ public class AuthManager {
 
     public void onPlayerLeave(ServerPlayer player) {
         UUID uuid = player.getUUID();
+        lobbyEntryDone.remove(uuid);   // next join starts on the pad again
         PlayerProfile profile = store.get(uuid);
         if (profile != null) {
+            boolean dirty = false;
             if (profile.sessionStartEpoch > 0) {
-                long secs = (System.currentTimeMillis() - profile.sessionStartEpoch) / 1000;
-                profile.totalPlaytimeSeconds += secs;
+                // 🔴 PLAYTIME IS SMP-ONLY (owner decision 2026-09-22). The lobby is a waiting room:
+                // time spent queueing, registering or waiting for name approval is not play, and
+                // counting it inflated the sidebar level, which is playtime-only.
+                //
+                // The session stamp is still cleared here even on the lobby — leaving it set would
+                // let a later SMP bank swallow the lobby interval as if it were play.
+                if (!com.coffeesaerosmp.auth.lobby.LobbyHandoff.isLobbyRole()) {
+                    long secs = (System.currentTimeMillis() - profile.sessionStartEpoch) / 1000;
+                    profile.totalPlaytimeSeconds += secs;
+                }
                 profile.sessionStartEpoch = 0;
+                dirty = true;
             }
             // Remember the logoff spot in the MAIN world so /spawn resumes the player here on their next
             // return instead of dumping them at world spawn. Never record a lobby position — a returning
             // player restored into the void room grid would fall. First-timers have no return pos yet.
             if (isAuthenticated(uuid)
-                    && player.level().dimension() != com.coffeesaerosmp.auth.lobby.PrivateRoomManager.LOBBY_DIMENSION) {
+                    && player.level().dimension() != com.coffeesaerosmp.auth.lobby.LobbyManager.LOBBY_DIMENSION) {
                 profile.returnDim = player.level().dimension().location().toString();
                 profile.returnX   = player.getX();
                 profile.returnY   = player.getY();
@@ -438,8 +629,19 @@ public class AuthManager {
             // never actually written (so /profile showed a stale "last seen"). It is now also the
             // clock for the lobby-bypass rule below — premium players have no session token, so
             // SessionTokenManager cannot answer "how long were they away?" for them.
-            profile.lastSeen = System.currentTimeMillis();
-            store.save(profile);
+            //
+            // 🔴 AUTHENTICATED sessions only (2026-09-29). This used to stamp every disconnect, so a
+            // stranger refused by the identity gate, a failed /login, or a name-conflict kick all
+            // refreshed the VICTIM's last_seen — and last_seen is the proof the Mojang-link backfill
+            // relies on ("seen < 30 days ago, so the name cannot have changed hands"). An intruder
+            // must never be able to manufacture that evidence by knocking on the door.
+            // A refused login therefore writes nothing at all: no stamp, no playtime, so no save of a
+            // cached row that could clobber a newer one from the other process.
+            if (isAuthenticated(uuid)) {
+                profile.lastSeen = System.currentTimeMillis();
+                dirty = true;
+            }
+            if (dirty) store.save(profile);
         }
         // Start the reconnect grace window from logout: a return within SESSION_GRACE_MINUTES skips
         // login; after it, the session is expired and the player must /login again (in the lobby).
@@ -453,8 +655,9 @@ public class AuthManager {
         failedAttempts.remove(uuid);
         pendingLobbyTeleport.remove(uuid);
         awaitingType.remove(uuid);
+        pendingClaims.remove(uuid);
         nameHidden.remove(uuid);
-        if (CoffeesAeroAuth.ROOM_MANAGER != null) CoffeesAeroAuth.ROOM_MANAGER.releaseFrozenSpot(uuid);
+        if (CoffeesAeroAuth.LOBBY_MANAGER != null) CoffeesAeroAuth.LOBBY_MANAGER.releaseFrozenSpot(uuid);
         NameVisibility.clear(player);
     }
 
@@ -466,14 +669,14 @@ public class AuthManager {
         // Full hunger in the lobby every tick — no starving (the "out of breath" oxygen bar can still
         // drop, but damage is off so it never hurts). The player's REAL overworld food/health are
         // stashed on lobby entry and restored on /spawn, so the lobby never affects overworld vitals.
-        if (player.level().dimension() == com.coffeesaerosmp.auth.lobby.PrivateRoomManager.LOBBY_DIMENSION) {
+        if (player.level().dimension() == com.coffeesaerosmp.auth.lobby.LobbyManager.LOBBY_DIMENSION) {
             player.getFoodData().setFoodLevel(20);
             player.getFoodData().setSaturation(5.0f);
         }
 
         // No background music in the auth lobby: stop the MUSIC category client-side, re-sent
         // periodically because the client's music tracker keeps scheduling the next track.
-        if (player.level().dimension() == com.coffeesaerosmp.auth.lobby.PrivateRoomManager.LOBBY_DIMENSION
+        if (player.level().dimension() == com.coffeesaerosmp.auth.lobby.LobbyManager.LOBBY_DIMENSION
                 && player.tickCount % 100 == 0) {
             try {
                 player.connection.send(new net.minecraft.network.protocol.game.ClientboundStopSoundPacket(
@@ -494,10 +697,13 @@ public class AuthManager {
         // players (premium first-join), so it precedes the isAuthenticated() early-return.
         if (pendingLobbyTeleport.remove(uuid)) {
             PlayerProfile profile = store.get(uuid);
-            if (profile != null && profile.roomSlot >= 0 && CoffeesAeroAuth.ROOM_MANAGER != null) {
-                CoffeesAeroAuth.ROOM_MANAGER.teleportToRoom(player, profile.roomSlot);
+            // 🔴 The old condition also required profile.roomSlot >= 0, which silently SKIPPED the
+            // whole lobby teleport for any profile whose dead slot happened to be -1 — and then
+            // returned, so nothing else ran either. Removing the slot removes that trapdoor.
+            if (profile != null && CoffeesAeroAuth.LOBBY_MANAGER != null) {
+                CoffeesAeroAuth.LOBBY_MANAGER.teleportToLobby(player);
                 if (!isAuthenticated(uuid)) {   // offline lobby/login players stay frozen on their ring pad
-                    double[] pos = CoffeesAeroAuth.ROOM_MANAGER.getFrozenSpotFor(uuid);
+                    double[] pos = CoffeesAeroAuth.LOBBY_MANAGER.getFrozenSpotFor(uuid);
                     frozenPos.put(uuid, pos);
                     player.teleportTo(pos[0], pos[1], pos[2]);
                 }
@@ -515,17 +721,97 @@ public class AuthManager {
         if (isAuthenticated(uuid)) {
             if (nameHidden.remove(uuid)) {
                 PlayerProfile prof = store.get(uuid);
+                boolean premium = prof != null
+                    && prof.getAccountType() == PlayerProfile.AccountType.PREMIUM;
                 NameMask.apply(player);   // masked BEFORE reveal so the badge team keys on the display name
-                NameVisibility.reveal(player, prof != null
-                    && prof.getAccountType() == PlayerProfile.AccountType.PREMIUM);
+                NameVisibility.reveal(player, premium);
+
+                // Rank + cosmetics load OFF-THREAD, so this first reveal is necessarily unranked.
+                // Re-reveal once the snapshot lands, hopping back to the server thread because the
+                // scoreboard is not thread-safe. Without this a subscriber renders unranked until
+                // something else happens to refresh them, which looks exactly like a failed purchase.
+                var server = player.getServer();
+                com.coffeesaerosmp.auth.store.StoreState.loadAsync(uuid, () -> {
+                    // Still on the AsyncIo thread, which is where DB work belongs.
+                    //
+                    // A purchase made while this player had never joined as premium was PARKED, because
+                    // delivery needs players.mojang_uuid and that column only fills on a gate-verified
+                    // join. This join is the event that fills it, so this is the moment those orders
+                    // become deliverable. Applying them here is what stops a paid rank sitting in
+                    // store_pending_grants indefinitely.
+                    com.coffeesaerosmp.auth.store.MojangIds.toMojang(uuid).ifPresent(
+                        com.coffeesaerosmp.auth.store.StoreGrants::applyPending);
+
+                    if (server == null) return;
+                    server.execute(() -> {
+                        // They may have left in the interval — re-resolve rather than capturing the
+                        // ServerPlayer, which would be a stale object after a disconnect.
+                        ServerPlayer live = server.getPlayerList().getPlayer(uuid);
+                        if (live != null) NameVisibility.reveal(live, premium);
+                    });
+                });
             }
+            // ── Standalone lobby: an authenticated player belongs IN the lobby, always ──
+            //
+            // 🔴 Phase C shipped the EXIT (/spawn transfers) without the ENTRANCE. On a LOBBY-role
+            // server an established player is resolved PREMIUM (or resumes a session token), never
+            // routed to the lobby room, and lands at the void superflat's world spawn — observed
+            // live 2026-09-07 at y=-238, i.e. falling. The lobby server has exactly one purpose, so
+            // membership of the lobby dimension is unconditional here rather than a join-path
+            // special case: this catches join, respawn, session-resume and any future path at once.
+            //
+            // Safe against the stash: LobbyInventoryStash writes
+            // <world>/coffeesaeroauth/lobby_inventory_stash.json — a PER-SERVER file, so stashing an
+            // empty inventory here cannot touch the SMP's copy of that player's real inventory.
+            // Two conditions, one action. Either they are outside the lobby dimension entirely, or
+            // they have not yet been placed on the pad this session — a player who logged out
+            // wandering around the lobby is IN the right dimension but the wrong spot, and the lobby
+            // is a waiting room, not somewhere you keep a position. Every arrival starts on the pad.
+            if (com.coffeesaerosmp.auth.lobby.LobbyHandoff.isLobbyRole()
+                    && !pendingLobbyTeleport.contains(uuid)
+                    && (player.level().dimension() != com.coffeesaerosmp.auth.lobby.LobbyManager.LOBBY_DIMENSION
+                        || !lobbyEntryDone.contains(uuid))) {
+                PlayerProfile lobbyProfile = store.get(uuid);
+                if (lobbyProfile != null) {
+                    boolean wrongDim = player.level().dimension()
+                        != com.coffeesaerosmp.auth.lobby.LobbyManager.LOBBY_DIMENSION;
+                    lobbyEntryDone.add(uuid);
+                    routeToLobbyRoom(uuid, lobbyProfile);
+                    CoffeesAeroAuth.LOGGER.info("[Lobby] Placing {} on the lobby pad ({}).",
+                        player.getGameProfile().getName(),
+                        wrongDim ? "was in " + player.level().dimension().location() : "fresh arrival");
+                }
+                return;
+            }
+
+            // Standalone lobby: hold the loadout to exactly the paper. Reaching here means LOBBY role
+            // and already inside the lobby dimension (the block above returns otherwise).
+            //
+            // 1 Hz, not every tick — this walks 41 inventory slots, and a lobby that reports lag must
+            // not add any. Enforced continuously rather than once on join because the mods that gift
+            // guidebooks do so on their own schedule, sometimes seconds after the player lands.
+            //
+            // ⚠️ OPS ARE EXEMPT (perm 4), matching lobbyLocked() everywhere else in this codebase.
+            // Without it an admin cannot hold ANYTHING in the lobby: this runs once a second and
+            // would delete every block they pulled from the creative menu while building the place.
+            // The exemption is by permission, not by gamemode, so an op in survival testing the
+            // lobby also keeps their items.
+            if (com.coffeesaerosmp.auth.lobby.LobbyHandoff.isLobbyRole()
+                    && player.tickCount % 20 == 0
+                    && !player.hasPermissions(4)) {
+                if (com.coffeesaerosmp.auth.lobby.LobbyInventoryStash.enforceLobbyLoadout(player)) {
+                    CoffeesAeroAuth.LOGGER.debug("[Lobby] Reset {}'s lobby loadout to the paper.",
+                        player.getGameProfile().getName());
+                }
+            }
+
             // Floating-island fall-catch: an authed player still in the lobby who drops off the island
             // is returned to the spawn pad (damage is off in the lobby, so this is cosmetic-safe).
-            if (player.level().dimension() == com.coffeesaerosmp.auth.lobby.PrivateRoomManager.LOBBY_DIMENSION) {
+            if (player.level().dimension() == com.coffeesaerosmp.auth.lobby.LobbyManager.LOBBY_DIMENSION) {
                 int floor = AuthConfig.LOBBY_FLOOR_Y.get();
                 int drop  = AuthConfig.LOBBY_FALL_CATCH_DROP.get();
-                if (player.getY() < floor - drop && CoffeesAeroAuth.ROOM_MANAGER != null) {
-                    double[] pad = com.coffeesaerosmp.auth.lobby.PrivateRoomManager.spawnPad();
+                if (player.getY() < floor - drop && CoffeesAeroAuth.LOBBY_MANAGER != null) {
+                    double[] pad = com.coffeesaerosmp.auth.lobby.LobbyManager.spawnPad();
                     player.teleportTo(pad[0], pad[1], pad[2]);
                     player.setDeltaMovement(0, 0, 0);
                     player.fallDistance = 0;
@@ -539,6 +825,9 @@ public class AuthManager {
             int timeout = AuthConfig.TYPE_RESOLVE_TIMEOUT_SECONDS.get();
             Long joined = joinTimes.get(uuid);
             if (timeout > 0 && joined != null && (System.currentTimeMillis() - joined) > timeout * 1000L) {
+                // The client never answered the cookie request at all — the third way to arrive
+                // without one, alongside "no cookie" and "invalid cookie". Same refusal.
+                if (CoffeesAeroAuth.refuseDirectEntry(player)) return;
                 resolvePlayerType(player, false);   // no signal — treat as offline / cracked
             } else {
                 double[] held = frozenPos.get(uuid);
@@ -625,12 +914,20 @@ public class AuthManager {
             return false;
         }
         failedAttempts.put(uuid, 0);
+        UUID claimed = pendingClaims.remove(uuid);
+        if (claimed != null) {
+            // Before onAuthenticated: this upgrades the account, and the entry path reads the type.
+            IdentityEnforcer.completeClaim(player, profile, claimed);
+            send(player, TextUtil.PREFIX + "§aAccount claimed — it is now linked to your Minecraft account. "
+                + "You won't need this password again.");
+        }
         authStates.put(uuid, AuthState.AUTHENTICATED);
         onAuthenticated(player, profile, false);
         if (CoffeesAeroAuth.WATCHDOG != null) {
-            CoffeesAeroAuth.WATCHDOG.recordSuccessfulLogin(uuid, NetUtil.getPlayerIP(player), profile.displayName, false);
+            CoffeesAeroAuth.WATCHDOG.recordSuccessfulLogin(uuid, NetUtil.getPlayerIP(player), profile.displayName, claimed != null);
         }
-        sessionTokens.createToken(uuid, NetUtil.getPlayerIP(player));
+        // No session token for a claim: it is now a premium account and never logs in by password again.
+        if (claimed == null) sessionTokens.createToken(uuid, NetUtil.getPlayerIP(player));
         return true;
     }
 
@@ -980,7 +1277,24 @@ public class AuthManager {
             send(player, TextUtil.PREFIX + "§cYour name must be approved before you can enter the server.");
             return false;
         }
-        if (player.level().dimension() != com.coffeesaerosmp.auth.lobby.PrivateRoomManager.LOBBY_DIMENSION) {
+        // ── Standalone lobby: /spawn leaves this SERVER, it does not move the player within it ──
+        //
+        // 🔴 This MUST sit above the dimension check below. On the standalone lobby the player is in
+        // that server's ordinary `world`, not in auth_lobby, so the check would send them down
+        // handleWorldSpawnTeleport and teleport them around the lobby forever instead of handing them
+        // to the SMP. It also has to be above the stash restore further down: their real inventory
+        // lives on the SMP and must never be restored into a lobby they are about to leave.
+        //
+        // Returns true when it has taken over, INCLUDING failure cases — a LOBBY must never fall
+        // through to local /spawn behaviour, because "the handoff broke" and "you have been teleported
+        // somewhere unexpected on the wrong server" are very different problems for a player.
+        //
+        // No-op on the SMP (serverRole defaults to SMP), so the existing in-process lobby flow is
+        // completely unchanged and remains the rollback path.
+        if (com.coffeesaerosmp.auth.lobby.LobbyHandoff.tryTransfer(player)) {
+            return true;
+        }
+        if (player.level().dimension() != com.coffeesaerosmp.auth.lobby.LobbyManager.LOBBY_DIMENSION) {
             return handleWorldSpawnTeleport(player);
         }
         // Destination: a returning player resumes at their last main-world position; a first-timer
@@ -995,8 +1309,8 @@ public class AuthManager {
                 resumed = true;
             }
         }
-        if (!resumed && CoffeesAeroAuth.ROOM_MANAGER != null) {
-            CoffeesAeroAuth.ROOM_MANAGER.teleportToSpawn(player);
+        if (!resumed && CoffeesAeroAuth.LOBBY_MANAGER != null) {
+            CoffeesAeroAuth.LOBBY_MANAGER.teleportToSpawn(player);
         }
         // Restore the real inventory AFTER the teleport: anything the restore can't fit is dropped at
         // the player's feet, and feet-drops in the LOBBY are destroyed by the room purge/rebuild —
@@ -1051,7 +1365,7 @@ public class AuthManager {
                 return false;
             }
         }
-        if (CoffeesAeroAuth.ROOM_MANAGER == null) {
+        if (CoffeesAeroAuth.LOBBY_MANAGER == null) {
             send(player, TextUtil.PREFIX + "§cSpawn teleport is unavailable right now.");
             return false;
         }
@@ -1062,12 +1376,12 @@ public class AuthManager {
         net.minecraft.server.level.ServerLevel fromLevel = player.serverLevel();
         double fx = player.getX(), fy = player.getY(), fz = player.getZ();
 
-        CoffeesAeroAuth.ROOM_MANAGER.teleportToSpawn(player);
+        CoffeesAeroAuth.LOBBY_MANAGER.teleportToSpawn(player);
 
         // Bystanders get the enderman VWOOP + portal particles at BOTH ends: where they went from,
         // and where they landed. Departure is skipped if they were in the lobby — nobody is there
         // to see it, and the lobby is not a place effects belong.
-        if (fromLevel.dimension() != com.coffeesaerosmp.auth.lobby.PrivateRoomManager.LOBBY_DIMENSION) {
+        if (fromLevel.dimension() != com.coffeesaerosmp.auth.lobby.LobbyManager.LOBBY_DIMENSION) {
             Sounds.teleportAmbient(fromLevel, fx, fy, fz);
         }
         Sounds.teleportAmbient(player.serverLevel(), player.getX(), player.getY(), player.getZ());
@@ -1096,7 +1410,7 @@ public class AuthManager {
         // reward and nothing in the log to say why (2026-08-18). PlayerRestrictEvents.onLobbyCommand
         // already refuses the command in the lobby; this is the second gate, so a macro, an alias or a
         // direct call can't reach the teleport either. Ops keep the old behaviour for testing.
-        if (player.level().dimension() == com.coffeesaerosmp.auth.lobby.PrivateRoomManager.LOBBY_DIMENSION
+        if (player.level().dimension() == com.coffeesaerosmp.auth.lobby.LobbyManager.LOBBY_DIMENSION
                 && !player.hasPermissions(4)) {
             send(player, TextUtil.PREFIX + "§7You're in the lobby — §a/spawn§7 is the way into the world.");
             send(player, TextUtil.PREFIX + "§7It gives your inventory back and pays your arrival rewards; §f/home§7 skips both.");
@@ -1128,7 +1442,7 @@ public class AuthManager {
         // Only an op can still be here while in the lobby (the guard above turns everyone else away),
         // but the restore stays: an op who /homes out must not carry the spawn paper into the world.
         boolean fromLobby = player.level().dimension()
-            == com.coffeesaerosmp.auth.lobby.PrivateRoomManager.LOBBY_DIMENSION;
+            == com.coffeesaerosmp.auth.lobby.LobbyManager.LOBBY_DIMENSION;
         player.teleportTo(level, bed.getX() + 0.5, bed.getY() + 1.0, bed.getZ() + 0.5,
             Set.of(), player.getRespawnAngle(), 0.0f);
         // Leaving the lobby via /home → same cleanup as /spawn: restore the real inventory (which
@@ -1196,8 +1510,8 @@ public class AuthManager {
 
         // Logged in inside the lobby (expired-session return, or a persisted lobby position) → make
         // sure they aren't standing over void before they type /spawn, then guide them out.
-        if (player.level().dimension() == com.coffeesaerosmp.auth.lobby.PrivateRoomManager.LOBBY_DIMENSION) {
-            if (CoffeesAeroAuth.ROOM_MANAGER != null) CoffeesAeroAuth.ROOM_MANAGER.ensureSafeFooting(player);
+        if (player.level().dimension() == com.coffeesaerosmp.auth.lobby.LobbyManager.LOBBY_DIMENSION) {
+            if (CoffeesAeroAuth.LOBBY_MANAGER != null) CoffeesAeroAuth.LOBBY_MANAGER.rescueFromVoid(player);
             send(player, TextUtil.PREFIX + "§eType §a/spawn§e to enter the server.");
         }
     }

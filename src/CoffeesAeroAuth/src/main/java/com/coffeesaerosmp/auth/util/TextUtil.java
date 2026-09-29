@@ -62,4 +62,17 @@ public final class TextUtil {
     public static Component info(String msg) {
         return Component.literal(PREFIX + "§7" + msg);
     }
+
+    /**
+     * Clamps a string to at most {@code maxChars} UTF-16 units without splitting a surrogate pair.
+     *
+     * <p>Exists because MySQL rejects a lone surrogate, so a naive {@code substring} that lands
+     * mid-pair silently loses the whole row. Null in, null out.
+     */
+    public static String clampChars(String s, int maxChars) {
+        if (s == null || s.length() <= maxChars) return s;
+        int end = maxChars;
+        if (Character.isHighSurrogate(s.charAt(end - 1))) end--;   // don't orphan the high half
+        return s.substring(0, end);
+    }
 }

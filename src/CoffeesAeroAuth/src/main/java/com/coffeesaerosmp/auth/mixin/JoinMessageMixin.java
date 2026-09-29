@@ -17,8 +17,11 @@ import org.spongepowered.asm.mixin.injection.Redirect;
  * {@code Player.getDisplayName()} is deliberate: three other call sites read that method and
  * prepending badges to it breaks vote-reward sound selection and two chat sentences.</p>
  *
- * <p>{@code require = 0}: if the target ever moves, joins are announced the vanilla way rather than
- * the server failing to boot. Failure is therefore SILENT — verify it applied, never assume.</p>
+ * <p>🔴 {@code require = 1} since 1.11.0. This was {@code require = 0} — "if the target ever moves,
+ * joins are announced the vanilla way rather than the server failing to boot" — and that is the
+ * wrong trade for an anonymity feature: a silent failure means hidden ops are announced to everyone
+ * with no error anywhere. If this refuses to boot after a NeoForge update, RE-TARGET the redirect;
+ * do not restore {@code require = 0}, which restores the bug.</p>
  */
 @Mixin(PlayerList.class)
 public abstract class JoinMessageMixin {
@@ -27,7 +30,7 @@ public abstract class JoinMessageMixin {
         method = "placeNewPlayer",
         at = @At(value = "INVOKE",
                  target = "Lnet/minecraft/server/players/PlayerList;broadcastSystemMessage(Lnet/minecraft/network/chat/Component;Z)V"),
-        require = 0)
+        require = 1)
     private void aeroauth$joinLine(PlayerList list, Component message, boolean overlay,
                                    net.minecraft.network.Connection connection,
                                    ServerPlayer player,

@@ -1,7 +1,6 @@
 package com.coffeesaerosmp.auth.db;
 
 import com.coffeesaerosmp.auth.CoffeesAeroAuth;
-import com.coffeesaerosmp.auth.auth.UUIDUtil;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -70,6 +69,26 @@ public class ProfileStore implements CredentialStore {
     // ── Profile CRUD ──────────────────────────────────────────────────────────
 
     public GetOrCreateResult getOrCreate(UUID uuid, String username, PlayerProfile.AccountType type) {
+        // 🔴 Re-read this ONE row from MySQL before deciding anything about the joining player.
+        //
+        // The lobby and the SMP are separate processes sharing one database, and each caches EVERY
+        // profile at boot (initialize -> loadAllFromDatabase) with no cross-process invalidation
+        // anywhere. save() then writes all 26 columns from its in-memory copy. So a process that
+        // booted before a change happened elsewhere will happily clobber the newer row with its own
+        // stale snapshot — last writer wins, whole row.
+        //
+        // That is not theoretical. It is why new players were welcomed "for the first time" over and
+        // over: the lobby set first_join_complete=true, the SMP's stale copy wrote false back, and
+        // the next join looked like a first join again. startup_bonus_given rides in the same row,
+        // so the same revert made the SMP pay the starter bonus a second time — real currency, and
+        // every log line about it looks legitimate. total_playtime and last_seen can go backwards
+        // the same way.
+        //
+        // One indexed primary-key SELECT per join, against a database that now lives on the game
+        // host. This is the join path and the no-blocking-DB rule applies to it — but get() already
+        // hits MySQL on any cache miss, so this adds a read that was always possible, and the
+        // alternative is paying players twice.
+        refreshFromDatabase(uuid);
         PlayerProfile existing = get(uuid);
         if (existing != null) {
             existing.username = username;
@@ -164,6 +183,41 @@ public class ProfileStore implements CredentialStore {
      * Reads are cache-first, so without this the old uuid would keep answering from memory and the
      * new one would look like it does not exist — for the rest of the server's uptime.
      */
+    /**
+     * Replaces one cached profile with the current database row, if and only if that row can be
+     * read right now.
+     *
+     * <h3>🔴 Why this never evicts on failure</h3>
+     * The obvious implementation — {@code evict(uuid)} and let {@link #get} re-read — is dangerous.
+     * If MySQL is momentarily unavailable, the evict succeeds, {@code get} finds nothing, and
+     * {@code getOrCreate} mints a BRAND-NEW empty profile over a real player's account: no password,
+     * no display name, {@code startup_bonus_given=false}. The next save would persist that blank.
+     *
+     * <p>So the order is inverted: read first, and only replace the cache entry once a real row is
+     * in hand. Every failure path — database down, read throws, row genuinely absent — leaves the
+     * existing cached copy exactly as it was. A stale profile is a bug; a destroyed profile is not
+     * recoverable.
+     *
+     * <p>A missing row is NOT treated as a failure to report, because it is the normal case for a
+     * player who has never been saved yet.
+     */
+    public void refreshFromDatabase(UUID uuid) {
+        if (uuid == null || !db.isAvailable()) return;
+        try (Connection c = db.getConnection();
+             PreparedStatement ps = c.prepareStatement("SELECT * FROM players WHERE uuid=?")) {
+            ps.setString(1, uuid.toString());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    cache.put(uuid, fromResultSet(rs));   // only now is it safe to displace the cache
+                }
+            }
+        } catch (SQLException e) {
+            // Keep whatever is cached. See the javadoc: losing it is worse than it being stale.
+            CoffeesAeroAuth.LOGGER.warn("[ProfileStore] join refresh failed for {} — keeping the "
+                + "cached copy: {}", uuid, e.getMessage());
+        }
+    }
+
     public void evict(UUID uuid) {
         if (uuid != null) cache.remove(uuid);
     }
@@ -229,7 +283,7 @@ public class ProfileStore implements CredentialStore {
         }
         return matchesByName(name).stream()
             .max(Comparator
-                .comparing((PlayerProfile p) -> UUIDUtil.isPremiumUUID(p.getUUID()))
+                .comparing(PlayerProfile::isPremium)
                 .thenComparingLong(p -> p.totalPlaytimeSeconds)
                 .thenComparingLong(p -> p.lastSeen))
             .orElse(null);
@@ -258,7 +312,7 @@ public class ProfileStore implements CredentialStore {
         }
         byName.values().removeIf(l -> l.size() < 2);
         Comparator<PlayerProfile> best = Comparator
-            .comparing((PlayerProfile p) -> UUIDUtil.isPremiumUUID(p.getUUID()))
+            .comparing(PlayerProfile::isPremium)
             .thenComparingLong(p -> p.totalPlaytimeSeconds)
             .thenComparingLong(p -> p.lastSeen);
         byName.values().forEach(l -> l.sort(best.reversed()));
@@ -380,7 +434,19 @@ public class ProfileStore implements CredentialStore {
         p.returnZ              = rs.getDouble("return_z");
         p.skinChangesUsed      = rs.getInt("skin_changes_used");
         p.discordId            = rs.getString("discord_id");
+        p.mojangLink           = optString(rs, "mojang_uuid");
+        p.linkSource           = optString(rs, "link_source");
+        p.identityHold         = optString(rs, "identity_hold");
         return p;
+    }
+
+    /** Reads a string column, returning null if the column is absent rather than failing the whole row. */
+    private static String optString(ResultSet rs, String column) {
+        try {
+            return rs.getString(column);
+        } catch (SQLException missingColumn) {
+            return null;
+        }
     }
 
     /** Reads a long column, returning 0 if the column is absent rather than failing the whole row. */

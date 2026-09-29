@@ -2,7 +2,7 @@ package com.coffeesaerosmp.auth.watchdog;
 
 import com.coffeesaerosmp.auth.CoffeesAeroAuth;
 import com.coffeesaerosmp.auth.config.AuthConfig;
-import com.coffeesaerosmp.auth.lobby.PrivateRoomManager;
+import com.coffeesaerosmp.auth.lobby.LobbyManager;
 import com.coffeesaerosmp.auth.util.Sounds;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
@@ -92,7 +92,7 @@ public final class WatchdogTaunts {
         // Lobby players are mid-onboarding — being told they are under surveillance before they
         // have even chosen a name is the wrong first impression. World chat only.
         List<ServerPlayer> audience = server.getPlayerList().getPlayers().stream()
-            .filter(p -> p.level().dimension() != PrivateRoomManager.LOBBY_DIMENSION)
+            .filter(p -> p.level().dimension() != LobbyManager.LOBBY_DIMENSION)
             .toList();
         if (audience.isEmpty()) return;      // never talk to an empty room
 

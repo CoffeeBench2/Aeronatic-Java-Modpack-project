@@ -43,16 +43,44 @@ public final class RestartWarning {
 
     /** Starts (or replaces) the countdown. {@code minutes} must be > 0. */
     public static void start(MinecraftServer server, int minutes) {
-        if (server == null || minutes <= 0) return;
+        if (minutes <= 0) return;
+        startSeconds(server, minutes * 60L);
+    }
+
+    /**
+     * Seconds-precise entry point, for a countdown aimed at a fixed wall-clock moment rather than
+     * at "n minutes from now".
+     *
+     * <p>{@link DailyRestartSchedule} needs this: if the server boots at 10:26 for a 10:30 restart
+     * there are 4.5 minutes left, and rounding that to whole minutes either overshoots the restart
+     * (the bar still reading 1m as the process dies) or, at under 30 seconds, rounds to 0 and shows
+     * nothing at all — silently skipping the warning in the case where it is most needed.
+     */
+    public static void startSeconds(MinecraftServer server, long seconds) {
+        if (server == null || seconds <= 0) return;
         cancel(server);
 
-        totalMs  = minutes * 60_000L;
+        totalMs  = seconds * 1000L;
         endsAtMs = System.currentTimeMillis() + totalMs;
 
         bar = new ServerBossEvent(label(secondsLeft()),
             BossEvent.BossBarColor.RED, BossEvent.BossBarOverlay.PROGRESS);
         bar.setProgress(1.0f);
         for (ServerPlayer p : server.getPlayerList().getPlayers()) bar.addPlayer(p);
+
+        // 🔴 DELIBERATELY DOES NOT RAISE THE LOCKDOWN. It used to, and that was wrong.
+        //
+        // The lock only ever clears by hand (`/authmod lockdown off`), which is the owner's choice —
+        // but this method is also called by DailyRestartSchedule for the UNATTENDED 10:30 restart.
+        // So every night the lock would be raised while nobody was watching, survive the restart,
+        // and leave the lobby refusing every arrival with "Survival is still under process" until
+        // somebody noticed. A switch that only a human can release must therefore only ever be
+        // pressed by a human.
+        //
+        // Raising it now lives in the MANUAL `/authmod warn` command path (ProfileCommands
+        // .restartWarn), which is what the owner actually described: "when u warn a switch was
+        // toggled". The nightly restart still evacuates players to the lobby — it just does not bar
+        // the door behind them.
     }
 
     /** Removes the bar. Safe to call when nothing is running. */

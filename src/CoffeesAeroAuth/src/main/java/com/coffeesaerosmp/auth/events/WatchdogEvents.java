@@ -6,7 +6,7 @@ import com.coffeesaerosmp.auth.util.TextUtil;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.event.CommandEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
-import net.neoforged.neoforge.event.tick.EntityTickEvent;
+import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.neoforged.neoforge.event.entity.player.AdvancementEvent;
 
 public class WatchdogEvents {
@@ -34,8 +34,17 @@ public class WatchdogEvents {
         }
     }
 
-    /** Movement speed check for authenticated players. */
-    public static void onLivingTick(EntityTickEvent.Pre event) {
+    /**
+     * Movement speed check for authenticated players. Fires once per tick per PLAYER.
+     *
+     * <p>Was {@code EntityTickEvent.Pre} until 2026-09-07 — see the long note on
+     * {@link com.coffeesaerosmp.auth.events.PlayerRestrictEvents#onPlayerTick}. That event is posted
+     * for every ticking entity in the world, so this speed check was being dispatched thousands of
+     * times a tick and discarding all but a handful. Player-scoped now; the check itself is still
+     * per-tick, which it must be — a speed check that samples every 20th tick cannot tell a speed
+     * hack from a legitimate ender pearl.
+     */
+    public static void onPlayerTick(PlayerTickEvent.Pre event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         if (CoffeesAeroAuth.WATCHDOG == null) return;
         if (CoffeesAeroAuth.AUTH_MANAGER == null) return;

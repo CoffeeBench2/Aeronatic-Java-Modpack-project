@@ -209,7 +209,7 @@ public final class DailyRewardManager {
 
     private static boolean inLobby(ServerPlayer player) {
         return player.level().dimension()
-            == com.coffeesaerosmp.auth.lobby.PrivateRoomManager.LOBBY_DIMENSION;
+            == com.coffeesaerosmp.auth.lobby.LobbyManager.LOBBY_DIMENSION;
     }
 
     private void sendReminder(ServerPlayer player) {

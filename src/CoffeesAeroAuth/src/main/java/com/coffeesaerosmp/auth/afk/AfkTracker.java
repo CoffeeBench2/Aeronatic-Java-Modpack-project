@@ -241,6 +241,13 @@ public final class AfkTracker {
      * trip per idle player per second on a link with a 234 ms RTT.
      */
     private static void exclude(ServerPlayer player, long millis, long now) {
+        // 🔴 SMP-ONLY, and this guard is load-bearing rather than tidy.
+        //
+        // Playtime is only ever ADDED on the SMP (owner decision 2026-09-22 — the lobby is a
+        // waiting room, not play). Stage 2 below SUBTRACTS from the banked total. Running that on
+        // the lobby would therefore deduct AFK time from hours the player genuinely earned on the
+        // SMP: a one-way leak that gets worse the longer someone idles in the lobby.
+        if (com.coffeesaerosmp.auth.lobby.LobbyHandoff.isLobbyRole()) return;
         if (millis <= 0L) return;
         if (CoffeesAeroAuth.PROFILE_STORE == null) return;
         PlayerProfile profile = CoffeesAeroAuth.PROFILE_STORE.get(player.getUUID());

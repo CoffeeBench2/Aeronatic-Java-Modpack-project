@@ -117,6 +117,20 @@ public class CoffeesAeroAuth {
         // datapack (coffees_aero_auth:loot_modifiers/rarity_nerf.json) so they are /reload-tunable.
         com.coffeesaerosmp.auth.loot.AeroLootModifiers.register(modBus);
 
+        // Re-apply a player's scoreboard team whenever their rank or cosmetics change. The tab list and
+        // chat re-render on their own, but the nametag above the head is a team prefix/colour that only
+        // changes when something rewrites it — see StoreState#setChangeListener. Resolved through
+        // ServerLifecycleHooks rather than a stored server field so nothing has to keep one alive.
+        com.coffeesaerosmp.auth.store.StoreState.setChangeListener(localUuid -> {
+            var srv = net.neoforged.neoforge.server.ServerLifecycleHooks.getCurrentServer();
+            if (srv == null) return;
+            srv.execute(() -> {
+                net.minecraft.server.level.ServerPlayer p = srv.getPlayerList().getPlayer(localUuid);
+                // `premium` is unused by reveal() now; the offline marker comes from the profile.
+                if (p != null) com.coffeesaerosmp.auth.auth.NameVisibility.reveal(p, true);
+            });
+        });
+
         // Server lifecycle
         NeoForge.EVENT_BUS.addListener(CoffeesAeroAuth::onServerStarting);
         NeoForge.EVENT_BUS.addListener(CoffeesAeroAuth::onServerStopping);
@@ -157,6 +171,7 @@ public class CoffeesAeroAuth {
         NeoForge.EVENT_BUS.addListener(PlayerRestrictEvents::onRightClickBlock);
         NeoForge.EVENT_BUS.addListener(PlayerRestrictEvents::onRightClickItem);
         NeoForge.EVENT_BUS.addListener(PlayerRestrictEvents::onEntityInteract);
+        NeoForge.EVENT_BUS.addListener(PlayerRestrictEvents::onEntityInteractSpecific);
         NeoForge.EVENT_BUS.addListener(PlayerRestrictEvents::onLeftClickBlock);
         NeoForge.EVENT_BUS.addListener(PlayerRestrictEvents::onAttackEntity);
         NeoForge.EVENT_BUS.addListener(PlayerRestrictEvents::onBlockBreak);
@@ -232,6 +247,7 @@ public class CoffeesAeroAuth {
             if (e.getParseResults().getContext().getSource().getEntity()
                     instanceof net.minecraft.server.level.ServerPlayer sp) {
                 com.coffeesaerosmp.auth.afk.AfkTracker.touch(sp);
+                com.coffeesaerosmp.auth.tracking.ActivitySampler.onCommand(sp.getUUID());
             }
         });
         // BreakEvent is not a PlayerEvent, so it needs its own unwrap rather than onPlayerActivity.
@@ -290,6 +306,12 @@ public class CoffeesAeroAuth {
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.tick.ServerTickEvent.Post e) ->
             com.coffeesaerosmp.auth.protect.SaveGuard.onServerTick(e.getServer()));
 
+        // Player-activity and claim-footprint sampling, every 5 minutes on the server thread.
+        // Sampled rather than event-hooked on purpose: a per-event listener here is the shape that
+        // cost 7.89% of the server thread on recipe advancements.
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.tick.ServerTickEvent.Post e) ->
+            com.coffeesaerosmp.auth.tracking.TrackingSampler.onServerTick(e.getServer()));
+
         // Sustained-lag warning, so players stop blaming their own connection. Deliberately hard to
         // trigger — see LagMonitor for why warning on this pack's routine spikes would be worse.
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.tick.ServerTickEvent.Post e) ->
@@ -314,6 +336,14 @@ public class CoffeesAeroAuth {
         NeoForge.EVENT_BUS.addListener(com.coffeesaerosmp.auth.pvp.CombatGuard::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(com.coffeesaerosmp.auth.pvp.CombatGuard::onPlayerLoggedOut);
         NeoForge.EVENT_BUS.addListener(com.coffeesaerosmp.auth.pvp.CombatGuard::onCommand);
+
+        // Confiscation enforcement: command blocking, on-join notice, and cleaning up the pinned
+        // freeze position when a held player disconnects. The freeze itself lives in
+        // PlayerRestrictEvents::onPlayerTick (already registered above) — it must NOT get a second
+        // handler here, see that method's javadoc.
+        NeoForge.EVENT_BUS.addListener(com.coffeesaerosmp.auth.moderation.ConfiscationEvents::onCommand);
+        NeoForge.EVENT_BUS.addListener(com.coffeesaerosmp.auth.moderation.ConfiscationEvents::onPlayerLoggedIn);
+        NeoForge.EVENT_BUS.addListener(PlayerRestrictEvents::onPlayerLoggedOut);
     }
 
     private static void onServerStarting(ServerStartingEvent event) {
@@ -400,6 +430,9 @@ public class CoffeesAeroAuth {
 
         WATCHDOG = new WatchdogManager(event.getServer(), ipBans, trustedIps, auditLog, watchdogLog, WEBHOOK_QUEUE, dataDir);
         WATCHDOG.start(PROFILE_STORE);
+
+        // Restore confiscation holds. Must be after the schema exists and before players can join.
+        com.coffeesaerosmp.auth.moderation.ConfiscationStore.loadInto();
 
         // Hung-tick detector. Started AFTER WATCHDOG so its alerts have somewhere to go, and it
         // watches from its own thread so a wedged tick loop cannot stop it from noticing.
@@ -669,8 +702,12 @@ public class CoffeesAeroAuth {
                 return;   // nothing below should run for a session that is about to end
             }
         }
-        AUTH_MANAGER.resolvePlayerType(player, v.premium());
-        if (v.premium()) {
+        // Only an ALLOWED login may bind or wear the Mojang identity. A refused one has been disconnected,
+        // and a CLAIM_REQUIRED one has not given the password yet — binding here would hand the profile
+        // to whoever bought the name before they proved anything. See admin/IdentityGate.
+        boolean admitted = AUTH_MANAGER.resolvePlayerType(player, v.premium(), v.premium() ? v.uuid() : null)
+                           == com.coffeesaerosmp.auth.admin.IdentityGate.Verdict.ALLOW;
+        if (v.premium() && admitted) {
             // No rename detected: keep the mapping current so the NEXT one is detectable. Cheap,
             // async, and self-backfilling — a premium player gains a mojang_uuid on their first
             // gate-verified login after this build, with no migration step.
@@ -684,7 +721,7 @@ public class CoffeesAeroAuth {
             com.coffeesaerosmp.auth.admin.AccountTransfer.rememberMojangUuid(player.getUUID(), v.uuid());
         }
         // Premium: show their REAL Mojang skin (fetched by the gate-verified UUID) on this offline server.
-        if (v.premium()) com.coffeesaerosmp.auth.compat.SkinsHook.applyPremium(player, v.uuid());
+        if (v.premium() && admitted) com.coffeesaerosmp.auth.compat.SkinsHook.applyPremium(player, v.uuid());
     }
 
     /** Premium reconnect grace: true if the player was resolved PREMIUM from a recent same-IP session. */
@@ -696,18 +733,25 @@ public class CoffeesAeroAuth {
         LOGGER.info("[Gate] Reconnect grace: {} ({}) re-resolved PREMIUM — same IP within the grace window.",
             name, why);
         com.coffeesaerosmp.auth.auth.PremiumReconnectGrace.record(name, mojangUuid, ip);   // refresh
-        AUTH_MANAGER.resolvePlayerType(player, true);
-        com.coffeesaerosmp.auth.compat.SkinsHook.applyPremium(player, mojangUuid);
+        // The grace carries the Mojang uuid, so it goes through the identity gate like a fresh cookie —
+        // otherwise a reconnect would be a way round it.
+        if (AUTH_MANAGER.resolvePlayerType(player, true, mojangUuid)
+                == com.coffeesaerosmp.auth.admin.IdentityGate.Verdict.ALLOW) {
+            com.coffeesaerosmp.auth.compat.SkinsHook.applyPremium(player, mojangUuid);
+        }
         return true;
     }
 
     private static void onRegisterCommands(RegisterCommandsEvent event) {
         AuthCommands.register(event.getDispatcher());
         ProfileCommands.register(event.getDispatcher());
+        com.coffeesaerosmp.auth.commands.InvseeCommands.register(event.getDispatcher());
         com.coffeesaerosmp.auth.pvp.CombatGuard.registerCommands(event.getDispatcher());
         com.coffeesaerosmp.auth.commands.TpaCommands.register(event.getDispatcher());
         com.coffeesaerosmp.auth.commands.RtpCommand.register(event.getDispatcher());
         com.coffeesaerosmp.auth.commands.ShipNameCommand.register(event.getDispatcher());
         com.coffeesaerosmp.auth.commands.NameColorCommands.register(event.getDispatcher());
+        com.coffeesaerosmp.auth.commands.StoreCommands.register(event.getDispatcher());
+        com.coffeesaerosmp.auth.commands.IdentityCommands.register(event.getDispatcher());
     }
 }

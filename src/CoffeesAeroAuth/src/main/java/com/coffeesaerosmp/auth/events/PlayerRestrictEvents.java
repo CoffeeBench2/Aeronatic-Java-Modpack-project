@@ -2,7 +2,7 @@ package com.coffeesaerosmp.auth.events;
 
 import com.coffeesaerosmp.auth.CoffeesAeroAuth;
 import com.coffeesaerosmp.auth.lobby.LobbyInventoryStash;
-import com.coffeesaerosmp.auth.lobby.PrivateRoomManager;
+import com.coffeesaerosmp.auth.lobby.LobbyManager;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
@@ -14,16 +14,96 @@ import net.neoforged.neoforge.event.entity.player.AttackEntityEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
 
+/**
+ * Enforcement for auth-lockdown and confiscation: blocks actions, freezes position, and locks out
+ * commands for players who are unauthenticated or held.
+ *
+ * <h3>Confiscation — known, deliberately accepted gaps</h3>
+ * <ul>
+ *   <li><b>Bow/charged-item release.</b> Only the START of item use ({@code RightClickItem}) is
+ *   blocked. A player who had already fully drawn a bow (or was mid-charge on some other item) in
+ *   the exact tick a hold lands can still release that single shot — the release packet is a
+ *   separate path this does not gate. Too narrow (needs a completed draw at the exact moment of
+ *   confiscation) to justify intercepting another packet path for it.</li>
+ *   <li><b>Portal travel on the SMP role.</b> Not explicitly gated. In practice this is academic:
+ *   a held player cannot walk to a portal (position is pinned every tick — see {@link #onPlayerTick}),
+ *   so only an already-standing-in-a-portal case could apply, and the damage immunity added for
+ *   confiscation removes the only way that case could hurt them.</li>
+ * </ul>
+ */
 public class PlayerRestrictEvents {
 
+    /** Where each held player was pinned, so they cannot drift. Cleared the moment the hold lifts. */
+    private static final java.util.Map<java.util.UUID, double[]> HELD_POS =
+        new java.util.concurrent.ConcurrentHashMap<>();
+
     /**
-     * Fires every tick for every living entity.
+     * Fires every tick for every ticking entity; we act only on players.
      * For unauthenticated players: freezes position and checks auth timeout.
+     *
+     * <h3>🔴 THIS HANDLER TELEPORTS, SO IT MUST NOT RUN ON {@code PlayerTickEvent}</h3>
+     * It was moved to {@code PlayerTickEvent.Pre} on 2026-09-07 to kill a whole-world entity scan,
+     * and that <b>broke movement for everyone in the lobby</b> — reverted the same day. The reason is
+     * in {@code ServerGamePacketListenerImpl.tick()}:
+     *
+     * <pre>
+     *   this.resetPosition();                                  // firstGood = current position
+     *   this.player.doTick();                                  // &lt;- PlayerTickEvent fires in here
+     *   this.player.absMoveTo(this.firstGoodX, firstGoodY, firstGoodZ, ...);   // &lt;- reverts it
+     * </pre>
+     *
+     * A {@code teleportTo} performed inside {@code doTick()} is undone by {@code absMoveTo} on the
+     * very next line — but {@code connection.teleport()} has already armed
+     * {@code awaitingPositionFromClient}, and while that field is set {@code handleMovePlayer}
+     * DISCARDS every movement packet the client sends. Re-arming it every tick means the client can
+     * never acknowledge, so the player is permanently unable to move. 🔑 **A position change is only
+     * safe outside the connection tick** — which is where {@code EntityTickEvent} (level ticking) and
+     * ordinary commands both run.
+     *
+     * <p>The entity-scan cost that prompted the move is real (this event is posted for every ticking
+     * entity in every level) but it is not worth breaking movement for. {@code WatchdogEvents} stays
+     * on {@code PlayerTickEvent} — it only zeroes VELOCITY, which {@code absMoveTo} does not touch —
+     * so half the saving is kept. If the scan is ever worth removing properly, the correct home is
+     * {@code ServerTickEvent.Post} iterating {@code getPlayerList().getPlayers()}: player-scoped AND
+     * outside the connection tick.
+     *
+     * <p>⚠️ Verifying this by watching for "frozen in AWAITING_TYPE" in the log is NOT enough — that
+     * only proves the freeze engaged. It has to be checked by MOVING as an authenticated player.
      */
-    public static void onLivingTick(EntityTickEvent.Pre event) {
+    public static void onPlayerTick(EntityTickEvent.Pre event) {
         if (!(event.getEntity() instanceof ServerPlayer player)) return;
         if (CoffeesAeroAuth.AUTH_MANAGER == null) return;
         CoffeesAeroAuth.AUTH_MANAGER.onTick(player);
+
+        // Confiscation freeze — same mechanism AuthManager already uses for unauthenticated
+        // players: pin the position and zero the velocity every tick.
+        //
+        // 🔴 THIS IS WHY THIS HANDLER MUST STAY ON EntityTickEvent (see the class javadoc above).
+        // A teleport inside PlayerTickEvent is reverted by absMoveTo on the next line of
+        // ServerGamePacketListenerImpl.tick() while leaving awaitingPositionFromClient armed,
+        // which permanently breaks movement. That froze the whole lobby on 2026-09-07. The
+        // unauthenticated freeze and this one now BOTH depend on it.
+        com.coffeesaerosmp.auth.moderation.Confiscation.Hold held =
+            com.coffeesaerosmp.auth.moderation.Confiscation.get(player.getUUID());
+        if (held != null) {
+            // Riding while frozen is undefined — the vehicle would keep moving under a player whose
+            // own position is being pinned every tick. Dismount rather than leave it ambiguous.
+            if (player.isPassenger()) player.stopRiding();
+            double[] at = HELD_POS.computeIfAbsent(player.getUUID(),
+                k -> new double[]{player.getX(), player.getY(), player.getZ()});
+            player.teleportTo(at[0], at[1], at[2]);
+            player.setDeltaMovement(0, 0, 0);
+            player.fallDistance = 0;
+            if (player.tickCount % 200 == 0) {
+                player.sendSystemMessage(net.minecraft.network.chat.Component.literal(
+                    "§c§lCONFISCATED §7— you cannot act until an admin releases you."
+                    + (held.reason() == null || held.reason().isBlank()
+                        ? "" : "\n§7Reason: §f" + held.reason())
+                    + "\n§7You can still talk in chat."));
+            }
+        } else {
+            HELD_POS.remove(player.getUUID());
+        }
 
         // Lobby container lockdown: the inventory stash only clears the VANILLA inventory
         // (main+armor+offhand), so an equipped Sophisticated Backpack — which lives in an
@@ -40,8 +120,15 @@ public class PlayerRestrictEvents {
         // for, brand-new players in the lobby, are exactly the people this closed it on. Found
         // 2026-08-19 when an NPC could not be opened in the lobby. An Easy NPC menu holds no player
         // items, so exempting it does not re-open the backpack hole this guard was built for.
-        if (player.containerMenu != player.inventoryMenu && lobbyLocked(player)
-                && !isEasyNpcMenu(player.containerMenu)) {
+        if (player.containerMenu != player.inventoryMenu
+                && (lobbyLocked(player)
+                    || com.coffeesaerosmp.auth.moderation.Confiscation.isHeld(player.getUUID()))
+                && !isEasyNpcMenu(player.containerMenu)
+                // An admin's /invsee is not the player's own menu, so this guard would slam it shut
+                // on the very next tick — silently, looking like the command simply did nothing.
+                // Exempting it holds no player items: the menu belongs to the VIEWER, and the guard
+                // above is about what a locked-down player can reach, not what an admin can open.
+                && !(player.containerMenu instanceof com.coffeesaerosmp.auth.invsee.InvseeMenu.Marker)) {
             player.closeContainer();
         }
     }
@@ -80,7 +167,7 @@ public class PlayerRestrictEvents {
         // the paper itself never does anything else.
         if (event.getEntity() instanceof ServerPlayer player
                 && LobbyInventoryStash.isLobbyPaper(event.getItemStack())
-                && player.level().dimension() == PrivateRoomManager.LOBBY_DIMENSION) {
+                && player.level().dimension() == LobbyManager.LOBBY_DIMENSION) {
             event.setCanceled(true);
             if (CoffeesAeroAuth.AUTH_MANAGER != null
                     && CoffeesAeroAuth.AUTH_MANAGER.isAuthenticated(player.getUUID())) {
@@ -122,6 +209,79 @@ public class PlayerRestrictEvents {
         if (isEasyNpc(event.getTarget())) return;
         // Lobby decor (item frames, armor stands, etc.) is untouchable for everyone but ops.
         if (shouldBlock(event.getEntity()) || lobbyLocked(event.getEntity())) event.setCanceled(true);
+    }
+
+    /**
+     * Precise entity interaction — armour-stand slot swaps in particular.
+     *
+     * <p>Needed because {@code EntityInteract} does NOT fire when {@code interactAt} returns
+     * SUCCESS, which is exactly what an armour-stand swap does. Without this a held player can
+     * still strip and re-equip an armour stand standing next to them.
+     */
+    public static void onEntityInteractSpecific(PlayerInteractEvent.EntityInteractSpecific event) {
+        if (shouldBlock(event.getEntity()) || lobbyLocked(event.getEntity())) event.setCanceled(true);
+    }
+
+    /**
+     * Standalone lobby: nothing leaves this server through a portal.
+     *
+     * <p>Nether and End portals — and any modded dimension a portal block might reach — are not a
+     * route out of a login front door. The only sanctioned exit is the paper, which hands the player
+     * to the SMP.
+     *
+     * <h3>🔑 Filtered by DESTINATION, not by blanket cancellation</h3>
+     * This event also fires for our OWN cross-dimension teleport that puts a player into
+     * {@code coffees_aero_auth:auth_lobby}. Cancelling every travel event would therefore block the
+     * lobby routing itself and strand players in the void overworld — the exact bug 1.8.1 fixed.
+     * Allowing the lobby dimension as a destination keeps our routing working while closing every
+     * other door. The SMP handoff is unaffected either way: a transfer packet is a reconnect, not a
+     * dimension change, so it never reaches this event.
+     *
+     * <p>Ops (perm 4) are exempt, matching {@link #lobbyLocked} everywhere else — an admin has to be
+     * able to go look at something.
+     */
+    public static void onTravelToDimension(
+            net.neoforged.neoforge.event.entity.EntityTravelToDimensionEvent event) {
+        if (!com.coffeesaerosmp.auth.lobby.LobbyHandoff.isLobbyRole()) return;
+        if (event.getDimension() == LobbyManager.LOBBY_DIMENSION) return;   // our own routing
+        if (!(event.getEntity() instanceof ServerPlayer player)) {
+            event.setCanceled(true);        // mobs/items have no business changing dimension here
+            return;
+        }
+        // 🔑 A portal in the lobby is a SECOND DOOR TO THE SMP, not a dead end.
+        //
+        // Vanilla travel is always cancelled — the lobby has no Nether and no End, and letting the
+        // engine try would drop the player into an ungenerated dimension on a server that exists to
+        // hold them for three seconds. Instead an authenticated player gets the same handoff the
+        // paper performs, so walking into a portal simply means "take me to the survival server".
+        //
+        // ⚠️ The transfer is deferred to the next tick with server.execute(). We are inside the
+        // engine's portal handling right now; sending a Transfer packet here means the client
+        // disconnects mid-dimension-change, and the tick continues operating on a player who has
+        // left. One tick later that work is finished and the player object is stable.
+        event.setCanceled(true);
+
+        // ⚠️ NO OP EXEMPTION HERE, deliberately — and this was wrong in 1.8.5/1.8.8.
+        // Ops used to return early after the cancel, which meant an admin standing in the portal got
+        // neither the Nether nor the handoff: the portal simply did nothing, which is indistinguishable
+        // from "the feature is broken" and is exactly how it was reported. The portal is a PLAYER exit
+        // and the only people who ever test it are ops. An admin who does not want to travel just
+        // doesn't stand in the portal.
+
+        if (CoffeesAeroAuth.AUTH_MANAGER == null
+                || !CoffeesAeroAuth.AUTH_MANAGER.isAuthenticated(player.getUUID())) {
+            player.sendSystemMessage(net.minecraft.network.chat.Component.literal(
+                com.coffeesaerosmp.auth.util.TextUtil.PREFIX
+                + "§7Finish logging in first — then this will take you to the server."));
+            return;
+        }
+
+        player.sendSystemMessage(net.minecraft.network.chat.Component.literal(
+            com.coffeesaerosmp.auth.util.TextUtil.PREFIX + "§aTaking you to the survival server…"));
+        net.minecraft.server.MinecraftServer server = player.getServer();
+        if (server != null) {
+            server.execute(() -> com.coffeesaerosmp.auth.lobby.LobbyHandoff.tryTransfer(player));
+        }
     }
 
     /** True for any entity from the Easy NPC mod, whatever NPC variant it is. */
@@ -183,11 +343,20 @@ public class PlayerRestrictEvents {
     // (Operators are exempt so admins can design the lobby via /lobby.)
 
     public static void onBlockBreak(BlockEvent.BreakEvent event) {
-        if (lobbyLocked(event.getPlayer())) event.setCanceled(true);
+        // shouldBlock covers confiscated AND unauthenticated players; lobbyLocked covers the
+        // lobby-grief rule for everyone else. A confiscated player is held out in the world,
+        // where lobbyLocked is false — without shouldBlock here they could keep mining.
+        // (This also now blocks an unauthenticated player from mining outside the lobby, which
+        // they could technically do before — intentional and strictly more correct: a frozen,
+        // unauthenticated player has no business editing the world.)
+        if (shouldBlock(event.getPlayer()) || lobbyLocked(event.getPlayer())) event.setCanceled(true);
     }
 
     public static void onBlockPlace(BlockEvent.EntityPlaceEvent event) {
-        if (event.getEntity() instanceof ServerPlayer p && lobbyLocked(p)) event.setCanceled(true);
+        // Same reasoning as onBlockBreak above — shouldBlock closes the confiscated/unauthenticated
+        // hole, lobbyLocked keeps the existing lobby-grief rule for everyone else.
+        if (event.getEntity() instanceof ServerPlayer p
+                && (shouldBlock(p) || lobbyLocked(p))) event.setCanceled(true);
     }
 
     /** No Q-dropping in the lobby (or while unauthenticated): a tossed spawn-paper would strand the
@@ -204,16 +373,32 @@ public class PlayerRestrictEvents {
     /** No damage of any kind in the lobby (fall/PvP/drown/mob). Covers the fall-catch window and the
      *  "can't hit each other" rule for melee AND projectiles. Ops included — the lobby is a safe zone. */
     public static void onIncomingDamage(net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent event) {
-        if (event.getEntity() instanceof ServerPlayer sp
-                && sp.level().dimension() == PrivateRoomManager.LOBBY_DIMENSION) {
+        if (!(event.getEntity() instanceof ServerPlayer sp)) return;
+        // A confiscated player cannot move, fight or flee. Letting a mob or a fall kill them while
+        // they are frozen would scatter their inventory through no fault of their own — and destroy
+        // whatever an admin froze them to look at. Immunity lasts exactly as long as the hold.
+        if (com.coffeesaerosmp.auth.moderation.Confiscation.isHeld(sp.getUUID())) {
+            event.setCanceled(true);
+            return;
+        }
+        if (sp.level().dimension() == LobbyManager.LOBBY_DIMENSION) {
             event.setCanceled(true);
         }
     }
 
     /** No item pickup in the lobby (belt-and-braces; there should be no ground items anyway). */
     public static void onItemPickup(net.neoforged.neoforge.event.entity.player.ItemEntityPickupEvent.Pre event) {
-        if (event.getPlayer() instanceof ServerPlayer sp
-                && sp.level().dimension() == PrivateRoomManager.LOBBY_DIMENSION) {
+        if (!(event.getPlayer() instanceof ServerPlayer sp)) return;
+        // No op exemption here, unlike the lobby rule below: an op cannot be confiscated at all,
+        // so an exemption would be dead code that becomes a bypass if that ever changes.
+        if (com.coffeesaerosmp.auth.moderation.Confiscation.isHeld(sp.getUUID())) {
+            event.setCanPickup(net.neoforged.neoforge.common.util.TriState.FALSE);
+            return;
+        }
+        // Ops exempt (perm 4), matching lobbyLocked() everywhere else. An admin building the
+        // lobby needs to be able to pick their own blocks back up — without this, anything
+        // dropped or broken while building is unrecoverable and just despawns.
+        if (sp.level().dimension() == LobbyManager.LOBBY_DIMENSION && !sp.hasPermissions(4)) {
             event.setCanPickup(net.neoforged.neoforge.common.util.TriState.FALSE);
         }
     }
@@ -223,7 +408,7 @@ public class PlayerRestrictEvents {
      *  players, armor-stand greeters, item frames, paintings and dropped items are untouched. */
     public static void onEntityJoin(net.neoforged.neoforge.event.entity.EntityJoinLevelEvent event) {
         if (event.getLevel().isClientSide()
-                || event.getLevel().dimension() != PrivateRoomManager.LOBBY_DIMENSION
+                || event.getLevel().dimension() != LobbyManager.LOBBY_DIMENSION
                 || !(event.getEntity() instanceof net.minecraft.world.entity.Mob)) {
             return;
         }
@@ -239,7 +424,7 @@ public class PlayerRestrictEvents {
     /** Remember a lobby death so we can send them back to the lobby (not their overworld bed). */
     public static void onLobbyDeath(net.neoforged.neoforge.event.entity.living.LivingDeathEvent event) {
         if (event.getEntity() instanceof ServerPlayer sp
-                && sp.level().dimension() == PrivateRoomManager.LOBBY_DIMENSION) {
+                && sp.level().dimension() == LobbyManager.LOBBY_DIMENSION) {
             diedInLobby.add(sp.getUUID());
         }
     }
@@ -250,9 +435,12 @@ public class PlayerRestrictEvents {
         if (!(event.getEntity() instanceof ServerPlayer sp)) return;
         if (!diedInLobby.remove(sp.getUUID())) return;
         net.minecraft.server.level.ServerLevel lobby = sp.getServer() != null
-            ? sp.getServer().getLevel(PrivateRoomManager.LOBBY_DIMENSION) : null;
-        double[] pad = PrivateRoomManager.spawnPad();
-        if (lobby != null) sp.teleportTo(lobby, pad[0], pad[1], pad[2], java.util.Set.of(), 180.0f, 0.0f);
+            ? sp.getServer().getLevel(LobbyManager.LOBBY_DIMENSION) : null;
+        double[] pad = LobbyManager.spawnPad();
+        // Same facing as a normal lobby arrival — a respawn that drops you in staring at a different
+        // wall than everyone else reads as a bug.
+        if (lobby != null) sp.teleportTo(lobby, pad[0], pad[1], pad[2], java.util.Set.of(),
+            LobbyManager.spawnYaw(), LobbyManager.spawnPitch());
         boolean hasPaper = false;
         for (net.minecraft.world.item.ItemStack s : sp.getInventory().items) {
             if (com.coffeesaerosmp.auth.lobby.LobbyInventoryStash.isLobbyPaper(s)) { hasPaper = true; break; }
@@ -315,14 +503,58 @@ public class PlayerRestrictEvents {
         return allowedCache;
     }
 
+    /**
+     * Drops the pinned position the moment a held player disconnects.
+     *
+     * <p>Without this, a player who is confiscated and then logs out (or is kicked) leaves their
+     * {@code HELD_POS} entry behind forever: {@link #onPlayerTick}'s own cleanup branch only runs
+     * while the player is still ticking, so it never fires again for someone who is offline. If an
+     * admin then releases them while they're offline, nothing ever removes the stale entry — a
+     * permanent, if tiny, per-ever-held-player leak. Unconditional removal here is safe either way:
+     * a released player has no hold to resume, and a still-held player gets a fresh pin (their
+     * position on reconnect) from {@link #onPlayerTick} on their very first tick back.
+     */
+    public static void onPlayerLoggedOut(
+            net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerLoggedOutEvent event) {
+        HELD_POS.remove(event.getEntity().getUUID());
+
+        // Close any /invsee menu pointed AT this player: a live view is backed by their real
+        // Inventory, which vanilla is about to discard, so an admin left holding it would be
+        // editing an object that no longer belongs to anyone. PlayerLoggedOutEvent firing BEFORE
+        // the save is exactly what we want here — closing first is the point.
+        java.util.UUID gone = event.getEntity().getUUID();
+
+        // Final activity sample + the session row, while the player object is still intact.
+        // Order matters: sample BEFORE the session row, because sampleAll drains the chat/command
+        // deltas and we want this session's messages counted against this session.
+        if (event.getEntity() instanceof ServerPlayer leaving) {
+            if (!com.coffeesaerosmp.auth.tracking.ActivitySampler.disabledHere()) {
+                com.coffeesaerosmp.auth.tracking.ActivitySampler.sample(leaving);
+            }
+            com.coffeesaerosmp.auth.tracking.PlayerSessionLog.recordLogout(leaving, "QUIT");
+        }
+        com.coffeesaerosmp.auth.tracking.ActivitySampler.forget(gone);
+
+        com.coffeesaerosmp.auth.invsee.InvseeManager.closeViewersOf(
+            event.getEntity().getServer(), gone);
+        // And drop THIS player from any watch list they were on as a viewer, so the map cannot
+        // grow without bound across restarts' worth of admin activity.
+        com.coffeesaerosmp.auth.invsee.InvseeManager.forgetViewer(gone);
+    }
+
     private static boolean lobbyLocked(net.minecraft.world.entity.player.Player player) {
         return player instanceof ServerPlayer sp
-            && sp.level().dimension() == PrivateRoomManager.LOBBY_DIMENSION
+            && sp.level().dimension() == LobbyManager.LOBBY_DIMENSION
             && !sp.hasPermissions(4);
     }
 
     private static boolean shouldBlock(net.minecraft.world.entity.Entity entity) {
         if (!(entity instanceof ServerPlayer player)) return false;
+        // A confiscated player is blocked by every handler already registered against this
+        // predicate — block break/place, right-click block/item, attack, pickup, drop, container
+        // open. One line here rather than a second "may not act" implementation that would drift
+        // out of sync with this one.
+        if (com.coffeesaerosmp.auth.moderation.Confiscation.isHeld(player.getUUID())) return true;
         return CoffeesAeroAuth.AUTH_MANAGER != null
             && !CoffeesAeroAuth.AUTH_MANAGER.isAuthenticated(player.getUUID());
     }

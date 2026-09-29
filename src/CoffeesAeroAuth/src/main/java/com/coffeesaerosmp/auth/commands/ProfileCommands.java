@@ -3,6 +3,10 @@ package com.coffeesaerosmp.auth.commands;
 import com.coffeesaerosmp.auth.CoffeesAeroAuth;
 import com.coffeesaerosmp.auth.db.PlayerProfile;
 import com.coffeesaerosmp.auth.lobby.NameApprovalQueue;
+import com.coffeesaerosmp.auth.admin.FreshStart;
+import com.coffeesaerosmp.auth.moderation.Confiscation;
+import com.coffeesaerosmp.auth.moderation.ConfiscationStore;
+import com.coffeesaerosmp.auth.tracking.InfractionLog;
 import com.coffeesaerosmp.auth.util.TextUtil;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.DoubleArgumentType;
@@ -485,6 +489,38 @@ public class ProfileCommands {
                 .then(Commands.literal("now")
                     .executes(ctx -> itemClearNow(ctx.getSource())))
             )
+            // /authmod confiscate <player> [reason]  ·  /authmod confiscate list
+            //
+            // Held state persists to MySQL and reloads at boot, so it survives a relog AND a
+            // restart. Release is manual and only manual — owner decision, 2026-09-22.
+            // /authmod freshstart <player> [confirm]
+            //
+            // Name-based, never EntityArgument: the target must be OFFLINE for the wipe to stick,
+            // so an argument type that only resolves online players would reject every valid use.
+            // Same shape as transferaccount, which refuses for the same reason.
+            .then(Commands.literal("freshstart")
+                .then(Commands.argument("player", StringArgumentType.word())
+                    // No "confirm" => dry run. This is the only command in the mod that deletes
+                    // player data, so seeing the plan is the default and running it is the opt-in.
+                    .executes(ctx -> freshStart(ctx.getSource(),
+                        StringArgumentType.getString(ctx, "player"), false))
+                    .then(Commands.literal("confirm")
+                        .executes(ctx -> freshStart(ctx.getSource(),
+                            StringArgumentType.getString(ctx, "player"), true)))))
+            .then(Commands.literal("confiscate")
+                .then(Commands.literal("list")
+                    .executes(ctx -> confiscateList(ctx.getSource())))
+                .then(Commands.argument("player", EntityArgument.player())
+                    .executes(ctx -> confiscate(ctx.getSource(),
+                        EntityArgument.getPlayer(ctx, "player"), null))
+                    .then(Commands.argument("reason", StringArgumentType.greedyString())
+                        .executes(ctx -> confiscate(ctx.getSource(),
+                            EntityArgument.getPlayer(ctx, "player"),
+                            StringArgumentType.getString(ctx, "reason"))))))
+            .then(Commands.literal("release")
+                .then(Commands.argument("name", StringArgumentType.word())
+                    .executes(ctx -> release(ctx.getSource(),
+                        StringArgumentType.getString(ctx, "name")))))
         );
     }
 
@@ -543,6 +579,175 @@ public class ProfileCommands {
             source.sendFailure(Component.literal("§cShip census failed: " + e));
             return 0;
         }
+    }
+
+    /**
+     * Freezes a player completely until an admin releases them.
+     *
+     * <p>🔴 An op (permission 4) can NEVER be confiscated. Without this an admin could freeze
+     * themselves or a colleague out of their own server, and the enforcement layer deliberately has
+     * no op bypass anywhere — so a held op would be locked out of every command with no self-rescue.
+     */
+    private static int confiscate(CommandSourceStack src, ServerPlayer target, String reason) {
+        if (target.hasPermissions(4)) {
+            src.sendFailure(Component.literal(
+                "§cRefusing: §f" + target.getGameProfile().getName()
+                + "§c is an op. The freeze has no op bypass, so they would be locked out "
+                + "of every command with no way to free themselves."));
+            return 0;
+        }
+        if (Confiscation.isHeld(target.getUUID())) {
+            src.sendFailure(Component.literal("§f" + target.getGameProfile().getName()
+                + "§c is already confiscated. Use §f/authmod confiscate list§c to see details."));
+            return 0;
+        }
+
+        String actor = src.getTextName();
+        // Memory first, then the store — enforcement is immediate, persistence catches up.
+        Confiscation.Hold hold = new Confiscation.Hold(
+            target.getUUID(),   // uuid
+            reason,             // reason (nullable)
+            actor,              // actor
+            System.currentTimeMillis());
+        Confiscation.hold(hold);
+        ConfiscationStore.persist(hold);
+        InfractionLog.record(target.getUUID(), "CONFISCATE",
+            reason == null ? "(no reason given)" : reason, actor);
+
+        target.sendSystemMessage(Component.literal(
+            "§c§lYou have been CONFISCATED by " + actor + "."
+            + (reason == null || reason.isBlank() ? "" : "\n§7Reason: §f" + reason)
+            + "\n§7You cannot move or interact. You CAN talk — speak to the admin."));
+        String name = target.getGameProfile().getName();
+        src.sendSuccess(() -> Component.literal("§a" + name
+            + " is now confiscated. Release with §f/authmod release " + name), true);
+        return 1;
+    }
+
+    /**
+     * Lifts a hold. Takes a NAME, not an online player, because a held player can log out and an
+     * admin must still be able to free them.
+     */
+    private static int release(CommandSourceStack src, String name) {
+        var store = CoffeesAeroAuth.PROFILE_STORE;
+        if (store == null) {
+            src.sendFailure(Component.literal("§cProfile store is not initialised yet."));
+            return 0;
+        }
+        // A raw uuid is always accepted and always wins. /authmod confiscate list prints one for
+        // every hold precisely so an admin has an unambiguous handle when a name does not resolve.
+        java.util.UUID uuid = null;
+        PlayerProfile profile = null;
+        try {
+            uuid = java.util.UUID.fromString(name);
+        } catch (IllegalArgumentException notAUuid) {
+            // 🔴 Prefer a name match that is ACTUALLY HELD.
+            //
+            // findByAnyName ranks duplicates by premium-then-playtime, which is right for most
+            // admin commands and wrong for this one. This server genuinely has duplicate names
+            // across premium and offline accounts — /authmod duplicates exists to find them. If
+            // the cracked "Bob" is the one frozen and the premium "Bob" is not, the ranking picks
+            // the premium account, Confiscation.release returns null, and the admin is told
+            // "Bob is not confiscated" while the real Bob stays frozen with no way out.
+            for (PlayerProfile candidate : store.matchesByName(name)) {
+                if (Confiscation.isHeld(candidate.getUUID())) { profile = candidate; break; }
+            }
+            if (profile == null) profile = store.findByAnyName(name);   // none held — normal ranking
+            if (profile == null) {
+                src.sendFailure(Component.literal("§cNo profile matches §f" + name
+                    + "§c — check the spelling, or pass the uuid from §f/authmod confiscate list§c."));
+                return 0;
+            }
+            uuid = profile.getUUID();
+        }
+
+        String label = profile != null ? profile.username : uuid.toString();
+        Confiscation.Hold was = Confiscation.release(uuid);
+        if (was == null) {
+            src.sendFailure(Component.literal("§f" + label + "§c is not confiscated."));
+            return 0;
+        }
+        ConfiscationStore.delete(uuid);
+        InfractionLog.record(uuid, "RELEASE",
+            "held " + ((System.currentTimeMillis() - was.startedEpoch()) / 1000L) + "s",
+            src.getTextName());
+
+        ServerPlayer online = src.getServer().getPlayerList().getPlayer(uuid);
+        if (online != null) {
+            online.sendSystemMessage(Component.literal(
+                "§aYou have been released. Normal play resumes."));
+        }
+        String username = label;
+        boolean isOffline = online == null;
+        src.sendSuccess(() -> Component.literal("§aReleased §f" + username
+            + (isOffline ? " §7(offline — takes effect immediately)" : "")), true);
+        return 1;
+    }
+
+    /**
+     * Wipes a player's progress, keeping their account.
+     *
+     * <p>If the target is online this KICKS them and stops, asking the admin to re-run. It
+     * deliberately does not kick-and-wait: vanilla rewrites playerdata on disconnect, so the wipe
+     * must happen after they are fully gone, and the only ways to wait are sleeping on the server
+     * thread (stalls the tick loop) or a polling scheduler (a timing race for a destructive
+     * operation). Two explicit invocations have neither problem.
+     */
+    private static int freshStart(CommandSourceStack src, String name, boolean confirm) {
+        var server = src.getServer();
+
+        if (!confirm) {
+            FreshStart.Result r = FreshStart.plan(server, name);
+            r.lines().forEach(l -> src.sendSuccess(() -> Component.literal(l), false));
+            return r.ok() ? 1 : 0;
+        }
+
+        var store = CoffeesAeroAuth.PROFILE_STORE;
+        PlayerProfile p = store == null ? null : store.findByAnyName(name);
+        if (p != null) {
+            ServerPlayer online = server.getPlayerList().getPlayer(p.getUUID());
+            if (online != null) {
+                online.connection.disconnect(Component.literal(
+                    "§eYour progress is being reset by an admin. Reconnect in a moment."));
+                String who = p.username;
+                src.sendSuccess(() -> Component.literal(
+                    "§eKicked §f" + who + "§e. Re-run §f/authmod freshstart " + who
+                    + " confirm§e now that they are offline — vanilla rewrites their playerdata on "
+                    + "disconnect, so wiping before that would be undone."), true);
+                return 1;
+            }
+        }
+
+        FreshStart.Result r = FreshStart.execute(server, name);
+        r.lines().forEach(l -> src.sendSuccess(() -> Component.literal(l), false));
+        if (r.ok() && CoffeesAeroAuth.WATCHDOG != null) {
+            CoffeesAeroAuth.WATCHDOG.recordModAction(
+                "FRESHSTART " + name + " by " + src.getTextName());
+        }
+        return r.ok() ? 1 : 0;
+    }
+
+    private static int confiscateList(CommandSourceStack src) {
+        var holds = Confiscation.all();
+        if (holds.isEmpty()) {
+            src.sendSuccess(() -> Component.literal("§7Nobody is confiscated."), false);
+            return 1;
+        }
+        src.sendSuccess(() -> Component.literal("§6Confiscated (" + holds.size() + "):"), false);
+        long now = System.currentTimeMillis();
+        var store = CoffeesAeroAuth.PROFILE_STORE;
+        for (Confiscation.Hold h : holds) {
+            PlayerProfile p = store == null ? null : store.get(h.uuid());
+            String who = p != null ? p.username : "(unknown)";
+            long mins = (now - h.startedEpoch()) / 60000L;
+            // The uuid is always printed, never only the name: on a duplicate name it is the only
+            // unambiguous handle, and /authmod release accepts it directly for exactly that reason.
+            String line = "§7 · §f" + who + " §8" + h.uuid()
+                + "\n§7    by §f" + h.actor() + " §7(" + mins + "m ago)"
+                + (h.reason() == null || h.reason().isBlank() ? "" : " §8— " + h.reason());
+            src.sendSuccess(() -> Component.literal(line), false);
+        }
+        return 1;
     }
 
     // ── Command handlers ──────────────────────────────────────────────────────
@@ -617,9 +822,13 @@ public class ProfileCommands {
                 sb.append("\n§e").append(name);
                 for (int i = 0; i < list.size(); i++) {
                     PlayerProfile p = list.get(i);
-                    boolean premium = com.coffeesaerosmp.auth.auth.UUIDUtil.isPremiumUUID(p.getUUID());
+                    // account_type, not the uuid version. Every uuid here is v3 (the backend is
+                    // offline-mode and mints them from the name), so the old "v4 PREMIUM / v3 offline"
+                    // label printed "v3 offline" for absolutely everyone — actively misleading in the
+                    // one command an admin runs to untangle a duplicate account.
+                    boolean premium = p.isPremium();
                     sb.append("\n  ").append(i == 0 ? "§a> " : "§8  ")
-                      .append(premium ? "§6v4 PREMIUM" : "§7v3 offline")
+                      .append(premium ? "§6PREMIUM" : "§7offline")
                       .append(" §8").append(p.getUUID())
                       .append(" §f").append(formatPlaytime(p.totalPlaytimeSeconds))
                       .append(p.discordId != null && !p.discordId.isBlank() ? " §9[discord]" : "");
@@ -1290,7 +1499,108 @@ public class ProfileCommands {
 
         String card = sb.toString();
         source.sendSuccess(() -> Component.literal(card), false);
+        appendStatSheet(source, p.getUUID(), secs);
         return 1;
+    }
+
+    /**
+     * Appends the 1.11.0 tracking section to the player card: activity, claim footprint, recent
+     * sessions and infractions.
+     *
+     * <p>🔴 Four SELECTs. They run on the AsyncIo thread and the formatted result is posted back
+     * with {@code server.execute} — an admin command must not stall the tick loop on the database,
+     * even one that now lives on the same host. The card above is already sent by the time this
+     * lands, so the section simply arrives a moment later rather than delaying the whole reply.
+     *
+     * @param playtimeSecs the same figure the card printed, reused so the level cannot disagree
+     */
+    private static void appendStatSheet(CommandSourceStack source, java.util.UUID uuid,
+                                        long playtimeSecs) {
+        if (CoffeesAeroAuth.DB_MANAGER == null || !CoffeesAeroAuth.DB_MANAGER.isAvailable()) return;
+        MinecraftServer server = source.getServer();
+        com.coffeesaerosmp.auth.util.AsyncIo.submit(() -> {
+            StringBuilder out = new StringBuilder();
+            out.append("§6Level      : §f").append(
+                com.coffeesaerosmp.auth.tracking.StatSheet.level(playtimeSecs))
+               .append(" §7(SMP playtime only)");
+            try (java.sql.Connection c = CoffeesAeroAuth.DB_MANAGER.getConnection()) {
+
+                try (java.sql.PreparedStatement ps = c.prepareStatement(
+                        "SELECT blocks_mined, items_used, deaths, mob_kills, player_kills, " +
+                        "distance_cm, chat_messages, commands_run FROM player_stats WHERE uuid=?")) {
+                    ps.setString(1, uuid.toString());
+                    try (java.sql.ResultSet rs = ps.executeQuery()) {
+                        if (rs.next()) {
+                            out.append("\n§6Activity   : §7mined §f")
+                               .append(com.coffeesaerosmp.auth.tracking.StatSheet.count(rs.getLong(1)))
+                               .append(" §7· used §f")
+                               .append(com.coffeesaerosmp.auth.tracking.StatSheet.count(rs.getLong(2)))
+                               .append(" §7· deaths §f").append(rs.getInt(3))
+                               .append(" §7· mobs §f").append(rs.getInt(4))
+                               .append(" §7· PvP §f").append(rs.getInt(5))
+                               .append("\n§7             travelled §f")
+                               .append(com.coffeesaerosmp.auth.tracking.StatSheet.distance(rs.getLong(6)))
+                               .append(" §7· chat §f")
+                               .append(com.coffeesaerosmp.auth.tracking.StatSheet.count(rs.getLong(7)))
+                               .append(" §7· commands §f")
+                               .append(com.coffeesaerosmp.auth.tracking.StatSheet.count(rs.getLong(8)));
+                        } else {
+                            out.append("\n§8No activity sampled yet (sampler runs every 5 min).");
+                        }
+                    }
+                }
+
+                // Claim SLOTS — AeroClaims exposes no per-player ship count, see FootprintSampler.
+                try (java.sql.PreparedStatement ps = c.prepareStatement(
+                        "SELECT claim_slots_used, claim_slots_free FROM player_footprint WHERE uuid=?")) {
+                    ps.setString(1, uuid.toString());
+                    try (java.sql.ResultSet rs = ps.executeQuery()) {
+                        if (rs.next()) {
+                            out.append("\n§6Claims     : §7used §f").append(rs.getInt(1))
+                               .append(" §7· free §f").append(rs.getInt(2));
+                        }
+                    }
+                }
+
+                try (java.sql.PreparedStatement ps = c.prepareStatement(
+                        "SELECT duration_s, server_role, reason, logout_epoch FROM session_log " +
+                        "WHERE uuid=? ORDER BY logout_epoch DESC LIMIT 5")) {
+                    ps.setString(1, uuid.toString());
+                    try (java.sql.ResultSet rs = ps.executeQuery()) {
+                        boolean any = false;
+                        while (rs.next()) {
+                            if (!any) { out.append("\n§6Sessions   §7(last 5):"); any = true; }
+                            out.append("\n§7  · §f")
+                               .append(com.coffeesaerosmp.auth.tracking.StatSheet.duration(rs.getInt(1)))
+                               .append(" §8").append(rs.getString(2))
+                               .append(rs.getString(3) == null ? "" : " / " + rs.getString(3))
+                               .append(" §8").append(DATETIME_FMT.format(
+                                   Instant.ofEpochMilli(rs.getLong(4))));
+                        }
+                    }
+                }
+
+                try (java.sql.PreparedStatement ps = c.prepareStatement(
+                        "SELECT type, detail, epoch FROM infractions WHERE uuid=? " +
+                        "ORDER BY epoch DESC LIMIT 3")) {
+                    ps.setString(1, uuid.toString());
+                    try (java.sql.ResultSet rs = ps.executeQuery()) {
+                        boolean any = false;
+                        while (rs.next()) {
+                            if (!any) { out.append("\n§cInfractions §7(last 3):"); any = true; }
+                            out.append("\n§7  · §f").append(rs.getString(1))
+                               .append(" §8").append(rs.getString(2) == null ? "" : rs.getString(2));
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                out.append("\n§cStat lookup failed: ").append(e.getMessage());
+            }
+            String text = out.toString();
+            // Back on the server thread: sendSuccess touches the command source, which is not
+            // safe to use from the IO thread.
+            server.execute(() -> source.sendSuccess(() -> Component.literal(text), false));
+        });
     }
 
     /**

@@ -110,9 +110,11 @@ public final class StallWatchdog {
         // Above normal, so a saturated box still schedules the one thread whose job is to notice.
         thread.setPriority(Thread.NORM_PRIORITY + 2);
         thread.start();
+        // Seed the cache here, where the config IS bound, so the shutdown path later has real values
+        // rather than the compiled-in seeds.
+        refreshConfigCache();
         CoffeesAeroAuth.LOGGER.info("[StallWatchdog] Watching. warn={}s kill={}s shutdownKill={}s",
-            AuthConfig.STALL_WARN_SECONDS.get(), AuthConfig.STALL_KILL_SECONDS.get(),
-            AuthConfig.STALL_SHUTDOWN_KILL_SECONDS.get());
+            cfgWarnMs / 1000L, cfgKillMs / 1000L, cfgShutdownKillMs / 1000L);
     }
 
     /** Switch to shutdown supervision. Called from {@code onServerStopping}. */
@@ -120,14 +122,57 @@ public final class StallWatchdog {
         shuttingDown = true;
         shutdownAtMs = System.currentTimeMillis();
         reported     = false;
+        // Cached, not live: this runs during shutdown, so a direct read can throw — and it would throw
+        // AFTER shuttingDown/shutdownAtMs are set but BEFORE anything else this method might later do,
+        // which is the kind of half-executed handler that is painful to diagnose.
         CoffeesAeroAuth.LOGGER.info("[StallWatchdog] Shutdown started — supervising for {}s.",
-            AuthConfig.STALL_SHUTDOWN_KILL_SECONDS.get());
+            cfgShutdownKillMs / 1000L);
     }
 
     /** Stop watching entirely (clean shutdown completed). */
     public static void stop() {
         running = false;
         if (thread != null) thread.interrupt();
+    }
+
+    // ── Config cache ──────────────────────────────────────────────────────────
+
+    /**
+     * Last values read while the SERVER config was actually bound.
+     *
+     * <h3>Why this exists</h3>
+     * The 2026-09-01 fix guarded the {@code enabled} read and stopped there, so
+     * {@code checkTickStall} and {@code checkShutdown} still read their THRESHOLDS unguarded. Every
+     * one of those reads throws once the config unbinds, which is exactly what happens during
+     * shutdown — so {@code checkShutdown} threw on its very first line, every second, and
+     * <b>the shutdown-hang watchdog has never once been able to fire</b>. The visible symptom was a
+     * warning per second; the real defect was that the guard covering shutdown was inoperative
+     * precisely when shutdown was the thing being guarded.
+     *
+     * <p>Caching rather than defaulting matters: falling back to hardcoded defaults would silently
+     * ignore an admin who had tuned {@code stallShutdownKillSeconds}, and would do so only in the
+     * window where the setting is used. Seeds match the spec defaults so the very first iteration —
+     * before any successful read — still behaves sanely.
+     *
+     * <p>These are the only place the watchdog reads config, which is what keeps the guarantee
+     * checkable: no other method may call {@code AuthConfig} directly.
+     */
+    private static volatile boolean cfgEnabled = true;               // stallWatchdogEnabled
+    private static volatile long    cfgWarnMs  = 60L * 1000L;        // stallWarnSeconds
+    private static volatile long    cfgKillMs  = 240L * 1000L;       // stallKillSeconds
+    private static volatile long    cfgShutdownKillMs = 300L * 1000L; // stallShutdownKillSeconds
+
+    /** Refresh every cached value, or keep the previous ones if the config is unbound. */
+    private static void refreshConfigCache() {
+        try {
+            cfgEnabled        = AuthConfig.STALL_WATCHDOG_ENABLED.get();
+            cfgWarnMs         = AuthConfig.STALL_WARN_SECONDS.get() * 1000L;
+            cfgKillMs         = AuthConfig.STALL_KILL_SECONDS.get() * 1000L;
+            cfgShutdownKillMs = AuthConfig.STALL_SHUTDOWN_KILL_SECONDS.get() * 1000L;
+        } catch (Throwable t) {
+            // Unbound: before load, or — the case that matters — during shutdown. Keep guarding with
+            // the last known values rather than throwing and skipping the check entirely.
+        }
     }
 
     // ── The watcher ───────────────────────────────────────────────────────────
@@ -142,10 +187,8 @@ public final class StallWatchdog {
                 // 2026-09-01 logs, and every one of those seconds the watchdog was NOT guarding.
                 // The 1s sleep above means this never span, unlike LagAttributor — but a watchdog
                 // that is silently blind is still a broken watchdog.
-                boolean enabled;
-                try { enabled = AuthConfig.STALL_WATCHDOG_ENABLED.get(); }
-                catch (Throwable t) { enabled = true; }          // fail SAFE: keep guarding
-                if (!enabled) { reported = false; continue; }
+                refreshConfigCache();
+                if (!cfgEnabled) { reported = false; continue; }
                 long now = System.currentTimeMillis();
 
                 if (shuttingDown) {
@@ -166,8 +209,8 @@ public final class StallWatchdog {
 
     private static void checkTickStall(long now) {
         long stalledMs = now - lastTickMs;
-        long warnMs    = AuthConfig.STALL_WARN_SECONDS.get() * 1000L;
-        long killMs    = AuthConfig.STALL_KILL_SECONDS.get() * 1000L;
+        long warnMs    = cfgWarnMs;      // cached — see refreshConfigCache()
+        long killMs    = cfgKillMs;
 
         if (stalledMs < warnMs) {
             if (reported) {
@@ -199,7 +242,9 @@ public final class StallWatchdog {
     }
 
     private static void checkShutdown(long now) {
-        long killMs = AuthConfig.STALL_SHUTDOWN_KILL_SECONDS.get() * 1000L;
+        // Cached, NOT read live: the config is unbound by the time this runs, so a live read threw on
+        // this exact line every second and the shutdown guard never executed at all.
+        long killMs = cfgShutdownKillMs;
         if (killMs <= 0) return;
         long elapsed = now - shutdownAtMs;
         if (elapsed < killMs) return;

@@ -31,7 +31,7 @@ public class NameApprovalQueue {
     private final WebhookQueue  webhooks;
     private final com.coffeesaerosmp.auth.discord.DiscordRest discordRest;
     private final MinecraftServer server;
-    private final PrivateRoomManager rooms;
+    private final LobbyManager rooms;
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
         Thread t = new Thread(r, "name-approval-timer");
         t.setDaemon(true);
@@ -40,7 +40,7 @@ public class NameApprovalQueue {
 
     public NameApprovalQueue(ProfileStore store, WebhookQueue webhooks,
                               com.coffeesaerosmp.auth.discord.DiscordRest discordRest,
-                              MinecraftServer server, PrivateRoomManager rooms) {
+                              MinecraftServer server, LobbyManager rooms) {
         this.store   = store;
         this.webhooks = webhooks;
         this.discordRest = discordRest;
@@ -237,8 +237,30 @@ public class NameApprovalQueue {
 
     // ── Discord ───────────────────────────────────────────────────────────────
 
+    /**
+     * Which server this process is, for Discord messages and button routing.
+     *
+     * <p>🔴 Both servers post into the SAME watchdog channel and, sharing a bot token, BOTH receive
+     * every INTERACTION_CREATE. Without an origin in the {@code custom_id} each click is handled
+     * twice: the server holding the player approves it, the other finds nothing in its in-memory
+     * queue and answers "no longer in the queue" — and whichever response Discord accepts first is
+     * what the admin sees. The approval works and looks broken.
+     *
+     * <p>So the origin is baked into the button id and each server ignores clicks that are not its
+     * own. Since the lobby split this matters for real: new offline players can only register on the
+     * LOBBY, so the lobby raises approvals the SMP must not answer.
+     */
+    public static String originTag() {
+        try {
+            return com.coffeesaerosmp.auth.lobby.LobbyHandoff.isLobbyRole() ? "LOBBY" : "SURVIVAL";
+        } catch (Exception e) {
+            return "SURVIVAL";      // fail to the historic behaviour
+        }
+    }
+
     private void postDiscordPending(String mcName, String proposedName, UUID uuid) {
         if (!AuthConfig.DISCORD_ENABLED.get()) return;
+        final String origin = originTag();
 
         // Action-needed events must PING the admin role (embeds alone never notify anyone).
         String adminRole = AuthConfig.DISCORD_ADMIN_ROLE_ID.get();
@@ -250,14 +272,19 @@ public class NameApprovalQueue {
         String channelId = AuthConfig.DISCORD_WATCHDOG_CHANNEL_ID.get();
         if (discordRest != null && discordRest.isConfigured() && !channelId.isBlank()) {
             String json = "{" + ping
-                + "\"embeds\":[{\"title\":\"🔔 Name Approval Required\",\"color\":16776960,\"fields\":["
+                + "\"embeds\":[{\"title\":\"🔔 Name Approval Required — " + jesc(origin) + "\","
+                + "\"color\":16776960,\"fields\":["
                 +   "{\"name\":\"Player\",\"value\":\"" + jesc(mcName) + "\",\"inline\":true},"
                 +   "{\"name\":\"Requested Name\",\"value\":\"" + jesc(proposedName) + "\",\"inline\":true},"
+                +   "{\"name\":\"Server\",\"value\":\"" + jesc(origin) + "\",\"inline\":true},"
                 +   "{\"name\":\"UUID\",\"value\":\"" + jesc(uuid.toString()) + "\",\"inline\":false}"
                 + "]}],"
+                // origin is embedded in the id so the OTHER server can ignore this click entirely
                 + "\"components\":[{\"type\":1,\"components\":["
-                +   "{\"type\":2,\"style\":3,\"label\":\"Approve\",\"custom_id\":\"nameapprove:" + jesc(mcName) + "\"},"
-                +   "{\"type\":2,\"style\":4,\"label\":\"Reject\",\"custom_id\":\"namereject:" + jesc(mcName) + "\"}"
+                +   "{\"type\":2,\"style\":3,\"label\":\"Approve\",\"custom_id\":\"nameapprove:"
+                +       jesc(origin) + ":" + jesc(mcName) + "\"},"
+                +   "{\"type\":2,\"style\":4,\"label\":\"Reject\",\"custom_id\":\"namereject:"
+                +       jesc(origin) + ":" + jesc(mcName) + "\"}"
                 + "]}]}";
             discordRest.postMessage(channelId, json);
             return;

@@ -1,5 +1,6 @@
 package com.coffeesaerosmp.auth.discord;
 
+import com.coffeesaerosmp.auth.config.AuthConfig;
 import com.coffeesaerosmp.auth.watchdog.Severity;
 import com.coffeesaerosmp.auth.watchdog.WatchdogEvent;
 import com.google.gson.*;
@@ -30,12 +31,48 @@ public final class AlertFormatter {
         JsonObject payload = new JsonObject();
         payload.addProperty("username", BOT_NAME);
 
+        // 🔴 Ping the admin role for HIGH+.
+        //
+        // This used to live ONLY in WatchdogManager.postActionableAlert — the interactive bot path
+        // that carries Ban/Unban buttons. That path returns false unless the event has an IP or a
+        // Subnet field, because without one there is nothing to ban. So any HIGH alert that is not
+        // about a connection — an assembled exploit, a failed confiscation release — fell through
+        // to THIS webhook and was posted silently. Reported live 2026-09-22: the Item Drain alert
+        // fired correctly and pinged nobody.
+        //
+        // An embed on its own never notifies anyone, so a HIGH alert without a mention is a HIGH
+        // alert nobody reads until they happen to scroll.
+        String adminRole = AuthConfig.DISCORD_ADMIN_ROLE_ID.get();
+        if (adminRole != null && !adminRole.isBlank()
+                && event.severity().ordinal() >= Severity.HIGH.ordinal()) {
+            payload.addProperty("content", "<@&" + adminRole + ">");
+            // Restrict what the mention may resolve to: the role and nothing else. Without this a
+            // player-supplied string reaching an alert field could @everyone the channel.
+            JsonObject allowed = new JsonObject();
+            allowed.add("parse", new JsonArray());
+            JsonArray roles = new JsonArray();
+            roles.add(adminRole);
+            allowed.add("roles", roles);
+            payload.add("allowed_mentions", allowed);
+        }
+
         JsonArray embeds = new JsonArray();
         JsonObject embed = new JsonObject();
         embed.addProperty("title", event.severity().emoji() + " " + event.severity().label() + " — " + event.title());
         embed.addProperty("color", event.severity().color());
 
         JsonArray fields = new JsonArray();
+        // 🔴 Which server raised this. Both the SMP and the LOBBY post into the same watchdog
+        // channel, and since the lobby split the lobby is the ONLY place a new offline player can
+        // register — so a stream of identical-looking alerts from two processes is otherwise
+        // impossible to tell apart. First field so it reads before the detail.
+        {
+            JsonObject origin = new JsonObject();
+            origin.addProperty("name", "Server");
+            origin.addProperty("value", com.coffeesaerosmp.auth.lobby.NameApprovalQueue.originTag());
+            origin.addProperty("inline", true);
+            fields.add(origin);
+        }
         for (Map.Entry<String, String> e : event.fields().entrySet()) {
             JsonObject f = new JsonObject();
             f.addProperty("name", e.getKey());

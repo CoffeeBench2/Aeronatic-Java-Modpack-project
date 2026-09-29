@@ -11,10 +11,22 @@ import net.minecraft.server.players.UserBanListEntry;
 import java.util.Date;
 
 /**
- * Disconnects a player once {@link AfkTracker} marks them AFK, and blocks re-entry for a short
- * cooling-off period.
+ * Decides what happens to a player once {@link AfkTracker} marks them AFK.
  *
- * <h2>Why a timed ban and not just a kick</h2>
+ * <h2>Preferred outcome since 2026-09-09: move them, don't remove them</h2>
+ * If a lobby server is configured, an AFK player is <b>transferred to the lobby</b> rather than
+ * disconnected ({@code afkSendToLobby}, tried first). The SMP slot is freed either way, but the
+ * transfer costs the player nothing: they keep their session, take no cooling-off ban, and do not pay
+ * the gate round trip that rejoining would. Idling in the lobby is harmless — it holds no world, no
+ * entities and no ticking machinery — which is the owner's point: "in lobby AFK is not an issue".
+ *
+ * <p>The kick below remains the FALLBACK for when there is no lobby to send them to, so enabling the
+ * transfer can never silently disable the AFK handling that already existed.
+ *
+ * <p>🔴 Disabled outright on {@code serverRole = LOBBY} — there is nowhere to send them, and
+ * kick-banning somebody for standing still in the waiting room would be absurd.
+ *
+ * <h2>Why a timed ban and not just a kick (the fallback path)</h2>
  * A bare kick is not a deterrent, it is an inconvenience — the client reconnects in three seconds
  * and the AFK farm carries on. Worse, on this server every rejoin costs a full login round trip
  * through the gate and a profile load, so a kick that is instantly undone is <b>more</b> load than
@@ -66,9 +78,23 @@ public final class AfkKick {
      */
     public static void consider(ServerPlayer player) {
         try {
-            if (!AuthConfig.AFK_KICK_ENABLED.get()) return;
             if (player == null || player.server == null) return;
+
+            // 🔴 LOBBY role: idling here is the entire point of the room, and there is nowhere to send
+            // them anyway. Belt-and-braces — the lobby's config already has afkEnabled=false, but a
+            // config can drift and kick-banning someone for standing in the waiting room would be a
+            // spectacularly bad failure.
+            if (com.coffeesaerosmp.auth.lobby.LobbyHandoff.isLobbyRole()) return;
+
             if (isExempt(player)) return;
+
+            // Preferred outcome: move them, do not remove them. Tried FIRST, and independently of
+            // afkKickEnabled, because it is a strictly gentler answer to the same problem — the SMP
+            // slot is freed either way, but a transferred player keeps their session, needs no
+            // cooling-off ban, and does not pay the gate round trip to come back.
+            if (AuthConfig.AFK_SEND_TO_LOBBY.get() && sendToLobby(player)) return;
+
+            if (!AuthConfig.AFK_KICK_ENABLED.get()) return;
 
             int minutes = AuthConfig.AFK_KICK_BAN_MINUTES.get();
             apply(player, minutes);
@@ -77,6 +103,37 @@ public final class AfkKick {
             // Never let this remove a player by accident, and never let it break the tick loop.
             CoffeesAeroAuth.LOGGER.warn("[AFK] auto-kick skipped for {}: {}",
                 player == null ? "?" : player.getGameProfile().getName(), e.toString());
+        }
+    }
+
+    /**
+     * Transfers an AFK player to the lobby instead of disconnecting them.
+     *
+     * <p>Reuses {@code LobbyHandoff.returnToLobby}, which signs a cookie — so a premium player arrives
+     * at the lobby still premium rather than being silently demoted to OFFLINE by the anti-spoof rule.
+     * That is the same mechanism the graceful-restart evacuation uses.
+     *
+     * <p>Safe with respect to playtime: {@link AfkTracker} settles and excludes the idle stretch
+     * <b>before</b> calling {@code consider}, and the transfer then triggers the normal leave path, so
+     * the session closes exactly once.
+     *
+     * @return {@code true} if the handoff consumed the player and the caller must NOT also kick them.
+     *         Note this includes the case where the handoff deliberately refused (e.g. no gate secret,
+     *         where it would rather leave them connected than demote them) — fail-open is the rule in
+     *         this class, and an idle timer must never be the thing that removes somebody.
+     */
+    private static boolean sendToLobby(ServerPlayer player) {
+        try {
+            boolean consumed = com.coffeesaerosmp.auth.lobby.LobbyHandoff.returnToLobby(player);
+            if (consumed) {
+                CoffeesAeroAuth.LOGGER.info("[AFK] Sent {} to the lobby (idle {} min) instead of kicking.",
+                    player.getGameProfile().getName(), AuthConfig.AFK_TIMEOUT_MINUTES.get());
+            }
+            return consumed;
+        } catch (Exception e) {
+            CoffeesAeroAuth.LOGGER.warn("[AFK] lobby handoff failed for {}: {} — falling back to the kick.",
+                player.getGameProfile().getName(), e.toString());
+            return false;
         }
     }
 

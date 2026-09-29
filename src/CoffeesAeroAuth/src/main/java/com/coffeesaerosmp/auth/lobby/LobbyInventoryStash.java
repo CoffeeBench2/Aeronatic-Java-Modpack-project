@@ -171,14 +171,81 @@ public class LobbyInventoryStash {
         player.inventoryMenu.broadcastChanges();
     }
 
+    /**
+     * The one item a lobby player holds.
+     *
+     * <p>The LABEL is role-aware, the marker and behaviour are not. On the standalone lobby this
+     * paper does not teleport anyone anywhere on this server — it hands them to the SMP — so calling
+     * it "Teleport to Spawn" would describe the wrong thing entirely. On the SMP's in-process lobby
+     * it still means exactly what it always did.
+     *
+     * <p>⚠️ {@code MARKER} and {@link #isLobbyPaper} are deliberately unchanged: papers already in a
+     * player's inventory from a previous version must keep working, and the marker is what
+     * {@code onRightClickItem} matches on. Renaming the display name is safe; renaming the marker
+     * would silently brick every paper already in circulation.
+     */
     public static ItemStack makeLobbyPaper() {
+        boolean lobbyServer = com.coffeesaerosmp.auth.lobby.LobbyHandoff.isLobbyRole();
         ItemStack paper = new ItemStack(Items.PAPER);
         paper.set(DataComponents.CUSTOM_NAME,
-            Component.literal("§b§lTeleport to Spawn").setStyle(Style.EMPTY.withItalic(false)));
+            Component.literal(lobbyServer ? "§a§lJoin Survival" : "§b§lTeleport to Spawn")
+                .setStyle(Style.EMPTY.withItalic(false)));
         CompoundTag marker = new CompoundTag();
         marker.putBoolean(MARKER, true);
         paper.set(DataComponents.CUSTOM_DATA, CustomData.of(marker));
         return paper;
+    }
+
+    /**
+     * Forces a standalone-lobby player's inventory to exactly one thing: the lobby paper.
+     *
+     * <h3>Why this is needed at all</h3>
+     * Mods hand out starter guidebooks on first join — FTB Quests, Patchouli manuals and friends —
+     * and they do it on the LOBBY server too, because as far as they can tell a player just joined a
+     * world for the first time. Observed 2026-09-08: three books in hand in the lobby. There is no
+     * single switch for this; every mod has its own idea about first-join gifts, and a blocklist
+     * would go stale the moment one is added.
+     *
+     * <p>So this enforces the OUTCOME instead of chasing the causes: on the lobby you hold the paper
+     * and nothing else, whatever put it there.
+     *
+     * <h3>🔑 Why deleting here is safe, and would NOT be on the SMP</h3>
+     * The standalone lobby is a separate server with its own playerdata. A player's real inventory
+     * lives on the SMP and is never loaded here — anything in hand on the lobby was minted by the
+     * lobby. That is the entire reason this is gated to {@code serverRole = LOBBY} by its caller and
+     * must never be run on the SMP, where the same code would eat people's actual belongings.
+     *
+     * <p>⚠️ Covers the vanilla {@code Inventory} only — main, armor and offhand (41 slots). Modded
+     * accessory/curio slots live in their own capability and are NOT touched; if a mod ever gifts
+     * into one, this will not catch it.
+     *
+     * @return true if anything was changed (used to keep the log quiet on the common no-op path).
+     */
+    public static boolean enforceLobbyLoadout(ServerPlayer player) {
+        net.minecraft.world.entity.player.Inventory inv = player.getInventory();
+        boolean changed = false;
+        int papers = 0;
+
+        for (int i = 0; i < inv.getContainerSize(); i++) {
+            ItemStack s = inv.getItem(i);
+            if (s.isEmpty()) continue;
+            if (isLobbyPaper(s)) {
+                papers++;
+                if (papers > 1) { inv.setItem(i, ItemStack.EMPTY); changed = true; }   // duplicates
+            } else {
+                inv.setItem(i, ItemStack.EMPTY);
+                changed = true;
+            }
+        }
+        // Always leave them holding exactly one. A lobby player with no paper has no way out except
+        // /spawn, and a player who does not know that command is simply stuck.
+        if (papers == 0) {
+            inv.setItem(0, makeLobbyPaper());
+            inv.selected = 0;
+            changed = true;
+        }
+        if (changed) player.inventoryMenu.broadcastChanges();
+        return changed;
     }
 
     public static boolean isLobbyPaper(ItemStack stack) {
