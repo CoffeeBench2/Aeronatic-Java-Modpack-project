@@ -7,8 +7,10 @@ import com.coffeesaerosmp.auth.invsee.InvseeMenu;
 import com.coffeesaerosmp.auth.invsee.PlayerInventoryView;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.suggestion.SuggestionProvider;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
@@ -31,24 +33,63 @@ public final class InvseeCommands {
 
     private InvseeCommands() {}
 
+    /**
+     * Online players first, then every known profile name.
+     *
+     * <p>Deliberately not just online players: these commands read offline playerdata too, and a
+     * completer that only offers online names implies the offline case is unsupported.
+     */
+    private static final SuggestionProvider<CommandSourceStack> KNOWN_NAMES = (ctx, builder) -> {
+        java.util.LinkedHashSet<String> names = new java.util.LinkedHashSet<>();
+        ctx.getSource().getServer().getPlayerList().getPlayers()
+            .forEach(p -> names.add(p.getGameProfile().getName()));
+        var store = CoffeesAeroAuth.PROFILE_STORE;
+        if (store != null) {
+            for (PlayerProfile p : store.getAll()) {
+                if (p.username != null && !p.username.isBlank()) names.add(p.username);
+            }
+        }
+        return SharedSuggestionProvider.suggest(names, builder);
+    };
+
+    /**
+     * 🔴 The argument is named {@code target}, NOT {@code player}, and that is load-bearing.
+     *
+     * <p>FTB Essentials also registers {@code /invsee}, with its argument named {@code player} and
+     * typed as an ENTITY SELECTOR. Brigadier merges command trees by node name, so its node won and
+     * ours was never added — but our executor still ran and called
+     * {@code StringArgumentType.getString(ctx, "player")} against an argument parsed as a selector:
+     *
+     * <pre>IllegalArgumentException: Argument 'player' is defined as EntitySelector, not class java.lang.String</pre>
+     *
+     * which reaches the player as a bare "An unexpected error occurred". Reported live 2026-09-22.
+     *
+     * <p>A unique name means the two can never be confused again: the worst case becomes our branch
+     * not firing, instead of a crash. ⚠️ For OUR {@code /invsee} to actually run, FTB Essentials'
+     * must be off — {@code config/ftbessentials.snbt} → {@code invsee { enabled: false }}. Ours is a
+     * superset: offline snapshots, curios, and a watchdog audit line per open.
+     */
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(Commands.literal("invsee")
             .requires(src -> src.hasPermission(3))
-            .then(Commands.argument("player", StringArgumentType.word())
+            .then(Commands.argument("target", StringArgumentType.word())
+                .suggests(KNOWN_NAMES)
                 .executes(ctx -> open(ctx.getSource(),
-                    StringArgumentType.getString(ctx, "player"), false))));
+                    StringArgumentType.getString(ctx, "target"), false))));
 
         dispatcher.register(Commands.literal("invsee_echest")
             .requires(src -> src.hasPermission(3))
-            .then(Commands.argument("player", StringArgumentType.word())
+            .then(Commands.argument("target", StringArgumentType.word())
+                .suggests(KNOWN_NAMES)
                 .executes(ctx -> open(ctx.getSource(),
-                    StringArgumentType.getString(ctx, "player"), true))));
+                    StringArgumentType.getString(ctx, "target"), true))));
 
         dispatcher.register(Commands.literal("invsee_curios")
             .requires(src -> src.hasPermission(3))
-            .then(Commands.argument("player", StringArgumentType.word())
+            .then(Commands.argument("target", StringArgumentType.word())
+                .suggests(KNOWN_NAMES)
                 .executes(ctx -> openCurios(ctx.getSource(),
-                    StringArgumentType.getString(ctx, "player")))));
+                    StringArgumentType.getString(ctx, "target")))));
     }
 
     /**
