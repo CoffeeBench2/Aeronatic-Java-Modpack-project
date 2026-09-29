@@ -1,5 +1,6 @@
 package com.coffeesaerosmp.auth.discord;
 
+import com.coffeesaerosmp.auth.config.AuthConfig;
 import com.coffeesaerosmp.auth.watchdog.Severity;
 import com.coffeesaerosmp.auth.watchdog.WatchdogEvent;
 import com.google.gson.*;
@@ -29,6 +30,31 @@ public final class AlertFormatter {
     public static String watchdogAlert(WatchdogEvent event) {
         JsonObject payload = new JsonObject();
         payload.addProperty("username", BOT_NAME);
+
+        // 🔴 Ping the admin role for HIGH+.
+        //
+        // This used to live ONLY in WatchdogManager.postActionableAlert — the interactive bot path
+        // that carries Ban/Unban buttons. That path returns false unless the event has an IP or a
+        // Subnet field, because without one there is nothing to ban. So any HIGH alert that is not
+        // about a connection — an assembled exploit, a failed confiscation release — fell through
+        // to THIS webhook and was posted silently. Reported live 2026-09-22: the Item Drain alert
+        // fired correctly and pinged nobody.
+        //
+        // An embed on its own never notifies anyone, so a HIGH alert without a mention is a HIGH
+        // alert nobody reads until they happen to scroll.
+        String adminRole = AuthConfig.DISCORD_ADMIN_ROLE_ID.get();
+        if (adminRole != null && !adminRole.isBlank()
+                && event.severity().ordinal() >= Severity.HIGH.ordinal()) {
+            payload.addProperty("content", "<@&" + adminRole + ">");
+            // Restrict what the mention may resolve to: the role and nothing else. Without this a
+            // player-supplied string reaching an alert field could @everyone the channel.
+            JsonObject allowed = new JsonObject();
+            allowed.add("parse", new JsonArray());
+            JsonArray roles = new JsonArray();
+            roles.add(adminRole);
+            allowed.add("roles", roles);
+            payload.add("allowed_mentions", allowed);
+        }
 
         JsonArray embeds = new JsonArray();
         JsonObject embed = new JsonObject();
