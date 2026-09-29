@@ -321,12 +321,11 @@ public final class AccountTransfer {
      * stored value alone and raise a HIGH alert</b>. A Mojang uuid never changes, so a different one
      * arriving for the same profile means a different human — it is not a heuristic.
      *
-     * <h3>⚠️ This DETECTS, it does not DENY</h3>
-     * Deliberately alert-only for now. The newcomer still logs in. Denying the profile is the next step
-     * and needs somewhere safe to put the old data first: the DB row is not the account — builds, claims
-     * and balances live in world files keyed by the same uuid, so a "fresh profile" that leaves
-     * {@code playerdata/<uuid>.dat} in place still hands over the base. Shipping the detection first is
-     * what makes it possible to find out whether this is already happening, at no risk to a valid login.
+     * <h3>Detection here; denial happens earlier</h3>
+     * Since 1.11.4 the refusal is {@link IdentityGate}, run inside {@code resolvePlayerType} BEFORE this
+     * is called, and the caller only calls this for an ALLOWED login. So a MISMATCH reaching this method
+     * means either {@code identityGateEnforce=false} (alert-only mode) or a race with the other process
+     * binding the row between the gate's read and this one. It still never overwrites.
      * See {@code planning/store-identity-risk.md}.
      */
     public static void rememberMojangUuid(UUID offlineUuid, UUID mojangUuid) {
@@ -427,7 +426,8 @@ public final class AccountTransfer {
             CoffeesAeroAuth.WATCHDOG.alert(com.coffeesaerosmp.auth.watchdog.WatchdogEvent.of(
                 com.coffeesaerosmp.auth.watchdog.Severity.HIGH,
                 "Identity mismatch — possible account takeover",
-                "Alert only; the login was NOT blocked. Verify who owns the name before acting.",
+                "Reached the bind step, so the login was NOT blocked (identityGateEnforce=false, or a "
+              + "lobby/SMP race). Verify who owns the name, then /aeroid hold if needed.",
                 "Profile",        username == null ? "(unknown)" : username,
                 "Profile uuid",   String.valueOf(profileUuid),
                 "Linked Mojang",  stored == null ? "(none)" : stored,

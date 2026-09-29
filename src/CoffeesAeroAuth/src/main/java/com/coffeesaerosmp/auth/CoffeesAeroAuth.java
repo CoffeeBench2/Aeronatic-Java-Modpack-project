@@ -702,8 +702,12 @@ public class CoffeesAeroAuth {
                 return;   // nothing below should run for a session that is about to end
             }
         }
-        AUTH_MANAGER.resolvePlayerType(player, v.premium());
-        if (v.premium()) {
+        // Only an ALLOWED login may bind or wear the Mojang identity. A refused one has been disconnected,
+        // and a CLAIM_REQUIRED one has not given the password yet — binding here would hand the profile
+        // to whoever bought the name before they proved anything. See admin/IdentityGate.
+        boolean admitted = AUTH_MANAGER.resolvePlayerType(player, v.premium(), v.premium() ? v.uuid() : null)
+                           == com.coffeesaerosmp.auth.admin.IdentityGate.Verdict.ALLOW;
+        if (v.premium() && admitted) {
             // No rename detected: keep the mapping current so the NEXT one is detectable. Cheap,
             // async, and self-backfilling — a premium player gains a mojang_uuid on their first
             // gate-verified login after this build, with no migration step.
@@ -717,7 +721,7 @@ public class CoffeesAeroAuth {
             com.coffeesaerosmp.auth.admin.AccountTransfer.rememberMojangUuid(player.getUUID(), v.uuid());
         }
         // Premium: show their REAL Mojang skin (fetched by the gate-verified UUID) on this offline server.
-        if (v.premium()) com.coffeesaerosmp.auth.compat.SkinsHook.applyPremium(player, v.uuid());
+        if (v.premium() && admitted) com.coffeesaerosmp.auth.compat.SkinsHook.applyPremium(player, v.uuid());
     }
 
     /** Premium reconnect grace: true if the player was resolved PREMIUM from a recent same-IP session. */
@@ -729,8 +733,12 @@ public class CoffeesAeroAuth {
         LOGGER.info("[Gate] Reconnect grace: {} ({}) re-resolved PREMIUM — same IP within the grace window.",
             name, why);
         com.coffeesaerosmp.auth.auth.PremiumReconnectGrace.record(name, mojangUuid, ip);   // refresh
-        AUTH_MANAGER.resolvePlayerType(player, true);
-        com.coffeesaerosmp.auth.compat.SkinsHook.applyPremium(player, mojangUuid);
+        // The grace carries the Mojang uuid, so it goes through the identity gate like a fresh cookie —
+        // otherwise a reconnect would be a way round it.
+        if (AUTH_MANAGER.resolvePlayerType(player, true, mojangUuid)
+                == com.coffeesaerosmp.auth.admin.IdentityGate.Verdict.ALLOW) {
+            com.coffeesaerosmp.auth.compat.SkinsHook.applyPremium(player, mojangUuid);
+        }
         return true;
     }
 
@@ -744,5 +752,6 @@ public class CoffeesAeroAuth {
         com.coffeesaerosmp.auth.commands.ShipNameCommand.register(event.getDispatcher());
         com.coffeesaerosmp.auth.commands.NameColorCommands.register(event.getDispatcher());
         com.coffeesaerosmp.auth.commands.StoreCommands.register(event.getDispatcher());
+        com.coffeesaerosmp.auth.commands.IdentityCommands.register(event.getDispatcher());
     }
 }

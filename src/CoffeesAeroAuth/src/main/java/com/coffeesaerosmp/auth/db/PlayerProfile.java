@@ -54,6 +54,15 @@ public class PlayerProfile {
 
     public transient UUID uuid;
 
+    // Identity — READ-ONLY copies of players.mojang_uuid / link_source / identity_hold, loaded with the
+    // row so the join gate (admin/IdentityGate) needs no extra query. 🔴 Transient and deliberately
+    // absent from upsertPlayer: save() writes the whole row from a cached copy, and a stale cached
+    // link written back would undo a bind, or erase a hold, made by the other process. Only the
+    // guarded statements in AccountTransfer / IdentityCommands ever write these columns.
+    public transient String mojangLink;
+    public transient String linkSource;
+    public transient String identityHold;
+
     public PlayerProfile() {
     }
 

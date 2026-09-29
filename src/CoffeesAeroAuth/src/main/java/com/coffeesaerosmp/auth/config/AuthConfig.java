@@ -42,6 +42,7 @@ public class AuthConfig {
     public static final ModConfigSpec.BooleanValue VOTE_ANNOUNCE_ENABLED;
     public static final ModConfigSpec.IntValue     VOTE_REWARD_MAX_REWARDED;
     public static final ModConfigSpec.BooleanValue KICK_ON_NAME_CONFLICT;
+    public static final ModConfigSpec.BooleanValue IDENTITY_GATE_ENFORCE;
     public static final ModConfigSpec.IntValue     MAX_FAILED_ATTEMPTS;
     public static final ModConfigSpec.BooleanValue BYPASS_AUTH_FOR_OPS;
 
@@ -298,6 +299,13 @@ public class AuthConfig {
         KICK_ON_NAME_CONFLICT = b
             .comment("Kick offline players whose Minecraft username matches a verified player's display name.")
             .define("kickOnNameConflict", true);
+        IDENTITY_GATE_ENFORCE = b
+            .comment("Refuse logins that would take over someone else's profile (admin/IdentityGate):",
+                     "a different Mojang account on a linked profile, a profile on an identity hold, and a",
+                     "premium login on an offline profile that has not proven the old password.",
+                     "false = ALERT ONLY: every verdict is still logged and sent to Discord, but the login",
+                     "proceeds exactly as it did before 1.11.4. This is the rollback switch - no redeploy.")
+            .define("identityGateEnforce", true);
         MAX_FAILED_ATTEMPTS = b
             .comment("Wrong password attempts allowed before kicking. 0 = unlimited.")
             .defineInRange("maxFailedAttempts", 5, 0, 20);

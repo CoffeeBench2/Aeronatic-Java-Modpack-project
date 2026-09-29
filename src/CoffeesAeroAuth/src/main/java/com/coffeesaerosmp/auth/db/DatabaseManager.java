@@ -235,6 +235,14 @@ public class DatabaseManager {
             // just mean the inference was wrong. Same alert, different confidence — do not collapse them.
             try { s.executeUpdate("ALTER TABLE players ADD COLUMN link_source ENUM('GATE','BACKFILL') NULL"); }
             catch (SQLException dupCol) { /* column already present — fine */ }
+            //   ADMIN    — bound by staff with /aeroid bind, after checking by hand. Added 2026-09-29.
+            // MODIFY is idempotent, and it only ever ADDS a value, so existing rows are untouched.
+            try { s.executeUpdate("ALTER TABLE players MODIFY COLUMN link_source ENUM('GATE','BACKFILL','ADMIN') NULL"); }
+            catch (SQLException e) { CoffeesAeroAuth.LOGGER.warn("[DB] link_source enum widen failed: {}", e.getMessage()); }
+            // Identity hold (admin/IdentityGate): non-null = nobody may log into this profile until staff
+            // release it. The text is the reason, shown to staff. Lock-don't-move: the data stays put.
+            try { s.executeUpdate("ALTER TABLE players ADD COLUMN identity_hold VARCHAR(255) NULL"); }
+            catch (SQLException dupCol) { /* column already present — fine */ }
             try { s.executeUpdate("ALTER TABLE players ADD COLUMN startup_bonus_given BOOLEAN NOT NULL DEFAULT FALSE"); }
             catch (SQLException dupCol) { /* column already present — fine */ }
             try { s.executeUpdate("ALTER TABLE players ADD COLUMN first_ip VARCHAR(45) NULL"); }

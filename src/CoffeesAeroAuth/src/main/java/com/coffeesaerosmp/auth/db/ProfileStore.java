@@ -434,7 +434,19 @@ public class ProfileStore implements CredentialStore {
         p.returnZ              = rs.getDouble("return_z");
         p.skinChangesUsed      = rs.getInt("skin_changes_used");
         p.discordId            = rs.getString("discord_id");
+        p.mojangLink           = optString(rs, "mojang_uuid");
+        p.linkSource           = optString(rs, "link_source");
+        p.identityHold         = optString(rs, "identity_hold");
         return p;
+    }
+
+    /** Reads a string column, returning null if the column is absent rather than failing the whole row. */
+    private static String optString(ResultSet rs, String column) {
+        try {
+            return rs.getString(column);
+        } catch (SQLException missingColumn) {
+            return null;
+        }
     }
 
     /** Reads a long column, returning 0 if the column is absent rather than failing the whole row. */

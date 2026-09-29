@@ -1,6 +1,9 @@
 package com.coffeesaerosmp.auth.auth;
 
 import com.coffeesaerosmp.auth.CoffeesAeroAuth;
+import com.coffeesaerosmp.auth.admin.IdentityEnforcer;
+import com.coffeesaerosmp.auth.admin.IdentityGate;
+import com.coffeesaerosmp.auth.db.ProfileStore;
 import com.coffeesaerosmp.auth.config.AuthConfig;
 import com.coffeesaerosmp.auth.db.DatabaseManager;
 import com.coffeesaerosmp.auth.db.PlayerProfile;
@@ -47,6 +50,9 @@ public class AuthManager {
      */
     private final Set<UUID>            lobbyEntryDone       = ConcurrentHashMap.newKeySet();
     private final Set<UUID>            awaitingType         = ConcurrentHashMap.newKeySet();
+    /** Premium arrivals on an offline profile who must give its old password once (IdentityGate
+     *  CLAIM_REQUIRED) → the gate-verified Mojang uuid to bind when they do. */
+    private final Map<UUID, UUID>      pendingClaims        = new ConcurrentHashMap<>();
     private final Set<UUID>            nameHidden           = ConcurrentHashMap.newKeySet();
     private final SessionTokenManager  sessionTokens        = new SessionTokenManager();
 
@@ -108,9 +114,19 @@ public class AuthManager {
      * only the first call per join is honoured.
      */
     public void resolvePlayerType(ServerPlayer player, boolean premium) {
+        resolvePlayerType(player, premium, null);
+    }
+
+    /**
+     * @param mojangUuid the gate-verified Mojang uuid for a premium arrival (from the HMAC-signed cookie
+     *                   or the reconnect grace), or null when the path that resolved them does not carry one
+     * @return the identity verdict this login got, or null if it was not resolved here (already resolved,
+     *         or turned away by the name-conflict check). Callers must only bind/link on {@code ALLOW}.
+     */
+    public IdentityGate.Verdict resolvePlayerType(ServerPlayer player, boolean premium, UUID mojangUuid) {
         UUID uuid = player.getUUID();
-        if (!awaitingType.remove(uuid)) return;   // already resolved, or not awaiting
-        if (isAuthenticated(uuid)) return;
+        if (!awaitingType.remove(uuid)) return null;   // already resolved, or not awaiting
+        if (isAuthenticated(uuid)) return null;
 
         String mcName = player.getGameProfile().getName();
         CoffeesAeroAuth.LOGGER.info("[Auth] Resolving {} as {}.", mcName, premium ? "PREMIUM" : "OFFLINE");
@@ -155,13 +171,40 @@ public class AuthManager {
                 player.connection.disconnect(Component.literal(
                     "§cThe name §e" + mcName + "§c is reserved by (or too close to) a verified player §7(" + reservedBy + ")§c.\n" +
                     "§7Relaunch your account with a different name — for example §a" + suggestion + "§7."));
-                return;
+                return null;
             }
         }
 
         PlayerProfile.AccountType type = premium ? PlayerProfile.AccountType.PREMIUM : PlayerProfile.AccountType.OFFLINE;
         CredentialStore.GetOrCreateResult r = store.getOrCreate(uuid, mcName, type);
         PlayerProfile profile = r.profile();
+
+        // ── Identity gate (admin/IdentityGate) ────────────────────────────────────────────
+        // 🔴 MUST come before anything below writes to the profile: the firstIp stamp and the
+        // offline→premium upgrade both save(), and that upgrade IS the takeover of an unclaimed
+        // offline account. getOrCreate above only refreshed the row; it wrote nothing, and a new
+        // profile is never refused. The stored link came with that same row — no extra query.
+        boolean dbBacked = store instanceof ProfileStore ps && ps.isBacked();
+        IdentityGate.Verdict verdict = IdentityEnforcer.judge(profile, r.isNew(), premium, mojangUuid, dbBacked);
+        boolean enforce = IdentityEnforcer.enforcing();
+        if (verdict != IdentityGate.Verdict.ALLOW && !enforce) {
+            IdentityEnforcer.observe(profile, verdict, mojangUuid);   // alert-only: behave as before 1.11.4
+            verdict = IdentityGate.Verdict.ALLOW;
+        }
+        if (verdict.denies()) {
+            IdentityEnforcer.refuse(player, profile, verdict, mojangUuid);
+            return verdict;
+        }
+        if (verdict == IdentityGate.Verdict.CLAIM_REQUIRED) {
+            if (isSplitArchitecture()) {
+                // The SMP has no login room of its own (its lobby spawn is the unset void default), and
+                // the lobby only transfers after /login — so an unclaimed arrival here skipped the claim.
+                IdentityEnforcer.refuse(player, profile, verdict, mojangUuid);
+            } else {
+                enterClaimFlow(player, profile, mojangUuid);
+            }
+            return verdict;
+        }
 
         // Record the first IP this account ever logged in from (set once, never overwritten).
         if (profile.firstIp == null || profile.firstIp.isBlank()) {
@@ -186,6 +229,7 @@ public class AuthManager {
         } else {
             enterOfflineFlow(player, profile, mcName);
         }
+        return verdict;
     }
 
     private void enterPremiumFlow(ServerPlayer player, PlayerProfile profile, boolean isFirstJoin) {
@@ -306,6 +350,27 @@ public class AuthManager {
         long awayMs = System.currentTimeMillis() - profile.lastSeen;
         if (awayMs < 0) return false;                      // clock skew — don't punish the player
         return awayMs >= bypassMinutes * 60_000L;
+    }
+
+    /**
+     * A premium login arrived on an invested offline profile (IdentityGate CLAIM_REQUIRED). The real owner
+     * who bought the game and a stranger who bought the name are indistinguishable without a secret, so ask
+     * for the old password once — the returning-offline-player login, with the bind riding on success.
+     * Never reached for a premium profile: 276 of 284 have no password to give.
+     */
+    private void enterClaimFlow(ServerPlayer player, PlayerProfile profile, UUID mojangUuid) {
+        UUID uuid = player.getUUID();
+        pendingClaims.put(uuid, mojangUuid);
+        // A session token must not stand in for the claim: it proves an earlier offline login from this
+        // IP, not that this Mojang account is that person.
+        sessionTokens.invalidate(uuid);
+        routeToLobbyRoom(uuid, profile);
+        authStates.put(uuid, AuthState.PENDING);
+        CoffeesAeroAuth.LOGGER.info("[Identity] {} is premium on offline profile {} — claim required (/login).",
+            player.getGameProfile().getName(), uuid);
+        send(player, TextUtil.PREFIX + "§eThis name has an existing offline account on this server.");
+        send(player, TextUtil.PREFIX + "§eIf it's yours, prove it once with its old password: §a/login <password>");
+        send(player, TextUtil.PREFIX + "§7After that it's linked to your Minecraft account — no password ever again.");
     }
 
     private void enterOfflineFlow(ServerPlayer player, PlayerProfile profile, String mcName) {
@@ -535,6 +600,7 @@ public class AuthManager {
         lobbyEntryDone.remove(uuid);   // next join starts on the pad again
         PlayerProfile profile = store.get(uuid);
         if (profile != null) {
+            boolean dirty = false;
             if (profile.sessionStartEpoch > 0) {
                 // 🔴 PLAYTIME IS SMP-ONLY (owner decision 2026-09-22). The lobby is a waiting room:
                 // time spent queueing, registering or waiting for name approval is not play, and
@@ -547,6 +613,7 @@ public class AuthManager {
                     profile.totalPlaytimeSeconds += secs;
                 }
                 profile.sessionStartEpoch = 0;
+                dirty = true;
             }
             // Remember the logoff spot in the MAIN world so /spawn resumes the player here on their next
             // return instead of dumping them at world spawn. Never record a lobby position — a returning
@@ -562,8 +629,19 @@ public class AuthManager {
             // never actually written (so /profile showed a stale "last seen"). It is now also the
             // clock for the lobby-bypass rule below — premium players have no session token, so
             // SessionTokenManager cannot answer "how long were they away?" for them.
-            profile.lastSeen = System.currentTimeMillis();
-            store.save(profile);
+            //
+            // 🔴 AUTHENTICATED sessions only (2026-09-29). This used to stamp every disconnect, so a
+            // stranger refused by the identity gate, a failed /login, or a name-conflict kick all
+            // refreshed the VICTIM's last_seen — and last_seen is the proof the Mojang-link backfill
+            // relies on ("seen < 30 days ago, so the name cannot have changed hands"). An intruder
+            // must never be able to manufacture that evidence by knocking on the door.
+            // A refused login therefore writes nothing at all: no stamp, no playtime, so no save of a
+            // cached row that could clobber a newer one from the other process.
+            if (isAuthenticated(uuid)) {
+                profile.lastSeen = System.currentTimeMillis();
+                dirty = true;
+            }
+            if (dirty) store.save(profile);
         }
         // Start the reconnect grace window from logout: a return within SESSION_GRACE_MINUTES skips
         // login; after it, the session is expired and the player must /login again (in the lobby).
@@ -577,6 +655,7 @@ public class AuthManager {
         failedAttempts.remove(uuid);
         pendingLobbyTeleport.remove(uuid);
         awaitingType.remove(uuid);
+        pendingClaims.remove(uuid);
         nameHidden.remove(uuid);
         if (CoffeesAeroAuth.LOBBY_MANAGER != null) CoffeesAeroAuth.LOBBY_MANAGER.releaseFrozenSpot(uuid);
         NameVisibility.clear(player);
@@ -835,12 +914,20 @@ public class AuthManager {
             return false;
         }
         failedAttempts.put(uuid, 0);
+        UUID claimed = pendingClaims.remove(uuid);
+        if (claimed != null) {
+            // Before onAuthenticated: this upgrades the account, and the entry path reads the type.
+            IdentityEnforcer.completeClaim(player, profile, claimed);
+            send(player, TextUtil.PREFIX + "§aAccount claimed — it is now linked to your Minecraft account. "
+                + "You won't need this password again.");
+        }
         authStates.put(uuid, AuthState.AUTHENTICATED);
         onAuthenticated(player, profile, false);
         if (CoffeesAeroAuth.WATCHDOG != null) {
-            CoffeesAeroAuth.WATCHDOG.recordSuccessfulLogin(uuid, NetUtil.getPlayerIP(player), profile.displayName, false);
+            CoffeesAeroAuth.WATCHDOG.recordSuccessfulLogin(uuid, NetUtil.getPlayerIP(player), profile.displayName, claimed != null);
         }
-        sessionTokens.createToken(uuid, NetUtil.getPlayerIP(player));
+        // No session token for a claim: it is now a premium account and never logs in by password again.
+        if (claimed == null) sessionTokens.createToken(uuid, NetUtil.getPlayerIP(player));
         return true;
     }
 
