@@ -60,7 +60,45 @@ public final class IdentityCommands {
                         .executes(ctx -> bind(ctx, name(ctx), StringArgumentType.getString(ctx, "mojangUuid"))))))
             .then(Commands.literal("unbind")
                 .then(Commands.argument("name", StringArgumentType.word())
-                    .executes(ctx -> unbind(ctx, name(ctx))))));
+                    .executes(ctx -> unbind(ctx, name(ctx)))))
+            // UUID-to-UUID account move. /authmod transferaccount is name-based and refuses equal names, but
+            // under premiumKeepsMojangUuid an offline player who buys the game keeps their NAME and gets a
+            // new (Mojang) uuid — the one move the name form cannot express. Level 4: it re-keys an account.
+            .then(Commands.literal("move")
+                .requires(src -> src.hasPermission(4))
+                .then(Commands.argument("fromUuid", StringArgumentType.word())
+                    .then(Commands.argument("toUuid", StringArgumentType.word())
+                        .executes(ctx -> move(ctx, false))
+                        .then(Commands.literal("confirm")
+                            .executes(ctx -> move(ctx, true)))))));
+    }
+
+    private static int move(CommandContext<CommandSourceStack> ctx, boolean confirm) {
+        CommandSourceStack src = ctx.getSource();
+        UUID from = parseUuid(StringArgumentType.getString(ctx, "fromUuid"));
+        UUID to = parseUuid(StringArgumentType.getString(ctx, "toUuid"));
+        if (from == null || to == null) {
+            src.sendFailure(Component.literal("Both arguments must be uuids (see /aeroid status <name>)."));
+            return 0;
+        }
+        PlayerProfile p = CoffeesAeroAuth.PROFILE_STORE == null ? null : CoffeesAeroAuth.PROFILE_STORE.get(from);
+        String name = p != null ? p.username : "?";
+        // Commands run on the server thread, which AccountTransfer requires.
+        var r = confirm
+            ? com.coffeesaerosmp.auth.admin.AccountTransfer.execute(src.getServer(), from, to, name)
+            : com.coffeesaerosmp.auth.admin.AccountTransfer.plan(src.getServer(), from, to, name);
+        for (String line : r.lines()) {
+            if (r.ok()) src.sendSuccess(() -> Component.literal("  " + line), false);
+            else src.sendFailure(Component.literal(line));
+        }
+        if (!r.ok()) return 0;
+        if (confirm) {
+            CoffeesAeroAuth.LOGGER.warn("[Identity] {} MOVED account {} ({}) -> {}.", src.getTextName(), name, from, to);
+            src.sendSuccess(() -> Component.literal("§a✔ Moved. Have them rejoin and check everything."), false);
+        } else {
+            src.sendSuccess(() -> Component.literal("§ePLAN ONLY. §7Add §fconfirm§7 to apply."), false);
+        }
+        return 1;
     }
 
     private static String name(CommandContext<CommandSourceStack> ctx) {
@@ -198,6 +236,16 @@ public final class IdentityCommands {
     private static UUID resolve(CommandContext<CommandSourceStack> ctx, String name) {
         UUID id = UUIDUtil.expectedOfflineUUID(name);
         if (CoffeesAeroAuth.PROFILE_STORE != null && CoffeesAeroAuth.PROFILE_STORE.get(id) != null) return id;
+        // premiumKeepsMojangUuid: a premium profile lives under its Mojang uuid, which the name cannot
+        // derive. Accept exactly one profile whose ACCOUNT name matches exact-case.
+        if (CoffeesAeroAuth.PROFILE_STORE != null) {
+            UUID exact = null;
+            int hits = 0;
+            for (PlayerProfile p : CoffeesAeroAuth.PROFILE_STORE.matchesByName(name)) {
+                if (name.equals(p.username)) { exact = p.getUUID(); hits++; }
+            }
+            if (hits == 1) return exact;
+        }
         StringBuilder msg = new StringBuilder("No profile named exactly '" + name + "' (names are case-sensitive).");
         if (CoffeesAeroAuth.PROFILE_STORE != null) {
             List<String> near = new ArrayList<>();

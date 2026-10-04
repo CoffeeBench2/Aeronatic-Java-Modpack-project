@@ -93,6 +93,23 @@ public class AuthManager {
         // frozen in AWAITING_TYPE and wait for AeroVelocity's aerosmp:player_type message (handled by
         // resolvePlayerType), with onTick() falling back to offline on timeout. Detection happens at the
         // proxy — here we only READ the forwarded result.
+        if (CoffeesAeroAuth.premiumKeepsMojangUuid()) {
+            // The cookie was read during LOGIN (it chose this player's uuid). Asking again would get the
+            // same single-use cookie back as a replay. The forwarded-uuid reader is skipped too: premium
+            // uuids are v4 now, and "v4" is not proof of anything on a direct-connect backend.
+            //
+            // Deferred one task, like the cookie response it replaces: every other join handler runs first
+            // and sees the player in AWAITING_TYPE, exactly as before, and a rename/heal disconnect never
+            // fires from inside PlayerLoggedInEvent.
+            LoginIdentity.Outcome outcome = LoginIdentity.take(uuid);
+            net.minecraft.server.MinecraftServer server = player.getServer();
+            if (server != null) {
+                server.execute(() -> {
+                    if (!player.hasDisconnected()) CoffeesAeroAuth.handleLoginOutcome(player, outcome);
+                });
+            }
+            return;
+        }
         PlayerIdentityReader.Identity forwarded = PlayerIdentityReader.read(player);
         if (forwarded != PlayerIdentityReader.Identity.UNKNOWN) {
             CoffeesAeroAuth.LOGGER.info("[Auth] {} resolved from forwarded UUID as {}.",
@@ -133,6 +150,23 @@ public class AuthManager {
 
         // Anti-spoof: a cracked player whose MC name IS (or is too close to) a verified player's name is
         // turned away with the standard message + an example offline handle to relaunch with.
+        if (!premium && CoffeesAeroAuth.premiumKeepsMojangUuid()) {
+            // premiumKeepsMojangUuid: a premium account lives under its Mojang uuid, so an OFFLINE arrival
+            // carrying a premium account's name is never that account — it is the owner without a cookie
+            // (direct connect, grace expired) or an impostor. Both are turned away: letting the owner in
+            // as the offline alias is precisely the split identity this mode exists to remove. FAIL
+            // CLOSED, and independent of kickOnNameConflict, which only covers display names.
+            PlayerProfile premiumOwner = premiumAccountNamed(mcName, uuid);
+            if (premiumOwner != null) {
+                CoffeesAeroAuth.LOGGER.warn("[Auth] {} arrived OFFLINE under premium account name {} ({}) — refused.",
+                    uuid, premiumOwner.username, premiumOwner.getUUID());
+                player.connection.disconnect(Component.literal(
+                    "§cThe name §e" + mcName + "§c belongs to a premium Minecraft account.\n"
+                  + "§7If it is yours, reconnect using the server address from Discord\n"
+                  + "§7with your normal Minecraft launcher, signed in to that account."));
+                return null;
+            }
+        }
         if (!premium && AuthConfig.KICK_ON_NAME_CONFLICT.get()) {
             String reservedBy = null;
             // exact: their MC name equals a verified player's display name
@@ -151,6 +185,8 @@ public class AuthManager {
                     // derives from the name they chose — the test below holds for both, which is
                     // why it discriminates: it asks whether this connection is the offline alias of
                     // the very account that owns the name.
+                    // (Unreachable for the self-alias case when premiumKeepsMojangUuid is on: the block
+                    // above has already refused it.)
                     if (UUIDUtil.isSelfOfflineAlias(uuid, ownerProfile.username)) {
                         CoffeesAeroAuth.LOGGER.warn(
                             "[Auth] {} is the offline alias of PREMIUM {} — not a spoof, letting them in. "
@@ -1108,6 +1144,25 @@ public class AuthManager {
     }
 
     /** Suggests a unique-ish offline handle "aerosmp_&lt;username&gt;", sanitized and clamped to 20 chars. */
+    /**
+     * The PREMIUM profile whose account name is {@code mcName} (case-insensitive, as Mojang names are), or
+     * null. An offline account that already has its own OFFLINE profile at {@code arriving} is never
+     * matched: those case-variant pairs predate this mode (e.g. {@code flamesjet} / {@code FlamesJet}) and
+     * the password flow already guards them.
+     */
+    private static PlayerProfile premiumAccountNamed(String mcName, UUID arriving) {
+        ProfileStore ps = CoffeesAeroAuth.PROFILE_STORE;
+        if (ps == null || mcName == null) return null;
+        PlayerProfile own = ps.get(arriving);
+        if (own != null && own.getAccountType() == PlayerProfile.AccountType.OFFLINE) return null;
+        for (PlayerProfile p : ps.matchesByName(mcName)) {
+            if (p.getAccountType() == PlayerProfile.AccountType.PREMIUM && mcName.equalsIgnoreCase(p.username)) {
+                return p;
+            }
+        }
+        return null;
+    }
+
     private static String suggestOfflineName(String mcName) {
         String base = mcName == null ? "" : mcName.replaceAll("[^a-zA-Z0-9_]", "");
         if (base.isBlank()) base = "player";

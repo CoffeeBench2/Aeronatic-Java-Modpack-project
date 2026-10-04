@@ -81,6 +81,18 @@ public final class AccountTransfer {
      * (destination occupied, player online) need a human decision, not a retry.
      */
     public static Result plan(MinecraftServer server, String oldName, String newName) {
+        if (oldName.equalsIgnoreCase(newName)) {
+            return Result.fail("Old and new names are the same — nothing to transfer.");
+        }
+        return plan(server, offlineUuid(oldName), offlineUuid(newName), newName);
+    }
+
+    /**
+     * UUID form of {@link #plan(MinecraftServer, String, String)}. Under {@code premiumKeepsMojangUuid}
+     * the destination is the Mojang uuid, and old and new may carry the SAME name (the heal that moves a
+     * name-derived premium profile onto its Mojang uuid), so identity is decided by uuid, not name.
+     */
+    public static Result plan(MinecraftServer server, UUID oldId, UUID newId, String newName) {
         List<String> out = new ArrayList<>();
 
         // 🔴 SERVER THREAD ONLY. The both-offline gate below reads PlayerList, whose `players` list
@@ -94,8 +106,8 @@ public final class AccountTransfer {
               + "Wrap the call in server.execute(...).");
         }
 
-        if (oldName.equalsIgnoreCase(newName)) {
-            return Result.fail("Old and new names are the same — nothing to transfer.");
+        if (oldId.equals(newId)) {
+            return Result.fail("Old and new uuids are the same — nothing to transfer.");
         }
         ProfileStore store = CoffeesAeroAuth.PROFILE_STORE;
         if (store == null) return Result.fail("Profile store is not ready.");
@@ -106,26 +118,23 @@ public final class AccountTransfer {
                              + "desync the database from the fallback store. Retry when DB: UP.");
         }
 
-        UUID oldId = offlineUuid(oldName);
-        UUID newId = offlineUuid(newName);
-
         // 🔴 Online players hold their .dat open and rewrite it on disconnect.
         ServerPlayer onOld = server.getPlayerList().getPlayer(oldId);
         ServerPlayer onNew = server.getPlayerList().getPlayer(newId);
         if (onOld != null || onNew != null) {
-            return Result.fail("§c" + (onOld != null ? oldName : newName) + " is ONLINE. "
+            return Result.fail("§c" + (onOld != null ? onOld : onNew).getGameProfile().getName() + " is ONLINE. "
                              + "Both accounts must be offline — a logged-in player rewrites their "
                              + "playerdata on disconnect and would undo the move.");
         }
 
         PlayerProfile oldP = store.get(oldId);
         if (oldP == null) {
-            return Result.fail("No profile for §f" + oldName + "§c (" + oldId + "). "
+            return Result.fail("No profile at §f" + oldId + "§c. "
                              + "Nothing to transfer — check the spelling.");
         }
         PlayerProfile newP = store.get(newId);
 
-        out.add("§7from §f" + oldName + " §8" + oldId);
+        out.add("§7from §f" + oldP.username + " §8" + oldId);
         out.add("§7to   §f" + newName + " §8" + newId);
         out.add("§7account: §f" + oldP.accountType + "§7, playtime §f"
                 + (oldP.totalPlaytimeSeconds / 3600) + "h§7, display §f" + oldP.displayName
@@ -158,12 +167,18 @@ public final class AccountTransfer {
      * confirmation (the player logged back in while the admin was reading) cannot slip through.
      */
     public static Result execute(MinecraftServer server, String oldName, String newName) {
-        Result pre = plan(server, oldName, newName);
+        if (oldName.equalsIgnoreCase(newName)) {
+            return Result.fail("Old and new names are the same — nothing to transfer.");
+        }
+        return execute(server, offlineUuid(oldName), offlineUuid(newName), newName);
+    }
+
+    /** UUID form of {@link #execute(MinecraftServer, String, String)}; see the UUID form of {@code plan}. */
+    public static Result execute(MinecraftServer server, UUID oldId, UUID newId, String newName) {
+        Result pre = plan(server, oldId, newId, newName);
         if (!pre.ok()) return pre;
 
         ProfileStore store = CoffeesAeroAuth.PROFILE_STORE;
-        UUID oldId = offlineUuid(oldName);
-        UUID newId = offlineUuid(newName);
         PlayerProfile oldP = store.get(oldId);
         String oldDisplayLower = oldP.displayName;
 
@@ -181,6 +196,10 @@ public final class AccountTransfer {
                      AUTOCREATED_MAX_PLAYTIME);
                 exec(c, "DELETE FROM trusted_ips WHERE uuid=?", newId.toString());
                 exec(c, "DELETE FROM name_queue  WHERE uuid=?", newId.toString());
+                // One-row-per-player tables keyed on uuid: anything the destination session wrote in its
+                // few seconds online would collide with the move below. The destination is auto-created
+                // (plan() refuses otherwise), so its rows are disposable.
+                for (String t : PER_PLAYER_TABLES) execIfTable(c, "DELETE FROM " + t + " WHERE uuid=?", newId.toString());
 
                 int moved = exec(c, "UPDATE players SET uuid=?, username=? WHERE uuid=?",
                                  newId.toString(), newName, oldId.toString());
@@ -189,10 +208,15 @@ public final class AccountTransfer {
 
                 exec(c, "UPDATE trusted_ips SET uuid=? WHERE uuid=?", newId.toString(), oldId.toString());
                 exec(c, "UPDATE name_queue  SET uuid=? WHERE uuid=?", newId.toString(), oldId.toString());
+                for (String t : PER_PLAYER_TABLES)
+                    execIfTable(c, "UPDATE " + t + " SET uuid=? WHERE uuid=?", newId.toString(), oldId.toString());
+                for (String t : HISTORY_TABLES)
+                    execIfTable(c, "UPDATE " + t + " SET uuid=? WHERE uuid=?", newId.toString(), oldId.toString());
                 exec(c, "DELETE FROM sessions WHERE uuid IN (?,?)", oldId.toString(), newId.toString());
 
                 c.commit();
-                out.add("§a✔ database re-keyed §7(players, trusted_ips, name_queue; sessions cleared)");
+                out.add("§a✔ database re-keyed §7(players, trusted_ips, name_queue, stats, footprint, "
+                      + "confiscations, infractions, session_log; sessions cleared)");
             } catch (SQLException e) {
                 c.rollback();
                 return Result.fail("§cDatabase transfer FAILED and was rolled back: " + e.getMessage()
@@ -260,6 +284,19 @@ public final class AccountTransfer {
 
     // ── vanilla per-player files ─────────────────────────────────────────────
 
+    // ── uuid-keyed tables beyond players / trusted_ips / name_queue / sessions ──
+    //
+    // Before 2026-10-04 a transfer moved only players, trusted_ips and name_queue, so a renamed player's
+    // stats, footprint, moderation history and an active confiscation stayed behind on the old uuid.
+    // Store tables (subscriptions, cosmetics_*, store_pending_grants) are keyed by MOJANG uuid and never
+    // move. 🔴 A table missing here is a table a transfer silently splits — keep in step with the schema.
+
+    /** One row per player (uuid is the PRIMARY KEY): the destination's row is deleted first. */
+    static final String[] PER_PLAYER_TABLES = { "player_stats", "player_footprint", "confiscations" };
+
+    /** Many rows per player: moved as they are, histories merge. */
+    static final String[] HISTORY_TABLES = { "infractions", "session_log" };
+
     private record Sub(String label, String ext, LevelResource res) {
         Path dir(MinecraftServer s) { return s.getWorldPath(res); }
     }
@@ -275,6 +312,70 @@ public final class AccountTransfer {
         try (PreparedStatement ps = c.prepareStatement(sql)) {
             for (int i = 0; i < args.length; i++) ps.setObject(i + 1, args[i]);
             return ps.executeUpdate();
+        }
+    }
+
+    /** MySQL error 1146 ER_NO_SUCH_TABLE. A statement error does not abort a MySQL transaction. */
+    private static final int ER_NO_SUCH_TABLE = 1146;
+
+    /**
+     * {@link #exec} for the tracking/moderation tables, which are created by their own subsystems and can
+     * be absent on a test database. A missing table has nothing to move; any other error still rolls back.
+     */
+    private static int execIfTable(Connection c, String sql, Object... args) throws SQLException {
+        try {
+            return exec(c, sql, args);
+        } catch (SQLException e) {
+            if (e.getErrorCode() == ER_NO_SUCH_TABLE) return 0;
+            throw e;
+        }
+    }
+
+    /**
+     * {@code premiumKeepsMojangUuid}: the name-derived profile a premium player arriving under their Mojang
+     * uuid should fold into, or null.
+     *
+     * <p>Only an UNLINKED PREMIUM row with no identity hold. Unlinked means no Mojang uuid was ever
+     * stamped on it, so nothing contradicts the arrival — the same reasoning as {@link IdentityGate}'s
+     * "unlinked premium profile: ALLOW", because the gate only marks a name premium while Mojang resolves
+     * it. A HELD row is a released name: whoever arrives under it now bought the name and gets a fresh
+     * profile. An OFFLINE row is not folded (its owner proves themselves with the password flow).
+     */
+    public static UUID unlinkedPremiumAlias(String name, UUID mojangUuid) {
+        if (name == null || mojangUuid == null || CoffeesAeroAuth.DB_MANAGER == null
+                || !CoffeesAeroAuth.DB_MANAGER.isAvailable()) return null;
+        UUID alias = offlineUuid(name);
+        if (alias.equals(mojangUuid)) return null;
+        try (Connection c = CoffeesAeroAuth.DB_MANAGER.getConnection();
+             PreparedStatement ps = c.prepareStatement(
+                 "SELECT uuid FROM players WHERE uuid=? AND account_type='PREMIUM' "
+               + "AND (mojang_uuid IS NULL OR mojang_uuid='') AND (identity_hold IS NULL OR identity_hold='')")) {
+            ps.setString(1, alias.toString());
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? alias : null;
+            }
+        } catch (SQLException e) {
+            CoffeesAeroAuth.LOGGER.warn("[Transfer] unlinkedPremiumAlias lookup failed", e);
+            return null;
+        }
+    }
+
+    /** True if the profile at {@code uuid} carries an identity hold (live DB read; false when unknown). */
+    public static boolean isHeld(UUID uuid) {
+        if (uuid == null || CoffeesAeroAuth.DB_MANAGER == null || !CoffeesAeroAuth.DB_MANAGER.isAvailable()) {
+            return false;
+        }
+        try (Connection c = CoffeesAeroAuth.DB_MANAGER.getConnection();
+             PreparedStatement ps = c.prepareStatement("SELECT identity_hold FROM players WHERE uuid=?")) {
+            ps.setString(1, uuid.toString());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) return false;
+                String h = rs.getString(1);
+                return h != null && !h.isBlank();
+            }
+        } catch (SQLException e) {
+            CoffeesAeroAuth.LOGGER.warn("[Transfer] isHeld lookup failed", e);
+            return false;
         }
     }
 

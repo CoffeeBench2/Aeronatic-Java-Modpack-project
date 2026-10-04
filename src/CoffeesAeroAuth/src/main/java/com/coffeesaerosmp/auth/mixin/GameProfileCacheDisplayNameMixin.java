@@ -67,6 +67,19 @@ public class GameProfileCacheDisplayNameMixin {
         if (name == null || name.isBlank()) return;
         if (CoffeesAeroAuth.PROFILE_STORE == null) return;      // pre-boot lookups
         try {
+            // premiumKeepsMojangUuid: a premium player lives under their Mojang uuid, but for a name not yet
+            // in usercache.json vanilla FABRICATES md5("OfflinePlayer:"+name) — so "/op Name", "/ban Name"
+            // and FTB invites would silently target an empty alias. Answer premium ACCOUNT names from our
+            // store, which holds the uuid that player actually plays under.
+            if (CoffeesAeroAuth.premiumKeepsMojangUuid()) {
+                for (PlayerProfile p : CoffeesAeroAuth.PROFILE_STORE.matchesByName(name)) {
+                    if (p.isPremium() && name.equalsIgnoreCase(p.username) && p.getUUID() != null) {
+                        cir.setReturnValue(Optional.of(new GameProfile(p.getUUID(), p.username)));
+                        return;
+                    }
+                }
+            }
+
             if (!AuthConfig.RESOLVE_DISPLAY_NAMES.get()) return;
 
             PlayerProfile profile = CoffeesAeroAuth.PROFILE_STORE.findByAnyName(name);

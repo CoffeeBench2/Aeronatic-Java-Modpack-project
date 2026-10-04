@@ -60,6 +60,22 @@ public final class RenameHealer {
         String oldName = old != null ? old.username : "your previous name";
 
         PENDING.put(player.getUUID(), new Pending(priorId, newName, System.currentTimeMillis()));
+
+        // premiumKeepsMojangUuid: the same name, moving from its name-derived uuid onto the Mojang one.
+        // Not a rename, and saying "name change detected" to someone who changed nothing reads as a bug.
+        if (oldName.equals(newName)) {
+            CoffeesAeroAuth.LOGGER.info(
+                "[Rename] {} moving profile {} onto Mojang uuid {}. Disconnecting to migrate.",
+                newName, priorId, player.getUUID());
+            player.connection.disconnect(Component.literal(
+                "§6§lOne-time account upgrade\n\n"
+              + "§7Welcome back, §f" + newName + "§7.\n"
+              + "§7We are linking your account to your Minecraft account so it\n"
+              + "§7follows you even if you change your name in future.\n\n"
+              + "§a§lPlease reconnect in a few seconds.§r\n"
+              + "§8Nothing has been lost. If anything looks wrong, tell an admin."));
+            return;
+        }
         CoffeesAeroAuth.LOGGER.info(
             "[Rename] {} is {} renamed (mojang identity matches profile {}). Disconnecting to migrate.",
             newName, oldName, priorId);
@@ -135,12 +151,15 @@ public final class RenameHealer {
             }
             // execute() re-runs its own preflight, including the both-offline check, so a player who
             // reconnected faster than this ran is caught there rather than corrupted here.
-            AccountTransfer.Result r = AccountTransfer.execute(server, old.username, p.newName());
+            //
+            // Destination = the uuid this session actually played under. With premiumKeepsMojangUuid off
+            // that IS offlineUuid(newName), exactly as before; with it on it is the Mojang uuid.
+            AccountTransfer.Result r = AccountTransfer.execute(server, p.priorUuid(), localUuid, p.newName());
             if (r.ok()) {
                 CoffeesAeroAuth.LOGGER.info("[Rename] {} → {} migrated successfully.",
                                             old.username, p.newName());
                 AccountTransfer.rememberMojangUuid(
-                    AccountTransfer.offlineUuid(p.newName()),
+                    localUuid,
                     CoffeesAeroAuth.VERIFIED_PREMIUM_UUID.getOrDefault(localUuid, null));
                 for (String line : r.lines()) CoffeesAeroAuth.LOGGER.info("[Rename]   {}", line);
             } else {

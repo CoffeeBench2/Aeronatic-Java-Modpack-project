@@ -674,6 +674,40 @@ public class CoffeesAeroAuth {
             AUTH_MANAGER.resolvePlayerType(player, false);
             return;
         }
+        handleVerified(player, v);
+    }
+
+    /**
+     * {@code premiumKeepsMojangUuid}: the cookie was already read and verified in the LOGIN phase
+     * ({@code mixin/ServerLoginIdentityMixin}), which also chose this player's uuid. Same outcomes as
+     * {@link #handleAuthCookie}, without asking the client again — the nonce is single-use, so a second
+     * request would come back as a replay and demote a premium player to offline.
+     *
+     * @param o the login outcome, or null if none was stashed (memory connection, or the stash expired)
+     */
+    public static void handleLoginOutcome(net.minecraft.server.level.ServerPlayer player,
+                                          com.coffeesaerosmp.auth.auth.LoginIdentity.Outcome o) {
+        if (AUTH_MANAGER == null) return;
+        String name = player.getGameProfile().getName();
+        if (o != null && o.verified() != null) {
+            handleVerified(player, o.verified());
+            return;
+        }
+        if (refuseDirectEntry(player)) return;
+        if (o != null && o.graceMojangUuid() != null
+                && player.getUUID().equals(o.graceMojangUuid())) {
+            admitViaGrace(player, name, o.graceMojangUuid(), o.why());
+            return;
+        }
+        LOGGER.warn("[Gate] No usable cookie for {} at login ({}) — treating as OFFLINE.",
+            name, o == null ? "no login outcome" : o.why());
+        AUTH_MANAGER.resolvePlayerType(player, false);
+    }
+
+    /** A cookie that verified, from either phase. */
+    private static void handleVerified(net.minecraft.server.level.ServerPlayer player,
+                                       com.coffeesaerosmp.auth.auth.CookieAuth.Verified v) {
+        String name = player.getGameProfile().getName();
         LOGGER.info("[Gate] Cookie OK: {} -> {} (verified UUID {}).",
             name, v.premium() ? "PREMIUM" : "OFFLINE", v.uuid());
         // Recorded for BOTH premium and offline: the offline case is the one that matters, because it
@@ -698,6 +732,18 @@ public class CoffeesAeroAuth {
             // own account. One reconnect, no admin, no data loss.
             java.util.UUID prior =
                 com.coffeesaerosmp.auth.admin.AccountTransfer.previousIdentity(v.uuid(), player.getUUID());
+            // premiumKeepsMojangUuid: this player now plays under the Mojang uuid, so their name-derived
+            // row (unlinked, never stamped) is the same human's account and is folded in the same way.
+            // The query excludes held rows, so a released name's buyer gets a fresh profile.
+            if (prior == null && premiumKeepsMojangUuid() && player.getUUID().equals(v.uuid())) {
+                prior = com.coffeesaerosmp.auth.admin.AccountTransfer.unlinkedPremiumAlias(name, v.uuid());
+            }
+            if (prior != null && com.coffeesaerosmp.auth.admin.AccountTransfer.isHeld(prior)) {
+                LOGGER.warn("[Identity] {} matches profile {}, which is on an identity hold — refused.", name, prior);
+                player.connection.disconnect(net.minecraft.network.chat.Component.literal(
+                    "§cThis profile is on hold while staff verify who owns it."));
+                return;
+            }
             if (prior != null) {
                 com.coffeesaerosmp.auth.admin.RenameHealer.scheduleFor(player, prior, name);
                 return;   // nothing below should run for a session that is about to end
@@ -731,6 +777,18 @@ public class CoffeesAeroAuth {
         String ip = com.coffeesaerosmp.auth.util.NetUtil.getPlayerIP(player);
         java.util.UUID mojangUuid = com.coffeesaerosmp.auth.auth.PremiumReconnectGrace.check(name, ip);
         if (mojangUuid == null) return false;
+        if (premiumKeepsMojangUuid() && !player.getUUID().equals(mojangUuid)) {
+            // Login already gave this connection its name-derived uuid. Resolving it PREMIUM now would put
+            // a premium session on the offline alias — the split identity this mode exists to prevent.
+            return false;
+        }
+        admitViaGrace(player, name, mojangUuid, why);
+        return true;
+    }
+
+    private static void admitViaGrace(net.minecraft.server.level.ServerPlayer player, String name,
+                                      java.util.UUID mojangUuid, String why) {
+        String ip = com.coffeesaerosmp.auth.util.NetUtil.getPlayerIP(player);
         LOGGER.info("[Gate] Reconnect grace: {} ({}) re-resolved PREMIUM — same IP within the grace window.",
             name, why);
         com.coffeesaerosmp.auth.auth.PremiumReconnectGrace.record(name, mojangUuid, ip);   // refresh
@@ -740,7 +798,18 @@ public class CoffeesAeroAuth {
                 == com.coffeesaerosmp.auth.admin.IdentityGate.Verdict.ALLOW) {
             com.coffeesaerosmp.auth.compat.SkinsHook.applyPremium(player, mojangUuid);
         }
-        return true;
+    }
+
+    /**
+     * Whether premium players play under their Mojang uuid. The ONE definition — the login mixin and every
+     * PLAY-phase branch read this, so the two phases cannot disagree. Off when no gate secret is set (no
+     * cookie can be trusted, so everyone is offline anyway) or when the config is unreadable.
+     */
+    public static boolean premiumKeepsMojangUuid() {
+        com.coffeesaerosmp.auth.auth.CookieAuth auth = COOKIE_AUTH;
+        if (auth == null || !auth.enabled()) return false;
+        try { return com.coffeesaerosmp.auth.config.AuthConfig.PREMIUM_KEEPS_MOJANG_UUID.get(); }
+        catch (Exception e) { return false; }
     }
 
     private static void onRegisterCommands(RegisterCommandsEvent event) {

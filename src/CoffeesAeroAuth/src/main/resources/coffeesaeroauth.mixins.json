@@ -11,6 +11,7 @@
         "ServerPacketListenerMixin",
         "AfkInputMixin",
         "ServerCommonCookieMixin",
+        "ServerLoginIdentityMixin",
         "PlayerInfoPacketAccessor",
         "ServerPlayerPlotGuardMixin",
         "ServerPlayerTeleportGuardMixin",

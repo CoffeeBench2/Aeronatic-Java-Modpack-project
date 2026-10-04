@@ -43,6 +43,7 @@ public class AuthConfig {
     public static final ModConfigSpec.IntValue     VOTE_REWARD_MAX_REWARDED;
     public static final ModConfigSpec.BooleanValue KICK_ON_NAME_CONFLICT;
     public static final ModConfigSpec.BooleanValue IDENTITY_GATE_ENFORCE;
+    public static final ModConfigSpec.BooleanValue PREMIUM_KEEPS_MOJANG_UUID;
     public static final ModConfigSpec.IntValue     MAX_FAILED_ATTEMPTS;
     public static final ModConfigSpec.BooleanValue BYPASS_AUTH_FOR_OPS;
 
@@ -308,6 +309,14 @@ public class AuthConfig {
                      "false = ALERT ONLY: every verdict is still logged and sent to Discord, but the login",
                      "proceeds exactly as it did before 1.11.4. This is the rollback switch - no redeploy.")
             .define("identityGateEnforce", true);
+        PREMIUM_KEEPS_MOJANG_UUID = b
+            .comment("Premium players keep their real Mojang UUID on this offline-mode server (auth/LoginIdentity).",
+                     "The gate cookie is read in the LOGIN phase, so the GameProfile is built with the Mojang",
+                     "UUID before any world data loads. Offline players keep md5(\"OfflinePlayer:\"+name).",
+                     "🔴 Changes the key of every premium player's world data. Turn on ONLY on a world that is",
+                     "already Mojang-keyed (Season 3) and on the lobby that feeds it, together, after the DB",
+                     "re-key (/aeroid rekeypremium). NEVER on the Season 2 world. Needs a restart.")
+            .define("premiumKeepsMojangUuid", false);
         MAX_FAILED_ATTEMPTS = b
             .comment("Wrong password attempts allowed before kicking. 0 = unlimited.")
             .defineInRange("maxFailedAttempts", 5, 0, 20);
