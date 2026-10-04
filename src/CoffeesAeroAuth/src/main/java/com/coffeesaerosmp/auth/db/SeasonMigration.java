@@ -60,7 +60,7 @@ public final class SeasonMigration {
     private SeasonMigration() {}
 
     /** Bump this for Season 3 and the same migration runs again, once. */
-    public static final int CURRENT_SEASON = 2;
+    public static final int CURRENT_SEASON = 3;   // Season 3 (S3 server, 2026-10). Only S3 + the post-launch lobby run this jar.
 
     /** Seconds of Season 1 playtime required to count as a veteran (1 hour). */
     private static final long VETERAN_SECONDS = 3600L;
