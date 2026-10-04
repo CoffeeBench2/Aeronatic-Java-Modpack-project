@@ -243,6 +243,10 @@ public class DatabaseManager {
             // release it. The text is the reason, shown to staff. Lock-don't-move: the data stays put.
             try { s.executeUpdate("ALTER TABLE players ADD COLUMN identity_hold VARCHAR(255) NULL"); }
             catch (SQLException dupCol) { /* column already present — fine */ }
+            // Season 3: total_playtime at the season rollover (set by scripts/s3-cutover). Season playtime
+            // for the level is playtime minus this. Never written by save() (PlayerProfile: transient).
+            try { s.executeUpdate("ALTER TABLE players ADD COLUMN season_start_playtime BIGINT NOT NULL DEFAULT 0"); }
+            catch (SQLException dupCol) { /* column already present — fine */ }
             try { s.executeUpdate("ALTER TABLE players ADD COLUMN startup_bonus_given BOOLEAN NOT NULL DEFAULT FALSE"); }
             catch (SQLException dupCol) { /* column already present — fine */ }
             try { s.executeUpdate("ALTER TABLE players ADD COLUMN first_ip VARCHAR(45) NULL"); }
@@ -388,6 +392,9 @@ public class DatabaseManager {
             // players.mojang_uuid rather than players.uuid — see StoreSchema for why that is forced
             // rather than chosen.
             com.coffeesaerosmp.auth.store.StoreSchema.create(c);
+
+            // ── Season 3: /mail and level-up bookkeeping (mail/MailStore) ─────────────────
+            com.coffeesaerosmp.auth.mail.MailStore.createSchema(c);
 
             CoffeesAeroAuth.LOGGER.info("[DB] Schema verified.");
         } catch (SQLException e) {

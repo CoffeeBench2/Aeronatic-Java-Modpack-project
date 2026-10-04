@@ -247,6 +247,32 @@ public final class TabListManager {
             + "\n ");
     }
 
+    private static volatile String tpsCache = "";
+    private static volatile long tpsAt;
+
+    /**
+     * "20.0 TPS", coloured — next to the pilot count, as the admins asked (2026-09-29). Same source as the
+     * op TPS bar (spark first, our own counters as the fallback) so the two never disagree; cached for a
+     * second because the footer is built several times per update.
+     */
+    private static String tpsText() {
+        long now = System.currentTimeMillis();
+        if (now - tpsAt < 1000 && !tpsCache.isEmpty()) return tpsCache;
+        double tps;
+        try {
+            var sp = com.coffeesaerosmp.auth.watchdog.SparkStats.available()
+                ? com.coffeesaerosmp.auth.watchdog.SparkStats.read() : null;
+            tps = sp != null ? sp.tps() : com.coffeesaerosmp.auth.watchdog.TickStats.read().tps();
+        } catch (Throwable t) {
+            return tpsCache;
+        }
+        tps = Math.min(20.0, Math.max(0.0, tps));
+        String colour = tps >= 19.5 ? "§a" : tps >= 15.0 ? "§e" : "§c";
+        tpsCache = colour + String.format(java.util.Locale.ROOT, "%.1f", tps) + " §7TPS";
+        tpsAt = now;
+        return tpsCache;
+    }
+
     private static Component footer(MinecraftServer server, boolean lobby, int count) {
         String[] tips = lobby ? TIPS_LOBBY : TIPS_WORLD;
         String tip = tips[(frame / 6) % tips.length];  // rotate roughly every 3s
@@ -255,7 +281,7 @@ public final class TabListManager {
         String line = lobby
             ? "§a✦ §e/spawn §6to enter the world §8• §7" + tip
             : "§6⚙ §e" + count + " §6pilot"
-              + (count == 1 ? "" : "s") + " aloft §8• §7" + tip;
+              + (count == 1 ? "" : "s") + " aloft §8• " + tpsText() + " §8• §7" + tip;
         return Component.literal(
               "\n§8§m                                          §r"
             + "\n" + line

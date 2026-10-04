@@ -292,10 +292,10 @@ public final class AccountTransfer {
     // move. 🔴 A table missing here is a table a transfer silently splits — keep in step with the schema.
 
     /** One row per player (uuid is the PRIMARY KEY): the destination's row is deleted first. */
-    static final String[] PER_PLAYER_TABLES = { "player_stats", "player_footprint", "confiscations" };
+    static final String[] PER_PLAYER_TABLES = { "player_stats", "player_footprint", "confiscations", "level_progress" };
 
     /** Many rows per player: moved as they are, histories merge. */
-    static final String[] HISTORY_TABLES = { "infractions", "session_log" };
+    static final String[] HISTORY_TABLES = { "infractions", "session_log", "mail" };
 
     private record Sub(String label, String ext, LevelResource res) {
         Path dir(MinecraftServer s) { return s.getWorldPath(res); }

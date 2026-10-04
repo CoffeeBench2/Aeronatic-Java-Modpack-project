@@ -157,6 +157,24 @@ public class AuthConfig {
     // ── Confiscation (moderation freeze) ──────────────────────────────────────
     public static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> CONFISCATE_ALLOWED_COMMANDS;
 
+    // ── Season 3 leveling + mail ───────────────────────────────────────────────
+    public static final ModConfigSpec.BooleanValue LEVELING_ENABLED;
+    public static final ModConfigSpec.IntValue     LEVEL_XP_PER_ADVANCEMENT;
+    public static final ModConfigSpec.IntValue     LEVEL_XP_PER_HOUR;
+    public static final ModConfigSpec.IntValue     LEVEL_CURVE;
+    public static final ModConfigSpec.BooleanValue LEVEL_CLAIMS_ENABLED;
+    public static final ModConfigSpec.IntValue     CLAIMS_BASE;
+    public static final ModConfigSpec.IntValue     CLAIMS_PER_LEVEL;
+    public static final ModConfigSpec.IntValue     CLAIMS_MAX;
+    public static final ModConfigSpec.IntValue     LEVEL_UP_SPURS_PER_LEVEL;
+    public static final ModConfigSpec.IntValue     LEVEL_MILESTONE_EVERY;
+    public static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> LEVEL_MILESTONE_ITEMS;
+    public static final ModConfigSpec.BooleanValue OPS_GET_ALL_ADVANCEMENTS;
+    public static final ModConfigSpec.BooleanValue MAIL_ENABLED;
+    public static final ModConfigSpec.IntValue     MAIL_EXPIRY_DAYS;
+    public static final ModConfigSpec.BooleanValue SEASON_WELCOME_MAIL;
+    public static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> SEASON_WELCOME_ITEMS;
+
     public static final ModConfigSpec.BooleanValue EXPLOIT_DETECT_ENABLED;
     public static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> EXPLOIT_RULES;
     public static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> EXPLOIT_FLAGGED_BLOCKS;
@@ -1342,6 +1360,64 @@ public class AuthConfig {
                      "🔑 Required by Mojang's rules, and a Discord or forum link explicitly does NOT",
                      "count — it has to be an email address.")
             .define("storeSupportEmail", "");
+        b.pop();
+
+        b.comment("Season 3 levels: achievement-driven level, claims by level, level-up mail (leveling/).").push("leveling");
+        LEVELING_ENABLED = b
+            .comment("Master switch. ON: the sidebar level comes from LevelFormula (real advancements + season",
+                     "playtime), FTB claim limits follow the level, and each new level mails a reward.",
+                     "OFF (default): the S2 playtime-only level, nothing else changes. SMP role only.")
+            .define("levelingEnabled", false);
+        LEVEL_XP_PER_ADVANCEMENT = b.comment("XP per completed real (non-recipe) advancement.")
+            .defineInRange("levelXpPerAdvancement", 10, 0, 10_000);
+        LEVEL_XP_PER_HOUR = b.comment("XP per hour of SEASON playtime (AFK excluded). 10/6 ≈ 80/20 at the S2 pace.")
+            .defineInRange("levelXpPerHour", 6, 0, 10_000);
+        LEVEL_CURVE = b.comment("level = 1 + floor(sqrt(xp / curve)). Bigger = slower levels.")
+            .defineInRange("levelCurve", 5, 1, 100_000);
+        LEVEL_CLAIMS_ENABLED = b
+            .comment("Set each player's FTB Chunks EXTRA claim chunks from their level.",
+                     "🔴 FTB Chunks' own max_claimed_chunks (config/ftbchunks-world.snbt) must equal claimsBase.")
+            .define("levelClaimsEnabled", true);
+        CLAIMS_BASE = b.comment("Claims at level 1 (= FTB Chunks max_claimed_chunks).")
+            .defineInRange("claimsBase", 5, 0, 100_000);
+        CLAIMS_PER_LEVEL = b.comment("Extra claims per level above 1.")
+            .defineInRange("claimsPerLevel", 2, 0, 100_000);
+        CLAIMS_MAX = b.comment("Hard cap per person (owner: 50).")
+            .defineInRange("claimsMax", 50, 0, 100_000);
+        LEVEL_UP_SPURS_PER_LEVEL = b.comment("Spurs mailed on reaching level N = this × N. 0 = none.")
+            .defineInRange("levelUpSpursPerLevel", 20, 0, 100_000);
+        LEVEL_MILESTONE_EVERY = b.comment("Every Nth level also mails levelMilestoneItems. 0 = never.")
+            .defineInRange("levelMilestoneEvery", 5, 0, 1000);
+        LEVEL_MILESTONE_ITEMS = b
+            .comment("Items for milestone levels, 'namespace:item*count' (e.g. 'minecraft:diamond*4').")
+            .defineListAllowEmpty("levelMilestoneItems",
+                java.util.List.of("minecraft:diamond*4", "minecraft:experience_bottle*16"),
+                () -> "minecraft:diamond*1",
+                o -> o instanceof String s && !s.isBlank());
+        OPS_GET_ALL_ADVANCEMENTS = b
+            .comment("Grant EVERY advancement to permission-4 players when they join (staff sit at the top of",
+                     "an achievement-based ladder rather than polluting it). ⚠ Fires every advancement reward",
+                     "once, recipe unlocks included. SMP role only.")
+            .define("opsGetAllAdvancements", false);
+        b.pop();
+
+        b.comment("/mail — a server-side mailbox GUI (mail/). Rewards, admin mail, season welcome.").push("mail");
+        MAIL_ENABLED = b
+            .comment("Master switch for /mail, the join notice and system mail. Needs MySQL. SMP role only;",
+                     "the lobby just reports the unread count.")
+            .define("mailEnabled", false);
+        MAIL_EXPIRY_DAYS = b.comment("Unclaimed mail is deleted after this many days. 0 = never.")
+            .defineInRange("mailExpiryDays", 60, 0, 3650);
+        SEASON_WELCOME_MAIL = b
+            .comment("Deliver the starter spurs (startupBonusSpurs) plus seasonWelcomeItems as a welcome mail",
+                     "instead of dropping them straight into the inventory.")
+            .define("seasonWelcomeMail", true);
+        SEASON_WELCOME_ITEMS = b
+            .comment("Extra items in the welcome mail, 'namespace:item*count'.")
+            .defineListAllowEmpty("seasonWelcomeItems",
+                java.util.List.of("minecraft:bread*16", "minecraft:oak_sapling*4"),
+                () -> "minecraft:bread*1",
+                o -> o instanceof String s && !s.isBlank());
         b.pop();
 
         SERVER_SPEC = b.build();

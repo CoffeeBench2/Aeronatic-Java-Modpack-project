@@ -588,6 +588,9 @@ public class AuthManager {
             return;
         }
         int amount = AuthConfig.STARTUP_BONUS_SPURS.get();
+        // Season 3: the starter spurs (+ welcome items) arrive as a welcome MAIL instead. Same one-time
+        // flag gates this call; the mail's dedupe key makes it once-per-season even if it is reached twice.
+        if (com.coffeesaerosmp.auth.mail.MailService.sendSeasonWelcome(player, Math.max(0, amount))) return;
         if (amount <= 0) return;
         int[]    values = {64, 16, 8, 1};
         String[] coins  = {"cog", "sprocket", "bevel", "spur"};

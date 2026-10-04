@@ -62,6 +62,12 @@ public class PlayerProfile {
     public transient String mojangLink;
     public transient String linkSource;
     public transient String identityHold;
+    /**
+     * players.season_start_playtime — total_playtime frozen at this season's rollover (S3 cutover SQL sets
+     * it). READ-ONLY here for the same reason as the identity fields: save() must never write a stale
+     * cached copy over the value the rollover stamped. Season playtime = playtime − this.
+     */
+    public transient long seasonStartPlaytime;
 
     public PlayerProfile() {
     }

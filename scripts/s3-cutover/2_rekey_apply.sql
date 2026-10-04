@@ -1,5 +1,6 @@
 -- =====================================================================================================
 -- Season 3 cutover, step 2: APPLY the premium re-key. Read the header of 1_precheck.sql first.
+-- 🔴 Run 0_prepare_schema.sql FIRST: this script updates the mail / level_progress tables it creates.
 -- Every precheck must have printed 0. Every server on this database must be STOPPED. A fresh mysqldump
 -- must exist. All of it is one transaction: any error before COMMIT leaves the database untouched.
 -- =====================================================================================================
@@ -33,6 +34,9 @@ UPDATE player_footprint t JOIN rk ON t.uuid = rk.old_uuid SET t.uuid = rk.new_uu
 UPDATE confiscations    t JOIN rk ON t.uuid = rk.old_uuid SET t.uuid = rk.new_uuid;
 UPDATE infractions      t JOIN rk ON t.uuid = rk.old_uuid SET t.uuid = rk.new_uuid;
 UPDATE session_log      t JOIN rk ON t.uuid = rk.old_uuid SET t.uuid = rk.new_uuid;
+-- auth 1.13 tables (created by 0_prepare_schema.sql)
+UPDATE mail             t JOIN rk ON t.uuid = rk.old_uuid SET t.uuid = rk.new_uuid;
+UPDATE level_progress   t JOIN rk ON t.uuid = rk.old_uuid SET t.uuid = rk.new_uuid;
 -- session tokens are bound to the old identity; dropping them costs one /login at most
 DELETE t FROM sessions  t JOIN rk ON t.uuid = rk.old_uuid;
 

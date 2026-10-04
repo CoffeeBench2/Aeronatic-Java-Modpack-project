@@ -15,6 +15,7 @@ public final class GuardConfig {
     public static final ModConfigSpec SERVER_SPEC;
 
     public static final ModConfigSpec.BooleanValue        LOCK_END_DIMENSION;
+    public static final ModConfigSpec.ConfigValue<String> NETHER_OPENS_AT;
     public static final ModConfigSpec.BooleanValue        PUBLIC_INTERACT_ENABLED;
     public static final ModConfigSpec.BooleanValue        DEBUG_INTERACT_LOGGING;
     public static final ModConfigSpec.IntValue            DRAGON_DAMAGE_DIVISOR;
@@ -60,6 +61,13 @@ public final class GuardConfig {
                      "recalls...). Ops (permission 2+) bypass. Hot-reloadable: flip to false and save to",
                      "open the End without a restart.")
             .define("lockEndDimension", true);
+        NETHER_OPENS_AT = b
+            .comment("Keep players out of the Nether until this moment (ISO-8601 with offset, e.g.",
+                     "\"2026-10-10T18:00:00+05:30\"). Blank = the Nether is open. Same routes and op bypass as",
+                     "the End lock; players are told how long is left. Hot-reloadable: edit, save, done.",
+                     "An unparseable value keeps the Nether OPEN and logs a warning — a typo must not lock",
+                     "players out with no end date.")
+            .define("netherOpensAt", "");
         b.pop();
 
         b.comment("Ender dragon difficulty.").push("enderdragon");

@@ -186,11 +186,23 @@ public final class SidebarManager {
         String name = profile != null && profile.displayName != null
             ? profile.displayName : player.getGameProfile().getName();
         long seconds = playtimeSeconds(profile);
-        int  level   = levelFor(seconds);
+        int  level;
+        Component bar;
+        if (com.coffeesaerosmp.auth.leveling.LevelService.enabled()) {
+            // Season 3: the achievement-driven level (leveling/LevelFormula), the SAME number claims and
+            // level-up mail use.
+            var p = com.coffeesaerosmp.auth.leveling.LevelService.params();
+            long xp = com.coffeesaerosmp.auth.leveling.LevelService.xpOf(player);
+            level = com.coffeesaerosmp.auth.leveling.LevelFormula.level(xp, p);
+            bar = bar(com.coffeesaerosmp.auth.leveling.LevelFormula.progress(xp, p));
+        } else {
+            level = levelFor(seconds);
+            bar = progressBar(seconds, level);
+        }
 
         l.add(rule());
         l.add(tint(" ✈ ", CREMA).append(tint(name, FOAM)));
-        l.add(tint(" Lv " + level + " ", LATTE).append(progressBar(seconds, level)));
+        l.add(tint(" Lv " + level + " ", LATTE).append(bar));
         l.add(rule());
         // While AFK the clock is genuinely paused, so say so on the row that stopped moving —
         // a playtime figure that silently freezes reads as a bug, not as a rule.
@@ -250,6 +262,10 @@ public final class SidebarManager {
      * session is banked (on leave/save), so without the live part the panel would sit frozen at the
      * join value for the whole session.
      */
+    public static long playtimeSecondsOf(PlayerProfile profile) {
+        return playtimeSeconds(profile);
+    }
+
     private static long playtimeSeconds(PlayerProfile profile) {
         if (profile == null) return 0L;
         long total = profile.totalPlaytimeSeconds;
@@ -328,6 +344,11 @@ public final class SidebarManager {
         return h * h * 3600.0;
     }
 
+    private static Component bar(double progress) {
+        int filled = Math.max(0, Math.min(8, (int) Math.round(8.0 * progress)));
+        return tint("▰".repeat(filled), LATTE).append(tint("▱".repeat(8 - filled), ESPRESSO));
+    }
+
     private static Component progressBar(long seconds, int level) {
         double base = secondsForLevel(level);
         double next = secondsForLevel(level + 1);
@@ -352,6 +373,16 @@ public final class SidebarManager {
      * display-present + {@code shouldAnnounceChat} test {@code WatchdogEvents.onAdvancement} already
      * uses to keep those auto-grants out of Discord, so the panel and the feed now agree.
      */
+    /** The cached real-advancement count — LevelService's input, so sidebar and level never disagree. */
+    public static int realAdvancementCount(ServerPlayer player, MinecraftServer server) {
+        return advancements(player, server);
+    }
+
+    /** Forget the cached count (after a bulk grant) so the next read rescans. */
+    public static void invalidateAdvancements(UUID id) {
+        advCount.remove(id);
+    }
+
     private static int advancements(ServerPlayer player, MinecraftServer server) {
         Integer cached = advCount.get(player.getUUID());
         if (cached != null) return cached;

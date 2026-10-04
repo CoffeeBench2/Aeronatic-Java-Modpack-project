@@ -230,6 +230,33 @@ public class CoffeesAeroAuth {
         NeoForge.EVENT_BUS.addListener(
             com.coffeesaerosmp.auth.sidebar.SidebarManager::onAdvancementEarned);
 
+        // Season 3: achievement-driven levels, claims by level, level-up mail, /mail notices. Every
+        // hook is a no-op unless levelingEnabled / mailEnabled (both default OFF), and SMP-role only.
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.tick.ServerTickEvent.Post e) ->
+            com.coffeesaerosmp.auth.leveling.LevelService.onServerTick(e.getServer()));
+        NeoForge.EVENT_BUS.addListener(
+            (net.neoforged.neoforge.event.entity.player.AdvancementEvent.AdvancementEarnEvent e) -> {
+                if (e.getEntity() instanceof net.minecraft.server.level.ServerPlayer sp) {
+                    com.coffeesaerosmp.auth.leveling.LevelService.onAdvancement(sp);
+                }
+            });
+        NeoForge.EVENT_BUS.addListener(
+            (net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent e) -> {
+                if (e.getEntity() instanceof net.minecraft.server.level.ServerPlayer sp) {
+                    com.coffeesaerosmp.auth.leveling.LevelService.onJoin(sp);
+                    com.coffeesaerosmp.auth.mail.MailService.onJoin(sp);
+                }
+            });
+        NeoForge.EVENT_BUS.addListener(
+            (net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerLoggedOutEvent e) -> {
+                if (e.getEntity() instanceof net.minecraft.server.level.ServerPlayer sp) {
+                    com.coffeesaerosmp.auth.leveling.LevelService.onLeave(sp);
+                }
+            });
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.server.ServerStartedEvent e) -> {
+            if (com.coffeesaerosmp.auth.mail.MailService.enabled()) com.coffeesaerosmp.auth.mail.MailStore.purgeExpired();
+        });
+
         // Idle timer — pauses playtime accrual while a player is AFK, so the playtime-derived
         // level can't be farmed by standing still. Rolls sessionStartEpoch forward rather than
         // accumulating a subtraction, so every consumer of playtime is corrected at once.
@@ -824,5 +851,6 @@ public class CoffeesAeroAuth {
         com.coffeesaerosmp.auth.commands.StoreCommands.register(event.getDispatcher());
         com.coffeesaerosmp.auth.commands.IdentityCommands.register(event.getDispatcher());
         com.coffeesaerosmp.auth.commands.AfkCommands.register(event.getDispatcher());
+        com.coffeesaerosmp.auth.commands.MailCommands.register(event.getDispatcher());
     }
 }

@@ -437,6 +437,7 @@ public class ProfileStore implements CredentialStore {
         p.mojangLink           = optString(rs, "mojang_uuid");
         p.linkSource           = optString(rs, "link_source");
         p.identityHold         = optString(rs, "identity_hold");
+        p.seasonStartPlaytime  = optLong(rs, "season_start_playtime");
         return p;
     }
 

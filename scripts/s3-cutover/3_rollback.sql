@@ -22,6 +22,8 @@ UPDATE player_footprint t JOIN rb ON t.uuid = rb.new_uuid SET t.uuid = rb.old_uu
 UPDATE confiscations    t JOIN rb ON t.uuid = rb.new_uuid SET t.uuid = rb.old_uuid;
 UPDATE infractions      t JOIN rb ON t.uuid = rb.new_uuid SET t.uuid = rb.old_uuid;
 UPDATE session_log      t JOIN rb ON t.uuid = rb.new_uuid SET t.uuid = rb.old_uuid;
+UPDATE mail             t JOIN rb ON t.uuid = rb.new_uuid SET t.uuid = rb.old_uuid;
+UPDATE level_progress   t JOIN rb ON t.uuid = rb.new_uuid SET t.uuid = rb.old_uuid;
 DELETE t FROM sessions  t JOIN rb ON t.uuid = rb.new_uuid;
 UPDATE players          p JOIN rb ON p.uuid = rb.new_uuid SET p.uuid = rb.old_uuid;
 
