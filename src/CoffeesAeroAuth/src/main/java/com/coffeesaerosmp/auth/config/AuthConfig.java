@@ -174,6 +174,9 @@ public class AuthConfig {
     public static final ModConfigSpec.IntValue     MAIL_EXPIRY_DAYS;
     public static final ModConfigSpec.BooleanValue SEASON_WELCOME_MAIL;
     public static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> SEASON_WELCOME_ITEMS;
+    public static final ModConfigSpec.BooleanValue LAUNCH_RESET;
+    public static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> LAUNCH_RESET_ACCOUNTS;
+    public static final ModConfigSpec.BooleanValue LAUNCH_RESET_DEOP;
 
     public static final ModConfigSpec.BooleanValue EXPLOIT_DETECT_ENABLED;
     public static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> EXPLOIT_RULES;
@@ -1418,6 +1421,26 @@ public class AuthConfig {
                 java.util.List.of("minecraft:bread*16", "minecraft:oak_sapling*4"),
                 () -> "minecraft:bread*1",
                 o -> o instanceof String s && !s.isBlank());
+        b.pop();
+
+        b.comment("Season launch: the one-time 'fresh start' for accounts used during the staff test (launch/LaunchReset).").push("launch");
+        LAUNCH_RESET = b
+            .comment("Flip to true ONCE, at launch. On the next boot every account in launchResetAccounts is reset to",
+                     "a brand-new player (inventory, ender chest, position, XP, advancements, stats, personal quest",
+                     "progress, homes) and, if launchResetDeop, de-opped. A stamp file in the world then records that it",
+                     "ran, so leaving this true afterwards does NOTHING. Files are MOVED to a backup folder, never deleted.",
+                     "FTB teams and claims are NOT touched (spawn stays protected). The world itself is never touched.")
+            .define("launchReset", false);
+        LAUNCH_RESET_ACCOUNTS = b
+            .comment("Account names to reset (case-insensitive; resolved through usercache.json, i.e. accounts that",
+                     "actually joined during the test). Never hard-coded: the owner fills this in before launch.")
+            .defineListAllowEmpty("launchResetAccounts",
+                java.util.List.<String>of(),
+                () -> "PlayerName",
+                o -> o instanceof String s && !s.isBlank());
+        LAUNCH_RESET_DEOP = b
+            .comment("Also remove op from those accounts (they become ordinary survival players).")
+            .define("launchResetDeop", true);
         b.pop();
 
         SERVER_SPEC = b.build();

@@ -93,6 +93,17 @@ public class AuthManager {
         // frozen in AWAITING_TYPE and wait for AeroVelocity's aerosmp:player_type message (handled by
         // resolvePlayerType), with onTick() falling back to offline on timeout. Detection happens at the
         // proxy — here we only READ the forwarded result.
+        net.minecraft.server.MinecraftServer mc = player.getServer();
+        if (mc != null && mc.usesAuthentication()) {
+            // online-mode=true (the Season 3 staff test, 2026-10-04): vanilla has ALREADY verified this
+            // account with Mojang during login and the uuid IS the Mojang uuid. Nothing to ask for — no gate
+            // cookie exists on a direct connect, and no password applies. Deferred one task like the other
+            // paths so every other join handler sees AWAITING_TYPE first.
+            mc.execute(() -> {
+                if (!player.hasDisconnected()) CoffeesAeroAuth.handleOnlineModeLogin(player);
+            });
+            return;
+        }
         if (CoffeesAeroAuth.premiumKeepsMojangUuid()) {
             // The cookie was read during LOGIN (it chose this player's uuid). Asking again would get the
             // same single-use cookie back as a replay. The forwarded-uuid reader is skipped too: premium

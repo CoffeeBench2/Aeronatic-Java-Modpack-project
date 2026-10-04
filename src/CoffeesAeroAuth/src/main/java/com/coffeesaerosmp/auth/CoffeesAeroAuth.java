@@ -255,6 +255,8 @@ public class CoffeesAeroAuth {
             });
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.server.ServerStartedEvent e) -> {
             if (com.coffeesaerosmp.auth.mail.MailService.enabled()) com.coffeesaerosmp.auth.mail.MailStore.purgeExpired();
+            // One-time season launch reset (launchReset lever); a no-op unless armed, and once only.
+            com.coffeesaerosmp.auth.launch.LaunchReset.onServerStarted(e.getServer());
         });
 
         // Idle timer — pauses playtime accrual while a player is AFK, so the playtime-derived
@@ -729,6 +731,27 @@ public class CoffeesAeroAuth {
         LOGGER.warn("[Gate] No usable cookie for {} at login ({}) — treating as OFFLINE.",
             name, o == null ? "no login outcome" : o.why());
         AUTH_MANAGER.resolvePlayerType(player, false);
+    }
+
+    /**
+     * online-mode=true: Mojang verified the login, the uuid is the Mojang uuid. Resolve PREMIUM directly.
+     *
+     * <p>🔴 Deliberately NO rename healing ({@code previousIdentity} / {@code unlinkedPremiumAlias}): those MOVE
+     * a stored account onto this uuid. On a test server that would reach into whatever database it is pointed
+     * at and re-key real players' rows. A test server must use its OWN database (Season 3 runbook).
+     */
+    public static void handleOnlineModeLogin(net.minecraft.server.level.ServerPlayer player) {
+        if (AUTH_MANAGER == null) return;
+        java.util.UUID id = player.getUUID();
+        LOGGER.info("[Auth] {} verified by Mojang (online-mode) — PREMIUM {}.", player.getGameProfile().getName(), id);
+        GATE_VERIFIED.add(id);
+        VERIFIED_PREMIUM_UUID.put(id, id);
+        boolean admitted = AUTH_MANAGER.resolvePlayerType(player, true, id)
+                           == com.coffeesaerosmp.auth.admin.IdentityGate.Verdict.ALLOW;
+        if (admitted) {
+            com.coffeesaerosmp.auth.admin.AccountTransfer.rememberMojangUuid(id, id);
+            com.coffeesaerosmp.auth.compat.SkinsHook.applyPremium(player, id);
+        }
     }
 
     /** A cookie that verified, from either phase. */
