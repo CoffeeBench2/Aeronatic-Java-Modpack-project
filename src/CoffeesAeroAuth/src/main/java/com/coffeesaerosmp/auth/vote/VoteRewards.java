@@ -41,11 +41,18 @@ import java.util.concurrent.ConcurrentHashMap;
  *       vote is banked and delivered on the next join.</li>
  * </ol>
  *
- * <h2>Scaling</h2>
- * The reward grows with a player's lifetime vote count and is then clamped:
- * {@code reward = min(max, base + totalVotes / votesPerStep)}. Regular voters end up better off
- * than one-off voters, but the per-vote ceiling means it can never inflate without bound — spurs
- * cap at {@code voteRewardSpursMax}, diamonds at {@code voteRewardDiamondsMax}.
+ * <h2>Scaling — a real STREAK (2026-10-04)</h2>
+ * The reward grows with the player's current voting streak and is clamped:
+ * {@code reward = min(max, base + (streak - 1) / votesPerStep)}.
+ * <ul>
+ *   <li>A vote at least {@link VoteStreak#NEXT_DAY_HOURS} after the vote that last moved the streak counts as
+ *       the next day (streak + 1). Sooner = same day (another site): the streak does not move.</li>
+ *   <li>More than {@code 2 × voteCooldownHours} with no vote breaks it: back to day 1.</li>
+ *   <li>No lifetime cap. A player who keeps their streak keeps earning the top tier.</li>
+ * </ul>
+ * Why: the old ladder ran on LIFETIME votes with a 30-vote cap. Someone who stopped voting for weeks came
+ * back on the top tier, while the most loyal voters hit vote 31 and were paid nothing ever again — the
+ * admins' report, 2026-10-04. Voting is the ONLY recurring spur source in the game (owner, 2026-10-04).
  */
 public final class VoteRewards {
 
@@ -57,7 +64,14 @@ public final class VoteRewards {
         int  totalVotes;
         int  pending;
         long lastVoteMs;
+        // Streak (2026-10-04). The reward is fixed when the vote LANDS, so banked votes pay the tier earned.
+        int  streak;
+        long lastStreakMs;
+        int  pendingSpurs;
+        int  pendingDiamonds;
     }
+
+
 
     private final Path file;
     private final Map<String, Entry> state = new ConcurrentHashMap<>();
@@ -94,16 +108,24 @@ public final class VoteRewards {
         UUID uuid = profile.getUUID();
         Entry e = state.computeIfAbsent(uuid.toString(), k -> new Entry());
         int voteNumber;
+        int streak;
         synchronized (e) {
+            long now = System.currentTimeMillis();
+            int next = VoteStreak.next(e.streak, e.lastStreakMs, now, AuthConfig.VOTE_COOLDOWN_HOURS.get());
+            if (next != e.streak || e.lastStreakMs <= 0) e.lastStreakMs = now;   // only a NEW day moves the clock
+            e.streak = next;
             e.totalVotes++;
-            e.lastVoteMs = System.currentTimeMillis();
+            e.lastVoteMs = now;
             voteNumber = e.totalVotes;
+            streak = e.streak;
             e.pending++;                      // cleared below if they are online to receive it now
+            e.pendingSpurs    += spursFor(streak);
+            e.pendingDiamonds += diamondsFor(streak);
         }
         save();
 
-        CoffeesAeroAuth.LOGGER.info("[Vote] {} voted on {} (vote #{})",
-            profile.username, serviceName, voteNumber);
+        CoffeesAeroAuth.LOGGER.info("[Vote] {} voted on {} (vote #{}, streak {})",
+            profile.username, serviceName, voteNumber, streak);
 
         // Hop to the server thread before looking at players or touching inventories.
         String shown = (profile.displayName != null && !profile.displayName.isBlank())
@@ -129,6 +151,17 @@ public final class VoteRewards {
     }
 
     /** Lifetime vote count, for {@code /authmod player} and the reward message. */
+    /**
+     * The streak as it stands NOW: a streak whose last day is older than 2 × cooldown already counts as
+     * broken, so /vote never shows a number the next vote would immediately reset.
+     */
+    public int currentStreak(UUID uuid) {
+        Entry e = state.get(uuid.toString());
+        if (e == null || e.streak <= 0) return 0;
+        long since = System.currentTimeMillis() - e.lastStreakMs;
+        return since > 2L * Math.max(1, AuthConfig.VOTE_COOLDOWN_HOURS.get()) * 3_600_000L ? 0 : e.streak;
+    }
+
     public int voteCount(UUID uuid) {
         Entry e = state.get(uuid.toString());
         return e == null ? 0 : e.totalVotes;
@@ -228,74 +261,56 @@ public final class VoteRewards {
 
     // ── Payout ────────────────────────────────────────────────────────────────
 
-    /** MUST run on the server thread. Pays every banked vote and clears the counter. */
+    /** MUST run on the server thread. Pays every banked vote and clears the counters. */
     private void deliver(ServerPlayer player, MinecraftServer server) {
         Entry e = state.get(player.getUUID().toString());
         if (e == null) return;
-
-        int owed, total;
+        int owed, spurs, diamonds, streak, lifetime;
         synchronized (e) {
-            owed  = e.pending;
-            total = e.totalVotes;
+            owed = e.pending;
             if (owed <= 0) return;
+            spurs = e.pendingSpurs;
+            diamonds = e.pendingDiamonds;
+            if (spurs == 0 && diamonds == 0) {
+                // Banked before the streak system existed (old file): pay those at the day-1 tier.
+                spurs = owed * spursFor(1);
+                diamonds = owed * diamondsFor(1);
+            }
+            streak = Math.max(1, e.streak);
+            lifetime = e.totalVotes;
             e.pending = 0;
+            e.pendingSpurs = 0;
+            e.pendingDiamonds = 0;
         }
         save();
-
-        // Each banked vote is paid at the tier the player had reached, so someone who banked five
-        // votes is not paid five times at their FINAL tier — the reward earned the ladder as it went.
-        // Votes past the lifetime cap pay nothing; they still counted, they are just not rewarded.
-        int cap = AuthConfig.VOTE_REWARD_MAX_REWARDED.get();
-        int spurs = 0, diamonds = 0, paidVotes = 0;
-        for (int i = owed; i >= 1; i--) {
-            int at = Math.max(1, total - i + 1);
-            if (cap > 0 && at > cap) continue;
-            spurs    += spursFor(at);
-            diamonds += diamondsFor(at);
-            paidVotes++;
-        }
-
-        if (paidVotes == 0) {
-            // Past the cap. Say so plainly rather than paying nothing in silence — an unexplained
-            // empty reward reads as a bug, and this player is a repeat voter worth keeping onside.
-            player.sendSystemMessage(Component.literal(TextUtil.PREFIX
-                + "§a✦ Thanks for voting! §7You've already collected all §f" + cap
-                + "§7 vote rewards — but every vote still pushes the server up the list. §6❤"));
-            Sounds.success(player);
-            CoffeesAeroAuth.LOGGER.info("[Vote] {} voted past the {}-vote reward cap (lifetime {})",
-                player.getGameProfile().getName(), cap, total);
-            return;
-        }
-
         Coins.pay(player, spurs);
         Coins.giveItem(player, ResourceLocation.parse("minecraft:diamond"), diamonds);
-
         String votes = owed == 1 ? "vote" : owed + " votes";
         player.sendSystemMessage(Component.literal(TextUtil.PREFIX
             + "§a✦ Thanks for voting! §7(" + votes + ") §f→ §6" + spurs + " spurs §fand §b"
             + diamonds + " diamonds§f."));
-        player.sendSystemMessage(Component.literal(TextUtil.PREFIX + "§7Rewarded votes: §e"
-            + Math.min(total, cap > 0 ? cap : total) + (cap > 0 ? "§7/§e" + cap : "") + "§7."
-            + (cap > 0 && total >= cap
-               ? " §6That's all of them — thank you!"
-               : " §7Each vote pays a little more than the last.")));
+        boolean topTier = spursFor(streak) >= AuthConfig.VOTE_REWARD_SPURS_MAX.get()
+                       && diamondsFor(streak) >= AuthConfig.VOTE_REWARD_DIAMONDS_MAX.get();
+        player.sendSystemMessage(Component.literal(TextUtil.PREFIX + "§7Vote streak: §e" + streak
+            + (streak == 1 ? " day" : " days") + (topTier ? " §6— top reward!" : " §7— each day pays a little more.")
+            + " §7Vote again within §f" + (2 * AuthConfig.VOTE_COOLDOWN_HOURS.get()) + "h§7 to keep it."));
         Sounds.reward(player);
-
-        CoffeesAeroAuth.LOGGER.info("[Vote] Paid {} for {} of {} vote(s): {} spurs, {} diamonds (lifetime {})",
-            player.getGameProfile().getName(), paidVotes, owed, spurs, diamonds, total);
+        CoffeesAeroAuth.LOGGER.info("[Vote] Paid {} for {} vote(s): {} spurs, {} diamonds (streak {}, lifetime {})",
+            player.getGameProfile().getName(), owed, spurs, diamonds, streak, lifetime);
     }
 
-    /** Spurs for the Nth lifetime vote, clamped to the configured ceiling. */
-    private static int spursFor(int voteNumber) {
+
+    /** Spurs for streak day N, clamped to the configured ceiling. */
+    private static int spursFor(int streakDay) {
         int step = Math.max(1, AuthConfig.VOTE_REWARD_VOTES_PER_STEP.get());
-        int value = AuthConfig.VOTE_REWARD_SPURS_BASE.get() + (voteNumber - 1) / step;
+        int value = AuthConfig.VOTE_REWARD_SPURS_BASE.get() + (Math.max(1, streakDay) - 1) / step;
         return Math.min(AuthConfig.VOTE_REWARD_SPURS_MAX.get(), value);
     }
 
-    /** Diamonds for the Nth lifetime vote, clamped to the configured ceiling. */
-    private static int diamondsFor(int voteNumber) {
+    /** Diamonds for streak day N, clamped to the configured ceiling. */
+    private static int diamondsFor(int streakDay) {
         int step = Math.max(1, AuthConfig.VOTE_REWARD_VOTES_PER_STEP.get());
-        int value = AuthConfig.VOTE_REWARD_DIAMONDS_BASE.get() + (voteNumber - 1) / step;
+        int value = AuthConfig.VOTE_REWARD_DIAMONDS_BASE.get() + (Math.max(1, streakDay) - 1) / step;
         return Math.min(AuthConfig.VOTE_REWARD_DIAMONDS_MAX.get(), value);
     }
 

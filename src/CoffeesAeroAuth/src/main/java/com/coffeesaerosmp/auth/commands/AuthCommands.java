@@ -118,17 +118,15 @@ public class AuthCommands {
                         com.coffeesaerosmp.auth.util.TextUtil.PREFIX + "§aYou can vote right now!"));
                     com.coffeesaerosmp.auth.util.Sounds.notify(player);
                 }
-                int cap = com.coffeesaerosmp.auth.config.AuthConfig.VOTE_REWARD_MAX_REWARDED.get();
+                int streak = CoffeesAeroAuth.VOTE_REWARDS.currentStreak(player.getUUID());
+                int keepHours = 2 * com.coffeesaerosmp.auth.config.AuthConfig.VOTE_COOLDOWN_HOURS.get();
                 player.sendSystemMessage(Component.literal(
-                    com.coffeesaerosmp.auth.util.TextUtil.PREFIX + "§7Votes: §e" + votes
-                        + (cap > 0 ? "§7/§e" + cap + " §7rewarded" : "")
+                    com.coffeesaerosmp.auth.util.TextUtil.PREFIX + "§7Vote streak: §e" + streak
+                        + (streak == 1 ? " day" : " days") + " §8· §7lifetime votes: §e" + votes
                         + " §8· §7rewards land automatically, even if you're offline."));
-                if (cap > 0 && votes >= cap) {
-                    player.sendSystemMessage(Component.literal(
-                        com.coffeesaerosmp.auth.util.TextUtil.PREFIX
-                            + "§6You've collected every vote reward §7— voting still helps the "
-                            + "server climb the list. §6❤"));
-                }
+                player.sendSystemMessage(Component.literal(
+                    com.coffeesaerosmp.auth.util.TextUtil.PREFIX + "§7Each streak day pays a little more. "
+                        + "Miss more than §f" + keepHours + "h§7 and it starts again."));
                 return 1;
             })
         );

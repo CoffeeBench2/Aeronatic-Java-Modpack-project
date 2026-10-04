@@ -16,6 +16,7 @@ public final class GuardConfig {
 
     public static final ModConfigSpec.BooleanValue        LOCK_END_DIMENSION;
     public static final ModConfigSpec.ConfigValue<String> NETHER_OPENS_AT;
+    public static final ModConfigSpec.BooleanValue        TEAM_LEAVE_TRIMS_CLAIMS;
     public static final ModConfigSpec.BooleanValue        PUBLIC_INTERACT_ENABLED;
     public static final ModConfigSpec.BooleanValue        DEBUG_INTERACT_LOGGING;
     public static final ModConfigSpec.IntValue            DRAGON_DAMAGE_DIVISOR;
@@ -119,6 +120,14 @@ public final class GuardConfig {
                      "from one that works until the dragon dies in 1000 damage instead of 1,000,000.",
                      "Turn it on for one fight to confirm the hook is live, then turn it off.")
             .define("debugEnderDragonScaling", false);
+        b.pop();
+
+        b.comment("Team claims.").push("teamclaims");
+        TEAM_LEAVE_TRIMS_CLAIMS = b
+            .comment("When a player leaves a party team, release the team's NEWEST claims until it is back under its",
+                     "new limit (FTB recalculates the limit but never removes chunks). Pair with FTB Chunks",
+                     "party_limit_mode = \"sum\" so a team's allowance is its members' allowances added up.")
+            .define("teamLeaveTrimsClaims", true);
         b.pop();
 
         b.comment("The dragon's island — an unclaimable region inside an otherwise claimable End.").push("endarena");

@@ -18,8 +18,8 @@ package com.coffeesaerosmp.auth.leveling;
  * made the S2 formula meaningless, and is why S2 went playtime-only on 08-19.
  *
  * <h2>Claims</h2>
- * {@code claims = min(max, base + perLevel × (level − 1))}: 5 at Lv 1, +2 a level, capped at 50
- * (reached at Lv 24; owner set the cap 2026-10-04). FTB Chunks' own {@code max_claimed_chunks} must equal {@code base}; we set the
+ * {@code claims = min(max, base + perLevel × (level − 1))}: 5 at Lv 1, +2 a level, capped at 150
+ * (reached at Lv 74; owner set the cap 2026-10-04, first 50 then 150). Teams SUM their members. FTB Chunks' own {@code max_claimed_chunks} must equal {@code base}; we set the
  * per-player EXTRA, so the two add up to this number.
  *
  * <p>Pure: no game state, so it is unit-tested and the sidebar, claims and level-up mail can never
@@ -29,7 +29,7 @@ public final class LevelFormula {
 
     public record Params(int xpPerAdvancement, int xpPerHour, int curve,
                          int claimsBase, int claimsPerLevel, int claimsMax) {
-        public static final Params DEFAULT = new Params(10, 6, 5, 5, 2, 50);
+        public static final Params DEFAULT = new Params(10, 6, 5, 5, 2, 150);
     }
 
     private LevelFormula() {}

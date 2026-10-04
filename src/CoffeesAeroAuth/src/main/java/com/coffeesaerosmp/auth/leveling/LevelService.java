@@ -84,7 +84,7 @@ public final class LevelService {
         State st = new State();
         STATE.put(player.getUUID(), st);
         if (AuthConfig.OPS_GET_ALL_ADVANCEMENTS.get() && player.hasPermissions(4)) {
-            player.getServer().execute(() -> grantEverything(player));
+            GRANTS.put(player.getUUID(), new GrantJob(player));
         }
         MailStore.levelRewarded(player.getServer(), player.getUUID(), MailService.season(), lv -> {
             if (STATE.get(player.getUUID()) != st) return;            // relogged meanwhile
@@ -95,9 +95,11 @@ public final class LevelService {
 
     public static void onLeave(ServerPlayer player) {
         STATE.remove(player.getUUID());
+        GRANTS.remove(player.getUUID());
     }
 
     public static void onServerTick(MinecraftServer server) {
+        if (!GRANTS.isEmpty()) runGrants();
         if (++ticks % 1200 != 0 || !enabled()) return;
         for (ServerPlayer p : server.getPlayerList().getPlayers()) safeCheck(p);
     }
@@ -105,7 +107,7 @@ public final class LevelService {
     public static void onAdvancement(ServerPlayer player) {
         if (!enabled()) return;
         // Next tick: SidebarManager's own listener bumps the cached count in the same event. Coalesced —
-        // an op's grantEverything fires thousands of these in one tick, and they need ONE check.
+        // an op's advancement grant fires hundreds of these per tick, and they need ONE check.
         if (!PENDING.add(player.getUUID())) return;
         player.getServer().execute(() -> {
             PENDING.remove(player.getUUID());
@@ -168,23 +170,52 @@ public final class LevelService {
         player.level().playSound(null, player.blockPosition(), SoundEvents.PLAYER_LEVELUP, SoundSource.PLAYERS, 0.8f, 1.0f);
     }
 
-    /** Ops: every advancement, every criterion. One-time cost — afterwards nothing is left to award. */
-    private static void grantEverything(ServerPlayer player) {
-        if (player.hasDisconnected()) return;
-        int awarded = 0;
-        for (AdvancementHolder h : player.getServer().getAdvancements().getAllAdvancements()) {
-            AdvancementProgress prog = player.getAdvancements().getOrStartProgress(h);
-            if (prog.isDone()) continue;
-            java.util.List<String> remaining = new java.util.ArrayList<>();
-            prog.getRemainingCriteria().forEach(remaining::add);   // copy: award() mutates the progress
-            for (String c : remaining) {
-                if (player.getAdvancements().award(h, c)) awarded++;
-            }
+    // ── ops: every advancement, spread over ticks ─────────────────────────────
+    //
+    // 2026-10-04 boot log: granting LegendaryTales everything in ONE tick (16,352 criteria) froze the
+    // server for 3.1 s ("Running 3132ms or 62 ticks behind"). Each op would do that once. Now it is a job
+    // that awards at most CRITERIA_PER_TICK per tick — the same total work, never more than a few ms at a time.
+
+    private static final int CRITERIA_PER_TICK = 400;
+    private static final Map<UUID, GrantJob> GRANTS = new ConcurrentHashMap<>();
+
+    private static final class GrantJob {
+        final ServerPlayer player;
+        final java.util.Iterator<AdvancementHolder> it;
+        int awarded;
+
+        GrantJob(ServerPlayer player) {
+            this.player = player;
+            this.it = new java.util.ArrayList<>(player.getServer().getAdvancements().getAllAdvancements()).iterator();
         }
-        if (awarded > 0) {
-            SidebarManager.invalidateAdvancements(player.getUUID());
-            CoffeesAeroAuth.LOGGER.info("[Level] op {}: granted {} advancement criteria (opsGetAllAdvancements).",
-                player.getGameProfile().getName(), awarded);
+    }
+
+    private static void runGrants() {
+        var iter = GRANTS.values().iterator();
+        while (iter.hasNext()) {
+            GrantJob job = iter.next();
+            ServerPlayer player = job.player;
+            if (player.hasDisconnected()) { iter.remove(); continue; }
+            int budget = CRITERIA_PER_TICK;
+            while (budget > 0 && job.it.hasNext()) {
+                AdvancementHolder h = job.it.next();
+                AdvancementProgress prog = player.getAdvancements().getOrStartProgress(h);
+                if (prog.isDone()) continue;
+                java.util.List<String> remaining = new java.util.ArrayList<>();
+                prog.getRemainingCriteria().forEach(remaining::add);   // copy: award() mutates the progress
+                for (String c : remaining) {
+                    if (player.getAdvancements().award(h, c)) job.awarded++;
+                    budget--;
+                }
+            }
+            if (!job.it.hasNext()) {
+                iter.remove();
+                if (job.awarded > 0) {
+                    SidebarManager.invalidateAdvancements(player.getUUID());
+                    CoffeesAeroAuth.LOGGER.info("[Level] op {}: granted {} advancement criteria (opsGetAllAdvancements).",
+                        player.getGameProfile().getName(), job.awarded);
+                }
+            }
         }
     }
 }

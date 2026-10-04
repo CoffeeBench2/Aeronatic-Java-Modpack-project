@@ -61,6 +61,8 @@ public class CoffeesAeroGuard {
         // listener — FTB Chunks' claim event is an Architectury event, so it is registered from
         // inside a containment class that is only touched when ftbchunks is loaded.
         EndArenaClaims.install();
+        // Season 3: a member leaving a party trims the party's claims to its new (summed) limit.
+        com.coffeesaerosmp.guard.protect.TeamClaimTrim.install();
         // Confirmation of the EFFECTIVE radius/centre, logged once the per-world SERVER config is
         // loaded. install() itself must not read config — see its javadoc.
         NeoForge.EVENT_BUS.addListener(EndArenaClaims::onServerStarted);

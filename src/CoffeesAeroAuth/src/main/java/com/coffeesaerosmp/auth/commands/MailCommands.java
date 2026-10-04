@@ -7,7 +7,6 @@ import com.coffeesaerosmp.auth.mail.MailItems;
 import com.coffeesaerosmp.auth.mail.MailService;
 import com.coffeesaerosmp.auth.mail.MailStore;
 import com.mojang.brigadier.CommandDispatcher;
-import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import net.minecraft.commands.CommandSourceStack;
@@ -25,9 +24,10 @@ import java.util.UUID;
  * {@code /mail} — open your mailbox. Staff: {@code /mail admin …} to post rewards.
  *
  * <pre>
- *   /mail admin send       &lt;player&gt; &lt;spurs&gt; &lt;subject | body&gt;   spurs (0 allowed) + a message
- *   /mail admin sendall    &lt;spurs&gt; &lt;subject | body&gt;            every profile on record
- *   /mail admin sendonline &lt;spurs&gt; &lt;subject | body&gt;            everyone online now
+ *   /mail admin send       &lt;player&gt; &lt;subject | body&gt;           a message
+ *   /mail admin sendall    &lt;subject | body&gt;                    every profile on record
+ *   /mail admin sendonline &lt;subject | body&gt;                    everyone online now
+ * 🔴 No spurs option: spurs come ONLY from the starting bonus and voting (owner, 2026-10-04).
  *   /mail admin item       &lt;player&gt; &lt;subject | body&gt;           a COPY of the item in your main hand
  *   /mail admin itemall    &lt;subject | body&gt;                    the same, to every profile
  *   player = online or offline, account or display name
@@ -48,17 +48,14 @@ public final class MailCommands {
                 .requires(src -> src.hasPermission(3))
                 .then(Commands.literal("send")
                     .then(Commands.argument("target", StringArgumentType.word())
-                        .then(Commands.argument("spurs", IntegerArgumentType.integer(0, 1_000_000))
-                            .then(Commands.argument("text", StringArgumentType.greedyString())
-                                .executes(ctx -> send(ctx, name(ctx), spurs(ctx), false))))))
+                        .then(Commands.argument("text", StringArgumentType.greedyString())
+                            .executes(ctx -> send(ctx, name(ctx), 0, false)))))
                 .then(Commands.literal("sendall")
-                    .then(Commands.argument("spurs", IntegerArgumentType.integer(0, 1_000_000))
-                        .then(Commands.argument("text", StringArgumentType.greedyString())
-                            .executes(ctx -> send(ctx, ALL, spurs(ctx), false)))))
+                    .then(Commands.argument("text", StringArgumentType.greedyString())
+                        .executes(ctx -> send(ctx, ALL, 0, false))))
                 .then(Commands.literal("sendonline")
-                    .then(Commands.argument("spurs", IntegerArgumentType.integer(0, 1_000_000))
-                        .then(Commands.argument("text", StringArgumentType.greedyString())
-                            .executes(ctx -> send(ctx, ONLINE, spurs(ctx), false)))))
+                    .then(Commands.argument("text", StringArgumentType.greedyString())
+                        .executes(ctx -> send(ctx, ONLINE, 0, false))))
                 .then(Commands.literal("item")
                     .then(Commands.argument("target", StringArgumentType.word())
                         .then(Commands.argument("text", StringArgumentType.greedyString())
@@ -79,9 +76,6 @@ public final class MailCommands {
         return StringArgumentType.getString(ctx, "target");
     }
 
-    private static int spurs(CommandContext<CommandSourceStack> ctx) {
-        return IntegerArgumentType.getInteger(ctx, "spurs");
-    }
 
     private static int open(CommandContext<CommandSourceStack> ctx) {
         ServerPlayer player = ctx.getSource().getPlayer();

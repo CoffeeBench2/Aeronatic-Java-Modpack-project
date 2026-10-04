@@ -378,8 +378,7 @@ public class AuthManager {
     private void payWorldEntryGrants(ServerPlayer player, PlayerProfile profile) {
         if (profile == null) return;
         boolean firstWorldEntry = !profile.startupBonusGiven;
-        if (!profile.startupBonusGiven) {
-            grantStartupBonus(player);
+        if (!profile.startupBonusGiven && grantStartupBonus(player)) {
             profile.startupBonusGiven = true;
         }
         com.coffeesaerosmp.auth.season.VeteranReward.grantIfOwed(player);
@@ -609,7 +608,8 @@ public class AuthManager {
      * One-time starter currency on first /spawn, paid as a mixed Numismatics wallet (greedy "change":
      * cog=64, sprocket=16, bevel=8, spur=1 — e.g. 200 → 3 cogs + 1 bevel). No-op if Numismatics is absent.
      */
-    private void grantStartupBonus(ServerPlayer player) {
+    /** @return true once the grant is DONE (or legitimately nothing); false = not yet, retry next entry. */
+    private boolean grantStartupBonus(ServerPlayer player) {
         // 🔴 ONE-TIME GRANTS ARE SMP-ONLY. HARD REFUSAL, NOT AN EARLY RETURN SOMEWHERE UPSTREAM.
         //
         // The standalone lobby shares the SMP's MySQL, so both processes can see and write the same
@@ -627,13 +627,26 @@ public class AuthManager {
                 + "One-time grants are paid by the SMP only. If you are seeing this, something routed a "
                 + "grant to the wrong server; the player has NOT been shortchanged, the SMP still owes it.",
                 player.getGameProfile().getName());
-            return;
+            return false;
         }
         int amount = AuthConfig.STARTUP_BONUS_SPURS.get();
         // Season 3: the starter spurs (+ welcome items) arrive as a welcome MAIL instead. Same one-time
         // flag gates this call; the mail's dedupe key makes it once-per-season even if it is reached twice.
-        if (com.coffeesaerosmp.auth.mail.MailService.sendSeasonWelcome(player, Math.max(0, amount))) return;
-        if (amount <= 0) return;
+        //
+        // 🔴 Mail configured but the database unreachable right now: do NOT fall back to paying into the
+        // inventory (2026-10-04: SideBlackStar's flag was set with no welcome mail, most likely exactly this
+        // during a DB blip). Leave the flag unset so the next world entry retries through the mail.
+        if (com.coffeesaerosmp.auth.mail.MailService.welcomeConfigured()) {
+            if (com.coffeesaerosmp.auth.mail.MailService.sendSeasonWelcome(player, Math.max(0, amount))) {
+                CoffeesAeroAuth.LOGGER.info("[Grants] {}: welcome mail queued ({} spurs).",
+                    player.getGameProfile().getName(), amount);
+                return true;
+            }
+            CoffeesAeroAuth.LOGGER.warn("[Grants] {}: welcome mail NOT sent (database unavailable) — will retry "
+                + "on their next world entry; nothing paid directly.", player.getGameProfile().getName());
+            return false;
+        }
+        if (amount <= 0) return true;
         int[]    values = {64, 16, 8, 1};
         String[] coins  = {"cog", "sprocket", "bevel", "spur"};
         boolean gaveAny = false;
@@ -646,6 +659,9 @@ public class AuthManager {
         }
         if (gaveAny)
             send(player, TextUtil.PREFIX + "§a✦ Welcome gift: §6" + amount + " spurs §ato get you started!");
+        CoffeesAeroAuth.LOGGER.info("[Grants] {}: starter {} spurs paid directly (mail off).",
+            player.getGameProfile().getName(), amount);
+        return true;
     }
 
     /** Gives {@code count} of a Numismatics coin item, spilling to the ground if the inventory is full. */
@@ -1432,8 +1448,7 @@ public class AuthManager {
         // First time entering the world → one-time starter currency + mark first-join complete.
         boolean firstWorldEntry = profile != null && !profile.startupBonusGiven;
         if (profile != null) {
-            if (!profile.startupBonusGiven) {
-                grantStartupBonus(player);
+            if (!profile.startupBonusGiven && grantStartupBonus(player)) {
                 profile.startupBonusGiven = true;
             }
             // Season 1 loyalty reward, once per veteran. Reads an in-memory set loaded at boot —

@@ -167,7 +167,6 @@ public class AuthConfig {
     public static final ModConfigSpec.IntValue     CLAIMS_BASE;
     public static final ModConfigSpec.IntValue     CLAIMS_PER_LEVEL;
     public static final ModConfigSpec.IntValue     CLAIMS_MAX;
-    public static final ModConfigSpec.IntValue     LEVEL_UP_SPURS_PER_LEVEL;
     public static final ModConfigSpec.IntValue     LEVEL_MILESTONE_EVERY;
     public static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> LEVEL_MILESTONE_ITEMS;
     public static final ModConfigSpec.BooleanValue OPS_GET_ALL_ADVANCEMENTS;
@@ -717,7 +716,7 @@ public class AuthConfig {
                 "With 30, votes 1-30 pay the ladder below and vote 31 onward pays nothing at all.",
                 "Votes past the cap are still recorded and still count for the server's listing",
                 "rank -- the player is simply told they have collected everything.")
-            .defineInRange("voteRewardMaxRewardedVotes", 30, 0, 100000);
+            .defineInRange("voteRewardMaxRewardedVotes", 30, 0, 100000);   // IGNORED since 1.13.4: streak-based, no lifetime cap
         VOTE_ANNOUNCE_ENABLED      = b.comment(
                 "Announce every vote to the whole server, with a quiet sound for bystanders.",
                 "Fires when the vote LANDS, so it celebrates offline voters too.")
@@ -1390,10 +1389,9 @@ public class AuthConfig {
             .defineInRange("claimsBase", 5, 0, 100_000);
         CLAIMS_PER_LEVEL = b.comment("Extra claims per level above 1.")
             .defineInRange("claimsPerLevel", 2, 0, 100_000);
-        CLAIMS_MAX = b.comment("Hard cap per person (owner: 50).")
-            .defineInRange("claimsMax", 50, 0, 100_000);
-        LEVEL_UP_SPURS_PER_LEVEL = b.comment("Spurs mailed on reaching level N = this × N. 0 = none.")
-            .defineInRange("levelUpSpursPerLevel", 20, 0, 100_000);
+        CLAIMS_MAX = b.comment("Hard cap per person (owner: 150, 2026-10-04; was 50). Teams add their members'",
+                               "allowances together (FTB party_limit_mode = \"sum\"), capped by FTB's hard_team_claim_limit.")
+            .defineInRange("claimsMax", 150, 0, 100_000);
         LEVEL_MILESTONE_EVERY = b.comment("Every Nth level also mails levelMilestoneItems. 0 = never.")
             .defineInRange("levelMilestoneEvery", 5, 0, 1000);
         LEVEL_MILESTONE_ITEMS = b

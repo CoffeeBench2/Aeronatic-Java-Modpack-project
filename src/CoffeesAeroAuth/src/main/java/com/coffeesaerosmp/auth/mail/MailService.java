@@ -35,6 +35,16 @@ public final class MailService {
         }
     }
 
+    /** Mail + welcome mail switched on in config (regardless of whether the DB is reachable right now). */
+    public static boolean welcomeConfigured() {
+        try {
+            return AuthConfig.MAIL_ENABLED.get() && AuthConfig.SEASON_WELCOME_MAIL.get()
+                && !LobbyHandoff.isLobbyRole();
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     public static boolean canOpen() {
         return enabled() && !LobbyHandoff.isLobbyRole();
     }
@@ -76,7 +86,8 @@ public final class MailService {
     public static void sendLevelReward(ServerPlayer player, int level, int claimsNow) {
         if (!enabled()) return;
         MinecraftServer server = player.getServer();
-        int spurs = AuthConfig.LEVEL_UP_SPURS_PER_LEVEL.get() * level;
+        // 🔴 NO SPURS. Owner, 2026-10-04: "spurs cannot be gained from any system reward except voting".
+        // The economy is the starting spurs + voting + what players trade among themselves.
         int every = AuthConfig.LEVEL_MILESTONE_EVERY.get();
         boolean milestone = every > 0 && level % every == 0;
         List<ItemStack> items = milestone ? MailItems.parseSpecs(AuthConfig.LEVEL_MILESTONE_ITEMS.get()) : List.of();
@@ -85,7 +96,7 @@ public final class MailService {
             + (milestone ? "\\nMilestone level: bonus items included." : "");
         MailStore.send(server, List.of(player.getUUID()), new MailStore.Outgoing(SYSTEM,
             (milestone ? "★ " : "") + "Level " + level + " reward", body,
-            MailItems.encode(items, server.registryAccess()), spurs, expiry(),
+            MailItems.encode(items, server.registryAccess()), 0, expiry(),
             "lvl:s" + season() + ":" + player.getUUID() + ":" + level),
             sent -> { if (sent > 0) notifyNew(player, 1); });
     }

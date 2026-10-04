@@ -45,14 +45,14 @@ class LevelFormulaTest {
     }
 
     @Test
-    @DisplayName("claims: +2 a level, capped at 50 (reached at Lv 24), never below 5")
+    @DisplayName("claims: +2 a level, capped at 150 (reached at Lv 74), never below 5")
     void claimsCap() {
         assertEquals(7, LevelFormula.claims(2, P));
         assertEquals(23, LevelFormula.claims(10, P));
-        assertEquals(49, LevelFormula.claims(23, P));
-        assertEquals(50, LevelFormula.claims(24, P));
-        assertEquals(50, LevelFormula.claims(500, P));
-        assertEquals(45, LevelFormula.extraClaims(500, P));
+        assertEquals(149, LevelFormula.claims(73, P));
+        assertEquals(150, LevelFormula.claims(74, P));
+        assertEquals(150, LevelFormula.claims(500, P));
+        assertEquals(145, LevelFormula.extraClaims(500, P));
         assertEquals(5, LevelFormula.claims(-3, P));
     }
 
@@ -70,6 +70,6 @@ class LevelFormulaTest {
     void opsWithEverything() {
         int lv = LevelFormula.level(LevelFormula.xp(1275, 0, P), P);
         assertTrue(lv >= 45 && lv <= 60, "was Lv " + lv);
-        assertEquals(50, LevelFormula.claims(lv, P));
+        assertEquals(LevelFormula.claims(lv, P), Math.min(150, 5 + 2 * (lv - 1)));
     }
 }
