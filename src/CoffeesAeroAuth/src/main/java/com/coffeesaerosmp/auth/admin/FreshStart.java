@@ -21,8 +21,15 @@ import java.util.UUID;
  *
  * <p><b>Deleted:</b> inventory, ender chest (it rides inside the {@code .dat} as {@code EnderItems}),
  * XP, advancements, vanilla stats, position.
- * <br><b>Reset in MySQL:</b> playtime, the frozen season snapshot, first-join and starter-bonus
- * flags, return position.
+ * <br><b>Reset in MySQL:</b> playtime, the frozen season snapshots ({@code season1_playtime},
+ * {@code season_start_playtime}), first-join and starter-bonus flags, return position.
+ * <br><b>Deleted in MySQL (2026-10-04):</b> their {@code mail} (incl. the claimed welcome mail — its dedupe
+ * key otherwise BLOCKED the new welcome mail, so a fresh start never got one), {@code level_progress}
+ * (level rewards count again from Lv 1) and {@code player_stats}. Rows are written to the backup first.
+ * <br><b>Numismatics (2026-10-04):</b> the player's bank account is removed from Numismatics' live bank
+ * (saved to the backup as SNBT first). It is recreated empty the next time they use a bank; ID cards still
+ * point at it by uuid. Done through {@code Numismatics.BANK} in memory — editing {@code numismatics_bank.dat}
+ * on disk would be overwritten by the running server.
  * <br><b>Kept:</b> password, display name, Discord link, account type, name approval, join date,
  * first IP, skin, trusted IPs.
  *
@@ -84,12 +91,14 @@ public final class FreshStart {
                   + "undone.");
         }
         out.add("§cWILL DELETE§7: inventory, ender chest, XP, advancements, stats, position");
-        out.add("§cWILL RESET§7: playtime §8(drops them to §fLv 1§8)§7, season snapshot, "
+        out.add("§cWILL RESET§7: playtime §8(drops them to §fLv 1§8)§7, season snapshots, "
               + "first-join + starter-bonus flags");
+        out.add("§cWILL DELETE§7: their mail §8(" + (dbUp ? "a new welcome mail follows" : "DB down")
+              + ")§7, level rewards, stats · Numismatics bank: " + bankSummary(uuid));
         out.add("§aWILL KEEP§7: password, display name, Discord link, approvals, trusted IPs, "
               + "join date, skin");
-        out.add("§8not handled — do these by hand: FTB Teams · FTB Chunks claims · AeroClaims "
-              + "· Waystones · graves");
+        out.add("§cAT NEXT RESTART§7: personal FTB Quests progress, FTB Essentials data (homes)");
+        out.add("§8not handled — do these by hand: FTB Teams · FTB Chunks claims · AeroClaims · Waystones · graves");
         out.add("§7Run again with §fconfirm§7 to execute.");
         return new Result(true, out);
     }
@@ -156,6 +165,18 @@ public final class FreshStart {
             return new Result(false, out);
         }
 
+        // 3b. Mail, level rewards, stats — backed up as JSON lines, then deleted.
+        out.add(wipeRows(uuid, backup));
+
+        // 3c. Numismatics bank (live, in memory — see the class javadoc).
+        out.add("§7bank: " + resetBank(server, uuid, backup));
+
+        // 3d. FTB Quests personal progress + FTB Essentials (homes, back, etc.). Both mods keep these in
+        //     memory and write them back on save, so the files can only be removed once they have saved for
+        //     the last time: queued, moved at server STOP (see onServerStopped).
+        queueOnStop(server, uuid, backup);
+        out.add("§7quests + homes: §fqueued §7— reset at the next restart (FTB writes them from memory until then)");
+
         // 4. In-memory state. sessionStartEpoch is NOT a database column — it lives only on the
         //    cached object — so clearing it in SQL is impossible and clearing it here is required.
         p.totalPlaytimeSeconds = 0;
@@ -170,8 +191,7 @@ public final class FreshStart {
 
         out.add("§a" + p.username + " has a fresh start. Account, password and display name are "
               + "unchanged.");
-        out.add("§8Still to do by hand: FTB Teams · FTB Chunks claims · AeroClaims · Waystones "
-              + "· graves");
+        out.add("§8Still to do by hand: FTB Teams · FTB Chunks claims · AeroClaims · Waystones · graves");
         CoffeesAeroAuth.LOGGER.warn("[FreshStart] {} ({}) wiped — backup at {}",
             p.username, uuid, backup);
         return new Result(true, out);
@@ -195,6 +215,12 @@ public final class FreshStart {
                 ps.setString(1, uuid.toString());
                 ps.executeUpdate();
             }
+            // Season 3 clock. Separate: the column only exists on 1.13+ databases.
+            try (PreparedStatement ps = c.prepareStatement(
+                    "UPDATE players SET season_start_playtime=0 WHERE uuid=?")) {
+                ps.setString(1, uuid.toString());
+                ps.executeUpdate();
+            } catch (Exception noColumn) { /* pre-1.13 schema */ }
             // Separate statement: the column only exists once SeasonMigration has run.
             try (PreparedStatement ps = c.prepareStatement(
                     "UPDATE players SET season1_playtime=0 WHERE uuid=?")) {
@@ -209,6 +235,162 @@ public final class FreshStart {
                 uuid, e.toString());
             return false;
         }
+    }
+
+    // ── files only removable once FTB has saved for the last time ─────────────
+
+    private static final String PENDING = "freshstart-pending.txt";
+
+    /** {@code <world>/ftbquests/<uuid>.snbt} (personal team progress) and FTB Essentials' player file. */
+    private static final String[][] ON_STOP_FILES = {
+        { "ftbquests", ".snbt" },
+        { "ftbessentials/playerdata", ".snbt" },
+    };
+
+    private static void queueOnStop(MinecraftServer server, UUID uuid, Path backup) {
+        Path f = server.getWorldPath(LevelResource.ROOT).resolve("coffeesaeroauth").resolve(PENDING);
+        try {
+            Files.writeString(f, uuid + "\t" + backup + System.lineSeparator(),
+                java.nio.file.StandardOpenOption.CREATE, java.nio.file.StandardOpenOption.APPEND);
+        } catch (Exception e) {
+            CoffeesAeroAuth.LOGGER.error("[FreshStart] could not queue the quest/home reset for {}: {}", uuid, e.toString());
+        }
+    }
+
+    /**
+     * ServerStoppedEvent: every mod has saved, nothing will write these files again until the next boot.
+     * Moves the queued files into each player's fresh-start backup folder. A crash before a clean stop just
+     * leaves the queue for the next stop.
+     */
+    public static void onServerStopped(MinecraftServer server) {
+        Path f = server.getWorldPath(LevelResource.ROOT).resolve("coffeesaeroauth").resolve(PENDING);
+        if (!Files.exists(f)) return;
+        try {
+            for (String line : Files.readAllLines(f)) {
+                String[] parts = line.split("\t", 2);
+                if (parts.length < 2 || parts[0].isBlank()) continue;
+                Path backup = Path.of(parts[1]);
+                Files.createDirectories(backup);
+                for (String[] spec : ON_STOP_FILES) {
+                    Path src = server.getWorldPath(LevelResource.ROOT).resolve(spec[0]).resolve(parts[0] + spec[1]);
+                    if (Files.exists(src)) {
+                        Files.move(src, backup.resolve(spec[0].replace('/', '-') + "-" + parts[0] + spec[1]),
+                            StandardCopyOption.REPLACE_EXISTING);
+                    }
+                }
+                CoffeesAeroAuth.LOGGER.info("[FreshStart] {}: quest progress + FTB Essentials data reset on stop.", parts[0]);
+            }
+            Files.delete(f);
+        } catch (Exception e) {
+            CoffeesAeroAuth.LOGGER.error("[FreshStart] on-stop reset failed (queue kept for next stop): {}", e.toString());
+        }
+    }
+
+    /** Tables whose rows for this player are progress, not account. Missing tables are skipped. */
+    private static final String[] PROGRESS_TABLES = { "mail", "level_progress", "player_stats" };
+
+    /** Backs the rows up to {@code <backup>/db-rows.jsonl}, then deletes them. Returns a summary line. */
+    private static String wipeRows(UUID uuid, Path backup) {
+        StringBuilder summary = new StringBuilder("§7deleted rows:");
+        StringBuilder dump = new StringBuilder();
+        try (Connection c = CoffeesAeroAuth.DB_MANAGER.getConnection()) {
+            for (String t : PROGRESS_TABLES) {
+                int n = 0;
+                try (PreparedStatement ps = c.prepareStatement("SELECT * FROM " + t + " WHERE uuid=?")) {
+                    ps.setString(1, uuid.toString());
+                    try (java.sql.ResultSet rs = ps.executeQuery()) {
+                        var md = rs.getMetaData();
+                        while (rs.next()) {
+                            com.google.gson.JsonObject o = new com.google.gson.JsonObject();
+                            o.addProperty("_table", t);
+                            for (int i = 1; i <= md.getColumnCount(); i++) {
+                                o.addProperty(md.getColumnLabel(i), rs.getString(i));
+                            }
+                            dump.append(o).append('\n');
+                            n++;
+                        }
+                    }
+                    try (PreparedStatement del = c.prepareStatement("DELETE FROM " + t + " WHERE uuid=?")) {
+                        del.setString(1, uuid.toString());
+                        del.executeUpdate();
+                    }
+                    summary.append(" §f").append(t).append("§7=").append(n);
+                } catch (java.sql.SQLException missingTable) {
+                    summary.append(" §8").append(t).append("=n/a");
+                }
+            }
+            Files.writeString(backup.resolve("db-rows.jsonl"), dump.toString());
+        } catch (Exception e) {
+            CoffeesAeroAuth.LOGGER.error("[FreshStart] row wipe failed for {}: {}", uuid, e.toString());
+            return "§cmail/level/stats wipe FAILED: " + e.getMessage();
+        }
+        return summary.toString();
+    }
+
+    /** "1,234 spurs" / "no account" / "Numismatics not installed" — for the dry run. */
+    private static String bankSummary(UUID uuid) {
+        try {
+            Object acct = bankAccounts().get(uuid);
+            if (acct == null) return "no account";
+            return acct.getClass().getMethod("getBalance").invoke(acct) + " spurs §8(+ any overflow)§7 → removed";
+        } catch (ClassNotFoundException e) {
+            return "Numismatics not installed";
+        } catch (Throwable t) {
+            return "unreadable (" + t.getClass().getSimpleName() + ")";
+        }
+    }
+
+    /**
+     * Removes the player's Numismatics account from the live bank and marks it dirty so the next save
+     * drops it. The account is saved to {@code <backup>/numismatics-account.snbt} first; restoring is
+     * {@code BankAccount.load} of that tag. Reflection: auth does not compile against Numismatics.
+     */
+    private static String resetBank(MinecraftServer server, UUID uuid, Path backup) {
+        try {
+            Class<?> num = Class.forName("dev.ithundxr.createnumismatics.Numismatics");
+            Object bank = num.getField("BANK").get(null);
+            @SuppressWarnings("unchecked")
+            java.util.Map<UUID, Object> accounts = (java.util.Map<UUID, Object>) bank.getClass().getField("accounts").get(bank);
+            Object acct = accounts.get(uuid);
+            if (acct == null) return "no account (nothing to reset)";
+            int balance = (int) acct.getClass().getMethod("getBalance").invoke(acct);
+            // The save signature differs by version (1.1.0: save(CompoundTag, Provider); 1.0.x: save(CompoundTag)).
+            // Whatever happens here, the balance is recorded before anything is removed.
+            Object tag = null;
+            try {
+                tag = acct.getClass()
+                    .getMethod("save", net.minecraft.nbt.CompoundTag.class, net.minecraft.core.HolderLookup.Provider.class)
+                    .invoke(acct, new net.minecraft.nbt.CompoundTag(), server.registryAccess());
+            } catch (NoSuchMethodException older) {
+                try {
+                    tag = acct.getClass().getMethod("save", net.minecraft.nbt.CompoundTag.class)
+                        .invoke(acct, new net.minecraft.nbt.CompoundTag());
+                } catch (NoSuchMethodException none) { /* recorded as text below */ }
+            }
+            Files.writeString(backup.resolve("numismatics-account.snbt"),
+                tag != null ? String.valueOf(tag) : "# account " + uuid + " balance " + balance + " (no NBT save available)");
+            accounts.remove(uuid);
+            try {
+                bank.getClass().getMethod("markBankDirty").invoke(bank);
+            } catch (NoSuchMethodException older) {
+                // Older Numismatics: the removal still lands on its next bank save (any deposit or the
+                // world save marks it dirty). Say so rather than claim it is already on disk.
+                return "§faccount removed in memory §7(had " + balance + " spurs) — written at the next bank save";
+            }
+            CoffeesAeroAuth.LOGGER.warn("[FreshStart] Numismatics account {} removed (balance {}).", uuid, balance);
+            return "§faccount removed §7(had " + balance + " spurs; backup numismatics-account.snbt)";
+        } catch (ClassNotFoundException e) {
+            return "Numismatics not installed";
+        } catch (Throwable t) {
+            CoffeesAeroAuth.LOGGER.error("[FreshStart] Numismatics reset failed for {}: {}", uuid, t.toString());
+            return "§cFAILED (" + t.getClass().getSimpleName() + ") — reset the balance by hand";
+        }
+    }
+
+    private static java.util.Map<?, ?> bankAccounts() throws Exception {
+        Class<?> num = Class.forName("dev.ithundxr.createnumismatics.Numismatics");
+        Object bank = num.getField("BANK").get(null);
+        return (java.util.Map<?, ?>) bank.getClass().getField("accounts").get(bank);
     }
 
     private static void requireServerThread(MinecraftServer server) {

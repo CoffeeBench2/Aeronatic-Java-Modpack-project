@@ -245,6 +245,7 @@ public class CoffeesAeroAuth {
                 if (e.getEntity() instanceof net.minecraft.server.level.ServerPlayer sp) {
                     com.coffeesaerosmp.auth.leveling.LevelService.onJoin(sp);
                     com.coffeesaerosmp.auth.mail.MailService.onJoin(sp);
+                    com.coffeesaerosmp.auth.admin.SpawnOnNextJoin.onJoin(sp);
                 }
             });
         NeoForge.EVENT_BUS.addListener(
@@ -253,6 +254,9 @@ public class CoffeesAeroAuth {
                     com.coffeesaerosmp.auth.leveling.LevelService.onLeave(sp);
                 }
             });
+        // Fresh starts queue FTB Quests / FTB Essentials files that can only be moved after FTB's last save.
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.server.ServerStoppedEvent e) ->
+            com.coffeesaerosmp.auth.admin.FreshStart.onServerStopped(e.getServer()));
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.server.ServerStartedEvent e) -> {
             if (com.coffeesaerosmp.auth.mail.MailService.enabled()) com.coffeesaerosmp.auth.mail.MailStore.purgeExpired();
             // One-time season launch reset (launchReset lever); a no-op unless armed, and once only.

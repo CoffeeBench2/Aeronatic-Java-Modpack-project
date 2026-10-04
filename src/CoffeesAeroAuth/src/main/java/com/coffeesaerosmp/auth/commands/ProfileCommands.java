@@ -1413,15 +1413,9 @@ public class ProfileCommands {
             source.sendFailure(Component.literal("§cNo profile found for '" + name + "' (username or display name)."));
             return 0;
         }
-        if (p.returnDim == null) {
-            source.sendSuccess(() -> Component.literal(
-                "§e" + p.displayName + "§7 had no stored return position — nothing to clear. "
-                    + "They already fall through to world spawn."
-            ), true);
-            return 1;
-        }
-
-        final String was = p.returnDim + " " + Math.round(p.returnX) + " "
+        // Always clear BOTH: the auth return position (used by /spawn) and, via SpawnOnNextJoin, the vanilla
+        // playerdata position an offline player would otherwise log back in at (owner, 2026-10-04).
+        final String was = p.returnDim == null ? "none" : p.returnDim + " " + Math.round(p.returnX) + " "
             + Math.round(p.returnY) + " " + Math.round(p.returnZ);
         p.returnDim = null;
         p.returnX = 0;
@@ -1429,24 +1423,18 @@ public class ProfileCommands {
         p.returnZ = 0;
         CoffeesAeroAuth.PROFILE_STORE.save(p);
 
-        source.sendSuccess(() -> Component.literal(
-            "§aCleared return position for §f" + p.displayName + "§a.\n"
-                + "§7Was: §f" + was + "§7 — next /spawn sends them to world spawn."
-        ), true);
-
-        // If they are connected right now, move them out immediately; otherwise the stale position
-        // is still live in this session and their logout would write it straight back.
         ServerPlayer online = source.getServer().getPlayerList().getPlayer(p.getUUID());
         if (online != null && CoffeesAeroAuth.LOBBY_MANAGER != null) {
             CoffeesAeroAuth.LOBBY_MANAGER.teleportToSpawn(online);
             online.sendSystemMessage(Component.literal(
                 "§eAn admin moved you to spawn and cleared your saved return position."));
-            source.sendSuccess(() -> Component.literal(
-                "§7They were online — teleported to spawn so logout cannot re-save the old spot."), false);
+            source.sendSuccess(() -> Component.literal("§aMoved §f" + p.displayName
+                + "§a to spawn now §7(was online). Stored return position was: §f" + was), true);
         } else {
-            source.sendSuccess(() -> Component.literal(
-                "§7Offline. Note: vanilla still loads their playerdata position on login — if that "
-                    + "chunk is the problem, edit the .dat offline as well."), false);
+            com.coffeesaerosmp.auth.admin.SpawnOnNextJoin.mark(source.getServer(), p.getUUID());
+            source.sendSuccess(() -> Component.literal("§aReset §f" + p.displayName
+                + "§a — they will appear at the world spawn on their NEXT join. §7Stored return position was: §f"
+                + was), true);
         }
         return 1;
     }

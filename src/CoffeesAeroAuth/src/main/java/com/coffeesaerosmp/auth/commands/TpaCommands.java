@@ -50,6 +50,7 @@ public final class TpaCommands {
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(Commands.literal("tpa")
+            .requires(AuthConfigGate::teleportAllowed)
             .then(Commands.argument("player", StringArgumentType.word())
                 .suggests(ONLINE_PLAYERS)
                 .executes(ctx -> {
@@ -59,11 +60,11 @@ public final class TpaCommands {
                 })
             )
         );
-        dispatcher.register(Commands.literal("tpaccept").executes(ctx -> {
+        dispatcher.register(Commands.literal("tpaccept").requires(AuthConfigGate::teleportAllowed).executes(ctx -> {
             handleResponse(ctx.getSource().getPlayerOrException(), true);
             return 1;
         }));
-        dispatcher.register(Commands.literal("tpdeny").executes(ctx -> {
+        dispatcher.register(Commands.literal("tpdeny").requires(AuthConfigGate::teleportAllowed).executes(ctx -> {
             handleResponse(ctx.getSource().getPlayerOrException(), false);
             return 1;
         }));

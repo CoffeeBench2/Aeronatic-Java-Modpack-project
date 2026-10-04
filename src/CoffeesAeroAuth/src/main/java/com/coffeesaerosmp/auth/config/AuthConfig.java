@@ -175,6 +175,7 @@ public class AuthConfig {
     public static final ModConfigSpec.BooleanValue SEASON_WELCOME_MAIL;
     public static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> SEASON_WELCOME_ITEMS;
     public static final ModConfigSpec.BooleanValue LAUNCH_RESET;
+    public static final ModConfigSpec.BooleanValue SURVIVAL_TELEPORT_COMMANDS;
     public static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> LAUNCH_RESET_ACCOUNTS;
     public static final ModConfigSpec.BooleanValue LAUNCH_RESET_DEOP;
 
@@ -1424,6 +1425,15 @@ public class AuthConfig {
                 java.util.List.of("minecraft:bread*16", "minecraft:oak_sapling*4"),
                 () -> "minecraft:bread*1",
                 o -> o instanceof String s && !s.isBlank());
+        b.pop();
+
+        b.comment("Survival teleportation commands provided by this mod.").push("teleport");
+        SURVIVAL_TELEPORT_COMMANDS = b
+            .comment("false = /tpa, /tpaccept, /tpdeny and /rtp disappear for players (ops keep them). /spawn is",
+                     "unaffected. DEFAULT false: Season 3 has no survival teleportation (owner, 2026-10-04) — and a",
+                     "default, unlike a hand-added key, cannot be stripped by an older jar's config correction.",
+                     "FTB Essentials' own /tpa /home /back /rtp /warp /playerspawn are off in config/ftbessentials.snbt.")
+            .define("survivalTeleportCommands", false);
         b.pop();
 
         b.comment("Season launch: the one-time 'fresh start' for accounts used during the staff test (launch/LaunchReset).").push("launch");
