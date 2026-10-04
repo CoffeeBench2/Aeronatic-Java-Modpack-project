@@ -23,6 +23,21 @@ public final class SkinCommands {
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(Commands.literal("skin")
+            // ── Staff: change ANY player's skin, online or offline (2026-10-04) ─────────────
+            //   /skin admin set <player> <java_name>   /skin admin reset <player>
+            // Never counts against the player's own lifetime changes.
+            .then(Commands.literal("admin")
+                .requires(src -> src.hasPermission(2))
+                .then(Commands.literal("set")
+                    .then(Commands.argument("player", StringArgumentType.word())
+                        .then(Commands.argument("java_name", StringArgumentType.word())
+                            .executes(ctx -> adminSet(ctx.getSource(),
+                                StringArgumentType.getString(ctx, "player"),
+                                StringArgumentType.getString(ctx, "java_name"))))))
+                .then(Commands.literal("reset")
+                    .then(Commands.argument("player", StringArgumentType.word())
+                        .executes(ctx -> adminReset(ctx.getSource(),
+                            StringArgumentType.getString(ctx, "player"))))))
             .then(Commands.literal("reset")
                 .executes(ctx -> {
                     ServerPlayer player = ctx.getSource().getPlayerOrException();
@@ -60,6 +75,37 @@ public final class SkinCommands {
                 })
             )
         );
+    }
+
+    private static int adminSet(CommandSourceStack src, String player, String javaName) {
+        java.util.UUID target = AeroSkinsApi.backend().resolvePlayer(src.getServer(), player);
+        if (target == null) {
+            src.sendFailure(error("No player named '" + player + "' (account or display name)."));
+            return 0;
+        }
+        src.sendSuccess(() -> info("Fetching skin '" + javaName + "' for " + player + "…"), false);
+        SkinService.setFor(src.getServer(), target, javaName, result -> {
+            if (result == null) {
+                src.sendFailure(error("No Java account named '" + javaName + "' found."));
+                return;
+            }
+            boolean online = src.getServer().getPlayerList().getPlayer(target) != null;
+            src.sendSuccess(() -> success(player + " now wears '" + result + "'s skin"
+                + (online ? "." : " — they will see it on their next join.")
+                + " §7(Premium players re-fetch their real Mojang skin on every join.)"), true);
+        });
+        return 1;
+    }
+
+    private static int adminReset(CommandSourceStack src, String player) {
+        java.util.UUID target = AeroSkinsApi.backend().resolvePlayer(src.getServer(), player);
+        if (target == null) {
+            src.sendFailure(error("No player named '" + player + "' (account or display name)."));
+            return 0;
+        }
+        SkinService.resetFor(src.getServer(), target);
+        src.sendSuccess(() -> success("Custom skin cleared for " + player + "."), true);
+        return 1;
     }
 
     private static boolean denied(ServerPlayer player) {

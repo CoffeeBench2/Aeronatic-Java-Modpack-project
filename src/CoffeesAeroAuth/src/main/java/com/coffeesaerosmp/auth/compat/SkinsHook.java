@@ -85,6 +85,15 @@ public final class SkinsHook {
                 return p != null && p.capeEnabled;
             }
 
+            /** /skin admin: account OR display name, online or offline, from the profile store. */
+            @Override public UUID resolvePlayer(net.minecraft.server.MinecraftServer server, String name) {
+                ServerPlayer online = server.getPlayerList().getPlayerByName(name);
+                if (online != null) return online.getUUID();
+                PlayerProfile p = CoffeesAeroAuth.PROFILE_STORE != null
+                    ? CoffeesAeroAuth.PROFILE_STORE.findByAnyName(name) : null;
+                return p != null ? p.getUUID() : null;
+            }
+
             @Override public String skinCommandDenyReason(ServerPlayer player) {
                 if (CoffeesAeroAuth.AUTH_MANAGER == null
                     || !CoffeesAeroAuth.AUTH_MANAGER.isAuthenticated(player.getUUID()))

@@ -110,6 +110,36 @@ public final class SkinService {
             }));
     }
 
+    /**
+     * Staff: give {@code target} (online OR offline) the public skin of Java account {@code javaName}. Saved
+     * to their profile; applied now if they are online, otherwise on their next join (applySaved). Does NOT
+     * consume the player's own /skin changes. Callback on the server thread with the donor name, or null.
+     */
+    public static void setFor(MinecraftServer server, UUID target, String javaName, Consumer<String> onResult) {
+        boolean allowCape = AeroSkinsApi.backend().capeAllowed(target);
+        resolveName(javaName)
+            .thenCompose(uuid -> uuid == null
+                ? CompletableFuture.completedFuture((Map.Entry<UUID, String>) null)
+                : fetchTexturesValue(uuid).thenApply(v -> v == null ? null : Map.entry(uuid, v)))
+            .thenAccept(donor -> server.execute(() -> {
+                if (donor == null) { onResult.accept(null); return; }
+                String applied = allowCape ? donor.getValue() : stripCape(donor.getValue());
+                AeroSkinsApi.backend().saveTextures(target, applied);
+                ServerPlayer online = server.getPlayerList().getPlayer(target);
+                if (online != null) apply(online, applied, donor.getKey());
+                CoffeesAeroSkins.LOGGER.info("[Skins] staff set {}'s skin from '{}' ({}).", target, javaName,
+                    online != null ? "applied now" : "on next join");
+                onResult.accept(javaName);
+            }));
+    }
+
+    /** Staff: clear {@code target}'s custom skin, online or offline. */
+    public static void resetFor(MinecraftServer server, UUID target) {
+        AeroSkinsApi.backend().saveTextures(target, null);
+        ServerPlayer online = server.getPlayerList().getPlayer(target);
+        if (online != null) reset(online);
+    }
+
     /** {@code /skin reset}: clear the custom skin (offline → default; premium → real skin on next join). */
     public static void reset(ServerPlayer player) {
         player.getGameProfile().getProperties().removeAll("textures");
