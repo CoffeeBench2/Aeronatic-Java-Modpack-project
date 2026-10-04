@@ -70,6 +70,7 @@ public class AuthConfig {
     public static final ModConfigSpec.IntValue      OVERWORLD_SPAWN_X;
     public static final ModConfigSpec.IntValue      OVERWORLD_SPAWN_Y;
     public static final ModConfigSpec.IntValue      OVERWORLD_SPAWN_Z;
+    public static final ModConfigSpec.DoubleValue   OVERWORLD_SPAWN_YAW;
     public static final ModConfigSpec.IntValue      SPAWN_FORCELOAD_RADIUS_CHUNKS;
 
     public static final ModConfigSpec.ConfigValue<String>  RESOURCE_PACK_URL;
@@ -1160,7 +1161,7 @@ public class AuthConfig {
                     "spawn,login,register,setname,changename,changepassword,logout,discord,profile,setbio,"
                   + "skin,vote,help,msg,tell,w,r,whisper,me,mytrustedips,sidebar");
         LOBBY_FORCELOAD_RADIUS_CHUNKS = b
-            .comment("Chunks (square radius) around the lobby anchor to permanently force-load. Cover the whole build.")
+            .comment("IGNORED since 1.13.3 — the mod no longer force-loads anything (owner, 2026-10-04).")
             .defineInRange("lobbyForceloadRadiusChunks", 8, 1, 32);
         LOBBY_PREPLACED_BUILD = b
             .comment("DEPRECATED and ignored since 2026-09-09 — kept only so the key does not vanish from",
@@ -1178,8 +1179,12 @@ public class AuthConfig {
         OVERWORLD_SPAWN_Z = b
             .comment("Overworld spawn Z.")
             .defineInRange("overworldSpawnZ", -1, -30000000, 30000000);
+        OVERWORLD_SPAWN_YAW = b
+            .comment("Direction players face at spawn (yaw, degrees): 0 = south, 90 = west, 180 = north, -90 = east.")
+            .defineInRange("overworldSpawnYaw", 0.0, -180.0, 180.0);
         SPAWN_FORCELOAD_RADIUS_CHUNKS = b
-            .comment("Chunks (square radius) around the overworld spawn to permanently force-load so joins/spawns are instant.")
+            .comment("IGNORED since 1.13.3 — the mod no longer force-loads anything (owner, 2026-10-04). Kept so",
+                     "existing configs do not lose the key; the old ring is released once on the next boot.")
             .defineInRange("spawnForceloadRadiusChunks", 7, 0, 16);
         b.pop();
 

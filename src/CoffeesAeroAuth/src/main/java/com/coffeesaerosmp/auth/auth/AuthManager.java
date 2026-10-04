@@ -299,6 +299,7 @@ public class AuthManager {
         // handleSpawn diverts to handleWorldSpawnTeleport for anyone not in that dimension, so those
         // grants would silently never be paid again. payWorldEntryGrants() pays exactly them.
         if (isSplitArchitecture()) {
+            leaveLegacyLobby(player);
             profile.sessionStartEpoch = System.currentTimeMillis();
             onAuthenticated(player, profile, false);
             payWorldEntryGrants(player, profile);
@@ -334,12 +335,26 @@ public class AuthManager {
      * which is also the documented rollback path.
      */
     private static boolean isSplitArchitecture() {
-        try {
-            if (com.coffeesaerosmp.auth.lobby.LobbyHandoff.isLobbyRole()) return false;   // we ARE the lobby
-            return !AuthConfig.LOBBY_RETURN_HOST.get().trim().isEmpty();
-        } catch (Exception e) {
-            return false;
-        }
+        // 2026-10-04 (owner: "the Authmod lobby and dimension should be long gone"): the SMP role NEVER
+        // uses its in-process auth_lobby any more, whether or not lobbyReturnHost is set. The single-box
+        // design it served is retired; Season 3's server has no lobbyReturnHost during its staff test and
+        // was dropping first joiners into the old lobby with the "Teleport to Spawn" paper. Only the
+        // LOBBY role keeps the dimension, as its own login pad.
+        return !com.coffeesaerosmp.auth.lobby.LobbyHandoff.isLobbyRole();
+    }
+
+    /**
+     * SMP role: anyone who logged out inside the retired in-process lobby is moved to the world spawn.
+     * Runs on the authentication path (deferred from join), never from a tick handler.
+     */
+    private void leaveLegacyLobby(ServerPlayer player) {
+        if (player.level().dimension() != com.coffeesaerosmp.auth.lobby.LobbyManager.LOBBY_DIMENSION) return;
+        CoffeesAeroAuth.LOGGER.info("[Auth] {} was in the retired auth_lobby — taking the /spawn exit.",
+            player.getGameProfile().getName());
+        // The lobby's OWN exit, not a bare teleport: entering the old lobby stashed the player's real
+        // inventory and vitals, and only this path gives them back (then resumes their saved position,
+        // or the world spawn for a first-timer). A plain teleport would strand that inventory.
+        handleSpawn(player);
     }
 
     /**
@@ -434,12 +449,28 @@ public class AuthManager {
         // boundary, and it is the same one the backend already uses to trust premium identity.
         if (isSplitArchitecture() && CoffeesAeroAuth.GATE_VERIFIED.contains(player.getUUID())) {
             authStates.put(player.getUUID(), AuthState.AUTHENTICATED);
+            leaveLegacyLobby(player);
             profile.sessionStartEpoch = System.currentTimeMillis();
             onAuthenticated(player, profile, false);
             payWorldEntryGrants(player, profile);
             CoffeesAeroAuth.LOGGER.info(
                 "[Auth] {} arrived OFFLINE with a valid gate cookie — already authenticated on the "
                 + "lobby, skipping the local login flow.", mcName);
+            return;
+        }
+
+        // SMP role without a lobby-verified cookie: everything below is the retired in-process login
+        // flow, which parks the player in auth_lobby to type /login. The SMP no longer has a lobby, so
+        // an offline login has to come through the real lobby server (which verifies the password and
+        // hands over a signed cookie). Refuse rather than send anyone into the old dimension.
+        if (isSplitArchitecture()) {
+            CoffeesAeroAuth.LOGGER.info("[Auth] {} arrived OFFLINE without a lobby cookie on the SMP — refused "
+                + "(the in-process lobby is retired).", mcName);
+            String where = "";
+            try { where = AuthConfig.LOBBY_ENTRY_ADDRESS.get().trim(); } catch (Exception ignored) {}
+            player.connection.disconnect(Component.literal(
+                "§cPlease join through the server address" + (where.isEmpty() ? "" : " §f" + where) + "§c.\n"
+              + "§7Offline accounts log in on the lobby first."));
             return;
         }
 

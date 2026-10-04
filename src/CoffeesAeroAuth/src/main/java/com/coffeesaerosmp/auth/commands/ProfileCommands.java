@@ -1195,20 +1195,27 @@ public class ProfileCommands {
         var ow = source.getServer().overworld();
         int[] c = spawnCentre();
         var st = com.coffeesaerosmp.auth.lobby.ForceloadManager.status(ow, c[0], c[1], radius);
-        int cfg = com.coffeesaerosmp.auth.config.AuthConfig.SPAWN_FORCELOAD_RADIUS_CHUNKS.get();
 
         source.sendSuccess(() -> Component.literal(
             "§6[Forceload]§7 overworld holds §f" + st.total() + "§7 forced chunk(s); §f"
             + st.nearby() + "§7 of them within §f" + radius + "§7 chunks of spawn ("
             + c[0] + ", " + c[1] + ")."), false);
         source.sendSuccess(() -> Component.literal(
-            "§7  Config §f spawnForceloadRadiusChunks = " + cfg + "§7 → "
-            + (cfg > 0 ? "we hold " + ((2*cfg+1)*(2*cfg+1)) + " chunk(s), blocks "
-                          + (-cfg*16) + ".." + (cfg*16+15) + " on each axis"
-                       : "§adisabled")), false);
-        if (cfg > 0) {
-            source.sendSuccess(() -> Component.literal(
-                "§e  Anything built inside that box ticks 24/7 with nobody online."), false);
+            "§a  This mod force-loads NOTHING since 1.13.3 §7— anything listed is /forceload or another mod."), false);
+        // Every dimension, with a few coordinates each: "is anything else holding chunks?" in one look.
+        for (var level : source.getServer().getAllLevels()) {
+            var forced = level.getForcedChunks();
+            if (forced.isEmpty()) continue;
+            StringBuilder sample = new StringBuilder();
+            int shown = 0;
+            for (long key : forced) {
+                if (shown++ == 6) { sample.append(" …"); break; }
+                sample.append(" [").append(net.minecraft.world.level.ChunkPos.getX(key) * 16).append(", ")
+                      .append(net.minecraft.world.level.ChunkPos.getZ(key) * 16).append("]");
+            }
+            String dim = level.dimension().location().toString();
+            int n = forced.size();
+            source.sendSuccess(() -> Component.literal("§7  §f" + dim + "§7: §f" + n + "§7 forced —" + sample), false);
         }
         return 1;
     }
@@ -1226,11 +1233,6 @@ public class ProfileCommands {
         source.sendSuccess(() -> Component.literal(
             "§7  Nothing was deleted — the chunks stay on disk and simply stop ticking when no "
             + "player is nearby."), false);
-        if (com.coffeesaerosmp.auth.config.AuthConfig.SPAWN_FORCELOAD_RADIUS_CHUNKS.get() > 0) {
-            source.sendSuccess(() -> Component.literal(
-                "§c  ⚠ spawnForceloadRadiusChunks is still > 0 — the mod will re-apply its ring on "
-                + "the next restart. Set it to 0 in the config to make this permanent."), false);
-        }
         return 1;
     }
 

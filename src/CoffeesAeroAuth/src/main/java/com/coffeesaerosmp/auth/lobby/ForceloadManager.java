@@ -46,48 +46,12 @@ public final class ForceloadManager {
      */
     private static final int CONFIG_MAX_RADIUS = 16;
 
-    // ── Applying the configured region ────────────────────────────────────────
-
-    /**
-     * Brings the forced set around spawn in line with {@code spawnForceloadRadiusChunks}.
-     *
-     * <p>Unforces everything we would previously have held that is now outside the desired radius,
-     * then forces what is wanted. Because it reconciles rather than only adding, lowering the config
-     * — or setting it to 0 — actually takes effect on the next boot instead of silently leaving the
-     * old ring loaded forever.
-     *
-     * @return number of chunks force-loaded after reconciling
-     */
-    public static int reconcile(ServerLevel level, int spawnX, int spawnZ, int desiredRadius) {
-        int cx = spawnX >> 4, cz = spawnZ >> 4;
-
-        // Sweep out to the widest radius the config could previously have held, so a reduction is
-        // actually released. Cheap: this is a bounded box, run once at startup.
-        int sweep = Math.max(desiredRadius, CONFIG_MAX_RADIUS);
-        int removed = 0, added = 0;
-
-        for (int x = cx - sweep; x <= cx + sweep; x++) {
-            for (int z = cz - sweep; z <= cz + sweep; z++) {
-                boolean want = desiredRadius > 0
-                            && Math.abs(x - cx) <= desiredRadius
-                            && Math.abs(z - cz) <= desiredRadius;
-                boolean have = level.getForcedChunks().contains(ChunkPos.asLong(x, z));
-                if (want && !have)      { level.setChunkForced(x, z, true);  added++; }
-                else if (!want && have) { level.setChunkForced(x, z, false); removed++; }
-            }
-        }
-
-        if (desiredRadius <= 0) {
-            CoffeesAeroAuth.LOGGER.info(
-                "[Forceload] Spawn force-load DISABLED (spawnForceloadRadiusChunks=0). "
-                + "Released {} chunk(s). Spawn will load on demand like anywhere else.", removed);
-        } else {
-            CoffeesAeroAuth.LOGGER.info(
-                "[Forceload] Spawn region reconciled around ({}, {}) — radius {} chunk(s): "
-                + "{} added, {} released.", spawnX, spawnZ, desiredRadius, added, removed);
-        }
-        return (desiredRadius > 0) ? (2 * desiredRadius + 1) * (2 * desiredRadius + 1) : 0;
-    }
+    // ── Applying the configured region: REMOVED 2026-10-04 ─────────────────────
+    //
+    // reconcile() — the only code in this mod that ever FORCED a chunk — was deleted on the owner's
+    // instruction ("remove the forceloading done by authmod, any coding"). What remains here only
+    // RELEASES chunks (clearAround) or reports them (status). LobbyManager runs a one-time release of
+    // the rings the old code left behind.
 
     // ── Operator tools ────────────────────────────────────────────────────────
 

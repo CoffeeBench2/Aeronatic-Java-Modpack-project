@@ -150,7 +150,7 @@ public class LobbyManager {
         BlockPos spawn = overworld.getSharedSpawnPos();
         player.teleportTo(overworld,
             spawn.getX() + 0.5, spawn.getY(), spawn.getZ() + 0.5,
-            Set.of(), 0.0f, 0.0f);
+            Set.of(), overworld.getSharedSpawnAngle(), 0.0f);
     }
 
     /**
@@ -250,20 +250,24 @@ public class LobbyManager {
 
     // ── Startup / force-load ──────────────────────────────────────────────────
 
-    /** Permanently force-loads the lobby region around the anchor so it never goes cold (the freeze fix). */
+    /**
+     * 🔴 NO FORCE-LOADING (owner, 2026-10-04: "remove the forceloading done by authmod, any coding").
+     *
+     * <p>This used to permanently force-load 17×17 = 289 chunks of {@code auth_lobby} on EVERY server —
+     * the survival servers included, which have not used that dimension since the standalone lobby
+     * replaced it. Now it RELEASES whatever is still forced there instead. Nothing but this mod ever
+     * forced chunks in {@code auth_lobby}, so releasing all of them cannot undo anyone else's work.
+     * The lobby server keeps its pad loaded the ordinary way: players are standing on it.
+     */
     public void initSharedLobby() {
         ServerLevel lobby = server.getLevel(LOBBY_DIMENSION);
-        if (lobby == null) {
-            CoffeesAeroAuth.LOGGER.error("[Lobby] auth_lobby dimension missing at startup — cannot force-load.");
-            return;
+        if (lobby == null) return;
+        int held = lobby.getForcedChunks().size();
+        if (held > 0) {
+            int released = ForceloadManager.clearAround(lobby, ANCHOR_X, ANCHOR_Z, ForceloadManager.MAX_CLEAR_RADIUS);
+            CoffeesAeroAuth.LOGGER.info("[Forceload] auth_lobby: released {} of {} chunk(s) this mod used to force-load.",
+                released, held);
         }
-        int r = AuthConfig.LOBBY_FORCELOAD_RADIUS_CHUNKS.get();
-        int cx = ANCHOR_X >> 4, cz = ANCHOR_Z >> 4;
-        int n = 0;
-        for (int x = cx - r; x <= cx + r; x++)
-            for (int z = cz - r; z <= cz + r; z++) { lobby.setChunkForced(x, z, true); n++; }
-        CoffeesAeroAuth.LOGGER.info("[Lobby] Shared lobby ready — force-loaded {} chunks around ({}, {}). "
-            + "No blocks placed.", n, ANCHOR_X, ANCHOR_Z);
     }
 
     /** Runs on server start: force-load the lobby and set up the overworld spawn. */
@@ -272,18 +276,49 @@ public class LobbyManager {
         initSpawnArea();
     }
 
-    /** Sets the overworld world-spawn to the configured coords (where /spawn + the lobby paper land players)
-     *  and permanently force-loads the surrounding chunks so joining/spawning there is instant. */
+    /**
+     * Sets the overworld world-spawn (where new players appear and /spawn lands) to the configured
+     * coordinates and facing. NO force-loading any more — see {@link #initSharedLobby}.
+     *
+     * <p>⚠️ This overwrites the world's own spawn every boot, so the config IS the spawn. The default
+     * (0, 112, -1) moved Season 3's spawn to the origin on its first boot with this mod (2026-10-04);
+     * set overworldSpawnX/Y/Z/Yaw for every new world.
+     *
+     * <p>One-time cleanup: the spawn ring this mod used to force-load is released — around the origin
+     * (where the default config put it) and around the configured spawn — then a stamp stops it running
+     * again, so a /forceload an admin adds later near spawn is never undone.
+     */
     public void initSpawnArea() {
         ServerLevel ow = server.overworld();
         if (ow == null) return;
         int sx = AuthConfig.OVERWORLD_SPAWN_X.get();
         int sy = AuthConfig.OVERWORLD_SPAWN_Y.get();
         int sz = AuthConfig.OVERWORLD_SPAWN_Z.get();
-        ow.setDefaultSpawnPos(new BlockPos(sx, sy, sz), 0.0f);
-        int r = AuthConfig.SPAWN_FORCELOAD_RADIUS_CHUNKS.get();
-        int n = ForceloadManager.reconcile(ow, sx, sz, r);
-        CoffeesAeroAuth.LOGGER.info("[Spawn] Overworld spawn set to ({}, {}, {}) — {} chunk(s) force-loaded.",
-            sx, sy, sz, n);
+        float yaw = (float) (double) AuthConfig.OVERWORLD_SPAWN_YAW.get();
+        ow.setDefaultSpawnPos(new BlockPos(sx, sy, sz), yaw);
+        CoffeesAeroAuth.LOGGER.info("[Spawn] Overworld spawn set to ({}, {}, {}) facing yaw {}.", sx, sy, sz, yaw);
+        releaseLegacySpawnForceload(ow, sx, sz);
+    }
+
+    private static final String FORCELOAD_STAMP = "forceload_released_v1.txt";
+
+    private void releaseLegacySpawnForceload(ServerLevel ow, int sx, int sz) {
+        java.nio.file.Path stamp = server.getWorldPath(net.minecraft.world.level.storage.LevelResource.ROOT)
+            .resolve("coffeesaeroauth").resolve(FORCELOAD_STAMP);
+        if (java.nio.file.Files.exists(stamp)) return;
+        int before = ow.getForcedChunks().size();
+        // 16 = the old spawnForceloadRadiusChunks maximum, so every ring the old code could have placed.
+        int released = ForceloadManager.clearAround(ow, 0, 0, 16);
+        if (Math.abs(sx) > 16 * 16 || Math.abs(sz) > 16 * 16) released += ForceloadManager.clearAround(ow, sx, sz, 16);
+        int left = ow.getForcedChunks().size();
+        CoffeesAeroAuth.LOGGER.warn("[Forceload] One-time cleanup: released {} overworld chunk(s) the old spawn "
+            + "force-load held ({} before, {} still forced by others — see /authmod forceload).", released, before, left);
+        try {
+            java.nio.file.Files.createDirectories(stamp.getParent());
+            java.nio.file.Files.writeString(stamp, "released " + released + " overworld chunk(s), " + left
+                + " left forced by other sources, " + java.time.LocalDateTime.now() + System.lineSeparator());
+        } catch (java.io.IOException e) {
+            CoffeesAeroAuth.LOGGER.warn("[Forceload] could not write {}: {}", stamp, e.getMessage());
+        }
     }
 }
