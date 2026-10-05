@@ -17,6 +17,7 @@ public class AeroConfig {
     public static final ModConfigSpec.ConfigValue<String> CURSEFORGE_URL;
     public static final ModConfigSpec.ConfigValue<String> MODRINTH_URL;
     public static final ModConfigSpec.BooleanValue ANALOG_AUDIO_PROMPT_SHOWN;
+    public static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> MANUAL_MODS;
 
     static {
         ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
@@ -85,6 +86,17 @@ public class AeroConfig {
                      "the mod (the CurseForge-website download strips it); Modrinth/GitHub builds include",
                      "it, so this is always ignored there. Not meant to be edited by hand.")
             .define("analogAudioPromptShown", false);
+
+        MANUAL_MODS = builder
+            .comment("Mods the server REQUIRES that a store download cannot ship (CurseForge will not host or",
+                     "allow them in a pack zip). When one is not loaded, the title screen shows a one-time-per-",
+                     "launch helper with a link to the mod's page and a shortcut to the mods folder. It never",
+                     "downloads anything itself. Format: \"modId|Display Name|https://page|what it does\".",
+                     "Builds that bundle a mod never see its entry, so listing extra mods is harmless.")
+            .defineListAllowEmpty("manualMods", java.util.List.of(
+                    "analogaudio|Analog Audio|https://modrinth.com/mod/analog-audio|the in-game radios and cassettes",
+                    "ssrd|Separate Sable Render Distance|https://modrinth.com/mod/ssrd/version/1.8.7|how far away ships render"),
+                o -> o instanceof String str && str.split("\\|").length >= 3);
 
         CLIENT_SPEC = builder.build();
     }

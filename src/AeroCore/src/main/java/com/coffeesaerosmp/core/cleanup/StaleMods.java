@@ -61,7 +61,9 @@ public final class StaleMods {
         // "Incompatible client" — a total lockout that this list, had it been maintained, would have
         // cleared on the next launch with no release at all. THIS is the list that must be updated.
         "wanna_play_chess",
-        "easybuilding",
+        // "easybuilding" WAS here (S2 dropped it). Removed 2026-10-05: Season 3 ships
+        // easybuilding-neoforge-1.21.1-v1.1.jar on both sides, and this sweep runs every launch,
+        // so the entry would have deleted a mod the S3 server requires.
         "tracks_in_bogs",        // NOT tracks-neoforge-* — that is Create Tracks, still shipped
         "wakes-1.21.1",
         "crawl-0.",              // narrow on purpose; nothing kept starts "crawl-0."

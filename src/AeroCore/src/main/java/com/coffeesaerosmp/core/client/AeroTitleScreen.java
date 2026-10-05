@@ -43,7 +43,7 @@ public class AeroTitleScreen extends Screen {
      * the full canvas), so centering the canvas centers what the player actually sees. If a future
      * version is exported with padding, trim it rather than compensating with offsets here.
      */
-    private static final int LOGO_W = 2048, LOGO_H = 672;   // Season 2 art (AERO SHIP)
+    private static final int LOGO_W = 1804, LOGO_H = 592;   // Season 3 art (COFFEE'S / SEASON 3 / AERO SMP)
 
     /** 16px pixel-art Discord mark for the invite tile. Native size — blitted 1:1 so it stays crisp. */
     private static final ResourceLocation DISCORD_ICON =
@@ -292,7 +292,10 @@ public class AeroTitleScreen extends Screen {
         // window), landing at ~36% width on 16:9. Bottom edge sits at 25%, so it still clears the
         // background airship at ~40% with room to spare, and the 80% width guard below never trips
         // (checked at 4:3, 16:9, 16:10 and 21:9). Re-derive this whenever the art changes shape.
-        int logoH = (int) (this.height * 0.21);
+        //
+        // Season 3 (2026-10-05): new art, same 3.05:1 shape, and the owner asked for it a further 30%
+        // smaller: 0.21 -> 0.147 (~25% of screen width on 16:9, bottom edge at ~19%).
+        int logoH = (int) (this.height * 0.147);
         int logoW = logoH * LOGO_W / LOGO_H;
         if (logoW > (int) (this.width * 0.8)) {
             logoW = (int) (this.width * 0.8);
@@ -513,12 +516,13 @@ public class AeroTitleScreen extends Screen {
             // Mod present (Modrinth/GitHub build): re-fire the mod's OWN Lavaplayer install prompt,
             // which hooks the vanilla TitleScreen we replaced and so never fires on its own here.
             fireLavaplayerWelcomeIfNeeded();
-        } else if (!AeroConfig.ANALOG_AUDIO_PROMPT_SHOWN.get()) {
-            // Mod absent (the CurseForge-website zip strips it). Analog Audio registers a required
-            // network channel, so without it the player can't join the server and radios/cassettes
-            // are dead — offer a one-click manual-install path. Invisible on builds that bundle it.
-            this.minecraft.setScreen(
-                new com.coffeesaerosmp.core.screen.AnalogAudioSetupScreen(this));
+        }
+        // Required mods a store zip cannot ship (Analog Audio on S2, SSRD on S3): both register
+        // required network channels, so without them the player is refused at the door. Offer a
+        // manual-install path. Invisible on builds that bundle them.
+        var missing = com.coffeesaerosmp.core.screen.MissingModsScreen.missing();
+        if (!missing.isEmpty()) {
+            this.minecraft.setScreen(new com.coffeesaerosmp.core.screen.MissingModsScreen(this, missing));
         }
     }
 
