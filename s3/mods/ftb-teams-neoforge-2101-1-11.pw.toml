@@ -1,0 +1,8 @@
+name = "ftb-teams-neoforge-2101.1.11"
+filename = "ftb-teams-neoforge-2101.1.11.jar"
+side = "both"
+
+[download]
+url = "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/download/s3-v3.0.0/ftb-teams-neoforge-2101.1.11.jar"
+hash-format = "sha256"
+hash = "e6bcd670493624e6906df872a9c6af4a33fe6405cac57a32c59cd4cd5838c655"

@@ -1,0 +1,13 @@
+name = "corpsecurioscompat-1.21.1-NeoForge-4.0.1"
+filename = "corpsecurioscompat-1.21.1-NeoForge-4.0.1.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/pJGcKPh1/versions/Ix4uAd2i/corpsecurioscompat-1.21.1-NeoForge-4.0.1.jar"
+hash-format = "sha512"
+hash = "3a75b28b4bf25d775c399c8b5eff1f186020957332f3698d4e313cd0c0785c8b5814ca7fd7194e8b938e276073bab99e8d22aa2c5c10ca78763945db825059fe"
+
+[update]
+[update.modrinth]
+mod-id = "pJGcKPh1"
+version = "Ix4uAd2i"

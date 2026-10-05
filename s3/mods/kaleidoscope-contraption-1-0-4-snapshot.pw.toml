@@ -1,0 +1,13 @@
+name = "kaleidoscope_contraption-1.0.4-SNAPSHOT"
+filename = "kaleidoscope_contraption-1.0.4-SNAPSHOT.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/JCCAvv9N/versions/ZgBRECRP/kaleidoscope_contraption-1.0.4-SNAPSHOT.jar"
+hash-format = "sha512"
+hash = "cb85961bb20387626e81550ff03e20879c41e0b4ca22ef0e36abcd5ca3dd762fe85d332619ffb06e9b3232f1961f522f883c25700948dae935043af4e4937269"
+
+[update]
+[update.modrinth]
+mod-id = "JCCAvv9N"
+version = "ZgBRECRP"

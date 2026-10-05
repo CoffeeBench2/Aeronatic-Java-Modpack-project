@@ -1,0 +1,13 @@
+name = "someassemblyrequired-5.2.8"
+filename = "someassemblyrequired-5.2.8.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/jZi8ogTA/versions/G8Lz8Txm/someassemblyrequired-5.2.8.jar"
+hash-format = "sha512"
+hash = "de9c76595188852b187718aaf6287a6057e4135b5f45dfe9201b302ccdd0a5cf967314e1025c305b4fdcbcc94d1dcab8a379e8488f6adedbf3e9eb2f959ff9cc"
+
+[update]
+[update.modrinth]
+mod-id = "jZi8ogTA"
+version = "G8Lz8Txm"

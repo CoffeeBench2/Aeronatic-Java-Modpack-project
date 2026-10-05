@@ -1,0 +1,13 @@
+name = "colorful_catalysts-2.2.0"
+filename = "colorful_catalysts-2.2.0.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/3ADr1McV/versions/zzwouLn5/colorful_catalysts-2.2.0.jar"
+hash-format = "sha512"
+hash = "aede52faeeae6ccd8adcbf6b9dcee1bd7e76f8461acc1553d4ca4202e95950bf265d8461edc9f2c86b4ea9c2bdb3fcb52a46d400786e9c70f90b7f7de8e4ea43"
+
+[update]
+[update.modrinth]
+mod-id = "3ADr1McV"
+version = "zzwouLn5"

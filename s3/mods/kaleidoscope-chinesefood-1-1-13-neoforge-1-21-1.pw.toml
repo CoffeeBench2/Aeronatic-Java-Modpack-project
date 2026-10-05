@@ -1,0 +1,13 @@
+name = "kaleidoscope_chinesefood-1.1.13-neoforge+1.21.1"
+filename = "kaleidoscope_chinesefood-1.1.13-neoforge+1.21.1.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/cuIIkdlx/versions/DAwZBnDN/kaleidoscope_chinesefood-1.1.13-neoforge%2B1.21.1.jar"
+hash-format = "sha512"
+hash = "916d0c5ba73da893b25c6a8285a0794cb5b80988003cc33300691ce5ded82a154b0a4fa35f49e4828c2167fbc975d4713886953cd3643c24fe7d33791ef1073b"
+
+[update]
+[update.modrinth]
+mod-id = "cuIIkdlx"
+version = "DAwZBnDN"

@@ -1,0 +1,13 @@
+name = "tracks_plus-1.0.6b7"
+filename = "tracks_plus-1.0.6b7.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/E8eHF2Yl/versions/qUDRhHla/tracks_plus-1.0.6b7.jar"
+hash-format = "sha512"
+hash = "b250a25a78de9fceeafd8d26c85d1b91948db903ea39e58df6afb6224e60268f59d42a40a3485cfaa705c2f501d0f73b6eaa25905457a0643a4873b12824db20"
+
+[update]
+[update.modrinth]
+mod-id = "E8eHF2Yl"
+version = "qUDRhHla"

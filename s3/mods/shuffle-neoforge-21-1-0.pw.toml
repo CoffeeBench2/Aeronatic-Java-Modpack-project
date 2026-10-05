@@ -1,0 +1,13 @@
+name = "shuffle-neoforge-21.1.0"
+filename = "shuffle-neoforge-21.1.0.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/WUvGZLgB/versions/c2CBLjgR/shuffle-neoforge-21.1.0.jar"
+hash-format = "sha512"
+hash = "b754df3ee89fe271e9a675abf18d22ded2fa51abe04c7fa91716dbe95ba5265cc46e873a7c0a0eca4ab72463baeee58deb9dea8d2f30da68cb3d3d6efa12d3cc"
+
+[update]
+[update.modrinth]
+mod-id = "WUvGZLgB"
+version = "c2CBLjgR"

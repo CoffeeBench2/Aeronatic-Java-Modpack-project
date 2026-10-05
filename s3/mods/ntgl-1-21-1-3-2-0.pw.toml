@@ -1,0 +1,13 @@
+name = "ntgl-1.21.1-3.2.0"
+filename = "ntgl-1.21.1-3.2.0.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/5m2kV8xK/versions/zd7xJnqO/ntgl-1.21.1-3.2.0.jar"
+hash-format = "sha512"
+hash = "fd164c5368be552237c327978d3c53f3e9208812438d97471382c3bb21b5e272e4cef2c466784ea8c169a6d1e979dd6e4ceb957a444f5590c3f43d7c16e48544"
+
+[update]
+[update.modrinth]
+mod-id = "5m2kV8xK"
+version = "zd7xJnqO"

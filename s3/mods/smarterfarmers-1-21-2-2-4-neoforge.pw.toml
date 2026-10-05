@@ -1,0 +1,13 @@
+name = "smarterfarmers-1.21-2.2.4-neoforge"
+filename = "smarterfarmers-1.21-2.2.4-neoforge.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/Bh6ZOMvp/versions/odppGdXf/smarterfarmers-1.21-2.2.4-neoforge.jar"
+hash-format = "sha512"
+hash = "a79babd2e4fd42823dbbfc6afedd30e57462d693fe255b7e4306023d0567f183196c9b142356b43803ad8e503a386642aa91b9b29835f739c233bce768018d62"
+
+[update]
+[update.modrinth]
+mod-id = "Bh6ZOMvp"
+version = "odppGdXf"

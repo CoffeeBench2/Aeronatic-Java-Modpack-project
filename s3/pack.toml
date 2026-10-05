@@ -1,0 +1,12 @@
+name = "Coffees Aero SMP Season 3"
+version = "3.0.0"
+pack-format = "packwiz:1.1.0"
+
+[index]
+file = "index.toml"
+hash-format = "sha256"
+hash = "f57ee6cd1e049c2bc630974d467b5f636f00379e9e779b5d043691d917ed3d60"
+
+[versions]
+minecraft = "1.21.1"
+neoforge = "21.1.251"

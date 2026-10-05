@@ -1,0 +1,13 @@
+name = "sablexaeromaps-1.21.1-1.4.1"
+filename = "sablexaeromaps-1.21.1-1.4.1.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/hqI03twF/versions/BwfxFcwh/sablexaeromaps-1.21.1-1.4.1.jar"
+hash-format = "sha512"
+hash = "14d7d900b10d3e62953828de07e097c50fce815df3c93a1ad19b3505347e2391949b6d6844b1f3b05edf7523662fe7b07f2b885af1ad42b06962a6cf796ca0c1"
+
+[update]
+[update.modrinth]
+mod-id = "hqI03twF"
+version = "BwfxFcwh"

@@ -1,0 +1,13 @@
+name = "torchmaster-neoforge-1.21.1-21.1.13"
+filename = "torchmaster-neoforge-1.21.1-21.1.13.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/Tl8ESrhX/versions/JmlakQNo/torchmaster-neoforge-1.21.1-21.1.13.jar"
+hash-format = "sha512"
+hash = "bfd009d48bef914c200b37395773372cec9bd2686eb8c726d2071d9799a13382f0c588c06caadfd5fce165eb9c34ddc38c91c890463e2dd9ae42b40b82feeeda"
+
+[update]
+[update.modrinth]
+mod-id = "Tl8ESrhX"
+version = "JmlakQNo"

@@ -1,0 +1,13 @@
+name = "emi_ores-1.3+1.21.1+neoforge"
+filename = "emi_ores-1.3+1.21.1+neoforge.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/sG4TqDb8/versions/V2MXZKsX/emi_ores-1.3%2B1.21.1%2Bneoforge.jar"
+hash-format = "sha512"
+hash = "c5774be0eeda90253c4fa98aaf0006ecb50dbd62ef5027420385482cea21b3339abdfbe945ab1233101bac7f52663cd2860abde04941a818ac3da312d86fc4ee"
+
+[update]
+[update.modrinth]
+mod-id = "sG4TqDb8"
+version = "V2MXZKsX"

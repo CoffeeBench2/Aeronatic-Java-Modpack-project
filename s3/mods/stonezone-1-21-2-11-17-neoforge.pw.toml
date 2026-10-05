@@ -1,0 +1,13 @@
+name = "stonezone-1.21-2.11.17-neoforge"
+filename = "stonezone-1.21-2.11.17-neoforge.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/uYwn8IP5/versions/kWBnBoqd/stonezone-1.21-2.11.17-neoforge.jar"
+hash-format = "sha512"
+hash = "b92922f7f34fbbfa5e8276b331cf651b2b7a5ff0072a9c6ef0da8eeb2448c8377862fbccd709a2a1ac21782bb9d57427c9f7e182ddd653dd5c0b139a30861743"
+
+[update]
+[update.modrinth]
+mod-id = "uYwn8IP5"
+version = "kWBnBoqd"

@@ -1,0 +1,13 @@
+name = "kaleidoscope_world_liquor-1.1.9-neoforge+1.21.1-fix"
+filename = "kaleidoscope_world_liquor-1.1.9-neoforge+1.21.1-fix.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/ePVLCraM/versions/C6RmUTaw/kaleidoscope_world_liquor-1.1.9-neoforge%2B1.21.1-fix.jar"
+hash-format = "sha512"
+hash = "00594bfaa1629d1d3ed1027db93e18748ddf07db36e9a0753568eb84ff884e4af482c85b49edf70584668b5831b28f0d78ba67406df2e79295257a5f82ab9dce"
+
+[update]
+[update.modrinth]
+mod-id = "ePVLCraM"
+version = "C6RmUTaw"
