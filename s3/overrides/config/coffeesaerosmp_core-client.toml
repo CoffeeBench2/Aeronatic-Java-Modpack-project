@@ -1,0 +1,14 @@
+# CoffeesAeroSMP Core - Season 3 (Modrinth + in-client updater). NeoForge fills in every key not listed here.
+serverIp = "managed"
+adminUsername = "MrCoffeeBench"
+# Stamped by scripts/build_s3_channel.py; the Modrinth mrpack re-stamps it one notch lower on purpose.
+packVersion = "3.0.0"
+# The Season 3 channel. NEVER the root files: those are Season 2 and are frozen at S3 launch.
+versionCheckUrl = "https://raw.githubusercontent.com/CoffeeBench2/Aeronatic-Java-Modpack-project/main/s3/version.json"
+packTomlUrl = "https://raw.githubusercontent.com/CoffeeBench2/Aeronatic-Java-Modpack-project/main/s3/pack.toml"
+manualUpdateOnly = false
+modrinthUrl = "https://modrinth.com/modpack/coffees-create-aeronautics-smp"
+# Live news would pull the Season 2 changelog from GitHub; S3 reads the bundled file only.
+newsUrl = ""
+# SSRD ships from Modrinth in this channel and S3 has no Analog Audio, so nothing to install by hand.
+manualMods = []

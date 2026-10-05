@@ -1,0 +1,13 @@
+name = "abyssal_decor_1.21.1_0.11.0_Neoforge"
+filename = "abyssal_decor_1.21.1_0.11.0_Neoforge.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/dzmhUvoY/versions/oPxSZMWy/abyssal_decor_1.21.1_0.11.0_Neoforge.jar"
+hash-format = "sha512"
+hash = "58c1f233fb56f3360c772ee77525f23da3877738fe20ebff81f8841de47dd81dda420495e2b03407b5ae9078a2457d4d51b654fe65ccfe61cd97993f6f1e562c"
+
+[update]
+[update.modrinth]
+mod-id = "dzmhUvoY"
+version = "oPxSZMWy"

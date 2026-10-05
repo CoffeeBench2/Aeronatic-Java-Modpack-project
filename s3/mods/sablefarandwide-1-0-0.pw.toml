@@ -1,0 +1,13 @@
+name = "sablefarandwide-1.0.0"
+filename = "sablefarandwide-1.0.0.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/YbNLIWOy/versions/NWXrimD0/sablefarandwide-1.0.0.jar"
+hash-format = "sha512"
+hash = "c8d1225dec1d8f4bdc97170b59857c99350fe33d2398445ffe06bff7e5ced0a0776ece6cdcbcc5b0ef3b9496a32e7f3ac8b5c52004bfe9e84e643f66a4b99837"
+
+[update]
+[update.modrinth]
+mod-id = "YbNLIWOy"
+version = "NWXrimD0"

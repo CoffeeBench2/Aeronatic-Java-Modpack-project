@@ -1,0 +1,13 @@
+name = "ash_api-neoforge-21.1.1"
+filename = "ash_api-neoforge-21.1.1.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/Q8xUICr6/versions/3VLPjt5Q/ash_api-neoforge-21.1.1.jar"
+hash-format = "sha512"
+hash = "6db5c15b3c0949c1eed65fc1d41ae5eadcbe23e802c6ed5d96d70a3de41c6c10c973a53389ce09c142b1a369904742ba18c88b778b8c18358c27f1ec3e4b3c94"
+
+[update]
+[update.modrinth]
+mod-id = "Q8xUICr6"
+version = "3VLPjt5Q"

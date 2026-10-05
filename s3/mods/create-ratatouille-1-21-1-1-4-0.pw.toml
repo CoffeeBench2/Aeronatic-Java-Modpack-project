@@ -1,0 +1,13 @@
+name = "create_ratatouille-1.21.1-1.4.0"
+filename = "create_ratatouille-1.21.1-1.4.0.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/XM0ifg8q/versions/c81IeQl2/create_ratatouille-1.21.1-1.4.0.jar"
+hash-format = "sha512"
+hash = "4d8b5a1430e5001e6d055f836a5de8cfb6454496d992403a06f092f90f9bdec485171c4577c1551b4d5d6356f35013bd76a6e14eb27c406cbb5a8c392c1c9cd1"
+
+[update]
+[update.modrinth]
+mod-id = "XM0ifg8q"
+version = "c81IeQl2"

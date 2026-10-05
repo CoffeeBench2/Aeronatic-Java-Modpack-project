@@ -1,0 +1,13 @@
+name = "mcw-doors-1.1.5-mc1.21.1neoforge"
+filename = "mcw-doors-1.1.5-mc1.21.1neoforge.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/kNxa8z3e/versions/u7BRX44F/mcw-doors-1.1.5-mc1.21.1neoforge.jar"
+hash-format = "sha512"
+hash = "43ddf00be46af91c009a95392a094f05017155214c46c7980042cbcf871864dc792416497019e688eb558897c87848bd70c282ec4a6d7b268e1ba30389ba987a"
+
+[update]
+[update.modrinth]
+mod-id = "kNxa8z3e"
+version = "u7BRX44F"

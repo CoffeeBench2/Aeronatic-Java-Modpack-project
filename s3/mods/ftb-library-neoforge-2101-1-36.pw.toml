@@ -1,0 +1,8 @@
+name = "ftb-library-neoforge-2101.1.36"
+filename = "ftb-library-neoforge-2101.1.36.jar"
+side = "both"
+
+[download]
+url = "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/download/s3-v3.0.0/ftb-library-neoforge-2101.1.36.jar"
+hash-format = "sha256"
+hash = "5122579e4d55d77057e98a1403b6006dde95d397976fc3c2ee7dd066747c696f"

@@ -1,0 +1,13 @@
+name = "mcw-roofs-2.3.2-mc1.21.1neoforge"
+filename = "mcw-roofs-2.3.2-mc1.21.1neoforge.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/B8jaH3P1/versions/jiXRXiSt/mcw-roofs-2.3.2-mc1.21.1neoforge.jar"
+hash-format = "sha512"
+hash = "c0e82a3d0a3ab2f2fac5fb0bdd7c7c228f084feaa816540d3d9524f341c8b108c3bb1afecadae2e8118e6c93f0e73280c62da1af4349aca87b6aa337e5e22ae4"
+
+[update]
+[update.modrinth]
+mod-id = "B8jaH3P1"
+version = "jiXRXiSt"

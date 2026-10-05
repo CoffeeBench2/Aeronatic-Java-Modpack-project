@@ -1,0 +1,13 @@
+name = "mapsyncer-1.0.3-neoforge-1.21.1"
+filename = "mapsyncer-1.0.3-neoforge-1.21.1.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/AW5A8Q2T/versions/rTv2rIvC/mapsyncer-1.0.3-neoforge-1.21.1.jar"
+hash-format = "sha512"
+hash = "e3a3b2a7e918f633443f6ca41f2c94803183cd3fec39ed88abb6e64b32bc7403180c6cd21d02b63c424da2cb3ef78bf1ab3c347d850af77213a898f17b6cd3b9"
+
+[update]
+[update.modrinth]
+mod-id = "AW5A8Q2T"
+version = "rTv2rIvC"

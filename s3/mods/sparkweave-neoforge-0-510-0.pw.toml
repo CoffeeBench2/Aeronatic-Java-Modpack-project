@@ -1,0 +1,13 @@
+name = "Sparkweave-NeoForge-0.510.0"
+filename = "Sparkweave-NeoForge-0.510.0.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/nf68xfAw/versions/j8reYKe3/Sparkweave-NeoForge-0.510.0.jar"
+hash-format = "sha512"
+hash = "be43de58ad508ec1d658f146b820d1dee19f64097fdd19eb77b97002931f162b5961781ba4fd6245bc6b3c630fa7c904ae6c602d66adedaf61fd4d7719a0ade9"
+
+[update]
+[update.modrinth]
+mod-id = "nf68xfAw"
+version = "j8reYKe3"

@@ -1,0 +1,13 @@
+name = "createfood-neoforge-1.21.1-3.0.0"
+filename = "createfood-neoforge-1.21.1-3.0.0.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/4HnO3el1/versions/uaxLGKon/createfood-neoforge-1.21.1-3.0.0.jar"
+hash-format = "sha512"
+hash = "52bd5675e216e26099f91ea33e8b6adc2f1d5134239ea7ea9c66221a2ffdce079348f5a35bda318ca8c9b91c40cf20ea63f431df677efb4f1408086653ead45e"
+
+[update]
+[update.modrinth]
+mod-id = "4HnO3el1"
+version = "uaxLGKon"

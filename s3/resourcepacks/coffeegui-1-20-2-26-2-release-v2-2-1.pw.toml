@@ -1,0 +1,13 @@
+name = "CoffeeGUI_1.20.2-26.2_release_v2.2.1"
+filename = "CoffeeGUI_1.20.2-26.2_release_v2.2.1.zip"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/KhALBWoN/versions/nWtVhqCd/CoffeeGUI_1.20.2-26.2_release_v2.2.1.zip"
+hash-format = "sha512"
+hash = "a2cec7234d73251b9685a1b9ff52302ba6733778a502d7b170d03f521be57acba7b33e60b1f597074305f3169d610bcde52e85f7fe5b9a783f0fef5e52f9274f"
+
+[update]
+[update.modrinth]
+mod-id = "KhALBWoN"
+version = "nWtVhqCd"

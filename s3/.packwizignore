@@ -1,0 +1,2 @@
+# Everything under s3/ ships, except packwiz's own files.
+version.json

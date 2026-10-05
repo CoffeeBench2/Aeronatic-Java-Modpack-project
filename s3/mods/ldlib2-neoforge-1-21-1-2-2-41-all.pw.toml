@@ -1,0 +1,13 @@
+name = "ldlib2-neoforge-1.21.1-2.2.41-all"
+filename = "ldlib2-neoforge-1.21.1-2.2.41-all.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/B1CBVXHX/versions/RIgL4A7W/ldlib2-neoforge-1.21.1-2.2.41-all.jar"
+hash-format = "sha512"
+hash = "4a1e76aa7e90f43f866a6cacc3a1ce0a4bf070517090234c9a56a9d431dc023a06fcbaeb15b83c9957e0387271670e581a58b799cfe5beac0a51f42442795925"
+
+[update]
+[update.modrinth]
+mod-id = "B1CBVXHX"
+version = "RIgL4A7W"

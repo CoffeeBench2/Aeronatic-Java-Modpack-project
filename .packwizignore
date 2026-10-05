@@ -7,6 +7,7 @@
 server-files/
 server/
 server-test/
+server-testbak/
 server-mods/
 dist/
 
@@ -78,3 +79,7 @@ server-assets/
 # client-mods-temp (2026-08-17) and Releases/ cases above. Hit again 2026-09-09 in pack 1.10.13.
 .mcp.json
 .mcp/
+
+# Season 3 channel lives in its own packwiz pack (s3/pack.toml). Indexing it here would
+# auto-install Season 3 content into every Season 2 instance.
+s3/

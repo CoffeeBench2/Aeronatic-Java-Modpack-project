@@ -1,0 +1,13 @@
+name = "deeperdarker-neoforge-1.21.1-1.4.1"
+filename = "deeperdarker-neoforge-1.21.1-1.4.1.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/fnAffV0n/versions/TuD0Zvi3/deeperdarker-neoforge-1.21.1-1.4.1.jar"
+hash-format = "sha512"
+hash = "38d8d87878f39a063feb029db17702bedadf7554233ae56db6018c21225b6dff4d4cc31f4b0995254fd488e2a687f3b15bf9647c59dd42b9032791d34316ed0c"
+
+[update]
+[update.modrinth]
+mod-id = "fnAffV0n"
+version = "TuD0Zvi3"

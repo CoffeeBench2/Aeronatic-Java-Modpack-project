@@ -1,0 +1,13 @@
+name = "createultimine-1.21.1-neoforge-1.3.3"
+filename = "createultimine-1.21.1-neoforge-1.3.3.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/vUE54e5E/versions/tpYldd7D/createultimine-1.21.1-neoforge-1.3.3.jar"
+hash-format = "sha512"
+hash = "15657afe14373bd02d263d4b4e5adadfa649dc0adc693df2d9b7779c53296d18cc5e8f141608dab8d8b4507221e4ec50d34c68d9819a00dc5bbcfbd494a0df6e"
+
+[update]
+[update.modrinth]
+mod-id = "vUE54e5E"
+version = "tpYldd7D"

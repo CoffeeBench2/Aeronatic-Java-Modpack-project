@@ -1,0 +1,13 @@
+name = "create_deep_dark-3.0.2-neoforge-1.21.1"
+filename = "create_deep_dark-3.0.2-neoforge-1.21.1.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/knrLSB8n/versions/3tduJc4Y/create_deep_dark-3.0.2-neoforge-1.21.1.jar"
+hash-format = "sha512"
+hash = "df0b5b9cd489b0def8bc8b750aedb96f4a1de37b4f24b0a45cae302cad94e2b3455240fa9dc6b58fd6cc7e005f445a8ea9cde2a7f51b449e54cccf3739a7a4b3"
+
+[update]
+[update.modrinth]
+mod-id = "knrLSB8n"
+version = "3tduJc4Y"

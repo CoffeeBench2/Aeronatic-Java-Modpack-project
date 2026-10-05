@@ -1,0 +1,13 @@
+name = "create_things_and_misc-4.1.1-neoforge-1.21.1"
+filename = "create_things_and_misc-4.1.1-neoforge-1.21.1.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/uWrs8XlB/versions/zfExofVB/create_things_and_misc-4.1.1-neoforge-1.21.1.jar"
+hash-format = "sha512"
+hash = "3e4530d97403cd8efabd3ac0dddfc2360b3c94b0cfc061ed36546a56d8857d1a4d95094c92087387c87904e117d3c05fd415d0f0062b9e3f83de7c663efb87b8"
+
+[update]
+[update.modrinth]
+mod-id = "uWrs8XlB"
+version = "zfExofVB"
