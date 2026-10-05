@@ -520,6 +520,10 @@ public class CoffeesAeroAuth {
         // is not. No-ops entirely on the SMP (isLobbyRole() is false there).
         com.coffeesaerosmp.auth.lobby.LobbyWaitingRoom.attach(event.getServer());
         com.coffeesaerosmp.auth.lobby.SmpLiveness.start();
+        // Lobby-side admin card: Survival + Lobby player counts, edited every minute. The webhook URL is a
+        // secret, so .env ADMIN_STATUS_WEBHOOK wins over the config key.
+        com.coffeesaerosmp.auth.lobby.AdminStatusCard.start(event.getServer(), dataDir,
+            env.get("ADMIN_STATUS_WEBHOOK"), discordToken);
         // Both roles: the LOBBY reads the flag to decide whether to hand players over, and the SMP
         // reads it so `/authmod lockdown status` tells the truth rather than echoing local state.
         com.coffeesaerosmp.auth.lobby.LockdownState.attach(event.getServer());
@@ -533,6 +537,7 @@ public class CoffeesAeroAuth {
         // Stop the liveness poller first: it holds a socket and a scheduled thread, and neither
         // should outlive the server it belongs to.
         com.coffeesaerosmp.auth.lobby.SmpLiveness.stop();
+        com.coffeesaerosmp.auth.lobby.AdminStatusCard.stop();
         com.coffeesaerosmp.auth.lobby.LockdownState.stop();
         com.coffeesaerosmp.auth.lobby.LobbyWaitingRoom.detach();
         // FIRST LINE ON PURPOSE: from here on ticks stop legitimately, so the tick-stall rule must

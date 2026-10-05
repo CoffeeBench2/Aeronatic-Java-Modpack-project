@@ -77,6 +77,8 @@ dependencies {
     testImplementation platform("org.junit:junit-bom:5.10.2")
     testImplementation "org.junit.jupiter:junit-jupiter"
     testRuntimeOnly "org.junit.platform:junit-platform-launcher"
+    // Gson reaches main through Minecraft but not the test classpath. Same version MC 1.21.1 ships.
+    testImplementation "com.google.code.gson:gson:2.10.1"
 }
 
 tasks.withType(JavaCompile).configureEach {

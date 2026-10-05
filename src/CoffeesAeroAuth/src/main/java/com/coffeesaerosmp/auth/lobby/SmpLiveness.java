@@ -61,6 +61,13 @@ public final class SmpLiveness {
     public static int     maxPlayers()    { return maxPlayers; }
     public static long    lastChangeMs()  { return lastChangeMs; }
 
+    /**
+     * Names from the last Server List Ping's player sample. A SAMPLE, not the roster: vanilla sends
+     * at most 12, so callers show "+N more" against {@link #onlinePlayers()}. Empty when down.
+     */
+    private static volatile java.util.List<String> sampleNames = java.util.List.of();
+    public static java.util.List<String> sampleNames() { return sampleNames; }
+
     /** Starts polling. Only meaningful on a LOBBY-role server; a no-op anywhere else. */
     public static void start() {
         if (!LobbyHandoff.isLobbyRole()) return;
@@ -116,6 +123,7 @@ public final class SmpLiveness {
             LobbyWaitingRoom.onSmpBack();
         } else {
             onlinePlayers = -1;
+            sampleNames = java.util.List.of();
             CoffeesAeroAuth.LOGGER.warn("[Liveness] SMP is DOWN ({}:{}) — holding players in the lobby.", host, port);
             LobbyWaitingRoom.onSmpDown();
         }
@@ -160,6 +168,15 @@ public final class SmpLiveness {
                 JsonObject p = o.getAsJsonObject("players");
                 if (p.has("online")) onlinePlayers = p.get("online").getAsInt();
                 if (p.has("max"))    maxPlayers    = p.get("max").getAsInt();
+                java.util.List<String> names = new java.util.ArrayList<>();
+                if (p.has("sample") && p.get("sample").isJsonArray()) {
+                    for (var el : p.getAsJsonArray("sample")) {
+                        if (el.isJsonObject() && el.getAsJsonObject().has("name")) {
+                            names.add(el.getAsJsonObject().get("name").getAsString());
+                        }
+                    }
+                }
+                sampleNames = java.util.List.copyOf(names);
             }
             return true;
         } catch (EOFException e) {

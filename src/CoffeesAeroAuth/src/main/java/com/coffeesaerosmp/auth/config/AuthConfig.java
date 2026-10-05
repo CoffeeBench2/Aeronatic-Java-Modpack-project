@@ -266,6 +266,9 @@ public class AuthConfig {
     public static final ModConfigSpec.ConfigValue<String>  DISCORD_MILESTONE_HOURS;
     public static final ModConfigSpec.ConfigValue<String>  DISCORD_ADMIN_CHANNEL_ID;
     public static final ModConfigSpec.ConfigValue<String>  DISCORD_ADMIN_ROLE_ID;
+    public static final ModConfigSpec.ConfigValue<String>  ADMIN_STATUS_WEBHOOK;
+    public static final ModConfigSpec.ConfigValue<String>  ADMIN_STATUS_CHANNEL_ID;
+    public static final ModConfigSpec.IntValue             ADMIN_STATUS_INTERVAL_SECONDS;
     public static final ModConfigSpec.ConfigValue<String>  DISCORD_SMP_LAUNCH_DATE;
 
     // ── Obsidian ──────────────────────────────────────────────────────────────
@@ -795,6 +798,15 @@ public class AuthConfig {
             .define("smpLaunchDate", "2026-06-27");
         DISCORD_ADMIN_ROLE_ID       = b.comment("Role ID allowed to use moderation buttons (approve/reject) and run console commands from Discord. Blank = no gating (LOCAL TESTING ONLY).")
             .define("adminRoleId", "");
+        ADMIN_STATUS_WEBHOOK = b.comment("LOBBY role. Webhook in the ADMIN status channel: one message there is edited every",
+                "adminStatusIntervalSeconds with Survival + Lobby player counts. Blank = off. A SECRET - set it on the",
+                "live server only, never in the repo.")
+            .define("adminStatusWebhook", "");
+        ADMIN_STATUS_CHANNEL_ID = b.comment("Channel of adminStatusWebhook. With botToken set, the card ADOPTS the oldest message that",
+                "webhook posted there (the one on top) instead of posting a new one when its saved id is lost.")
+            .define("adminStatusChannelId", "");
+        ADMIN_STATUS_INTERVAL_SECONDS = b.comment("How often the admin status card refreshes.")
+            .defineInRange("adminStatusIntervalSeconds", 60, 30, 3600);
         b.pop();
 
         b.comment("Obsidian Integration — requires the Obsidian Local REST API community plugin").push("obsidian");
