@@ -100,6 +100,20 @@ public final class MailItems {
         return (items == null ? 0 : items.size()) + (spurs > 0 ? COIN_STACKS : 0);
     }
 
+    /**
+     * True if this stack is, or anywhere inside it holds, a Numismatics item — see {@link MailRules}.
+     * Fails CLOSED: an item that cannot be serialised is treated as blocked, not waved through.
+     */
+    public static boolean containsBlocked(ItemStack s, HolderLookup.Provider registries) {
+        if (s == null || s.isEmpty()) return false;
+        if ("numismatics".equals(BuiltInRegistries.ITEM.getKey(s.getItem()).getNamespace())) return true;
+        try {
+            return MailRules.containsBlockedSnbt(s.save(registries).toString());
+        } catch (Exception e) {
+            return true;
+        }
+    }
+
     public static int freeSlots(ServerPlayer player) {
         int free = 0;
         var inv = player.getInventory();

@@ -258,7 +258,7 @@ public class CoffeesAeroAuth {
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.server.ServerStoppedEvent e) ->
             com.coffeesaerosmp.auth.admin.FreshStart.onServerStopped(e.getServer()));
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.server.ServerStartedEvent e) -> {
-            if (com.coffeesaerosmp.auth.mail.MailService.enabled()) com.coffeesaerosmp.auth.mail.MailStore.purgeExpired();
+            if (com.coffeesaerosmp.auth.mail.MailService.enabled()) com.coffeesaerosmp.auth.mail.MailStore.returnExpired();
             // One-time season launch reset (launchReset lever); a no-op unless armed, and once only.
             com.coffeesaerosmp.auth.launch.LaunchReset.onServerStarted(e.getServer());
         });
@@ -351,6 +351,16 @@ public class CoffeesAeroAuth {
             com.coffeesaerosmp.auth.watchdog.LagMonitor.onServerTick(e.getServer()));
 
         // Chat formatting + Discord bridge
+        // Mail drafts capture the player's next chat line BEFORE ChatEvents can broadcast or bridge it.
+        // HIGHEST + cancel: normal-priority listeners don't receive cancelled events.
+        NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.HIGHEST, false,
+            net.neoforged.neoforge.event.ServerChatEvent.class, com.coffeesaerosmp.auth.mail.MailCompose::onChat);
+        // A parcel window open at logout hands its items back before the player is saved.
+        NeoForge.EVENT_BUS.addListener(
+            (net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerLoggedOutEvent e) -> {
+                if (e.getEntity() instanceof net.minecraft.server.level.ServerPlayer sp)
+                    com.coffeesaerosmp.auth.mail.MailCompose.onLogout(sp);
+            });
         NeoForge.EVENT_BUS.addListener(ChatEvents::onServerChat);
 
         // Watchdog: command velocity, movement, death, advancements

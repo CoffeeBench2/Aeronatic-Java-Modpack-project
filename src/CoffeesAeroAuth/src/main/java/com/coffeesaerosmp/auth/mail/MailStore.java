@@ -74,6 +74,18 @@ public final class MailStore {
                 "  PRIMARY KEY (uuid, season)" +
                 ")");
         }
+        // 1.13.9 (mail remake): who SENT a mail, for the daily limit and returning expired parcels.
+        // MySQL has no ADD COLUMN IF NOT EXISTS (that is MariaDB), so add and swallow "already there".
+        alterIgnoring(c, "ALTER TABLE mail ADD COLUMN sender_uuid CHAR(36) NULL", 1060);
+        alterIgnoring(c, "ALTER TABLE mail ADD INDEX idx_mail_sender (sender_uuid, created_at)", 1061);
+    }
+
+    private static void alterIgnoring(Connection c, String sql, int duplicateErrno) throws SQLException {
+        try (Statement s = c.createStatement()) {
+            s.executeUpdate(sql);
+        } catch (SQLException e) {
+            if (e.getErrorCode() != duplicateErrno) throw e;
+        }
     }
 
     // ── model ────────────────────────────────────────────────────────────────
@@ -85,9 +97,18 @@ public final class MailStore {
         }
     }
 
-    /** A mail about to be sent. {@code dedupeKey} null = always deliver (manual admin mail). */
+    /**
+     * A mail about to be sent. {@code dedupeKey} null = always deliver (manual mail). {@code senderUuid}
+     * is set for mail a PLAYER or staff member sent: it is what the daily limit counts and where an
+     * expired parcel goes back to. Null for system mail.
+     */
     public record Outgoing(String sender, String subject, String body, String itemsSnbt, int spurs,
-                           long expiresAt, String dedupeKey) {}
+                           long expiresAt, String dedupeKey, UUID senderUuid) {
+        public Outgoing(String sender, String subject, String body, String itemsSnbt, int spurs,
+                        long expiresAt, String dedupeKey) {
+            this(sender, subject, body, itemsSnbt, spurs, expiresAt, dedupeKey, null);
+        }
+    }
 
     // ── writes ───────────────────────────────────────────────────────────────
 
@@ -102,8 +123,8 @@ public final class MailStore {
             if (available()) {
                 try (Connection c = CoffeesAeroAuth.DB_MANAGER.getConnection();
                      PreparedStatement ps = c.prepareStatement(
-                         "INSERT IGNORE INTO mail (uuid, sender, subject, body, items, spurs, created_at, expires_at, dedupe_key) "
-                       + "VALUES (?,?,?,?,?,?,?,?,?)")) {
+                         "INSERT IGNORE INTO mail (uuid, sender, subject, body, items, spurs, created_at, expires_at, dedupe_key, sender_uuid) "
+                       + "VALUES (?,?,?,?,?,?,?,?,?,?)")) {
                     long now = System.currentTimeMillis();
                     for (UUID u : targets) {
                         ps.setString(1, u.toString());
@@ -117,6 +138,7 @@ public final class MailStore {
                         // A per-recipient key: the same broadcast must still reach everyone exactly once.
                         if (mail.dedupeKey() == null) ps.setNull(9, Types.VARCHAR);
                         else ps.setString(9, trim(mail.dedupeKey() + (targets.size() > 1 ? ":" + u : ""), 128));
+                        if (mail.senderUuid() == null) ps.setNull(10, Types.CHAR); else ps.setString(10, mail.senderUuid().toString());
                         n += ps.executeUpdate();
                     }
                 } catch (SQLException e) {
@@ -180,11 +202,70 @@ public final class MailStore {
         });
     }
 
-    /** Boot housekeeping: expired mail is gone, claimed or not. */
-    public static void purgeExpired() {
+    /**
+     * Boot housekeeping. An expired, unclaimed parcel a PLAYER sent goes back to them first (dedupe key
+     * {@code return:<id>}, so a crash between the two steps can never return it twice); then expired
+     * mail is deleted, claimed or not. Returned parcels never expire: nobody's items are lost to a timer.
+     */
+    public static void returnExpired() {
         AsyncIo.submit(() -> {
-            int n = update("DELETE FROM mail WHERE expires_at > 0 AND expires_at < ?", System.currentTimeMillis());
-            if (n > 0) CoffeesAeroAuth.LOGGER.info("[Mail] purged {} expired mail.", n);
+            if (!available()) return;
+            long now = System.currentTimeMillis();
+            int returned = 0;
+            try (Connection c = CoffeesAeroAuth.DB_MANAGER.getConnection()) {
+                List<Object[]> back = new ArrayList<>();
+                try (PreparedStatement ps = c.prepareStatement(
+                        "SELECT id, sender, sender_uuid, items FROM mail WHERE expires_at > 0 AND expires_at < ? "
+                      + "AND claimed_at IS NULL AND sender_uuid IS NOT NULL AND items IS NOT NULL AND items <> ''")) {
+                    ps.setLong(1, now);
+                    try (ResultSet rs = ps.executeQuery()) {
+                        while (rs.next()) back.add(new Object[]{rs.getLong(1), rs.getString(3), rs.getString(4)});
+                    }
+                }
+                try (PreparedStatement ins = c.prepareStatement(
+                        "INSERT IGNORE INTO mail (uuid, sender, subject, body, items, spurs, created_at, expires_at, dedupe_key) "
+                      + "VALUES (?,?,?,?,?,0,?,0,?)")) {
+                    for (Object[] r : back) {
+                        ins.setString(1, (String) r[1]);
+                        ins.setString(2, "Mail Office");
+                        ins.setString(3, "Your parcel came back");
+                        ins.setString(4, "Nobody collected your parcel in time, so the Mail Office brought it "
+                            + "back to you. Everything you packed is attached.");
+                        ins.setString(5, (String) r[2]);
+                        ins.setLong(6, now);
+                        ins.setString(7, "return:" + r[0]);
+                        returned += ins.executeUpdate();
+                    }
+                }
+            } catch (SQLException e) {
+                // Do NOT delete anything if the returns could not be written.
+                CoffeesAeroAuth.LOGGER.warn("[Mail] returning expired parcels failed, nothing purged: {}", e.getMessage());
+                return;
+            }
+            int n = update("DELETE FROM mail WHERE expires_at > 0 AND expires_at < ?", now);
+            if (n > 0 || returned > 0) {
+                CoffeesAeroAuth.LOGGER.info("[Mail] {} expired mail purged, {} parcel(s) returned to sender.", n, returned);
+            }
+        });
+    }
+
+    /** Mail {@code sender} has sent since {@code sinceMs} — the daily limit. -1 if the DB is down. */
+    public static void countSentSince(MinecraftServer server, UUID sender, long sinceMs, Consumer<Integer> done) {
+        AsyncIo.submit(() -> {
+            int n = -1;
+            if (available()) {
+                try (Connection c = CoffeesAeroAuth.DB_MANAGER.getConnection();
+                     PreparedStatement ps = c.prepareStatement(
+                         "SELECT COUNT(*) FROM mail WHERE sender_uuid=? AND created_at > ?")) {
+                    ps.setString(1, sender.toString());
+                    ps.setLong(2, sinceMs);
+                    try (ResultSet rs = ps.executeQuery()) { if (rs.next()) n = rs.getInt(1); }
+                } catch (SQLException e) {
+                    CoffeesAeroAuth.LOGGER.warn("[Mail] send count failed: {}", e.getMessage());
+                }
+            }
+            int result = n;
+            server.execute(() -> done.accept(result));
         });
     }
 

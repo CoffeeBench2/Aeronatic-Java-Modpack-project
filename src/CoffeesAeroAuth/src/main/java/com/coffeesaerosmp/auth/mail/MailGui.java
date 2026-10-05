@@ -39,7 +39,7 @@ public final class MailGui {
 
     private static final int PER_PAGE = 45;
     private static final int B_PREV = 45, B_CLAIM_ALL = 47, B_INFO = 49, B_CLEAN = 51, B_NEXT = 53;
-    private static final int B_BACK = 45, B_CLAIM = 49, B_DELETE = 53, LETTER = 4, ATTACH_FROM = 18;
+    private static final int B_BACK = 45, B_READ = 47, B_CLAIM = 49, B_DELETE = 53, LETTER = 4, ATTACH_FROM = 18;
     private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ENGLISH)
         .withZone(ZoneId.systemDefault());
 
@@ -103,6 +103,7 @@ public final class MailGui {
     private void onLetterSlot(int slot) {
         switch (slot) {
             case B_BACK -> { open = null; click(); renderInbox(); }
+            case B_READ -> MailBook.open(player, open.sender(), open.createdAt(), open.body());
             case B_CLAIM -> { if (open.hasAttachments() && !open.claimed()) claim(open, false); }
             case B_DELETE -> {
                 if (open.hasAttachments() && !open.claimed()) return;   // never bin an unclaimed parcel
@@ -195,7 +196,8 @@ public final class MailGui {
         display.setItem(B_INFO, button(Items.WRITABLE_BOOK, "§6✉ Mailbox",
             "§7" + mails.size() + " mail, §f" + unread + " §7unread, §f" + unclaimed + " §7to claim",
             "§7Page §f" + (page + 1) + "§7/§f" + pages,
-            "§8Rewards, level-ups and staff mail arrive here."));
+            "§8Letters from players, rewards and level-ups arrive here.",
+            "§8Write one with §f/mail send <player>§8 · help: §f/mail help"));
         display.setItem(B_CLEAN, button(Items.LAVA_BUCKET, "§c🗑 Clear claimed mail",
             "§7Deletes every claimed parcel and read letter.", "§7Unclaimed rewards are never deleted."));
     }
@@ -210,7 +212,7 @@ public final class MailGui {
         }
         lore.add(Component.empty());
         for (String line : wrap(m.body(), 38)) lore.add(plain("§f" + line));
-        display.setItem(LETTER, withLore(named(new ItemStack(Items.WRITTEN_BOOK), "§6" + m.subject()), lore));
+        display.setItem(LETTER, withLore(named(new ItemStack(Items.WRITTEN_BOOK), "§6✉ Letter from " + m.sender()), lore));
 
         var regs = player.getServer().registryAccess();
         int slot = ATTACH_FROM;
@@ -224,6 +226,8 @@ public final class MailGui {
         }
         fillBottomRow();
         display.setItem(B_BACK, button(Items.ARROW, "§e↩ Back to inbox"));
+        display.setItem(B_READ, button(Items.WRITTEN_BOOK, "§6📖 Read as a book", "§7Opens the letter like a real book.",
+            "§8Type /mail to come back to your mailbox."));
         if (m.hasAttachments() && !m.claimed()) {
             int need = MailItems.slotsNeeded(MailItems.decode(m.itemsSnbt(), regs), m.spurs());
             display.setItem(B_CLAIM, glow(button(Items.LIME_DYE, "§a✔ Claim", "§7Needs §f" + need + " §7free slots.")));
@@ -236,17 +240,21 @@ public final class MailGui {
     }
 
     private ItemStack mailIcon(MailStore.Mail m) {
-        Item icon;
-        String state;
-        if (m.hasAttachments() && !m.claimed()) { icon = Items.CHEST_MINECART; state = "§a● Parcel — click to open"; }
-        else if (m.hasAttachments())            { icon = Items.MINECART;       state = "§8Claimed"; }
-        else                                    { icon = m.read() ? Items.PAPER : Items.MAP; state = m.read() ? "§8Read" : "§b● New letter"; }
+        boolean parcel = m.hasAttachments() && !m.claimed();
+        Item icon = parcel ? Items.CHEST : m.read() ? Items.PAPER : Items.WRITABLE_BOOK;
         List<Component> lore = new ArrayList<>();
-        lore.add(gray("From §f" + m.sender() + " §7· " + DATE.format(Instant.ofEpochMilli(m.createdAt()))));
-        if (m.spurs() > 0 && !m.claimed()) lore.add(plain("§e+" + m.spurs() + " spurs"));
-        lore.add(plain(state));
-        ItemStack s = withLore(named(new ItemStack(icon), (m.read() ? "§f" : "§e§l") + m.subject()), lore);
-        return (!m.read() || (m.hasAttachments() && !m.claimed())) ? glow(s) : s;
+        lore.add(plain("§f“" + m.subject() + "”"));
+        lore.add(gray(DATE.format(Instant.ofEpochMilli(m.createdAt()))));
+        if (parcel) {
+            int stacks = MailItems.decode(m.itemsSnbt(), player.getServer().registryAccess()).size();
+            lore.add(plain("§a📦 " + (stacks > 0 ? stacks + " item stack" + (stacks == 1 ? "" : "s") : "")
+                + (m.spurs() > 0 ? (stacks > 0 ? " + " : "") + "§e" + m.spurs() + " spurs" : "") + " §ato claim"));
+        } else if (m.hasAttachments()) {
+            lore.add(plain("§8Claimed"));
+        }
+        lore.add(plain(m.read() ? "§8Click to open" : "§b● New — click to open"));
+        ItemStack s = withLore(named(new ItemStack(icon), (m.read() ? "§7✉ From §f" : "§e§l✉ From ") + m.sender()), lore);
+        return (!m.read() || parcel) ? glow(s) : s;
     }
 
     private void fillBottomRow() {
