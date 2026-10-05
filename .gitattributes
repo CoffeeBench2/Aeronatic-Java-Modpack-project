@@ -7,3 +7,4 @@ pack.toml         -text
 mods/**           -text
 resourcepacks/**  -text
 overrides/**      -text
+s3/**            -text
