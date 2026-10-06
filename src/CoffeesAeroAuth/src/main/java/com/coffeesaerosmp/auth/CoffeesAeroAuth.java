@@ -116,6 +116,8 @@ public class CoffeesAeroAuth {
         // Global Loot Modifier codecs. The TYPE must be registered in code; the RULES stay in a
         // datapack (coffees_aero_auth:loot_modifiers/rarity_nerf.json) so they are /reload-tunable.
         com.coffeesaerosmp.auth.loot.AeroLootModifiers.register(modBus);
+        // auth_lobby is registered only on the LOBBY server (datapack condition, see the class).
+        com.coffeesaerosmp.auth.lobby.LobbyDimensionCondition.register(modBus);
 
         // Re-apply a player's scoreboard team whenever their rank or cosmetics change. The tab list and
         // chat re-render on their own, but the nametag above the head is a team prefix/colour that only

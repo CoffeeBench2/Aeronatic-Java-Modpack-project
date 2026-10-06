@@ -1,4 +1,9 @@
 {
+  "neoforge:conditions": [
+    {
+      "type": "coffees_aero_auth:lobby_server"
+    }
+  ],
   "type": "coffees_aero_auth:auth_lobby",
   "generator": {
     "type": "minecraft:flat",

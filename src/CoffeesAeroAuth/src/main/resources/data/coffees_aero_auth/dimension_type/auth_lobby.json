@@ -1,4 +1,9 @@
 {
+  "neoforge:conditions": [
+    {
+      "type": "coffees_aero_auth:lobby_server"
+    }
+  ],
   "ultrawarm": false,
   "natural": false,
   "coordinate_scale": 1.0,
