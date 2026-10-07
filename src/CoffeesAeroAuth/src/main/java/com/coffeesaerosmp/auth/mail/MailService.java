@@ -107,7 +107,14 @@ public final class MailService {
     public static void onJoin(ServerPlayer player) {
         if (!enabled()) return;
         MailStore.counts(player.getServer(), player.getUUID(), c -> {
-            if (player.hasDisconnected() || (c[0] == 0 && c[1] == 0)) return;
+            if (player.hasDisconnected()) return;
+            if (c[0] == 0 && c[1] == 0) {
+                // Owner 2026-10-07: always say something on join, so players learn the mailbox exists.
+                // SMP only: the lobby cannot open mail, and the player hears it again on arrival anyway.
+                if (LobbyHandoff.isLobbyRole()) return;
+                player.sendSystemMessage(Component.literal("§6✉ §7No new mail. ").append(openLink()));
+                return;
+            }
             Component msg = Component.literal("§6✉ §fYou have §e" + c[0] + "§f unread mail"
                 + (c[1] > 0 ? " §7(§a" + c[1] + " to claim§7)" : "") + ". ");
             player.sendSystemMessage(msg.copy().append(openLink()));

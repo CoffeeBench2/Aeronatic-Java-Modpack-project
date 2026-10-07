@@ -106,8 +106,16 @@ public class AuthCommands {
                 long wait = CoffeesAeroAuth.VOTE_REWARDS.msUntilVotable(player.getUUID());
                 int votes = CoffeesAeroAuth.VOTE_REWARDS.voteCount(player.getUUID());
 
+                // A plain literal is not clickable in chat; the URL needs an OPEN_URL click event.
                 player.sendSystemMessage(Component.literal(
-                    com.coffeesaerosmp.auth.util.TextUtil.PREFIX + "§6✦ Vote for the server §7— " + url));
+                    com.coffeesaerosmp.auth.util.TextUtil.PREFIX + "§6✦ Vote for the server §7— ")
+                    .append(Component.literal(url).withStyle(net.minecraft.network.chat.Style.EMPTY
+                        .withClickEvent(new net.minecraft.network.chat.ClickEvent(
+                            net.minecraft.network.chat.ClickEvent.Action.OPEN_URL, url))
+                        .withHoverEvent(new net.minecraft.network.chat.HoverEvent(
+                            net.minecraft.network.chat.HoverEvent.Action.SHOW_TEXT,
+                            Component.literal("Open the vote page")))
+                        .withUnderlined(true).withColor(net.minecraft.ChatFormatting.AQUA))));
                 if (wait > 0) {
                     player.sendSystemMessage(Component.literal(
                         com.coffeesaerosmp.auth.util.TextUtil.PREFIX + "§7You can vote again in §e"

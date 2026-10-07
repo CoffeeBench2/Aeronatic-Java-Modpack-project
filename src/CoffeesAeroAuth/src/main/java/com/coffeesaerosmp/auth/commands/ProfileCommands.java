@@ -1025,6 +1025,14 @@ public class ProfileCommands {
             source.sendFailure(Component.literal("§cAuth manager not ready."));
             return 0;
         }
+        // Standalone lobby configured (lobbyReturnHost): send them to the lobby SERVER, cookie signed
+        // so premium survives — the same trip as /lobby. The in-process auth_lobby room below only
+        // exists on a server that registers that dimension (LOBBY role since 1.13.10). Owner 2026-10-07.
+        if (com.coffeesaerosmp.auth.lobby.LobbyHandoff.returnToLobby(target)) {
+            source.sendSuccess(() -> Component.literal(
+                "§a" + target.getGameProfile().getName() + " sent to the lobby server."), true);
+            return 1;
+        }
         if (!CoffeesAeroAuth.AUTH_MANAGER.sendToLobby(target)) {
             source.sendFailure(Component.literal(
                 "§cCouldn't route " + target.getGameProfile().getName()
