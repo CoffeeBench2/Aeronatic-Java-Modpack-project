@@ -139,10 +139,12 @@ public final class LevelService {
         int previous = st.lastLevel;
         st.lastLevel = level;
         if (st.rewarded == UNKNOWN) return;                           // DB not answered (or down): no rewards
-        if (st.rewarded < 0) {                                        // first time on this system: no back-pay
-            st.rewarded = level;
-            MailStore.setLevelRewarded(player.getUUID(), MailService.season(), level);
-            return;
+        if (st.rewarded < 0) {
+            // First check this season. This used to record the CURRENT level as already rewarded ("no
+            // back-pay"), meant for switching leveling on mid-season. On a fresh season world every
+            // level above 1 was earned in this world, so it silently ate real rewards: aerosmp_random's
+            // first check found level 2 and wrote it off with no mail (2026-10-07). Count from level 1.
+            st.rewarded = 1;
         }
         if (level <= st.rewarded) return;
 
