@@ -131,8 +131,7 @@ public final class LobbyHandoff {
         int ttl;
         try { ttl = AuthConfig.HANDOFF_COOKIE_TTL_SECONDS.get(); } catch (Exception e) { ttl = 30; }
 
-        byte[] cookie = cookieAuth.sign(premium, signUuid,
-            player.getGameProfile().getName(), ttl * 1000L);
+        byte[] cookie = cookieAuth.sign(premium, signUuid, accountName(player), ttl * 1000L);
         if (cookie == null) {
             CoffeesAeroAuth.LOGGER.error("[Handoff] Failed to sign a handoff cookie for {}.",
                 player.getGameProfile().getName());
@@ -193,7 +192,7 @@ public final class LobbyHandoff {
         try { ttl = AuthConfig.HANDOFF_COOKIE_TTL_SECONDS.get(); } catch (Exception e) { ttl = 30; }
 
         byte[] cookie = cookieAuth.sign(premium, premium ? mojang : player.getUUID(),
-            player.getGameProfile().getName(), ttl * 1000L);
+            accountName(player), ttl * 1000L);
         if (cookie == null) {
             deny(player, "§cCould not send you to the lobby. Tell an admin.");
             return true;
@@ -235,5 +234,22 @@ public final class LobbyHandoff {
         try {
             player.sendSystemMessage(Component.literal(TextUtil.PREFIX + message));
         } catch (Exception ignored) {}
+    }
+
+    /**
+     * The name the cookie must carry: the ACCOUNT name the client logs in with, never the display name.
+     *
+     * <p>🔴 NameMask rewrites the GameProfile name to the display name in PLAY (an offline player
+     * "aerosmp_random" shows as "thatrandomdude_1"), but the receiving server checks the cookie in the
+     * LOGIN phase against the requested username, which is the account name. Signing the masked name
+     * made every name-masked OFFLINE player fail the handoff and get refused ("cookie name
+     * 'thatrandomdude_1' != requested 'aerosmp_random'", 2026-10-07). Premium names never differ, which is
+     * why it only showed on offline accounts. The profile store keeps the real account name.
+     */
+    static String accountName(ServerPlayer player) {
+        var store = CoffeesAeroAuth.PROFILE_STORE;
+        var profile = store != null ? store.get(player.getUUID()) : null;
+        if (profile != null && profile.username != null && !profile.username.isBlank()) return profile.username;
+        return player.getGameProfile().getName();
     }
 }

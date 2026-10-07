@@ -84,6 +84,15 @@ public final class TabListManager {
             com.coffeesaerosmp.auth.display.DisplayAdapter.refreshStaff();
         }
         sendTabNames(server, players);
+
+        // Diagnostic (2026-10-07): the owner sees no ping number in tab. Once a minute, log what the
+        // server actually measures, so "latency is 0" and "sent but not shown" can be told apart.
+        if (frame % 120 == 0) {
+            StringBuilder sb = new StringBuilder();
+            for (ServerPlayer p : players)
+                sb.append(p.getGameProfile().getName()).append('=').append(p.connection.latency()).append("ms ");
+            com.coffeesaerosmp.auth.CoffeesAeroAuth.LOGGER.info("[Tab] measured ping: {}", sb.toString().trim());
+        }
     }
 
     /**
