@@ -46,10 +46,23 @@ public class ProfileStore implements CredentialStore {
         }
     }
 
+    /**
+     * 🔴 Flush ONLY profiles whose own save() has not reached MySQL yet — never the whole cache.
+     *
+     * <p>Until 1.13.15 this upserted EVERY cached profile. The lobby and the SMP each cache all 429
+     * rows at boot and share one database, so whichever process stopped last wrote its BOOT-TIME
+     * snapshot over everything the other had changed since. Proven 2026-10-07: the lobby booted at
+     * 19:43, the S3 reward pass re-armed 256 starter kits at 19:56, and the lobby's 03:46 shutdown
+     * "Flushed 429 profiles" put all 256 back to given. The same path silently rolls back playtime,
+     * flags and names. Every save() already writes its own row (failures go to the DB retry queue +
+     * flat file), and AsyncIo is drained before this runs, so the only rows owed here are saves still
+     * in flight — tracked by {@link #pendingWrites}.
+     */
     public void shutdown() {
         if (db.isAvailable()) {
             int written = 0;
             for (PlayerProfile p : cache.values()) {
+                if (!pendingWrites.containsKey(p.getUUID())) continue;   // already written by its save()
                 try (Connection c = db.getConnection()) {
                     upsertPlayer(c, p);
                     written++;
@@ -58,7 +71,8 @@ public class ProfileStore implements CredentialStore {
                     writeProfileFallback(p);
                 }
             }
-            CoffeesAeroAuth.LOGGER.info("[ProfileStore] Flushed {} profiles to MySQL on shutdown.", written);
+            CoffeesAeroAuth.LOGGER.info("[ProfileStore] Flushed {} unsaved profile(s) to MySQL on shutdown "
+                + "(of {} cached; the rest were already written by their own save).", written, cache.size());
         } else {
             cache.values().forEach(this::writeProfileFallback);
             writeNameIndexToFile();
@@ -137,23 +151,33 @@ public class ProfileStore implements CredentialStore {
 
     public void save(PlayerProfile profile) {
         cache.put(profile.getUUID(), profile);   // reads are cache-first, so callers see this instantly
+        final UUID id = profile.getUUID();
+        pendingWrites.merge(id, 1, Integer::sum);  // owed until its async write below has run
 
         // The MySQL round-trip runs OFF the server thread (1.6.12) — a remote-DB latency spike used
         // to stall the tick on every login/leave/name-change. Single writer thread keeps ordering.
         final PlayerProfile snapshot = profile;
         com.coffeesaerosmp.auth.util.AsyncIo.submit(() -> {
-            if (db.isAvailable()) {
-                try (Connection c = db.getConnection()) {
-                    upsertPlayer(c, snapshot);
-                    return;
-                } catch (SQLException e) {
-                    CoffeesAeroAuth.LOGGER.warn("[ProfileStore] DB write failed, queuing for retry", e);
+            try {
+                if (db.isAvailable()) {
+                    try (Connection c = db.getConnection()) {
+                        upsertPlayer(c, snapshot);
+                        return;
+                    } catch (SQLException e) {
+                        CoffeesAeroAuth.LOGGER.warn("[ProfileStore] DB write failed, queuing for retry", e);
+                    }
                 }
+                db.queueWrite(conn -> upsertPlayer(conn, snapshot));
+                writeProfileFallback(snapshot);
+            } finally {
+                // Handled either way (written, or in the DB retry queue + flat file): no longer owed.
+                pendingWrites.computeIfPresent(id, (k, n) -> n <= 1 ? null : n - 1);
             }
-            db.queueWrite(conn -> upsertPlayer(conn, snapshot));
-            writeProfileFallback(snapshot);
         });
     }
+
+    /** uuid -> saves submitted but not yet run. Shutdown flushes only these (see {@link #shutdown}). */
+    private final Map<UUID, Integer> pendingWrites = new ConcurrentHashMap<>();
 
     /** Returns all profiles. When DB is up: from cache (fully loaded on startup).
      *  When fallback: scans flat files to populate cache. */
