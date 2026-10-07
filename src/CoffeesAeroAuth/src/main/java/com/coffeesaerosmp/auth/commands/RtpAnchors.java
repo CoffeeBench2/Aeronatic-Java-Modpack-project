@@ -237,6 +237,26 @@ public final class RtpAnchors {
         save();
     }
 
+    static synchronized boolean contains(Anchor a) { return anchors.contains(a); }
+
+    /**
+     * Drops every anchor the predicate rejects (1.13.21: anchors outside the world border). The pool
+     * then reads short, and the warmer re-picks replacements with the border-aware picker.
+     */
+    static synchronized boolean pruneOutside(java.util.function.Predicate<Anchor> keep) {
+        boolean changed = false;
+        for (var it = anchors.iterator(); it.hasNext(); ) {
+            Anchor a = it.next();
+            if (keep.test(a)) continue;
+            it.remove();
+            changed = true;
+            CoffeesAeroAuth.LOGGER.warn("[Rtp] Anchor {} {} is outside the world border — removed, a replacement will be picked inside it.",
+                a.x, a.z);
+        }
+        if (changed) save();
+        return changed;
+    }
+
     static synchronized void markUsed(Anchor a) {
         a.lastUsedMs = System.currentTimeMillis();
         save();

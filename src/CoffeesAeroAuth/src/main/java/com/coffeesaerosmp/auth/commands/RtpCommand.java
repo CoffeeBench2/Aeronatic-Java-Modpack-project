@@ -256,6 +256,7 @@ public final class RtpCommand {
         // Re-charts deliberately fall through to the random path — a re-chart means this anchor's
         // landing scan failed, so trying it again would just fail the same way.
         if (!isRechart && RtpAnchors.enabled()) {
+            RtpAnchors.pruneOutside(a -> insideBorder(level, a.x, a.z, borderMargin()));
             RtpAnchors.Anchor anchor = RtpAnchors.nextWarm();
             if (anchor != null) {
                 CoffeesAeroAuth.LOGGER.info("[Rtp] {} routed to anchor {} {} (generated to radius {}, need {}{}).",
@@ -386,13 +387,15 @@ public final class RtpCommand {
             double dist  = min + random.nextDouble() * (max - min);
             x = spawn.getX() + (int) (Math.cos(angle) * dist);
             z = spawn.getZ() + (int) (Math.sin(angle) * dist);
+            if (!insideBorder(level, x, z, borderMargin())) continue;    // past the world border
             var biome = biomes.getNoiseBiome(x >> 2, 64 >> 2, z >> 2, sampler);
             if (!biome.is(BiomeTags.IS_OCEAN) && !biome.is(BiomeTags.IS_DEEP_OCEAN)
                     && !biome.is(BiomeTags.IS_RIVER)) {
                 break;
             }
         }
-        return new int[]{x, z, (int) (System.currentTimeMillis() - startedAt)};
+        int[] xz = clampToBorder(level, x, z, borderMargin());
+        return new int[]{xz[0], xz[1], (int) (System.currentTimeMillis() - startedAt)};
     }
 
     /**
@@ -418,13 +421,45 @@ public final class RtpCommand {
             double dist  = min + random.nextDouble() * (max - min);
             x = spawn.getX() + (int) (Math.cos(angle) * dist);
             z = spawn.getZ() + (int) (Math.sin(angle) * dist);
+            if (!insideBorder(level, x, z, borderMargin())) continue;    // past the world border
             var biome = biomes.getNoiseBiome(x >> 2, 64 >> 2, z >> 2, sampler);
             if (!biome.is(BiomeTags.IS_OCEAN) && !biome.is(BiomeTags.IS_DEEP_OCEAN)
                     && !biome.is(BiomeTags.IS_RIVER)) {
                 break;
             }
         }
-        return new int[]{x, z, (int) (System.currentTimeMillis() - startedAt)};
+        int[] xz = clampToBorder(level, x, z, borderMargin());
+        return new int[]{xz[0], xz[1], (int) (System.currentTimeMillis() - startedAt)};
+    }
+
+    // ── World border (1.13.21) ────────────────────────────────────────────────
+    // Nothing here used to look at the border at all: targets were a circle of rtpMaxDistance /
+    // rtpAnchorMaxDistance around spawn, and S3's border is a 28,700 SQUARE (half-width 14,350)
+    // while anchors could roll out to 15,000 — two live anchors sat 478 and 892 blocks outside it
+    // and /rtp delivered players there. The border is the authority now; the distance configs are
+    // just the preferred ring inside it.
+
+    /** Blocks the target keeps from the border: the whole warmed bubble plus a ring must fit inside,
+     *  so pregen never generates past the border and the landing scatter/spiral stays inside. */
+    private static int borderMargin() {
+        return (RtpAnchors.warmTargetRadius() + 1) * 16;
+    }
+
+    /** WorldBorder reads are plain field reads — safe from the background picker threads. */
+    static boolean insideBorder(ServerLevel level, double x, double z, double margin) {
+        var wb = level.getWorldBorder();
+        return x >= wb.getMinX() + margin && x <= wb.getMaxX() - margin
+            && z >= wb.getMinZ() + margin && z <= wb.getMaxZ() - margin;
+    }
+
+    /** Pulls a point inside the border by margin (or to the border centre if the border is tiny). */
+    private static int[] clampToBorder(ServerLevel level, int x, int z, double margin) {
+        var wb = level.getWorldBorder();
+        double minX = wb.getMinX() + margin, maxX = wb.getMaxX() - margin;
+        double minZ = wb.getMinZ() + margin, maxZ = wb.getMaxZ() - margin;
+        int cx = minX > maxX ? (int) wb.getCenterX() : (int) Math.max(Math.ceil(minX), Math.min(Math.floor(maxX), x));
+        int cz = minZ > maxZ ? (int) wb.getCenterZ() : (int) Math.max(Math.ceil(minZ), Math.min(Math.floor(maxZ), z));
+        return new int[]{cx, cz};
     }
 
     // ── Anchor pool upkeep (idle-time work only) ──────────────────────────────
@@ -466,6 +501,14 @@ public final class RtpCommand {
         if (!RtpAnchors.enabled()) return;
         ServerLevel level = server.overworld();
         if (level == null) return;
+
+        // Border sweep (1.13.21) — an anchor outside the border is dropped and re-picked inside it.
+        if (server.getTickCount() % 200 == 0
+                && RtpAnchors.pruneOutside(a -> insideBorder(level, a.x, a.z, borderMargin()))
+                && warming != null && !RtpAnchors.contains(warming.anchor)) {
+            removeTickets(warming.level, warming.center, warming.ticketRadius);
+            warming = null;
+        }
 
         // PLAYER GATE (1.7.6). Warming generates 6750 chunks across the pool; doing that while
         // players are online is the exact worldgen load anchors exist to remove — it moves the lag
@@ -754,6 +797,7 @@ public final class RtpCommand {
                 for (int dz = -radius; dz <= radius; dz += 4) {
                     if (Math.max(Math.abs(dx), Math.abs(dz)) != radius) continue;   // ring only
                     int cx = x + dx, cz = z + dz;
+                    if (!insideBorder(level, cx + 0.5, cz + 0.5, 2)) continue;
                     int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, cx, cz);
                     if (y <= level.getMinBuildHeight() + 1 || y >= level.getMaxBuildHeight() - 2) continue;
                     BlockPos below = new BlockPos(cx, y - 1, cz);
