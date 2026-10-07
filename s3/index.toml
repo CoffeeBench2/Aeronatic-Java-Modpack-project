@@ -17,7 +17,7 @@ metafile = true
 
 [[files]]
 file = "mods/aerowarptics-1-3-0.pw.toml"
-hash = "533449e970d1b76e76d5781818feed1d729af3eb379ff746e27f6922837de57a"
+hash = "07a11390a193ac70ed6e36e470cd02e704747c4032448811fbd5dbda219e8588"
 metafile = true
 
 [[files]]
@@ -111,13 +111,13 @@ hash = "02b2691c5dc4e13509bb935a7cfc728ae46a0c225e91e1c363580b9a6a71c2d9"
 metafile = true
 
 [[files]]
-file = "mods/coffeesaerocore-1-3-54.pw.toml"
-hash = "6e2d2a8025ee3f980a93c0eee4b104092cbb9f664e6cdccf2b3bff539e8da005"
+file = "mods/coffeesaerocore-1-3-55.pw.toml"
+hash = "3a5ee1aa6dcd6d92268555ca37a693a6149714be49da8998363de29788e0b17e"
 metafile = true
 
 [[files]]
 file = "mods/coffeesaeroskins-1-1-1.pw.toml"
-hash = "db6a626f78b7924032c11b71ad43408aa979dd4424317b4f67c4ddf1d35b81df"
+hash = "26a34fc2c844b3fe50e4606328bf484780a7c8ca49abf3a80d8504a20eb1f79a"
 metafile = true
 
 [[files]]
@@ -457,32 +457,32 @@ metafile = true
 
 [[files]]
 file = "mods/ftb-chunks-neoforge-2101-1-22.pw.toml"
-hash = "37ae7ad925abb0da172d9b26891bd66b831859182c09a87dd7f356d104794418"
+hash = "d92fab869952a41a5f059a4846324a85052b5b152271f363af026e921a5054f0"
 metafile = true
 
 [[files]]
 file = "mods/ftb-essentials-neoforge-2101-1-10.pw.toml"
-hash = "23baee1975ef96ff604d29dfcb2b625b65a2df3a9f9a9ff7be2913443c7acfce"
+hash = "93d6e76b0aa877079e5b75790989cacf2a8382d25a2a6e21c1a184e97848ebef"
 metafile = true
 
 [[files]]
 file = "mods/ftb-library-neoforge-2101-1-36.pw.toml"
-hash = "fdc42564bfa51379739507bd896123f5aee8596c731313770a8e92e30df18651"
+hash = "92d9046b4e50c36aa1a1582377d83175954707068d21e4f0fd5aa996e9a0be49"
 metafile = true
 
 [[files]]
 file = "mods/ftb-quests-neoforge-2101-1-36.pw.toml"
-hash = "b0d25e4b036afa6ab22862bd254de76251727cb9d45f7c2578bd51b50cb5c1a5"
+hash = "8c9a77afd29e13b652cd0bee3d9150c8065f1e97ce71c696cd2bdb494e9336cc"
 metafile = true
 
 [[files]]
 file = "mods/ftb-teams-neoforge-2101-1-11.pw.toml"
-hash = "20853ca156fef320fe51b03a5271702d5eb784d86d30bcbb829f43ac67b6d415"
+hash = "e6aeb28b7ed430df5097dede7dc671338a70d4fada1fad1ddcedb06d02c72465"
 metafile = true
 
 [[files]]
 file = "mods/ftb-ultimine-neoforge-2101-1-15.pw.toml"
-hash = "a3c7aca2572d5286708d443e7e0b927499de879383d82eada1ea00d68846c90b"
+hash = "b14c3a77692c6c9be0b31bb513a6a144601eb22fc22786ad729c417f4d132a13"
 metafile = true
 
 [[files]]
@@ -702,7 +702,7 @@ metafile = true
 
 [[files]]
 file = "mods/reforgedplaymod-1-21-1-0-3.pw.toml"
-hash = "0d993c37aa9963da2314a71515a50d8ce3982c9267a09ddbc574b7440da51fa7"
+hash = "5fd6245806456f035efaf0a5a35adc510362d2c3763574a46776c2cc0932e6db"
 metafile = true
 
 [[files]]
@@ -942,11 +942,11 @@ metafile = true
 
 [[files]]
 file = "overrides/config/coffees_aero_announcements.json"
-hash = "d4c65da15c871e9c5153205383aee7613e9f57b174d8fc408a8a891bf1b74bb7"
+hash = "58cab5caa0e8e9bde1d58af764449ae0071f5fffa05dc7179fb8ab2eb0cad21f"
 
 [[files]]
 file = "overrides/config/coffeesaerosmp_core-client.toml"
-hash = "b1ed73ec3423df5ba4f7caaaa27d5488347fcc3f9663512d4f745784af2298d4"
+hash = "8be6d3e52f460bec42123727e47766359d6dbba0866f97d615d1a1145fdcc3fa"
 
 [[files]]
 file = "resourcepacks/coffeegui-1-20-2-26-2-release-v2-2-1.pw.toml"

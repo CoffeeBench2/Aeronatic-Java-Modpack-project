@@ -3,6 +3,6 @@ filename = "reforgedplaymod-1.21.1-0.3.jar"
 side = "both"
 
 [download]
-url = "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/download/s3-v3.0.1/reforgedplaymod-1.21.1-0.3.jar"
+url = "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/download/s3-v3.0.2/reforgedplaymod-1.21.1-0.3.jar"
 hash-format = "sha256"
 hash = "608481672d6afbd0926427e58dcbfb1c66421d9364aa00e67696bcdc9c5f5cc0"
