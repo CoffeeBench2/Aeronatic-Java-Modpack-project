@@ -207,8 +207,11 @@ public final class SidebarManager {
         // While AFK the clock is genuinely paused, so say so on the row that stopped moving —
         // a playtime figure that silently freezes reads as a bug, not as a rule.
         boolean afk = AfkTracker.isAfk(player);
-        l.add(afk ? row("⏸", "Playtime", formatPlaytime(seconds) + " · afk")
-                  : row("⏱", "Playtime", formatPlaytime(seconds)));
+        // THIS SEASON's playtime (owner 2026-10-07): lifetime minus the clock frozen at the season
+        // rollover — the same number leveling uses, so the row and the Lv line can never disagree.
+        long seasonSeconds = profile == null ? 0L : Math.max(0L, seconds - profile.seasonStartPlaytime);
+        l.add(afk ? row("⏸", "Playtime", formatPlaytime(seasonSeconds) + " · afk")
+                  : row("⏱", "Playtime", formatPlaytime(seasonSeconds)));
         l.add(row("☠", "Deaths",   String.valueOf(deaths(player))));
         l.add(row("★", "Advances", String.valueOf(advancements(player, server))));
         l.add(row("⚑", "Clan",     clanOf(player)));
