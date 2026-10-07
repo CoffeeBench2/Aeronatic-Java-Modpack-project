@@ -17,7 +17,7 @@ Output: D:\MC Project\Releases\CoffeesAeroSMP-S3-<ver>-CURSEFORGE-GITHUB.zip
 import argparse, json, os, re, sys, zipfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-PROFILE = r"C:\Users\disan\AppData\Roaming\ModrinthApp\profiles\Coffees AeroSmp Season 3 v1.0-FULL"
+PROFILE = r"D:\MC Project\S3-pack-source"  # see build_s3_channel.py
 RELEASES = r"D:\MC Project\Releases"
 CORE_JAR_DIR = os.path.join(ROOT, "src", "AeroCore", "build", "libs")
 S3_OVERRIDES = os.path.join(ROOT, "s3", "overrides")

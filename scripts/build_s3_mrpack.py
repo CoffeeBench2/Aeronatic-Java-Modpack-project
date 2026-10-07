@@ -27,6 +27,48 @@ NO_PERMISSION = ("ftb-chunks", "ftb-essentials", "ftb-library", "ftb-quests", "f
 BOOTSTRAP = "2.99.99"  # < 3.0.0, so the updater fires on first launch and backfills NO_PERMISSION
 
 
+def jar_mods(path):
+    """(modIds provided, modIds required on the client) from a jar's neoforge.mods.toml."""
+    import tomllib
+    try:
+        raw = zipfile.ZipFile(path).read("META-INF/neoforge.mods.toml").decode("utf-8", "replace")
+        t = tomllib.loads(raw)
+    except Exception:
+        return set(), set()
+    provides = {m.get("modId") for m in t.get("mods", []) if m.get("modId")}
+    needs = set()
+    for deps in (t.get("dependencies") or {}).values():
+        for dep in deps if isinstance(deps, list) else []:
+            required = dep.get("type", "required" if dep.get("mandatory", True) else "optional")
+            if str(required).lower() == "required" and str(dep.get("side", "BOTH")).upper() != "SERVER":
+                needs.add(dep.get("modId"))
+    return provides, needs
+
+
+def sweep_dependents(by_name, refs, bundled, dropped):
+    """Move every kept mod that (transitively) requires a dropped modId into `dropped`. In place."""
+    path_of = {n: p for (d, n), p in by_name.items() if d == "mods"}
+    info = {n: jar_mods(p) for n, p in path_of.items()}
+    gone = set().union(*(info.get(n, (set(), set()))[0] for n in dropped)) if dropped else set()
+    swept = []
+    while True:
+        kept = [r["path"].split("/", 1)[1] for r in refs if r["path"].startswith("mods/")] + \
+               [n for d, n, _ in bundled if d == "mods"]
+        provided = set().union(*(info[n][0] for n in kept if n in info))
+        hit = [n for n in kept if n in info and (info[n][1] & gone) - provided]
+        if not hit:
+            return swept
+        for n in hit:
+            if n.startswith("CoffeesAeroCore-"):
+                ch.fail("the Core would be dropped (it requires %s) -- the updater could never run"
+                        % sorted(info[n][1] & gone))
+            gone |= info[n][0]
+            dropped.append(n)
+            swept.append(n)
+        refs[:] = [r for r in refs if r["path"].split("/", 1)[1] not in hit]
+        bundled[:] = [b for b in bundled if b[1] not in hit]
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--version", default="3.0.0")
@@ -60,6 +102,14 @@ def main():
                 bundled.append((d, n, p))
     if len(refs) + len(bundled) + len(dropped) != len(files):
         ch.fail("coverage gap: %d+%d+%d != %d" % (len(refs), len(bundled), len(dropped), len(files)))
+
+    # 🔴 Dependency sweep (2026-10-07). Dropping FTB left createultimine + ultimine_rewind in the pack,
+    # both REQUIRE ftbultimine -> NeoForge refuses to boot -> the Core never runs -> the updater never
+    # backfills anything. Every KEPT mod that requires a dropped modId is dropped too, to a fixpoint.
+    # They are all in the s3/ channel, so the first-launch update installs them together with FTB.
+    swept = sweep_dependents(by_name, refs, bundled, dropped)
+    for n in swept:
+        print("  dropped (requires a dropped mod):", n)
 
     index = {"formatVersion": 1, "game": "minecraft", "versionId": a.version,
              "name": "Coffee's Create: Aeronautics SMP - Season 3",

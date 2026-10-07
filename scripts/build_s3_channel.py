@@ -21,7 +21,9 @@ The filename in each metafile is the PROFILE's filename, so an instance created 
 import argparse, hashlib, json, os, re, shutil, subprocess, sys, urllib.request, zipfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-PROFILE = r"C:\Users\disan\AppData\Roaming\ModrinthApp\profiles\Coffees AeroSmp Season 3 v1.0-FULL"
+# Was the Modrinth App profile until it got deleted 2026-10-07 (restored from the verified 3.0.1 CF
+# zip). The build source lives outside the launcher now, so a launcher clean-up cannot take it out.
+PROFILE = r"D:\MC Project\S3-pack-source"
 CORE_JAR_DIR = os.path.join(ROOT, "src", "AeroCore", "build", "libs")
 S3 = os.path.join(ROOT, "s3")
 S3_OVERRIDES_SRC = os.path.join(ROOT, "scripts", "s3-overrides")

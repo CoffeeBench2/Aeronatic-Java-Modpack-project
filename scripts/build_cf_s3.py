@@ -19,7 +19,7 @@ from cf_fingerprint import cf_fingerprint, cf_match  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 KEY = open(os.path.join(ROOT, ".cf-key")).read().strip()
-PROFILE = r"C:\Users\disan\AppData\Roaming\ModrinthApp\profiles\Coffees AeroSmp Season 3 v1.0-FULL"
+PROFILE = r"D:\MC Project\S3-pack-source"  # see build_s3_channel.py
 RELEASES = r"D:\MC Project\Releases"
 MC, LOADER = "1.21.1", "neoforge-21.1.251"
 NAME, AUTHOR = "Coffee's AeroSMP Season 3", "MrCoffeeBench"
