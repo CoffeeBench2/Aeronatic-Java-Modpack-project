@@ -68,13 +68,20 @@ public final class MailService {
      * @return true if mail took over the grant (the caller must NOT also pay it directly)
      */
     public static boolean sendSeasonWelcome(ServerPlayer player, int spurs) {
+        return sendSeasonWelcomeTo(player.getServer(), player.getUUID(), player.getGameProfile().getName(), spurs);
+    }
+
+    /**
+     * Same welcome mail by uuid, so it can reach a player who is offline (the startup mail-out, owner
+     * 2026-10-07). SAME dedupe key as the join path: whichever runs first sends it, the other is a no-op.
+     */
+    public static boolean sendSeasonWelcomeTo(MinecraftServer server, UUID uuid, String name, int spurs) {
         if (!enabled() || !AuthConfig.SEASON_WELCOME_MAIL.get()) return false;
-        MinecraftServer server = player.getServer();
         List<ItemStack> items = MailItems.parseSpecs(AuthConfig.SEASON_WELCOME_ITEMS.get());
-        String key = "welcome:s" + season() + ":" + player.getUUID();
-        MailStore.send(server, List.of(player.getUUID()), new MailStore.Outgoing(SYSTEM,
+        String key = "welcome:s" + season() + ":" + uuid;
+        MailStore.send(server, List.of(uuid), new MailStore.Outgoing(SYSTEM,
             "Welcome to Season " + season() + "!",
-            "Welcome aboard, " + player.getGameProfile().getName() + "! Here is your starter kit and your "
+            "Welcome aboard, " + name + "! Here is your starter kit and your "
                 + "starting spurs.\\nLevel up by earning advancements: every level grows your land claims "
                 + "and mails you a reward. Have fun!",
             MailItems.encode(items, server.registryAccess()), spurs, 0, key),

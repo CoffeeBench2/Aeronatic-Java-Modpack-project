@@ -61,7 +61,8 @@ public final class ClientToggles {
                     new Detector("Grand Teleport", ClientToggles::addGrandTeleport),
                     new Detector("Subtle Effects", ClientToggles::addSubtleEffects),
                     new Detector("Sounds",         ClientToggles::addSounds),
-                    new Detector("Recipe Viewer",  ClientToggles::addRecipeViewer)}) {
+                    new Detector("Recipe Viewer",  ClientToggles::addRecipeViewer),
+                    new Detector("Spatial GUI",    ClientToggles::addSpatialGui)}) {
                 int before = list.size();
                 try {
                     d.add().accept(list);
@@ -77,6 +78,45 @@ public final class ClientToggles {
                 list.size(), list.stream().map(Toggle::label).toList());
         }
         return cached;
+    }
+
+    /**
+     * Spatial GUI — renders inventories as a 3D plane. Ships OFF. Its config is a Cloth AutoConfig
+     * {@code ConfigData} ({@code SpatialGUIConfig.enabled}, a public instance field — verified with
+     * javap), so the live object comes from {@code AutoConfig.getConfigHolder(..).getConfig()} and
+     * {@code ConfigHolder.save()} persists it to config/spatial-gui.json. Resolved on every call, never
+     * cached: a config reload replaces the object (owner request 2026-10-07).
+     */
+    private static void addSpatialGui(List<Toggle> out) {
+        if (!ModList.get().isLoaded("spatial_gui")) return;
+        try {
+            Class<?> autoConfig = Class.forName("me.shedaniel.autoconfig.AutoConfig");
+            Class<?> holderType = Class.forName("me.shedaniel.autoconfig.ConfigHolder");
+            Class<?> cfgClass = Class.forName("org.tastytrash.spatialGUI.client.SpatialGUIConfig");
+            Method getHolder = autoConfig.getMethod("getConfigHolder", Class.class);
+            Method getConfig = holderType.getMethod("getConfig");
+            Method save = holderType.getMethod("save");
+            Field enabled = cfgClass.getField("enabled");
+            if (getConfig.invoke(getHolder.invoke(null, cfgClass)) == null)
+                throw new IllegalStateException("Spatial GUI config holder has no config");
+            out.add(new Toggle(
+                "Spatial GUI",
+                "Inventories and containers shown as a 3D panel in the world.",
+                () -> {
+                    try { return enabled.getBoolean(getConfig.invoke(getHolder.invoke(null, cfgClass))); }
+                    catch (Throwable t) { return false; }
+                },
+                v -> {
+                    try {
+                        Object holder = getHolder.invoke(null, cfgClass);
+                        enabled.setBoolean(getConfig.invoke(holder), v);
+                        save.invoke(holder);
+                        LogUtils.getLogger().info("[AeroCore] spatial gui enabled -> {}", v);
+                    } catch (Throwable t) { LogUtils.getLogger().warn("[AeroCore] spatial gui toggle failed", t); }
+                }));
+        } catch (Throwable t) {
+            LogUtils.getLogger().warn("[AeroCore] Spatial GUI toggle unavailable: {}", t.toString());
+        }
     }
 
     /**

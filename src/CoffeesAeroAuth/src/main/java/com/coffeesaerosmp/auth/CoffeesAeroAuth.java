@@ -263,6 +263,8 @@ public class CoffeesAeroAuth {
             if (com.coffeesaerosmp.auth.mail.MailService.enabled()) com.coffeesaerosmp.auth.mail.MailStore.returnExpired();
             // One-time season launch reset (launchReset lever); a no-op unless armed, and once only.
             com.coffeesaerosmp.auth.launch.LaunchReset.onServerStarted(e.getServer());
+            // Every owed starter kit + veteran reward, mailed now to online AND offline players.
+            com.coffeesaerosmp.auth.season.RewardMailout.run(e.getServer());
         });
 
         // Idle timer — pauses playtime accrual while a player is AFK, so the playtime-derived

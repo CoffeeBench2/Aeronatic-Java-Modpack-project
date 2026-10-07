@@ -47,7 +47,22 @@ public final class VeteranReward {
 
     /** Grants the reward if this player is owed one. Safe to call on every world entry. */
     public static void grantIfOwed(ServerPlayer player) {
-        UUID uuid = player.getUUID();
+        grantIfOwed(player.getServer(), player.getUUID());
+    }
+
+    /**
+     * Mails every owed veteran reward now, online or offline (owner 2026-10-07: "start the reward
+     * system now, even for admins and offline players"). Called once at SMP start; idempotent — each
+     * one is claimed as its mail is stored, and the dedupe key stops a second copy.
+     */
+    public static int mailAllOwed(net.minecraft.server.MinecraftServer server) {
+        java.util.List<UUID> owed = SeasonMigration.pendingRewardUuids();
+        for (UUID u : owed) grantIfOwed(server, u);
+        return owed.size();
+    }
+
+    /** Grants the reward if this uuid is owed one; works for offline players (by mail). */
+    public static void grantIfOwed(net.minecraft.server.MinecraftServer server, UUID uuid) {
         Long seconds = SeasonMigration.pendingRewardFor(uuid);
         if (seconds == null) return;
 
@@ -67,8 +82,7 @@ public final class VeteranReward {
         for (int left = diamonds; left > 0; left -= 64)
             items.add(new ItemStack(net.minecraft.world.item.Items.DIAMOND, Math.min(64, left)));
         if (netherite) items.add(new ItemStack(net.minecraft.world.item.Items.NETHERITE_INGOT, 1));
-        net.minecraft.server.MinecraftServer server = player.getServer();
-        if (!IN_FLIGHT.add(uuid)) return;
+        if (server == null || !IN_FLIGHT.add(uuid)) return;
 
         // By mail (owner 2026-10-07). Claimed ONLY once the mail is stored (or was already, by key), so a
         // DB blip leaves it collectable on the next join; if mail cannot be stored at all, paid directly.

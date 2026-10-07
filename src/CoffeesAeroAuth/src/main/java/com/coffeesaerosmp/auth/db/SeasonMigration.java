@@ -80,6 +80,11 @@ public final class SeasonMigration {
         return uuid == null ? null : UNCLAIMED.get(uuid);
     }
 
+    /** Everyone still owed a veteran reward (snapshot), for the startup mail-out. */
+    public static java.util.List<UUID> pendingRewardUuids() {
+        return new java.util.ArrayList<>(UNCLAIMED.keySet());
+    }
+
     /** Marks collected: drops it from memory and persists the flag off-thread. */
     public static void markClaimed(UUID uuid, DatabaseManager db) {
         if (uuid == null || UNCLAIMED.remove(uuid) == null) return;

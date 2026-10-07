@@ -52,6 +52,23 @@ public class AeroTitleScreen extends Screen {
     /** 16px pack logo for the small config tile. Native size — blitted 1:1 so it stays crisp. */
     private static final ResourceLocation CONFIG_ICON =
         ResourceLocation.fromNamespaceAndPath("coffeesaerosmp_core", "textures/gui/logo_icon.png");
+    /** The Replay Mod's own logo (164px, scaled into the tile). Only referenced when replaymod is loaded. */
+    private static final ResourceLocation REPLAY_ICON =
+        ResourceLocation.fromNamespaceAndPath("replaymod", "favicon_logo.png");
+
+    /** What the Replay Mod's own title button runs: new GuiReplayViewer(ReplayModReplay.instance).display(). */
+    private static void openReplayViewer() {
+        try {
+            Class<?> modCls = Class.forName("com.replaymod.replay.ReplayModReplay");
+            Object mod = modCls.getField("instance").get(null);
+            if (mod == null) throw new IllegalStateException("ReplayModReplay.instance is null");
+            Class<?> viewer = Class.forName("com.replaymod.replay.gui.screen.GuiReplayViewer");
+            Object gui = viewer.getConstructor(modCls).newInstance(mod);
+            viewer.getMethod("display").invoke(gui);
+        } catch (Throwable t) {
+            com.mojang.logging.LogUtils.getLogger().warn("[AeroCore] could not open the Replay Viewer", t);
+        }
+    }
 
     private static final int ANNOUNCE_W = 74;
     private int announceX, announceY;
@@ -125,6 +142,23 @@ public class AeroTitleScreen extends Screen {
                 Component.literal("Mods"),
                 b -> this.minecraft.setScreen(new ModListScreen(this))
         ).bounds(this.width / 2 - 100, joinY + 52, 200, 20).build());
+
+        // Replay Viewer — the Replay Mod only injects its title button when the screen is a vanilla
+        // TitleScreen (GuiHandler: `instanceof TitleScreen`, verified with javap), so on this menu it
+        // never appeared. A side tile left of Mods, same shape as the Discord / settings tiles, using
+        // the Replay Mod's own logo. Reflection keeps the Core loadable without the Replay Mod; the
+        // tile is simply absent when it is not installed (owner request 2026-10-07).
+        if (net.neoforged.fml.ModList.get().isLoaded("replaymod")) {
+            AeroButton replay = AeroButton.aero(
+                    Component.literal("Replay Viewer"),
+                    b -> openReplayViewer()
+            ).bounds(this.width / 2 - 124, joinY + 52, 20, 20)
+             .icon(REPLAY_ICON, 16)
+             .build();
+            replay.setTooltip(net.minecraft.client.gui.components.Tooltip.create(
+                    Component.literal("Replay Viewer — watch your recordings")));
+            this.addRenderableWidget(replay);
+        }
 
         this.addRenderableWidget(AeroButton.aero(
                 Component.translatable("menu.options"),
