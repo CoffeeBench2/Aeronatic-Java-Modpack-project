@@ -406,9 +406,10 @@ public final class AfkTracker {
         // Stage 2 — the part SaveGuard already banked.
         long remaining = (millis - viaSession) / 1000L;
         if (remaining <= 0L) return;
-        // Floor at the frozen Season 1 snapshot rather than at zero: season playtime is computed as
-        // (total − season1), so dipping below it would make this season's hours negative.
-        long floor = Math.max(0L, profile.season1PlaytimeSeconds);
+        // Floor at this season's starting total rather than at zero: season playtime is computed as
+        // (total − season_start_playtime), so dipping below it would make this season's hours
+        // negative AND eat hours banked in earlier seasons (1.13.23: this used the Season 1 snapshot).
+        long floor = Math.max(0L, Math.max(profile.season1PlaytimeSeconds, profile.seasonStartPlaytime));
         profile.totalPlaytimeSeconds = Math.max(floor, profile.totalPlaytimeSeconds - remaining);
     }
 

@@ -208,14 +208,16 @@ public class DiscordInteractions {
         java.util.List<Row> rows = new java.util.ArrayList<>();
         for (var p : store.getAll()) {
             if (p == null || p.getUUID() == null) continue;
-            // Default board is THIS SEASON: lifetime minus the total frozen at the last rollover.
-            // total_playtime is deliberately never zeroed (milestones, /uptime and account history
-            // are lifetime facts), so the season board is a subtraction, not a reset. clamped at 0
-            // because an admin /authmod setplaytime below the frozen figure would otherwise go
-            // negative and sort to the bottom of a DESC board as if they had never played.
+            // Default board is THIS SEASON: lifetime minus the lifetime total at this season's start
+            // (season_start_playtime — the same baseline the sidebar and leveling use). It used to
+            // subtract season1_playtime, the Season 1 snapshot, so in Season 3 the "season" board was
+            // really S2+S3 (1.13.23). total_playtime is deliberately never zeroed (milestones, /uptime
+            // and account history are lifetime facts), so the season board is a subtraction, not a
+            // reset. Clamped at 0 because an admin /authmod setplaytime below the baseline would
+            // otherwise go negative and sort to the bottom of a DESC board as if they had never played.
             long secs = (byAge || allTime)
                 ? p.totalPlaytimeSeconds
-                : Math.max(0L, p.totalPlaytimeSeconds - p.season1PlaytimeSeconds);
+                : Math.max(0L, p.totalPlaytimeSeconds - p.seasonStartPlaytime);
             // Add the live session so the card is current while someone is playing. Gated on the
             // player actually being ONLINE: a session that was never closed (hard restart, crash)
             // leaves a stale sessionStartEpoch that would otherwise inflate them by days.
