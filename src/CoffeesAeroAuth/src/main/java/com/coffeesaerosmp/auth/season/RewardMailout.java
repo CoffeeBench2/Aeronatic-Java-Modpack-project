@@ -41,6 +41,7 @@ public final class RewardMailout {
                 if (MailService.sendSeasonWelcomeTo(server, p.getUUID(), name, spurs)) kits++;
             }
             int vets = VeteranReward.mailAllOwed(server);
+            Season2VeteranReward.mailAll(server);                  // S1+S2 players' Season 2 hours (1.13.22)
             CoffeesAeroAuth.LOGGER.info("[Rewards] Startup mail-out: {} starter kit(s) and {} veteran reward(s) queued "
                 + "(already-delivered ones are dedupe no-ops).", kits, vets);
         } catch (Exception e) {
