@@ -42,6 +42,8 @@ public final class VeteranReward {
     private VeteranReward() {}
 
     private static final long H = 3600L;
+    /** Grants in flight (mail is async): a second world entry before the first finishes must not re-grant. */
+    private static final java.util.Set<UUID> IN_FLIGHT = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
     /** Grants the reward if this player is owed one. Safe to call on every world entry. */
     public static void grantIfOwed(ServerPlayer player) {
@@ -57,20 +59,41 @@ public final class VeteranReward {
         else if (seconds >= 5 * H)   { diamonds = 16; tier = "Regular"; }
         else                         { diamonds = 8;  tier = "Pioneer"; }
 
-        give(player, "minecraft:diamond", diamonds);
-        if (netherite) give(player, "minecraft:netherite_ingot", 1);
-
-        // Claim only after the items exist, so a crash mid-grant leaves it collectable next join.
-        SeasonMigration.markClaimed(uuid, CoffeesAeroAuth.DB_MANAGER);
-
         long hours = seconds / H;
-        player.sendSystemMessage(TextUtil.info(
-            "§6Season 1 " + tier + " reward §7— thank you for the §f" + hours + "§7 hours you flew with us."));
-        player.sendSystemMessage(TextUtil.info(
-            "§7Received: §b" + diamonds + " diamonds" + (netherite ? " §7+ §51 netherite ingot" : "")));
+        final int dia = diamonds;
+        final boolean neth = netherite;
+        final String t = tier;
+        java.util.List<ItemStack> items = new java.util.ArrayList<>();
+        for (int left = diamonds; left > 0; left -= 64)
+            items.add(new ItemStack(net.minecraft.world.item.Items.DIAMOND, Math.min(64, left)));
+        if (netherite) items.add(new ItemStack(net.minecraft.world.item.Items.NETHERITE_INGOT, 1));
+        net.minecraft.server.MinecraftServer server = player.getServer();
+        if (!IN_FLIGHT.add(uuid)) return;
 
-        CoffeesAeroAuth.LOGGER.info("[Season] Veteran reward to {} — tier={} ({}h): {} diamonds{}",
-            player.getGameProfile().getName(), tier, hours, diamonds, netherite ? " + netherite ingot" : "");
+        // By mail (owner 2026-10-07). Claimed ONLY once the mail is stored (or was already, by key), so a
+        // DB blip leaves it collectable on the next join; if mail cannot be stored at all, paid directly.
+        com.coffeesaerosmp.auth.mail.MailService.sendSystemReward(server, uuid,
+            "Season 1 " + tier + " reward",
+            "Thank you for the " + hours + " hours you flew with us in Season 1.",
+            items, 0, "vet:s1:" + uuid,
+            stored -> {
+                IN_FLIGHT.remove(uuid);
+                ServerPlayer online = server.getPlayerList().getPlayer(uuid);
+                if (!stored) {
+                    if (online == null) return;              // still owed: retried on their next entry
+                    give(online, "minecraft:diamond", dia);
+                    if (neth) give(online, "minecraft:netherite_ingot", 1);
+                }
+                SeasonMigration.markClaimed(uuid, CoffeesAeroAuth.DB_MANAGER);
+                if (online != null) {
+                    online.sendSystemMessage(TextUtil.info(
+                        "§6Season 1 " + t + " reward §7— thank you for the §f" + hours + "§7 hours you flew with us."));
+                    online.sendSystemMessage(TextUtil.info("§b" + dia + " diamonds" + (neth ? " §7+ §51 netherite ingot" : "")
+                        + (stored ? " §7are in your §f/mail§7." : " §7went straight to your inventory.")));
+                }
+                CoffeesAeroAuth.LOGGER.info("[Season] Veteran reward to {} — tier={} ({}h): {} diamonds{} ({})",
+                    uuid, t, hours, dia, neth ? " + netherite ingot" : "", stored ? "mailed" : "paid directly");
+            });
     }
 
     /** Adds to the inventory, dropping the remainder at the player's feet if it will not fit. */

@@ -78,7 +78,7 @@ public final class MailService {
                 + "starting spurs.\\nLevel up by earning advancements: every level grows your land claims "
                 + "and mails you a reward. Have fun!",
             MailItems.encode(items, server.registryAccess()), spurs, 0, key),
-            sent -> { if (sent > 0) notifyNew(player, 1); });
+            null);  // MailStore.send notifies the recipient
         return true;
     }
 
@@ -98,7 +98,7 @@ public final class MailService {
             (milestone ? "★ " : "") + "Level " + level + " reward", body,
             MailItems.encode(items, server.registryAccess()), 0, expiry(),
             "lvl:s" + season() + ":" + player.getUUID() + ":" + level),
-            sent -> { if (sent > 0) notifyNew(player, 1); });
+            null);  // MailStore.send notifies the recipient
     }
 
     // ── notices ──────────────────────────────────────────────────────────────
@@ -121,10 +121,35 @@ public final class MailService {
         });
     }
 
-    public static void notifyNew(ServerPlayer player, int n) {
-        if (player == null || player.hasDisconnected()) return;
-        player.sendSystemMessage(Component.literal("§6✉ §fNew mail" + (n > 1 ? " ×" + n : "") + "! ")
-            .append(openLink()));
+    /**
+     * "New mail from X: subject [Open /mail]" + a soft bell, to every recipient who is online right now.
+     * Called by {@link MailStore#send} after a successful insert — the single notification path for
+     * system, staff and player mail alike. Offline recipients hear about it from the join notice.
+     */
+    public static void notifyRecipients(MinecraftServer server, java.util.Collection<UUID> to,
+                                        MailStore.Outgoing mail) {
+        for (UUID u : to) {
+            ServerPlayer p = server.getPlayerList().getPlayer(u);
+            if (p == null || p.hasDisconnected()) continue;
+            p.sendSystemMessage(Component.literal("§6✉ §fNew mail from §e" + mail.sender() + "§f: §7"
+                + mail.subject() + " ").append(openLink()));
+            com.coffeesaerosmp.auth.util.Sounds.notify(p);
+        }
+    }
+
+    /**
+     * A system reward (daily, vote, veteran...) as mail. {@code done} gets {@code true} once it is stored
+     * — or was already, by dedupe key — and {@code false} when it could NOT be stored (mail off, DB down,
+     * insert failed). On {@code false} the caller pays directly, so a reward is never lost. Owner 2026-10-07:
+     * "anything the system gives players comes with a mail".
+     */
+    public static void sendSystemReward(MinecraftServer server, UUID to, String subject, String body,
+                                        List<ItemStack> items, int spurs, String dedupeKey,
+                                        java.util.function.Consumer<Boolean> done) {
+        if (!enabled()) { done.accept(false); return; }
+        MailStore.send(server, List.of(to), new MailStore.Outgoing(SYSTEM, subject, body,
+            MailItems.encode(items, server.registryAccess()), spurs, expiry(), dedupeKey),
+            sent -> done.accept(sent >= 0));
     }
 
     private static Component openLink() {

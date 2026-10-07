@@ -133,9 +133,13 @@ public final class TabListManager {
             Component styled = com.coffeesaerosmp.auth.util.NameStyles.nameComponent(
                 p.getUUID(), rawUsername, rawDisplay);
 
+            // Ping as a number after the name (owner 2026-10-07). The vanilla bars are drawn by the client
+            // and cannot be removed from here; this sits beside them.
+            Component ping = Component.literal(PingText.of(p.connection.latency()));
             Component plainName = Component.literal(segPlain.prefix())
                 .append(styled != null ? styled : Component.literal(segPlain.name()))
-                .append(Component.literal(segPlain.suffix()));
+                .append(Component.literal(segPlain.suffix()))
+                .append(ping);
             // Ops keep seeing hidden ops on purpose — an admin who cannot see another admin come and
             // go is worse than no hide at all. But until now the op view rendered them IDENTICALLY to
             // everyone else, so the only way to tell the hide had taken was to go find a non-op and
@@ -144,7 +148,8 @@ public final class TabListManager {
             boolean isHidden = com.coffeesaerosmp.auth.display.HiddenOps.isHidden(p.getUUID());
             Component opName = Component.literal((isHidden ? "§8[§7H§8] " : "") + segOp.prefix())
                 .append(styled != null ? styled : Component.literal(segOp.name()))
-                .append(Component.literal(segOp.suffix()));
+                .append(Component.literal(segOp.suffix()))
+                .append(ping);
 
             if (!isHidden) {
                 plain.add(new net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket.Entry(

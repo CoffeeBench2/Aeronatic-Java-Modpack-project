@@ -211,7 +211,6 @@ public final class MailCompose {
                         + (d.to.size() > 1 ? " §7(" + sent + " players)" : "") + "§a!"
                         + (items.isEmpty() ? "" : " §7" + items.size() + " stack(s) packed.")));
                     player.playNotifySound(SoundEvents.VILLAGER_WORK_CARTOGRAPHER, SoundSource.MASTER, 0.8f, 1.2f);
-                    for (UUID u : d.to) MailService.notifyNew(server.getPlayerList().getPlayer(u), 1);
                     if (!items.isEmpty()) audit(player, d, items, Severity.LOW, "Mail parcel sent");
                 } else if (!d.staff && !items.isEmpty()) {
                     // Nothing was written: the items must come back.

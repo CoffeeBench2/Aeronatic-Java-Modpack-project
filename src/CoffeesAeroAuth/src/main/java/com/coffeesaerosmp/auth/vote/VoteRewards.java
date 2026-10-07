@@ -14,11 +14,15 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 
 import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -132,8 +136,7 @@ public final class VoteRewards {
             ? profile.displayName : profile.username;
         server.execute(() -> {
             announce(server, shown, voteNumber);
-            ServerPlayer player = server.getPlayerList().getPlayer(uuid);
-            if (player != null) deliver(player, server);
+            deliver(uuid, server);            // by mail: online or not (owner 2026-10-07)
         });
         return true;
     }
@@ -144,7 +147,7 @@ public final class VoteRewards {
             if (!AuthConfig.VOTE_REWARD_ENABLED.get()) return;
             Entry e = state.get(player.getUUID().toString());
             if (e == null || e.pending <= 0) return;
-            deliver(player, player.getServer());
+            deliver(player.getUUID(), player.getServer());   // banked before mail, or mail was down
         } catch (Exception ex) {
             CoffeesAeroAuth.LOGGER.debug("[Vote] join payout skipped: {}", ex.toString());
         }
@@ -261,21 +264,24 @@ public final class VoteRewards {
 
     // ── Payout ────────────────────────────────────────────────────────────────
 
-    /** MUST run on the server thread. Pays every banked vote and clears the counters. */
-    private void deliver(ServerPlayer player, MinecraftServer server) {
-        Entry e = state.get(player.getUUID().toString());
+    /**
+     * MUST run on the server thread. Mails every banked vote (spurs + diamonds) and clears the counters —
+     * online or offline, so nobody waits for a join any more (owner 2026-10-07: system rewards come by mail).
+     * If the mail cannot be stored: paid directly when they are online, put back in the bank when not.
+     */
+    private void deliver(UUID uuid, MinecraftServer server) {
+        Entry e = state.get(uuid.toString());
         if (e == null) return;
-        int owed, spurs, diamonds, streak, lifetime;
+        final int owed, spurs, diamonds, streak, lifetime;
         synchronized (e) {
-            owed = e.pending;
-            if (owed <= 0) return;
-            spurs = e.pendingSpurs;
-            diamonds = e.pendingDiamonds;
-            if (spurs == 0 && diamonds == 0) {
+            if (e.pending <= 0) return;
+            int s = e.pendingSpurs, d = e.pendingDiamonds;
+            if (s == 0 && d == 0) {
                 // Banked before the streak system existed (old file): pay those at the day-1 tier.
-                spurs = owed * spursFor(1);
-                diamonds = owed * diamondsFor(1);
+                s = e.pending * spursFor(1);
+                d = e.pending * diamondsFor(1);
             }
+            owed = e.pending; spurs = s; diamonds = d;
             streak = Math.max(1, e.streak);
             lifetime = e.totalVotes;
             e.pending = 0;
@@ -283,18 +289,50 @@ public final class VoteRewards {
             e.pendingDiamonds = 0;
         }
         save();
-        Coins.pay(player, spurs);
-        Coins.giveItem(player, ResourceLocation.parse("minecraft:diamond"), diamonds);
+        List<ItemStack> items = new ArrayList<>();
+        for (int left = diamonds; left > 0; left -= 64) items.add(new ItemStack(Items.DIAMOND, Math.min(64, left)));
         String votes = owed == 1 ? "vote" : owed + " votes";
+        com.coffeesaerosmp.auth.mail.MailService.sendSystemReward(server, uuid, "Thanks for voting!",
+            "Thank you for voting (" + votes + "). Streak: " + streak + (streak == 1 ? " day" : " days")
+                + ". Vote again within " + (2 * AuthConfig.VOTE_COOLDOWN_HOURS.get()) + "h to keep it.",
+            items, spurs, "vote:" + uuid + ":" + lifetime,
+            stored -> {
+                ServerPlayer player = server.getPlayerList().getPlayer(uuid);
+                if (stored) {
+                    if (player != null) voteMessages(player, votes, spurs, diamonds, streak, " §7are in your §f/mail§7.");
+                    CoffeesAeroAuth.LOGGER.info("[Vote] Mailed {} for {} vote(s): {} spurs, {} diamonds (streak {}, lifetime {})",
+                        uuid, owed, spurs, diamonds, streak, lifetime);
+                } else if (player != null) {
+                    payDirect(player, owed, spurs, diamonds, streak, lifetime);
+                } else {
+                    synchronized (e) {                       // keep it for their next join
+                        e.pending += owed;
+                        e.pendingSpurs += spurs;
+                        e.pendingDiamonds += diamonds;
+                    }
+                    save();
+                    CoffeesAeroAuth.LOGGER.warn("[Vote] Mail unavailable — {} vote(s) for {} banked for their next join.", owed, uuid);
+                }
+            });
+    }
+
+    private void voteMessages(ServerPlayer player, String votes, int spurs, int diamonds, int streak, String where) {
         player.sendSystemMessage(Component.literal(TextUtil.PREFIX
             + "§a✦ Thanks for voting! §7(" + votes + ") §f→ §6" + spurs + " spurs §fand §b"
-            + diamonds + " diamonds§f."));
+            + diamonds + " diamonds" + where));
         boolean topTier = spursFor(streak) >= AuthConfig.VOTE_REWARD_SPURS_MAX.get()
                        && diamondsFor(streak) >= AuthConfig.VOTE_REWARD_DIAMONDS_MAX.get();
         player.sendSystemMessage(Component.literal(TextUtil.PREFIX + "§7Vote streak: §e" + streak
             + (streak == 1 ? " day" : " days") + (topTier ? " §6— top reward!" : " §7— each day pays a little more.")
             + " §7Vote again within §f" + (2 * AuthConfig.VOTE_COOLDOWN_HOURS.get()) + "h§7 to keep it."));
         Sounds.reward(player);
+    }
+
+    /** The pre-mail payout, kept as the fallback when mail cannot be stored. */
+    private void payDirect(ServerPlayer player, int owed, int spurs, int diamonds, int streak, int lifetime) {
+        Coins.pay(player, spurs);
+        Coins.giveItem(player, ResourceLocation.parse("minecraft:diamond"), diamonds);
+        voteMessages(player, owed == 1 ? "vote" : owed + " votes", spurs, diamonds, streak, "§f.");
         CoffeesAeroAuth.LOGGER.info("[Vote] Paid {} for {} vote(s): {} spurs, {} diamonds (streak {}, lifetime {})",
             player.getGameProfile().getName(), owed, spurs, diamonds, streak, lifetime);
     }

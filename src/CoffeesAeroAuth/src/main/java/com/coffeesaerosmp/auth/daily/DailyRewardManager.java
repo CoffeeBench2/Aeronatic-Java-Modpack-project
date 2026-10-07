@@ -22,7 +22,9 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -122,14 +124,14 @@ public final class DailyRewardManager {
 
         int dayIndex = (e.streak - 1) % TIERS.length;           // 0..6
         Tier tier = TIERS[dayIndex];
-        grant(player, tier);
+        int cycleDay = dayIndex + 1;
+        grant(player, tier, e.streak, cycleDay, now);
         e.lastClaimMs = now;
         save();
 
-        int cycleDay = dayIndex + 1;
         Sounds.reward(player);
         msg(player, TextUtil.PREFIX + "§a✦ Daily reward claimed! §f" + tier.name()
-            + " §7(streak §e" + e.streak + "§7 · day §e" + cycleDay + "§7/7)");
+            + " §7(streak §e" + e.streak + "§7 · day §e" + cycleDay + "§7/7) §7— the items are in your §f/mail§7.");
 
         if (cycleDay == TIERS.length) {                          // weekly jackpot — small server shout
             MinecraftServer server = player.getServer();
@@ -238,8 +240,14 @@ public final class DailyRewardManager {
         }
     }
 
-    private void grant(ServerPlayer player, Tier tier) {
+    /**
+     * XP lands at once (it cannot be mailed); the items arrive as mail (owner 2026-10-07: everything the
+     * system gives comes by mail). If the mail cannot be stored they go straight to the inventory, as
+     * before, so a claim is never lost. The dedupe key is the claim timestamp: one mail per claim.
+     */
+    private void grant(ServerPlayer player, Tier tier, int streak, int cycleDay, long claimMs) {
         if (tier.xpLevels() > 0) player.giveExperienceLevels(tier.xpLevels());
+        List<ItemStack> stacks = new ArrayList<>();
         for (String[] entry : tier.items()) {
             Item item = BuiltInRegistries.ITEM.get(ResourceLocation.parse(entry[0]));
             if (item == null || item == Items.AIR) continue;    // mod/item absent — skip that line silently
@@ -248,11 +256,28 @@ public final class DailyRewardManager {
             int max = new ItemStack(item).getMaxStackSize();
             while (count > 0) {
                 int n = Math.min(count, max);
-                ItemStack stack = new ItemStack(item, n);
-                if (!player.getInventory().add(stack)) player.drop(stack, false);
+                stacks.add(new ItemStack(item, n));
                 count -= n;
             }
         }
+        if (stacks.isEmpty()) return;
+        MinecraftServer server = player.getServer();
+        UUID uuid = player.getUUID();
+        com.coffeesaerosmp.auth.mail.MailService.sendSystemReward(server, uuid,
+            "Daily reward: " + tier.name(),
+            "Your /daily reward. Streak " + streak + ", day " + cycleDay + "/7. Come back tomorrow to keep it going!",
+            stacks, 0, "daily:" + uuid + ":" + claimMs,
+            stored -> {
+                if (stored) return;
+                ServerPlayer online = server.getPlayerList().getPlayer(uuid);
+                if (online != null) {
+                    for (ItemStack s : stacks) if (!online.getInventory().add(s)) online.drop(s, false);
+                    msg(online, TextUtil.PREFIX + "§7Mail is unavailable right now — your reward went straight to your inventory.");
+                } else {
+                    CoffeesAeroAuth.LOGGER.error("[Daily] {} logged out before an unmailable reward could be paid: {} {}",
+                        uuid, tier.name(), stacks);
+                }
+            });
     }
 
     private void msg(ServerPlayer p, String s) {

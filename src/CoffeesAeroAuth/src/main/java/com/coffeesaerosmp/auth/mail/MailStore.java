@@ -120,7 +120,8 @@ public final class MailStore {
         List<UUID> targets = new ArrayList<>(to);
         AsyncIo.submit(() -> {
             int n = 0;
-            if (available()) {
+            boolean ok = available();
+            if (ok) {
                 try (Connection c = CoffeesAeroAuth.DB_MANAGER.getConnection();
                      PreparedStatement ps = c.prepareStatement(
                          "INSERT IGNORE INTO mail (uuid, sender, subject, body, items, spurs, created_at, expires_at, dedupe_key, sender_uuid) "
@@ -142,11 +143,19 @@ public final class MailStore {
                         n += ps.executeUpdate();
                     }
                 } catch (SQLException e) {
+                    ok = false;
                     CoffeesAeroAuth.LOGGER.warn("[Mail] send failed ({} recipients): {}", targets.size(), e.getMessage());
                 }
             }
-            int sent = n;
-            if (done != null && server != null) server.execute(() -> done.accept(sent));
+            // -1 = NOT stored (DB down / insert failed): a system reward must then be paid directly.
+            //  0 = nothing new (every recipient already had it, by dedupe key) — already delivered.
+            int sent = ok ? n : -1;
+            if (server == null) return;
+            server.execute(() -> {
+                // The one place a recipient hears about new mail, so no sender can forget to (2026-10-07).
+                if (sent > 0) MailService.notifyRecipients(server, targets, mail);
+                if (done != null) done.accept(sent);
+            });
         });
     }
 
