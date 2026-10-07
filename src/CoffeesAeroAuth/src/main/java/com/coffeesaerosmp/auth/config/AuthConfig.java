@@ -176,6 +176,7 @@ public class AuthConfig {
     public static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> SEASON_WELCOME_ITEMS;
     public static final ModConfigSpec.BooleanValue LAUNCH_RESET;
     public static final ModConfigSpec.BooleanValue SURVIVAL_TELEPORT_COMMANDS;
+    public static final ModConfigSpec.BooleanValue PLAYER_RTP;
     public static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> LAUNCH_RESET_ACCOUNTS;
     public static final ModConfigSpec.BooleanValue LAUNCH_RESET_DEOP;
 
@@ -1446,6 +1447,10 @@ public class AuthConfig {
                      "default, unlike a hand-added key, cannot be stripped by an older jar's config correction.",
                      "FTB Essentials' own /tpa /home /back /rtp /warp /playerspawn are off in config/ftbessentials.snbt.")
             .define("survivalTeleportCommands", false);
+        PLAYER_RTP = b
+            .comment("true = players may use /rtp even while survivalTeleportCommands is false (/tpa stays off).",
+                     "Owner 2026-10-07: Season 3 gets /rtp back, still no /tpa. Ops always have /rtp.")
+            .define("playerRtp", true);
         b.pop();
 
         b.comment("Season launch: the one-time 'fresh start' for accounts used during the staff test (launch/LaunchReset).").push("launch");

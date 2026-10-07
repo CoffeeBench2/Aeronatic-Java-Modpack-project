@@ -142,7 +142,7 @@ public final class RtpCommand {
     // ── Command ───────────────────────────────────────────────────────────────
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
-        dispatcher.register(Commands.literal("rtp").requires(AuthConfigGate::teleportAllowed).executes(ctx -> {
+        dispatcher.register(Commands.literal("rtp").requires(AuthConfigGate::rtpAllowed).executes(ctx -> {
             handle(ctx.getSource().getPlayerOrException());
             return 1;
         }));

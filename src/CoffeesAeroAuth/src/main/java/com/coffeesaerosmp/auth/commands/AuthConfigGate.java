@@ -17,6 +17,20 @@ final class AuthConfigGate {
      * {@code /tpdeny} and {@code /rtp} vanish for players when {@code survivalTeleportCommands = false}.
      * Ops (permission 2) keep them for admin work.
      */
+    /**
+     * /rtp: allowed when survival teleports are on OR {@code playerRtp} is (owner 2026-10-07: "add rtp for
+     * players" — /tpa stays off). Brigadier evaluates this when the command tree is sent, so a config
+     * change applies on the player's next login.
+     */
+    static boolean rtpAllowed(CommandSourceStack src) {
+        if (src.hasPermission(2)) return true;
+        try {
+            return AuthConfig.SURVIVAL_TELEPORT_COMMANDS.get() || AuthConfig.PLAYER_RTP.get();
+        } catch (Exception e) {
+            return true;
+        }
+    }
+
     static boolean teleportAllowed(CommandSourceStack src) {
         if (src.hasPermission(2)) return true;
         try {
