@@ -36,4 +36,14 @@ public abstract class ServerCommonCookieMixin {
         }
         ci.cancel();
     }
+
+    /** Times the answer to our own tab-list ping (see PingMeter). Vanilla's handlePong is a no-op. */
+    @Inject(method = "handlePong", at = @At("HEAD"), cancellable = true)
+    private void coffees_aero_auth$onPong(net.minecraft.network.protocol.common.ServerboundPongPacket packet,
+                                          CallbackInfo ci) {
+        if (!((Object) this instanceof ServerGamePacketListenerImpl game)) return;
+        ServerPlayer player = game.player;
+        if (player == null) return;
+        if (com.coffeesaerosmp.auth.tablist.PingMeter.onPong(player.getUUID(), packet.getId())) ci.cancel();
+    }
 }

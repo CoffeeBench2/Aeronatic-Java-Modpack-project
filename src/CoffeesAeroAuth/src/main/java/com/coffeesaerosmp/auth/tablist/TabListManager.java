@@ -46,6 +46,7 @@ public final class TabListManager {
     /** Call every server tick; throttles internally to ~2 updates/sec. */
     public static void onServerTick(MinecraftServer server) {
         if (server == null) return;
+        PingMeter.onServerTick(server);
         if (++ticks % 10 != 0) return;
         frame++;
         var players = server.getPlayerList().getPlayers();
@@ -90,7 +91,7 @@ public final class TabListManager {
         if (frame % 120 == 0) {
             StringBuilder sb = new StringBuilder();
             for (ServerPlayer p : players)
-                sb.append(p.getGameProfile().getName()).append('=').append(p.connection.latency()).append("ms ");
+                sb.append(p.getGameProfile().getName()).append('=').append(PingMeter.ms(p)).append("ms (vanilla ").append(p.connection.latency()).append(") ");
             com.coffeesaerosmp.auth.CoffeesAeroAuth.LOGGER.info("[Tab] measured ping: {}", sb.toString().trim());
         }
     }
@@ -144,7 +145,8 @@ public final class TabListManager {
 
             // Ping as a number after the name (owner 2026-10-07). The vanilla bars are drawn by the client
             // and cannot be removed from here; this sits beside them.
-            Component ping = Component.literal(PingText.of(p.connection.latency()));
+            int pingMs = PingMeter.ms(p);
+            Component ping = Component.literal(PingText.of(pingMs));
             Component plainName = Component.literal(segPlain.prefix())
                 .append(styled != null ? styled : Component.literal(segPlain.name()))
                 .append(Component.literal(segPlain.suffix()))
@@ -162,19 +164,23 @@ public final class TabListManager {
 
             if (!isHidden) {
                 plain.add(new net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket.Entry(
-                    p.getUUID(), null, true, p.connection.latency(), p.gameMode.getGameModeForPlayer(), plainName, null));
+                    p.getUUID(), null, true, pingMs, p.gameMode.getGameModeForPlayer(), plainName, null));
             }
             opView.add(new net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket.Entry(
-                p.getUUID(), null, true, p.connection.latency(), p.gameMode.getGameModeForPlayer(), opName, null));
+                p.getUUID(), null, true, pingMs, p.gameMode.getGameModeForPlayer(), opName, null));
         }
         if (opView.isEmpty()) return;
 
         var pkt = new net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket(
-            java.util.EnumSet.of(net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket.Action.UPDATE_DISPLAY_NAME),
+            java.util.EnumSet.of(net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket.Action.UPDATE_DISPLAY_NAME,
+                // The bars too: vanilla's own UPDATE_LATENCY carries the 2-minute keep-alive value (see PingMeter).
+                net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket.Action.UPDATE_LATENCY),
             java.util.List.of());
         ((com.coffeesaerosmp.auth.mixin.PlayerInfoPacketAccessor) (Object) pkt).aeroauth$setEntries(plain);
         var opPkt = new net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket(
-            java.util.EnumSet.of(net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket.Action.UPDATE_DISPLAY_NAME),
+            java.util.EnumSet.of(net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket.Action.UPDATE_DISPLAY_NAME,
+                // The bars too: vanilla's own UPDATE_LATENCY carries the 2-minute keep-alive value (see PingMeter).
+                net.minecraft.network.protocol.game.ClientboundPlayerInfoUpdatePacket.Action.UPDATE_LATENCY),
             java.util.List.of());
         ((com.coffeesaerosmp.auth.mixin.PlayerInfoPacketAccessor) (Object) opPkt).aeroauth$setEntries(opView);
 
