@@ -1,7 +1,7 @@
 {
-  "version": "3.0.0",
+  "version": "3.0.1",
   "url": "https://modrinth.com/modpack/coffees-create-aeronautics-smp",
   "neoforge": "21.1.251",
   "minecraft": "1.21.1",
-  "notes": "Season 3."
+  "notes": "Season 3. Adds Be Quiet Negotiator (gate join fix) and CoffeesAeroSkins."
 }
