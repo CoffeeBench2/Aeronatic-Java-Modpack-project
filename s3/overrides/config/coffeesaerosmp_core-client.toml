@@ -2,7 +2,7 @@
 serverIp = "managed"
 adminUsername = "MrCoffeeBench"
 # Stamped by scripts/build_s3_channel.py; the Modrinth mrpack re-stamps it one notch lower on purpose.
-packVersion = "3.0.1"
+packVersion = "3.0.2"
 # The Season 3 channel. NEVER the root files: those are Season 2 and are frozen at S3 launch.
 versionCheckUrl = "https://raw.githubusercontent.com/CoffeeBench2/Aeronatic-Java-Modpack-project/main/s3/version.json"
 packTomlUrl = "https://raw.githubusercontent.com/CoffeeBench2/Aeronatic-Java-Modpack-project/main/s3/pack.toml"

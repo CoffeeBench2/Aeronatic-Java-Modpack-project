@@ -2,6 +2,13 @@
   "_comment": "Season 3 CurseForge pack news (bundled; newsUrl is blank in this pack).",
   "entries": [
     {
+      "version": "3.0.2",
+      "date": "October 2026",
+      "tag": "UPDATE",
+      "title": "Replays, 3D inventories and mail rewards",
+      "body": "A Replay Viewer button now sits beside Mods on the title screen. Spatial GUI (3D inventories) can be switched on and off from the Aero Settings gear. Your /daily rewards, vote rewards and veteran gifts now arrive in your mailbox, and you get a ping whenever new mail lands."
+    },
+    {
       "version": "3.0.0",
       "date": "October 2026",
       "tag": "NEW",
