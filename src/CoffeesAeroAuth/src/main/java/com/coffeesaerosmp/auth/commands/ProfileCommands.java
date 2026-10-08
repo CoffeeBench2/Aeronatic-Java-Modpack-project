@@ -349,6 +349,19 @@ public class ProfileCommands {
                     )
                 )
             )
+            // /authmod setdisplayname <account> <name> (1.13.25). Admin override for the lobby /setname
+            // flow — skips approval. Works OFFLINE. <account> prefers an EXACT-case username, because
+            // offline accounts differ only by case (FlamesJet / flamesjet / flamesJet are 3 players).
+            .then(Commands.literal("setdisplayname")
+                .then(Commands.argument("account", StringArgumentType.word())
+                    .suggests(ONLINE_NAMES)
+                    .then(Commands.argument("displayName", StringArgumentType.word())
+                        .executes(ctx -> adminSetDisplayName(ctx.getSource(),
+                            StringArgumentType.getString(ctx, "account"),
+                            StringArgumentType.getString(ctx, "displayName")))
+                    )
+                )
+            )
             // Name-based (works OFFLINE) — the whole point is unsticking someone who cannot get in.
             .then(Commands.literal("resetpos")
                 .then(Commands.argument("name", StringArgumentType.word())
@@ -1411,6 +1424,57 @@ public class ProfileCommands {
                 + (online ? "\n§7Player is online — current session re-based to now, so it will not"
                           + " be added on top at logout." : "")
         ), true);
+        return 1;
+    }
+
+    private static int adminSetDisplayName(CommandSourceStack source, String account, String newName) {
+        var store = CoffeesAeroAuth.PROFILE_STORE;
+        if (store == null) { source.sendFailure(Component.literal("§cProfiles aren't loaded.")); return 0; }
+        if (!newName.matches("[A-Za-z0-9_]{3,16}")) {
+            source.sendFailure(Component.literal("§cDisplay names are 3-16 characters: letters, digits and _ only."));
+            return 0;
+        }
+        // Exact-case username first: offline accounts that differ only by case are DIFFERENT players.
+        PlayerProfile p = null;
+        for (PlayerProfile c : store.getAll()) {
+            if (c != null && account.equals(c.username)) { p = c; break; }
+        }
+        if (p == null) p = store.findByAnyName(account);
+        if (p == null) {
+            source.sendFailure(Component.literal("§cNo profile found for '" + account + "' (username or display name)."));
+            return 0;
+        }
+        java.util.UUID owner = store.getDisplayNameOwner(newName);
+        if (owner != null && !owner.equals(p.getUUID())) {
+            PlayerProfile other = store.get(owner);
+            source.sendFailure(Component.literal("§c'" + newName + "' is already the display name of §f"
+                + (other != null ? other.username : owner.toString())
+                + "§c. Rename that account first (/authmod setdisplayname <it> <other name>)."));
+            return 0;
+        }
+        final String old = p.displayName;
+        final PlayerProfile target = p;
+        if (old != null && !old.equalsIgnoreCase(newName)) store.releaseDisplayName(old);
+        if (p.pendingDisplayName != null) store.releaseDisplayName(p.pendingDisplayName);
+        p.displayName         = newName;
+        p.nameApproved        = true;
+        p.nameApprovalPending = false;
+        p.pendingDisplayName  = null;
+        store.registerDisplayName(newName, p.getUUID());
+        store.save(p);
+        if (CoffeesAeroAuth.WATCHDOG != null) {
+            CoffeesAeroAuth.WATCHDOG.recordNameChange("ADMIN uuid=" + p.getUUID() + " " + old + " -> " + newName
+                + " by " + source.getTextName());
+        }
+        ServerPlayer online = source.getServer().getPlayerList().getPlayer(p.getUUID());
+        if (online != null) {
+            com.coffeesaerosmp.auth.auth.NameMask.apply(online);
+            online.sendSystemMessage(Component.literal(TextUtil.PREFIX + "§aAn admin set your display name to §f" + newName
+                + "§a. Rejoin if it hasn't updated everywhere yet."));
+        }
+        source.sendSuccess(() -> Component.literal("§aDisplay name of account §f" + target.username + "§a ("
+            + target.getUUID() + "): §7" + old + " §f→ §a" + newName
+            + (online != null ? " §7(online — applied now)" : " §7(offline — applies on next join)")), true);
         return 1;
     }
 
