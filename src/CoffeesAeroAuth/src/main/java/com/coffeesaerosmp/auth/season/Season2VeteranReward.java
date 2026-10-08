@@ -27,13 +27,17 @@ import java.util.UUID;
  * <p>Season 2 hours = {@code season_start_playtime - season1_playtime} (lifetime at S3 start, minus the
  * frozen S1 total). Rows where the two are equal are exactly the S2-only players already paid.
  *
- * <p><b>Idempotent, safe on every boot.</b> Each mail carries {@code vet:s2:<uuid>}; the mail table's
- * UNIQUE dedupe key turns every re-send into an {@code INSERT IGNORE} no-op. The query runs off-thread.
+ * <p><b>ONE-SHOT, guarded by {@code server_flags.s2_veteran_mailout} (1.13.24).</b> 1.13.22 relied on the
+ * mail's {@code vet:s2:<uuid>} dedupe key alone — but a player may DELETE a mail once it is claimed, which
+ * removes the row and frees the key, so the next boot mailed the reward again (SweetYuzu claimed it twice,
+ * SideBlackStar's second copy was removed unclaimed, 2026-10-08). The flag is written once every eligible
+ * mail has been stored; with it set, this never runs again. The query runs off-thread.
  */
 public final class Season2VeteranReward {
     private Season2VeteranReward() {}
 
     private static final long H = 3600L;
+    static final String DONE_FLAG = "s2_veteran_mailout";
 
     public static void mailAll(MinecraftServer server) {
         var db = CoffeesAeroAuth.DB_MANAGER;
@@ -41,6 +45,16 @@ public final class Season2VeteranReward {
         AsyncIo.submit(() -> {
             List<UUID> uuids = new ArrayList<>();
             List<Long> secs = new ArrayList<>();
+            try (Connection c = db.getConnection();
+                 PreparedStatement done = c.prepareStatement("SELECT 1 FROM server_flags WHERE name = ?")) {
+                done.setString(1, DONE_FLAG);
+                try (ResultSet rs = done.executeQuery()) {
+                    if (rs.next()) return;                          // already paid out — never again
+                }
+            } catch (Exception e) {
+                CoffeesAeroAuth.LOGGER.warn("[Season] S2 veteran flag check failed — skipped this boot: {}", e.toString());
+                return;                                             // fail CLOSED: a missed boot costs nothing
+            }
             try (Connection c = db.getConnection();
                  PreparedStatement ps = c.prepareStatement(
                      "SELECT uuid, season_start_playtime - season1_playtime FROM players "
@@ -58,14 +72,41 @@ public final class Season2VeteranReward {
                 return;
             }
             server.execute(() -> {
-                for (int i = 0; i < uuids.size(); i++) send(server, uuids.get(i), secs.get(i));
-                CoffeesAeroAuth.LOGGER.info("[Season] S2 veteran rewards: {} eligible (already-delivered ones are dedupe no-ops).",
-                    uuids.size());
+                java.util.concurrent.atomic.AtomicInteger left = new java.util.concurrent.atomic.AtomicInteger(uuids.size());
+                java.util.concurrent.atomic.AtomicBoolean allStored = new java.util.concurrent.atomic.AtomicBoolean(true);
+                for (int i = 0; i < uuids.size(); i++) {
+                    send(server, uuids.get(i), secs.get(i), stored -> {
+                        if (!stored) allStored.set(false);
+                        if (left.decrementAndGet() == 0 && allStored.get()) markDone();
+                    });
+                }
+                CoffeesAeroAuth.LOGGER.info("[Season] S2 veteran rewards: {} eligible.", uuids.size());
             });
         });
     }
 
-    private static void send(MinecraftServer server, UUID uuid, long seconds) {
+    /** Records the payout as finished, so no later boot can re-send a mail a player has since deleted. */
+    private static void markDone() {
+        var db = CoffeesAeroAuth.DB_MANAGER;
+        if (db == null) return;
+        AsyncIo.submit(() -> {
+            try (Connection c = db.getConnection();
+                 PreparedStatement ps = c.prepareStatement(
+                     "INSERT IGNORE INTO server_flags (name, value, set_by, updated_at) VALUES (?,?,?,?)")) {
+                ps.setString(1, DONE_FLAG);
+                ps.setString(2, "1");
+                ps.setString(3, "Season2VeteranReward");
+                ps.setLong(4, System.currentTimeMillis());
+                ps.executeUpdate();
+                CoffeesAeroAuth.LOGGER.info("[Season] S2 veteran mail-out complete — flagged, will not run again.");
+            } catch (Exception e) {
+                CoffeesAeroAuth.LOGGER.warn("[Season] S2 veteran done-flag write failed: {}", e.toString());
+            }
+        });
+    }
+
+    private static void send(MinecraftServer server, UUID uuid, long seconds,
+                             java.util.function.Consumer<Boolean> after) {
         int diamonds;
         boolean netherite = false;
         String tier;
@@ -85,7 +126,10 @@ public final class Season2VeteranReward {
             "Season 2 " + tier + " reward",
             "Thank you for the " + hours + " hours you flew with us in Season 2.",
             items, 0, "vet:s2:" + uuid,
-            stored -> CoffeesAeroAuth.LOGGER.info("[Season] S2 veteran reward to {} — tier={} ({}h): {} diamonds{} ({})",
-                uuid, tier, hours, dia, neth ? " + netherite ingot" : "", stored ? "mailed" : "NOT stored, retried next boot"));
+            stored -> {
+                CoffeesAeroAuth.LOGGER.info("[Season] S2 veteran reward to {} — tier={} ({}h): {} diamonds{} ({})",
+                    uuid, tier, hours, dia, neth ? " + netherite ingot" : "", stored ? "mailed" : "NOT stored, retried next boot");
+                after.accept(stored);
+            });
     }
 }
