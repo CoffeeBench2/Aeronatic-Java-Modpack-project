@@ -25,6 +25,7 @@ public final class GuardConfig {
     public static final ModConfigSpec.IntValue            END_ARENA_RADIUS;
     public static final ModConfigSpec.IntValue            END_ARENA_CENTER_X;
     public static final ModConfigSpec.IntValue            END_ARENA_CENTER_Z;
+    public static final ModConfigSpec.BooleanValue        CART_CONTRAPTIONS_DISABLED;
 
     private GuardConfig() {}
 
@@ -171,6 +172,15 @@ public final class GuardConfig {
             .defineInRange("endArenaCenterX", 0, -30_000_000, 30_000_000);
         END_ARENA_CENTER_Z = b
             .defineInRange("endArenaCenterZ", 0, -30_000_000, 30_000_000);
+        b.pop();
+
+        b.comment("Create minecart contraptions.").push("carts");
+        CART_CONTRAPTIONS_DISABLED = b
+            .comment("true = a Cart Assembler never assembles anything (owner 2026-10-10: \"people should build",
+                     "aero drills, not some easy ugly cart\"). Applies to assemblers already placed in the",
+                     "world too. Cart contraptions that already exist are left alone and can still be",
+                     "disassembled. The cart assembler crafting recipe is removed by this jar's data.")
+            .define("cartContraptionsDisabled", true);
         b.pop();
 
 

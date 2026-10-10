@@ -6,6 +6,7 @@
     "mixins": [],
     "server": [
         "AeroClaimsProtectionBypassMixin",
+        "CartAssemblerBlockEntityMixin",
         "CreateConfigPacketMixin",
         "ToolboxEquipPacketMixin",
         "ToolboxDisposeAllPacketMixin"

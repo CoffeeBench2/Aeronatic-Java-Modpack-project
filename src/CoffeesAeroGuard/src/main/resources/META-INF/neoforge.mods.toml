@@ -41,3 +41,11 @@ config = "coffeesaeroguard.diagnostic.mixins.json"
     versionRange = "[1.21.1,1.22)"
     ordering     = "NONE"
     side         = "BOTH"
+
+# Load AFTER Create so this jar's data/create/recipe/.../cart_assembler.json override wins.
+[[dependencies.coffees_aero_guard]]
+    modId        = "create"
+    type         = "optional"
+    versionRange = "*"
+    ordering     = "AFTER"
+    side         = "BOTH"
