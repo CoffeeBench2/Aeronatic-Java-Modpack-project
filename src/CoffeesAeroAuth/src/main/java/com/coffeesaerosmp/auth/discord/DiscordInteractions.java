@@ -67,6 +67,13 @@ public class DiscordInteractions {
 
             String customId = data.has("custom_id") ? data.get("custom_id").getAsString() : "";
 
+            // /ticket buttons + modals: gated by their OWN role, because the ticket channel lives in the
+            // admin server — a different guild from the one adminRoleId belongs to.
+            if (customId.startsWith("tk")) {
+                handleTicket(d, data, customId, type, id, token);
+                return;
+            }
+
             String clicker = "an admin";
             boolean authorized = adminRoleId.isBlank();    // blank = no gating (LOCAL TESTING ONLY)
             if (d.has("member") && d.get("member").isJsonObject()) {
@@ -105,6 +112,43 @@ public class DiscordInteractions {
         } catch (Exception e) {
             CoffeesAeroAuth.LOGGER.warn("[Discord] interaction handling error: {}", e.getMessage());
         }
+    }
+
+    private void handleTicket(JsonObject d, JsonObject data, String customId, int type, String id, String token) {
+        int colon = customId.indexOf(':');
+        if (colon < 0) return;
+        String action = customId.substring(0, colon);
+        String rest2 = forUs(customId.substring(colon + 1));
+        if (rest2 == null) return;                       // the other server owns this ticket
+        long ticketId;
+        try { ticketId = Long.parseLong(rest2); } catch (NumberFormatException e) { return; }
+
+        String role = com.coffeesaerosmp.auth.config.AuthConfig.TICKET_ADMIN_ROLE_ID.get().trim();
+        boolean authorized = role.isEmpty();
+        String clicker = "Staff";
+        JsonObject user = null;
+        if (d.has("member") && d.get("member").isJsonObject()) {
+            JsonObject member = d.getAsJsonObject("member");
+            if (member.has("user")) user = member.getAsJsonObject("user");
+            if (!authorized && member.has("roles"))
+                for (JsonElement r : member.getAsJsonArray("roles"))
+                    if (role.equals(r.getAsString())) { authorized = true; break; }
+        } else if (d.has("user")) {
+            user = d.getAsJsonObject("user");
+        }
+        if (user != null) {
+            if (user.has("global_name") && !user.get("global_name").isJsonNull()) clicker = user.get("global_name").getAsString();
+            else if (user.has("username")) clicker = user.get("username").getAsString();
+        }
+        if (!authorized) {
+            rest.respondInteraction(id, token,
+                "{\"type\":4,\"data\":{\"flags\":64,\"content\":\"You don't have permission to do that.\"}}");
+            return;
+        }
+        String modalText = null;
+        if (type == 5) modalText = extractModalValue(data, action.equals("tkreplymodal") ? "text" : "note");
+        rest.respondInteraction(id, token,
+            com.coffeesaerosmp.auth.ticket.TicketService.handle(server, action, ticketId, clicker, modalText));
     }
 
     // ── Slash commands (/uptime, /leaderboard, /link) ─────────────────────────

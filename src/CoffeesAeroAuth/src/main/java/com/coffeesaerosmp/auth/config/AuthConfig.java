@@ -146,7 +146,15 @@ public class AuthConfig {
     public static final ModConfigSpec.IntValue     COMBAT_TAG_SECONDS;
     public static final ModConfigSpec.IntValue     BACK_WINDOW_SECONDS;
     public static final ModConfigSpec.IntValue     BACK_COOLDOWN_SECONDS;
+    public static final ModConfigSpec.IntValue     BACK_COUNTDOWN_SECONDS;
+    public static final ModConfigSpec.IntValue     GHOST_SECONDS;
     public static final ModConfigSpec.BooleanValue COMBAT_LOG_PUNISH;
+
+    // ── /ticket ───────────────────────────────────────────────────────────────
+    public static final ModConfigSpec.BooleanValue TICKETS_ENABLED;
+    public static final ModConfigSpec.IntValue     TICKETS_PER_DAY;
+    public static final ModConfigSpec.ConfigValue<String> TICKET_CHANNEL_ID;
+    public static final ModConfigSpec.ConfigValue<String> TICKET_ADMIN_ROLE_ID;
 
     // ── /tpa (our own — replaces FTB Essentials' selector-based one) ──────────
     public static final ModConfigSpec.IntValue     TPA_TIMEOUT_SECONDS;
@@ -833,9 +841,28 @@ public class AuthConfig {
         BACK_WINDOW_SECONDS   = b.comment("/back only works within this many seconds of dying.")
             .defineInRange("backWindowSeconds", 300, 30, 3600);
         BACK_COOLDOWN_SECONDS = b.comment("After a successful /back, it locks for this many seconds.")
-            .defineInRange("backCooldownSeconds", 600, 0, 86400);
+            .defineInRange("backCooldownSeconds", 180, 0, 86400);
+        BACK_COUNTDOWN_SECONDS = b.comment("/back warms up for this many seconds before teleporting. Moving more than",
+                "1 block, taking damage or getting combat-tagged cancels it (cooldown not spent). 0 = instant.")
+            .defineInRange("backCountdownSeconds", 5, 0, 30);
+        GHOST_SECONDS         = b.comment("After /back the player is a ghost for this many seconds: immune to all damage,",
+                "ignored by mobs. Attacking, breaking/placing, or using any block or entity (except a Corpse) ends it. 0 = off.")
+            .defineInRange("ghostSeconds", 60, 0, 600);
         COMBAT_LOG_PUNISH     = b.comment("Kill players who disconnect while combat-tagged (items drop at the fight).")
             .define("combatLogPunish", true);
+        b.pop();
+
+        b.comment("/ticket: player support tickets posted to a Discord channel with Acknowledge / Reply / Close buttons.").push("ticket");
+        TICKETS_ENABLED       = b.comment("Master switch. Only ever active on serverRole = SMP.")
+            .define("ticketsEnabled", true);
+        TICKETS_PER_DAY       = b.comment("Tickets a player may open per server-local calendar day.")
+            .defineInRange("ticketsPerDay", 2, 1, 20);
+        TICKET_CHANNEL_ID     = b.comment("Discord channel the tickets are posted to (the bot must be in that server).")
+            .define("ticketChannelId", "1558498026375614515");
+        TICKET_ADMIN_ROLE_ID  = b.comment("Role allowed to press the ticket buttons. Blank = anyone who can see the channel",
+                "(the channel lives in the admin-only server). Separate from discord.adminRoleId, which is a role in the",
+                "PUBLIC guild and would never match a member of a different guild.")
+            .define("ticketAdminRoleId", "");
         b.pop();
 
         b.comment("Our own /tpa — replaces FTB Essentials' (disabled via ftbessentials.snbt)").push("tpa");

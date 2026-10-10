@@ -34,7 +34,9 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * /BACK — returns a player to their last DEATH point only: usable once per death, only within
  * {@code backWindowSeconds} (default 5 min) of dying, then locked for {@code backCooldownSeconds}
- * (default 10 min) so it can't be chained. Blocked entirely while combat-tagged.
+ * (default 3 min since 1.13.26) so it can't be chained. Blocked entirely while combat-tagged.
+ * Since 1.13.26 it warms up first ({@link BackCountdown}) and lands the player as a
+ * {@link GhostState} — players kept dying again the instant they arrived (owner 2026-10-10).
  *
  * Ops (permission 4) are exempt from command blocking but NOT from tagging (so admin testing
  * still shows the tag), and never punished on logout.
@@ -48,7 +50,7 @@ public final class CombatGuard {
         "logout", "back", "spawn", "lobby",
         "home", "sethome", "warp", "rtp", "tpa", "tpaccept", "tpahere", "tpdeny", "tpx");
 
-    private record DeathPoint(ResourceKey<net.minecraft.world.level.Level> dim,
+    record DeathPoint(ResourceKey<net.minecraft.world.level.Level> dim,
                               double x, double y, double z, long epochMs) {}
 
     private static final Map<UUID, Long>       taggedUntil     = new ConcurrentHashMap<>();
@@ -62,6 +64,7 @@ public final class CombatGuard {
     /** Player-vs-player damage tags both parties. Indirect (arrows etc.) counts via source entity. */
     public static void onLivingDamage(LivingDamageEvent.Post event) {
         if (!(event.getEntity() instanceof ServerPlayer victim)) return;
+        if (event.getNewDamage() > 0) BackCountdown.cancel(victim, "you took damage");
         if (!(event.getSource().getEntity() instanceof ServerPlayer attacker)) return;
         if (attacker == victim) return;
         tag(attacker);
@@ -189,13 +192,24 @@ public final class CombatGuard {
             player.sendSystemMessage(Component.literal(TextUtil.PREFIX + "§cThat dimension isn't loaded."));
             return false;
         }
-        player.teleportTo(target, death.x(), death.y(), death.z(),
-            Set.of(), player.getYRot(), player.getXRot());
-        lastDeath.remove(uuid);                                                   // one use per death
-        backLockedUntil.put(uuid, now + AuthConfig.BACK_COOLDOWN_SECONDS.get() * 1000L);
-        player.sendSystemMessage(Component.literal(TextUtil.PREFIX
-            + "§a↩ Back at your death spot. §7(Recharges in "
-            + (AuthConfig.BACK_COOLDOWN_SECONDS.get() / 60) + " min.)"));
+        // A void death would land the player back in the void, and the ghost's void-lift would
+        // only put them back at the same spot.
+        if (death.y() < target.getMinBuildHeight()) {
+            player.sendSystemMessage(Component.literal(TextUtil.PREFIX
+                + "§7You died in the void — there is nothing to return to."));
+            return false;
+        }
+        if (BackCountdown.isRunning(uuid)) {
+            player.sendSystemMessage(Component.literal(TextUtil.PREFIX + "§7Already returning — stand still."));
+            return false;
+        }
+        BackCountdown.start(player, death);
         return true;
+    }
+
+    /** Spends the death point and starts the cooldown — called by {@link BackCountdown} on arrival. */
+    static void consumeBack(UUID uuid) {
+        lastDeath.remove(uuid);                                                   // one use per death
+        backLockedUntil.put(uuid, System.currentTimeMillis() + AuthConfig.BACK_COOLDOWN_SECONDS.get() * 1000L);
     }
 }

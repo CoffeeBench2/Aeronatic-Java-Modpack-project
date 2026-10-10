@@ -383,6 +383,8 @@ public class CoffeesAeroAuth {
         NeoForge.EVENT_BUS.addListener(com.coffeesaerosmp.auth.pvp.CombatGuard::onLivingDeath);
         NeoForge.EVENT_BUS.addListener(com.coffeesaerosmp.auth.pvp.CombatGuard::onPlayerLoggedOut);
         NeoForge.EVENT_BUS.addListener(com.coffeesaerosmp.auth.pvp.CombatGuard::onCommand);
+        com.coffeesaerosmp.auth.pvp.BackCountdown.register(NeoForge.EVENT_BUS);
+        com.coffeesaerosmp.auth.pvp.GhostState.register(NeoForge.EVENT_BUS);
 
         // Confiscation enforcement: command blocking, on-join notice, and cleaning up the pinned
         // freeze position when a held player disconnects. The freeze itself lives in
@@ -898,5 +900,6 @@ public class CoffeesAeroAuth {
         com.coffeesaerosmp.auth.commands.IdentityCommands.register(event.getDispatcher());
         com.coffeesaerosmp.auth.commands.AfkCommands.register(event.getDispatcher());
         com.coffeesaerosmp.auth.commands.MailCommands.register(event.getDispatcher());
+        com.coffeesaerosmp.auth.ticket.TicketService.registerCommands(event.getDispatcher());
     }
 }

@@ -396,6 +396,9 @@ public class DatabaseManager {
             // ── Season 3: /mail and level-up bookkeeping (mail/MailStore) ─────────────────
             com.coffeesaerosmp.auth.mail.MailStore.createSchema(c);
 
+            // ── /ticket (ticket/TicketStore) ──────────────────────────────────────────────
+            com.coffeesaerosmp.auth.ticket.TicketStore.createSchema(c);
+
             CoffeesAeroAuth.LOGGER.info("[DB] Schema verified.");
         } catch (SQLException e) {
             CoffeesAeroAuth.LOGGER.error("[DB] Schema creation failed", e);

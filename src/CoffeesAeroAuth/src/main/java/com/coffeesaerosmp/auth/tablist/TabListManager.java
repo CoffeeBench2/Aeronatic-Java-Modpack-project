@@ -22,11 +22,9 @@ public final class TabListManager {
      * hangar or /spawn: those read as stale nonsense once a player is in the world, which is exactly
      * what the single shared tip pool used to do (2026-08-19).
      *
-     * <p>"Lay Create track" is accurate — {@code protect/RailAutoClaim} is registered and live,
-     * gated by {@code railAutoclaimEnabled}. If that config is ever turned off, drop the tip.
+     * <p>The "Lay Create track — it auto-claims to your team" tip was dropped 2026-10-10 (owner).
      */
     private static final String[] TIPS_WORLD = {
-        "Lay Create track — it auto-claims to your team",
         "Verified pilots fly with their real skin",
         "Build airships with Create: Aeronautics",
         "§e/sethome§7 and §e/home§7 save you a walk",
