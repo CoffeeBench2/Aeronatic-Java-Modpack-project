@@ -78,6 +78,19 @@ public final class MailStore {
         // MySQL has no ADD COLUMN IF NOT EXISTS (that is MariaDB), so add and swallow "already there".
         alterIgnoring(c, "ALTER TABLE mail ADD COLUMN sender_uuid CHAR(36) NULL", 1060);
         alterIgnoring(c, "ALTER TABLE mail ADD INDEX idx_mail_sender (sender_uuid, created_at)", 1061);
+        // 1.13.27 (System mail): patch notes outgrow VARCHAR(1024). Widen to TEXT once — checked first, so
+        // a boot never rebuilds the table again. Lobby jars that still trim to 1024 read TEXT fine.
+        try (PreparedStatement ps = c.prepareStatement(
+                "SELECT DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS "
+              + "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'mail' AND COLUMN_NAME = 'body'");
+             ResultSet rs = ps.executeQuery()) {
+            if (rs.next() && "varchar".equalsIgnoreCase(rs.getString(1))) {
+                try (Statement s = c.createStatement()) {
+                    s.executeUpdate("ALTER TABLE mail MODIFY body TEXT NOT NULL");
+                }
+                CoffeesAeroAuth.LOGGER.info("[Mail] mail.body widened VARCHAR(1024) -> TEXT for System mail.");
+            }
+        }
     }
 
     private static void alterIgnoring(Connection c, String sql, int duplicateErrno) throws SQLException {
@@ -131,7 +144,7 @@ public final class MailStore {
                         ps.setString(1, u.toString());
                         ps.setString(2, trim(mail.sender(), 32));
                         ps.setString(3, trim(mail.subject(), 64));
-                        ps.setString(4, trim(mail.body() == null ? "" : mail.body(), 1024));
+                        ps.setString(4, trim(mail.body() == null ? "" : mail.body(), SystemMail.BODY_MAX));
                         if (mail.itemsSnbt() == null) ps.setNull(5, Types.VARCHAR); else ps.setString(5, mail.itemsSnbt());
                         ps.setInt(6, Math.max(0, mail.spurs()));
                         ps.setLong(7, now);

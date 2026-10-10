@@ -110,6 +110,12 @@ public class CoffeesAeroAuth {
     public CoffeesAeroAuth(IEventBus modBus, ModContainer container) {
         container.registerConfig(ModConfig.Type.SERVER, AuthConfig.SERVER_SPEC);
 
+        // Other mods' debug floods off the tick thread (APT spawn: ~9,400 lines/s on S3). Again once the
+        // server is up, in case anything reconfigured log4j in between.
+        com.coffeesaerosmp.auth.util.NoisyLoggers.quiet();
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.server.ServerStartedEvent e) ->
+            com.coffeesaerosmp.auth.util.NoisyLoggers.quiet());
+
         // Networking: receive premium/cracked tag from the AeroVelocity proxy (mod bus event)
         modBus.addListener(AeroNetworking::register);
 
@@ -359,11 +365,15 @@ public class CoffeesAeroAuth {
         // HIGHEST + cancel: normal-priority listeners don't receive cancelled events.
         NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.HIGHEST, false,
             net.neoforged.neoforge.event.ServerChatEvent.class, com.coffeesaerosmp.auth.mail.MailCompose::onChat);
+        NeoForge.EVENT_BUS.addListener(net.neoforged.bus.api.EventPriority.HIGHEST, false,
+            net.neoforged.neoforge.event.ServerChatEvent.class, com.coffeesaerosmp.auth.mail.SystemMailCompose::onChat);
         // A parcel window open at logout hands its items back before the player is saved.
         NeoForge.EVENT_BUS.addListener(
             (net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerLoggedOutEvent e) -> {
                 if (e.getEntity() instanceof net.minecraft.server.level.ServerPlayer sp)
                     com.coffeesaerosmp.auth.mail.MailCompose.onLogout(sp);
+                if (e.getEntity() instanceof net.minecraft.server.level.ServerPlayer sp)
+                    com.coffeesaerosmp.auth.mail.SystemMailCompose.onLogout(sp);
             });
         NeoForge.EVENT_BUS.addListener(ChatEvents::onServerChat);
 

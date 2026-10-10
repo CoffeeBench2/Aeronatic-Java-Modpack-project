@@ -48,6 +48,10 @@ public final class MailCommands {
         d.register(Commands.literal("mail")
             .executes(MailCommands::open)
             .then(Commands.literal("help").executes(MailCommands::help))
+            // Staff: mail as the SERVER (Warning / Update / Patch notes / Announcement). "System" too,
+            // because that is how the owner types it — Brigadier literals are case-sensitive.
+            .then(Commands.literal("system").requires(src -> src.hasPermission(3)).executes(MailCommands::system))
+            .then(Commands.literal("System").requires(src -> src.hasPermission(3)).executes(MailCommands::system))
             .then(Commands.literal("send")
                 .then(Commands.argument("player", StringArgumentType.word())
                     .suggests((c, b) -> SharedSuggestionProvider.suggest(c.getSource().getOnlinePlayerNames(), b))
@@ -64,6 +68,21 @@ public final class MailCommands {
 
     /** Sentinels. Not valid Minecraft names (those are [A-Za-z0-9_]), so they cannot shadow a player. */
     private static final String ALL = "<all>", ONLINE = "<online>";
+
+    private static int system(CommandContext<CommandSourceStack> ctx) {
+        ServerPlayer player = ctx.getSource().getPlayer();
+        if (player == null) {
+            ctx.getSource().sendFailure(Component.literal("Players only — it opens a window."));
+            return 0;
+        }
+        if (!MailService.canOpen()) {
+            ctx.getSource().sendFailure(Component.literal(MailService.enabled()
+                ? "Send System mail from the survival server." : "Mail is not enabled on this server."));
+            return 0;
+        }
+        com.coffeesaerosmp.auth.mail.SystemMailCompose.open(player);
+        return 1;
+    }
 
     private static int open(CommandContext<CommandSourceStack> ctx) {
         ServerPlayer player = ctx.getSource().getPlayer();
@@ -167,6 +186,7 @@ public final class MailCommands {
         if (src.hasPermission(3)) {
             lines.add(Component.empty());
             lines.add(Component.literal("§cStaff: §f/mail admin send <player> §7· §f/mail admin sendall §7· §f/mail admin sendonline"));
+            lines.add(Component.literal("   §f/mail system §7— send as the server: warnings, updates, patch notes."));
             lines.add(Component.literal("   §7No daily limit; parcel items are copied to every recipient."));
         }
         for (Component l : lines) src.sendSystemMessage(l);
