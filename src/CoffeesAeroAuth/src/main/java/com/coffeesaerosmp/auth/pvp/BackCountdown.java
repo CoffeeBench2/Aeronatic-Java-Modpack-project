@@ -28,20 +28,23 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * <p>Driven from {@link ServerTickEvent.Post} — a teleport from PlayerTickEvent reverts (see memory
  * "never teleport from PlayerTickEvent"). Cancelling never spends the cooldown or the death point.
+ * Counted in server ticks, like {@link GhostState}.
  */
 public final class BackCountdown {
 
     private static final class Pending {
         final Vec3 start;
         final CombatGuard.DeathPoint death;
-        final long fireAtMs;
+        final long fireAtTick;
         long lastShown = -1;
-        Pending(Vec3 start, CombatGuard.DeathPoint death, long fireAtMs) {
-            this.start = start; this.death = death; this.fireAtMs = fireAtMs;
+        Pending(Vec3 start, CombatGuard.DeathPoint death, long fireAtTick) {
+            this.start = start; this.death = death; this.fireAtTick = fireAtTick;
         }
     }
 
     private static final Map<UUID, Pending> pending = new ConcurrentHashMap<>();
+    /** Server ticks since boot, advanced every ServerTickEvent.Post. */
+    private static volatile long now;
 
     private BackCountdown() {}
 
@@ -56,7 +59,7 @@ public final class BackCountdown {
         int secs = AuthConfig.BACK_COUNTDOWN_SECONDS.get();
         if (secs <= 0) { complete(player, death); return; }
         pending.put(player.getUUID(), new Pending(player.position(), death,
-            System.currentTimeMillis() + secs * 1000L));
+            now + secs * 20L));
         player.sendSystemMessage(Component.literal(TextUtil.PREFIX
             + "§b↩ Returning to your death spot in §f" + secs + "s§b. §7Stand still."));
     }
@@ -71,8 +74,8 @@ public final class BackCountdown {
     }
 
     private static void onServerTick(MinecraftServer server) {
+        long now = ++BackCountdown.now;
         if (pending.isEmpty()) return;
-        long now = System.currentTimeMillis();
         for (Iterator<Map.Entry<UUID, Pending>> it = pending.entrySet().iterator(); it.hasNext(); ) {
             Map.Entry<UUID, Pending> en = it.next();
             Pending pd = en.getValue();
@@ -82,12 +85,12 @@ public final class BackCountdown {
             if (p.position().distanceToSqr(pd.start) > 1.0) { cancel(p, "you moved"); continue; }
             if (CombatGuard.isTagged(p.getUUID()))    { cancel(p, "you're in combat"); continue; }
 
-            if (now >= pd.fireAtMs) {
+            if (now >= pd.fireAtTick) {
                 it.remove();
                 complete(p, pd.death);
                 continue;
             }
-            long left = (pd.fireAtMs - now + 999) / 1000;
+            long left = (pd.fireAtTick - now + 19) / 20;
             if (left != pd.lastShown) {
                 pd.lastShown = left;
                 p.connection.send(new ClientboundSetTitlesAnimationPacket(0, 25, 5));

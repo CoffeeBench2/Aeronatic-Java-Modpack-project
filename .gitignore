@@ -64,3 +64,6 @@ Releases/
 # and create.jar alone is 19 MB of somebody else's redistributed binary.
 # Refresh from overrides/mods/ and create's META-INF/jarjar/ when they need updating.
 src/*/libs/
+
+# GameTest server runtime (world, logs, test-only config, .env for the S3 BETA test DB)
+run-gametest/

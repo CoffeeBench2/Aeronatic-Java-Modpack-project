@@ -6,8 +6,7 @@ import com.coffeesaerosmp.auth.discord.DiscordRest;
 import com.coffeesaerosmp.auth.lobby.LobbyHandoff;
 import com.coffeesaerosmp.auth.lobby.NameApprovalQueue;
 import com.coffeesaerosmp.auth.mail.MailService;
-import com.coffeesaerosmp.auth.ticket.TicketStore.Status;
-import com.coffeesaerosmp.auth.ticket.TicketStore.Ticket;
+import com.coffeesaerosmp.auth.ticket.Ticket.Status;
 import com.coffeesaerosmp.auth.util.TextUtil;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -18,7 +17,6 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
 import java.text.SimpleDateFormat;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Date;
@@ -38,7 +36,6 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class TicketService {
 
     private static final int MIN_LEN = 10, MAX_LEN = 500;
-    private static final int OPEN = 0x5865F2, ACK = 0xFEE75C, CLOSED = 0x4F545C;
 
     /** Players whose /ticket is between "count" and "insert" — stops a double press slipping past the limit. */
     private static final Set<UUID> inFlight = ConcurrentHashMap.newKeySet();
@@ -108,7 +105,7 @@ public final class TicketService {
                 if (id < 0) { tell(server, uuid, "§cCouldn't save your ticket — please try again."); return; }
                 Ticket t = new Ticket(id, uuid, name, msg, loc, Status.OPEN, System.currentTimeMillis(), null, null);
                 DiscordRest r = rest();
-                if (r != null) r.postMessage(AuthConfig.TICKET_CHANNEL_ID.get(), messageJson(t));
+                if (r != null) r.postMessage(AuthConfig.TICKET_CHANNEL_ID.get(), TicketJson.message(t, NameApprovalQueue.originTag()));
                 tell(server, uuid, "§a🎫 Ticket #" + id + " sent. §7Staff will answer by §e/mail§7. §8("
                     + (limit - count - 1) + " left today)");
                 CoffeesAeroAuth.LOGGER.info("[Ticket] #{} opened by {}: {}", id, name, msg);
@@ -154,20 +151,21 @@ public final class TicketService {
      * response JSON to send.
      */
     public static String handle(MinecraftServer server, String action, long id, String clicker, String modalText) {
+        String origin = NameApprovalQueue.originTag();
         if (action.equals("tkreply"))
-            return modal("tkreplymodal", id, "Reply to ticket #" + id, "text", "Your reply (mailed to the player)", true);
+            return TicketJson.modal("tkreplymodal", id, origin, "Reply to ticket #" + id, "text", "Your reply (mailed to the player)", true);
         if (action.equals("tkclose"))
-            return modal("tkclosemodal", id, "Close ticket #" + id, "note", "Closing note (optional, mailed)", false);
+            return TicketJson.modal("tkclosemodal", id, origin, "Close ticket #" + id, "note", "Closing note (optional, mailed)", false);
 
         Ticket t = TicketStore.getNow(id);
-        if (t == null) return ephemeral("⚠️ Ticket #" + id + " not found (or the database is down).");
-        if (t.status() == Status.CLOSED) return update(t);   // already closed: just re-render
+        if (t == null) return TicketJson.ephemeral("⚠️ Ticket #" + id + " not found (or the database is down).");
+        if (t.status() == Status.CLOSED) return TicketJson.update(t, origin);   // already closed: just re-render
 
-        String c = trim(clicker, 64);
+        String c = TicketJson.trim(clicker, 64);
         Ticket next;
         switch (action) {
             case "tkack" -> {
-                next = with(t, Status.ACK, null, t.lastReply());
+                next = t.with(Status.ACK, null, t.lastReply());
                 TicketStore.update(id, Status.ACK, null, null);
                 mail(server, t, "Ticket #" + id + " received",
                     "Hi " + t.name() + ", we've received your ticket #" + id
@@ -175,117 +173,38 @@ public final class TicketService {
                     + "\n\nYour ticket: " + t.message());
             }
             case "tkreplymodal" -> {
-                String text = trim(modalText == null ? "" : modalText.trim(), 900);
-                if (text.isEmpty()) return ephemeral("Empty reply — nothing sent.");
+                String text = TicketJson.trim(modalText == null ? "" : modalText.trim(), 900);
+                if (text.isEmpty()) return TicketJson.ephemeral("Empty reply — nothing sent.");
                 Status st = t.status() == Status.OPEN ? Status.ACK : t.status();
                 String stored = c + ": " + text;
-                next = with(t, st, null, stored);
+                next = t.with(st, null, stored);
                 TicketStore.update(id, st, null, stored);
                 mail(server, t, "Ticket #" + id + " — reply", text + "\n\n— " + c);
             }
             case "tkclosemodal" -> {
-                String note = trim(modalText == null ? "" : modalText.trim(), 900);
-                next = with(t, Status.CLOSED, c, note.isEmpty() ? t.lastReply() : c + ": " + note);
+                String note = TicketJson.trim(modalText == null ? "" : modalText.trim(), 900);
+                next = t.with(Status.CLOSED, c, note.isEmpty() ? t.lastReply() : c + ": " + note);
                 TicketStore.update(id, Status.CLOSED, c, note.isEmpty() ? null : c + ": " + note);
                 mail(server, t, "Ticket #" + id + " closed",
                     "Your ticket #" + id + " has been resolved and closed."
                     + (note.isEmpty() ? "" : "\n\n" + note) + "\n\n— " + c
                     + "\n\nNeed more help? Open a new one with /ticket.");
             }
-            default -> { return ephemeral("Unknown ticket action."); }
+            default -> { return TicketJson.ephemeral("Unknown ticket action."); }
         }
         if (CoffeesAeroAuth.WATCHDOG != null)
             CoffeesAeroAuth.WATCHDOG.recordModAction("TICKET " + action + " #" + id + " by=" + c);
-        return update(next);
+        return TicketJson.update(next, origin);
     }
 
-    private static Ticket with(Ticket t, Status s, String closedBy, String lastReply) {
-        return new Ticket(t.id(), t.uuid(), t.name(), t.message(), t.location(), s, t.createdAt(),
-            closedBy != null ? closedBy : t.closedBy(), lastReply);
-    }
 
     private static void mail(MinecraftServer server, Ticket t, String subject, String body) {
-        server.execute(() -> MailService.sendSystemReward(server, t.uuid(), trim(subject, 64), trim(body, 1024),
+        server.execute(() -> MailService.sendSystemReward(server, t.uuid(), TicketJson.trim(subject, 64), TicketJson.trim(body, 1024),
             List.of(), 0, null, ok -> {
                 if (!ok) {
                     CoffeesAeroAuth.LOGGER.warn("[Ticket] mail for #{} to {} NOT stored", t.id(), t.name());
                     tell(server, t.uuid(), "§6🎫 " + subject + ": §f" + body);
                 }
             }));
-    }
-
-    // ── JSON ────────────────────────────────────────────────────────────────────
-
-    static String messageJson(Ticket t) {
-        return "{" + bodyJson(t) + "}";
-    }
-
-    private static String update(Ticket t) {
-        return "{\"type\":7,\"data\":{" + bodyJson(t) + "}}";
-    }
-
-    private static String bodyJson(Ticket t) {
-        int color = switch (t.status()) { case OPEN -> OPEN; case ACK -> ACK; case CLOSED -> CLOSED; };
-        String status = switch (t.status()) {
-            case OPEN -> "🟦 Open";
-            case ACK -> "🟨 Acknowledged";
-            case CLOSED -> "⬛ Closed by " + (t.closedBy() == null ? "staff" : t.closedBy());
-        };
-        StringBuilder fields = new StringBuilder()
-            .append(field("Player", t.name(), true))
-            .append(',').append(field("Location", "`" + t.location() + "`", true))
-            .append(',').append(field("Status", status, true));
-        if (t.lastReply() != null && !t.lastReply().isBlank())
-            fields.append(',').append(field("Last reply", trim(t.lastReply(), 1000), false));
-        String embed = "{\"title\":\"🎫 Ticket #" + t.id() + "\",\"description\":\"" + esc(t.message()) + "\","
-            + "\"color\":" + color + ",\"fields\":[" + fields + "],"
-            + "\"timestamp\":\"" + Instant.ofEpochMilli(t.createdAt()) + "\"}";
-        String components = t.status() == Status.CLOSED ? "[]"
-            : "[{\"type\":1,\"components\":["
-              + button(3, "✅ Acknowledge", "tkack", t.id(), t.status() == Status.ACK) + ","
-              + button(1, "✉ Reply", "tkreply", t.id(), false) + ","
-              + button(4, "🔒 Close", "tkclose", t.id(), false) + "]}]";
-        return "\"embeds\":[" + embed + "],\"components\":" + components;
-    }
-
-    private static String field(String name, String value, boolean inline) {
-        return "{\"name\":\"" + esc(name) + "\",\"value\":\"" + esc(value) + "\",\"inline\":" + inline + "}";
-    }
-
-    private static String button(int style, String label, String action, long id, boolean disabled) {
-        return "{\"type\":2,\"style\":" + style + ",\"label\":\"" + esc(label) + "\",\"custom_id\":\""
-            + action + ":" + NameApprovalQueue.originTag() + ":" + id + "\",\"disabled\":" + disabled + "}";
-    }
-
-    private static String modal(String action, long id, String title, String field, String label, boolean required) {
-        return "{\"type\":9,\"data\":{\"custom_id\":\"" + action + ":" + NameApprovalQueue.originTag() + ":" + id + "\","
-            + "\"title\":\"" + esc(title) + "\",\"components\":[{\"type\":1,\"components\":[{"
-            + "\"type\":4,\"custom_id\":\"" + field + "\",\"label\":\"" + esc(label) + "\","
-            + "\"style\":2,\"max_length\":900,\"required\":" + required + "}]}]}}";
-    }
-
-    private static String ephemeral(String text) {
-        return "{\"type\":4,\"data\":{\"flags\":64,\"content\":\"" + esc(text) + "\"}}";
-    }
-
-    private static String trim(String s, int max) {
-        if (s == null) return "";
-        return s.length() <= max ? s : s.substring(0, max - 1) + "…";
-    }
-
-    private static String esc(String s) {
-        if (s == null) return "";
-        StringBuilder b = new StringBuilder(s.length() + 8);
-        for (char ch : s.toCharArray()) {
-            switch (ch) {
-                case '\\' -> b.append("\\\\");
-                case '"'  -> b.append("\\\"");
-                case '\n' -> b.append("\\n");
-                case '\r' -> {}
-                case '\t' -> b.append(' ');
-                default   -> { if (ch < 0x20) b.append(' '); else b.append(ch); }
-            }
-        }
-        return b.toString();
     }
 }

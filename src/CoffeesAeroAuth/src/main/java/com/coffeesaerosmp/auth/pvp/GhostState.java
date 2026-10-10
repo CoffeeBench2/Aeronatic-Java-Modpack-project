@@ -37,6 +37,9 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * <p>Server-only: the "ghostly shape" is soul particles + a bossbar. A truly translucent body would
  * need a client renderer. In memory only — a logout, death or dimension change ends it.
+ *
+ * <p>Measured in server TICKS, not wall-clock time: a lagging server must not quietly shorten the
+ * protection (and GameTests run faster than real time).
  */
 public final class GhostState {
 
@@ -44,10 +47,11 @@ public final class GhostState {
     private static final String CORPSE_ENTITY = "corpse:corpse";
     private static final double DEAGGRO_RADIUS = 64;
 
-    private record Ghost(long untilMs, long totalMs, ServerBossEvent bar, Vec3 safeSpot) {}
+    private record Ghost(long untilTick, long totalTicks, ServerBossEvent bar, Vec3 safeSpot) {}
 
     private static final Map<UUID, Ghost> ghosts = new ConcurrentHashMap<>();
-    private static int tick;
+    /** Server ticks since boot, advanced every ServerTickEvent.Post. */
+    private static volatile long now;
 
     private GhostState() {}
 
@@ -69,17 +73,17 @@ public final class GhostState {
 
     public static boolean isGhost(UUID uuid) {
         Ghost g = ghosts.get(uuid);
-        return g != null && g.untilMs() > System.currentTimeMillis();
+        return g != null && g.untilTick() > now;
     }
 
     public static void start(ServerPlayer player, int seconds, Vec3 safeSpot) {
         if (seconds <= 0) return;
         end(player, null);
-        long total = seconds * 1000L;
+        long total = seconds * 20L;
         ServerBossEvent bar = new ServerBossEvent(Component.literal("§b👻 Ghost §7— " + seconds + "s"),
             BossEvent.BossBarColor.WHITE, BossEvent.BossBarOverlay.PROGRESS);
         bar.addPlayer(player);
-        ghosts.put(player.getUUID(), new Ghost(System.currentTimeMillis() + total, total, bar, safeSpot));
+        ghosts.put(player.getUUID(), new Ghost(now + total, total, bar, safeSpot));
         player.clearFire();
         deaggro(player);
         player.sendSystemMessage(Component.literal(TextUtil.PREFIX
@@ -158,15 +162,14 @@ public final class GhostState {
     // ── Tick: visuals, void, expiry ─────────────────────────────────────────────
 
     private static void onServerTick(MinecraftServer server) {
+        long now = ++GhostState.now;
         if (ghosts.isEmpty()) return;
-        tick++;
-        long now = System.currentTimeMillis();
         for (Iterator<Map.Entry<UUID, Ghost>> it = ghosts.entrySet().iterator(); it.hasNext(); ) {
             Map.Entry<UUID, Ghost> en = it.next();
             Ghost g = en.getValue();
             ServerPlayer p = server.getPlayerList().getPlayer(en.getKey());
             if (p == null || !p.isAlive()) { g.bar().removeAllPlayers(); it.remove(); continue; }
-            if (now >= g.untilMs()) {
+            if (now >= g.untilTick()) {
                 g.bar().removeAllPlayers();
                 it.remove();
                 p.sendSystemMessage(Component.literal(TextUtil.PREFIX + "§7👻 You are solid again."));
@@ -178,14 +181,14 @@ public final class GhostState {
                 p.teleportTo(level, g.safeSpot().x, g.safeSpot().y, g.safeSpot().z, p.getYRot(), p.getXRot());
                 p.resetFallDistance();
             }
-            if (tick % 4 == 0) {
+            if (now % 4 == 0) {
                 level.sendParticles(ParticleTypes.SOUL, p.getX(), p.getY() + 1.0, p.getZ(), 2, 0.3, 0.6, 0.3, 0.01);
                 level.sendParticles(ParticleTypes.SCULK_SOUL, p.getX(), p.getY() + 0.2, p.getZ(), 1, 0.25, 0.1, 0.25, 0.0);
             }
-            if (tick % 20 == 0) {
-                long left = g.untilMs() - now;
-                g.bar().setProgress(Math.max(0f, Math.min(1f, left / (float) g.totalMs())));
-                g.bar().setName(Component.literal("§b👻 Ghost §7— " + ((left + 999) / 1000) + "s"));
+            if (now % 20 == 0) {
+                long left = g.untilTick() - now;
+                g.bar().setProgress(Math.max(0f, Math.min(1f, left / (float) g.totalTicks())));
+                g.bar().setName(Component.literal("§b👻 Ghost §7— " + ((left + 19) / 20) + "s"));
             }
         }
     }

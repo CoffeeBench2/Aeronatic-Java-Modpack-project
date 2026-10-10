@@ -14,6 +14,8 @@ import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
 
+import com.coffeesaerosmp.auth.ticket.Ticket.Status;
+
 /**
  * MySQL side of /ticket. Writes and player-facing reads go through {@link AsyncIo} and call back on the
  * server thread. {@link #getNow} is the one synchronous read: Discord button handlers run on the gateway
@@ -21,11 +23,6 @@ import java.util.function.Consumer;
  * behind the single DB writer.
  */
 public final class TicketStore {
-
-    public enum Status { OPEN, ACK, CLOSED }
-
-    public record Ticket(long id, UUID uuid, String name, String message, String location,
-                         Status status, long createdAt, String closedBy, String lastReply) {}
 
     private TicketStore() {}
 

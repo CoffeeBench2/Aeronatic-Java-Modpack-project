@@ -11,8 +11,18 @@ repositories {
     mavenCentral()
 }
 
+// In-game tests (GameTest framework) — a separate source set so none of it ships in the mod jar.
+// They run on a throwaway server with mock ServerPlayers: ./gradlew.bat runGameTestServer
+sourceSets {
+    gametest {
+        compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+        runtimeClasspath += sourceSets.main.output + sourceSets.main.runtimeClasspath
+    }
+}
+
 neoForge {
     version = project.neoforge_version
+    addModdingDependenciesTo(sourceSets.gametest)
 
     runs {
         server {
@@ -20,11 +30,18 @@ neoForge {
             programArgument '--nogui'
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
         }
+        gameTestServer {
+            type = "gameTestServer"
+            gameDirectory = project.file('run-gametest')
+            sourceSet = sourceSets.gametest
+            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+        }
     }
 
     mods {
         "${project.mod_id}" {
             sourceSet(sourceSets.main)
+            sourceSet(sourceSets.gametest)
         }
     }
 }
@@ -33,6 +50,10 @@ dependencies {
     // Embedded in the JAR via NeoForge JarJar — no external install needed
     jarJar(implementation("com.zaxxer:HikariCP:5.1.0"))
     jarJar(implementation("com.mysql:mysql-connector-j:8.3.0"))
+    // Dev runs (runServer / runGameTestServer) don't unpack jarJar — put the DB libraries on their
+    // classpath directly, or the first DB connection dies with ClassNotFoundException: HikariConfig.
+    additionalRuntimeClasspath("com.zaxxer:HikariCP:5.1.0")
+    additionalRuntimeClasspath("com.mysql:mysql-connector-j:8.3.0")
 
     // log4j-core: shipped by Minecraft at runtime (2.22.1), needed at compile time for the
     // Feature B console-mirror appender. compileOnly so it is NOT bundled into the mod jar.
