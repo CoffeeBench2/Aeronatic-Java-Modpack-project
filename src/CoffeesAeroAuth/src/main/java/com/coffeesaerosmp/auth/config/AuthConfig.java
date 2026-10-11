@@ -85,6 +85,9 @@ public class AuthConfig {
     public static final ModConfigSpec.IntValue             ITEM_CLEAR_INTERVAL_MINUTES;
     public static final ModConfigSpec.ConfigValue<String>  ITEM_CLEAR_WARN_SECONDS;
     public static final ModConfigSpec.BooleanValue         ITEM_CLEAR_KEEP_NAMED;
+    public static final ModConfigSpec.BooleanValue         PROJECTILE_CLEANUP_ENABLED;
+    public static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> PROJECTILE_CLEANUP_TYPES;
+    public static final ModConfigSpec.IntValue             PROJECTILE_MAX_AGE_SECONDS;
     public static final ModConfigSpec.BooleanValue         SIDEBAR_ENABLED;
     public static final ModConfigSpec.BooleanValue         AFK_ENABLED;
     public static final ModConfigSpec.IntValue             AFK_TIMEOUT_MINUTES;
@@ -430,6 +433,20 @@ public class AuthConfig {
             .comment("Skip items with a custom name. A renamed item is nearly always a deliberate",
                      "keepsake rather than litter, so this defaults ON.")
             .define("itemClearKeepNamed", true);
+        PROJECTILE_CLEANUP_ENABLED = b
+            .comment("Remove stale gun projectiles (world/ProjectileJanitor). 2026-10-11: Create Gunsmithing's",
+                     "ntgl:projectile was the #1 entity in nearly every lag spike, up to ~1,100 live. A bullet frozen in",
+                     "a non-ticking chunk never expires, and a saved one gets a fresh lifetime on every chunk reload.",
+                     "Saved bullets are refused on load; any bullet older than projectileMaxAgeSeconds is removed.")
+            .define("projectileCleanupEnabled", true);
+        PROJECTILE_CLEANUP_TYPES = b
+            .comment("Entity ids the janitor manages. Only add short-lived projectiles: anything listed is removed",
+                     "after projectileMaxAgeSeconds and never survives a chunk save.")
+            .defineListAllowEmpty("projectileCleanupTypes", java.util.List.of("ntgl:projectile", "cgs:nail"),
+                () -> "modid:projectile", o -> o instanceof String s && s.contains(":"));
+        PROJECTILE_MAX_AGE_SECONDS = b
+            .comment("A listed projectile older than this (counted from when it was first seen) is removed.")
+            .defineInRange("projectileMaxAgeSeconds", 60, 10, 3600);
         WELCOME_INTERVAL_HOURS = b
             .comment("Hours between cosmetic welcome shows per player (title + welcome chat + skin tip).",
                      "Persisted in welcome_shown.json so relogs/restarts don't replay it. 0 = every join",
