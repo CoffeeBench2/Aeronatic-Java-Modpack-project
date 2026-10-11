@@ -49,6 +49,18 @@ import java.util.Map;
  * <p>⚠ Reports go out at {@link Severity#MEDIUM} on purpose. HIGH and above also message every op
  * in-game via {@code server.execute}, and a lag report is diagnostics for the watchdog channel — not
  * something to interrupt play with. {@link LagMonitor} already handles telling players.
+ *
+ * <h2>1.13.29 — per-episode, both sides of the tick (2026-10-11 audit)</h2>
+ * <ul>
+ *   <li>The old report's mod/frame breakdown was EVERY slow tick since the last report (up to 10 min), not the
+ *       spike it named; 45% of reports had no real backlog at all. Samples now belong to ONE stall episode and
+ *       are reset at each boundary, and only a stall of {@code stallReportMs} (default 2 s) is reported.</li>
+ *   <li>80% of lost time was BETWEEN ticks (packets, chunk-load tasks, mod jobs queued on the main thread),
+ *       where nothing sampled. The gap from tick Post to the next Pre is now an episode of its own.</li>
+ *   <li>If the sampler itself froze (far fewer samples than the stall allows) the report says WHOLE-SERVER PAUSE
+ *       and carries {@link RuntimePressure}'s GC / CPU-throttling figures.</li>
+ *   <li>Cooldown is per kind, so an in-tick report never hides a between-ticks one.</li>
+ * </ul>
  */
 public final class LagAttributor {
 
@@ -98,8 +110,14 @@ public final class LagAttributor {
     private static final Map<String, Integer> modSamples   = new HashMap<>();
     private static final Map<String, Integer> frameSamples = new HashMap<>();
     private static int    totalSamples;
+    /** Samples where the server thread was merely WAITING for the next tick (not lag). */
+    private static int    idleSamples;
     private static double worstTickMs;
-    private static long   lastReportMs;
+    /** nanoTime the last tick ENDED; 0 = no tick yet. The gap until the next Pre is the between-ticks episode. */
+    private static volatile long lastTickEndNanos = 0L;
+    private static final long[] lastReportMs = new long[StallMath.Kind.values().length];
+    /** The last report text, for the GameTests. */
+    static volatile String lastReport;
 
     // ── Lifecycle ─────────────────────────────────────────────────────────────
 
@@ -123,47 +141,74 @@ public final class LagAttributor {
 
     // ── Tick hooks (server thread) ────────────────────────────────────────────
 
-    /** Stamp the start of the tick. Two writes — this must never be why a tick is slow. */
+    /**
+     * Stamp the start of the tick — and close the between-ticks episode that just ended. Its samples were taken
+     * while the server thread was busy outside a tick; if the gap was long enough it is reported here, on the
+     * server thread, with those samples only.
+     */
     public static void onTickPre(MinecraftServer server) {
+        long now = System.nanoTime();
+        long lastEnd = lastTickEndNanos;
         serverThread   = Thread.currentThread();
-        tickStartNanos = System.nanoTime();
+        tickStartNanos = now;
+        if (lastEnd == 0L || server == null) { resetEpisode(); return; }
+        maybeReport(server, StallMath.Kind.BETWEEN_TICKS, (now - lastEnd) / 1_000_000.0);
     }
 
-    /** Close the tick out and, if it was a spike, produce a report. */
+    /** Close the tick out and, if it was a stall, report it with ITS samples only. */
     public static void onTickPost(MinecraftServer server) {
         long start = tickStartNanos;
-        tickStartNanos = 0L;                       // out of tick: sampler stops sampling
-        if (start == 0L || server == null) return;
-        double ms = (System.nanoTime() - start) / 1_000_000.0;
+        tickStartNanos = 0L;                       // out of tick: sampler switches to between-ticks mode
+        lastTickEndNanos = System.nanoTime();
+        if (start == 0L || server == null) { resetEpisode(); return; }
+        maybeReport(server, StallMath.Kind.IN_TICK, (lastTickEndNanos - start) / 1_000_000.0);
+    }
 
-        synchronized (LOCK) {
-            if (ms > worstTickMs) worstTickMs = ms;
-        }
-
+    private static void maybeReport(MinecraftServer server, StallMath.Kind kind, double ms) {
         try {
-            if (!AuthConfig.LAG_ATTRIBUTION_ENABLED.get()) return;
-            if (ms < AuthConfig.LAG_SPIKE_REPORT_MS.get()) return;
-
+            synchronized (LOCK) {
+                if (ms > worstTickMs) worstTickMs = ms;
+            }
+            if (!AuthConfig.LAG_ATTRIBUTION_ENABLED.get() || ms < AuthConfig.STALL_REPORT_MS.get()) {
+                resetEpisode();
+                return;
+            }
+            synchronized (LOCK) {
+                // Mostly waiting, not working: the thread was idle (e.g. nothing scheduled) — not lag.
+                if (idleSamples > 0 && idleSamples * 4 >= (idleSamples + totalSamples) * 3) { resetCounters(); return; }
+            }
             long now = System.currentTimeMillis();
             long cooldown = AuthConfig.LAG_REPORT_COOLDOWN_MINUTES.get() * 60_000L;
             synchronized (LOCK) {
-                if (now - lastReportMs < cooldown) return;
-                if (totalSamples < 5) return;      // too little evidence to name anything
-                lastReportMs = now;
+                if (now - lastReportMs[kind.ordinal()] < cooldown) { resetCounters(); return; }
+                lastReportMs[kind.ordinal()] = now;
             }
-
-            // Census runs HERE, on the server thread, inline — see the class note. It is the only
-            // way to read entities safely, and the cooldown is what makes it affordable.
+            // Census runs HERE, on the server thread, inline — see the class note. The cooldown makes it affordable.
             String census = censusNow(server);
-            Report r = snapshotAndReset();
-            // Posting touches the network; hand it off so it can never extend this tick.
+            Report r = snapshotAndReset(ms);
+            String pressure = RuntimePressure.summary((long) ms + 30_000L);
+            String cause = StallMath.cause(kind, (long) ms, r.samples(),
+                cfg(AuthConfig.LAG_SAMPLE_INTERVAL_MS, 50), kind == StallMath.Kind.IN_TICK
+                    ? cfg(AuthConfig.LAG_SAMPLE_AFTER_MS, 100) : cfg(AuthConfig.STALL_BETWEEN_SAMPLE_AFTER_MS, 150));
             final int players = server.getPlayerList().getPlayerCount();
-            Thread t = new Thread(() -> post(r, census, players), "AeroLagReport");
+            // Posting touches the network; hand it off so it can never extend this tick.
+            Thread t = new Thread(() -> post(kind, r, cause, pressure, census, players), "AeroLagReport");
             t.setDaemon(true);
             t.start();
         } catch (Throwable e) {
             CoffeesAeroAuth.LOGGER.debug("[LagAttributor] skipped: {}", e.toString());
+            resetEpisode();
         }
+    }
+
+    /** GameTest hook: clear the last report and every cooldown, so a test sees its own stall. */
+    static void resetForTest() {
+        lastReport = null;
+        synchronized (LOCK) { java.util.Arrays.fill(lastReportMs, 0L); resetCounters(); }
+    }
+
+    private static void resetEpisode() {
+        synchronized (LOCK) { resetCounters(); }
     }
 
     // ── Sampler thread ────────────────────────────────────────────────────────
@@ -227,13 +272,16 @@ public final class LagAttributor {
                 }
                 if (!cfg(AuthConfig.LAG_ATTRIBUTION_ENABLED, true)) continue;
 
-                long start = tickStartNanos;
-                if (start == 0L) continue;                       // not inside a tick
                 Thread st = serverThread;
                 if (st == null) continue;
-
-                long runningMs = (System.nanoTime() - start) / 1_000_000L;
-                if (runningMs < cfg(AuthConfig.LAG_SAMPLE_AFTER_MS, 100)) continue;  // tick is fine
+                long start = tickStartNanos;
+                long nowNs = System.nanoTime();
+                if (start != 0L) {                               // inside a tick
+                    if ((nowNs - start) / 1_000_000L < cfg(AuthConfig.LAG_SAMPLE_AFTER_MS, 100)) continue;
+                } else {                                         // between ticks: normally a <50 ms sleep
+                    long end = lastTickEndNanos;
+                    if (end == 0L || (nowNs - end) / 1_000_000L < cfg(AuthConfig.STALL_BETWEEN_SAMPLE_AFTER_MS, 150)) continue;
+                }
 
                 StackTraceElement[] stack = st.getStackTrace();
                 if (stack.length == 0) continue;
@@ -261,30 +309,66 @@ public final class LagAttributor {
         } catch (Throwable ignored) { }
     }
 
+    /**
+     * True when the server thread is just waiting for the next tick: the first non-JDK frame is the tick
+     * scheduler's wait ({@code waitUntilNextTick} / {@code managedBlock} / {@code waitForTasks}) — no queued task
+     * runs on top of it. A real job queued between ticks always has its own (game or mod) frame above that wait.
+     * Found by the GameTest: an idle test server produced a "BETWEEN TICKS" report of 100% {@code Net.poll}.
+     */
+    static boolean idle(StackTraceElement[] stack) {
+        for (StackTraceElement el : stack) {
+            String c = el.getClassName();
+            if (c.startsWith("java.") || c.startsWith("jdk.") || c.startsWith("sun.")) continue;
+            String m = el.getMethodName();
+            return m.equals("waitUntilNextTick") || m.equals("managedBlock") || m.equals("waitForTasks")
+                || m.equals("waitForRuns") || m.equals("parkUntil");
+        }
+        return false;
+    }
+
     private static void record(StackTraceElement[] stack) {
-        // Walk from the TOP (deepest call) down: the first recognised package is the most specific
-        // answer available. Reading bottom-up would attribute everything to "minecraft" forever,
-        // because the tick loop is always vanilla at the root.
+        if (idle(stack)) {
+            synchronized (LOCK) { idleSamples++; }
+            return;
+        }
+        // Walk from the TOP (deepest call) down, SKIPPING the JDK: a blocking socket read is "sun.nio.ch.Net.poll"
+        // at the top, which names nothing — the first game/mod frame under it is the code that made the call.
+        // (1.13.29: a GameTest stall reported only "sun.nio.ch 100% / Net.poll", which was useless.)
+        // Reading bottom-up would attribute everything to "minecraft" forever: the tick loop is vanilla at the root.
         String mod = null;
         String frame = null;
+        String top = shortFrame(stack[0]);
         for (StackTraceElement el : stack) {
             String cls = el.getClassName();
+            if (isJdk(cls)) continue;
             String hit = classify(cls);
             if (hit != null) {
                 mod = hit;
-                frame = shortFrame(el);
+                String own = shortFrame(el);
+                frame = own.equals(top) ? own : own + " > " + top;
                 break;
             }
         }
         if (mod == null) {
             mod = "unattributed";
-            frame = shortFrame(stack[0]);
+            frame = top;
         }
         synchronized (LOCK) {
             modSamples.merge(mod, 1, Integer::sum);
             frameSamples.merge(frame, 1, Integer::sum);
             totalSamples++;
         }
+    }
+
+    /** JDK and shared libraries: never the OWNER of a stall — keep walking to the code that called them. */
+    private static final String[] NOT_AN_OWNER = {
+        "java.", "jdk.", "sun.", "com.sun.", "com.mysql.", "com.zaxxer.", "io.netty.", "it.unimi.", "com.google.",
+        "org.apache.", "org.slf4j.", "com.mojang.serialization.", "com.mojang.datafixers.", "org.objectweb.asm.",
+    };
+
+    static boolean isJdk(String cls) {
+        for (String p : NOT_AN_OWNER) if (cls.startsWith(p)) return true;
+        return false;
     }
 
     /** null = keep walking. Vanilla matches LAST so a mod frame above it always wins. */
@@ -313,7 +397,7 @@ public final class LagAttributor {
      * Counts entities per type and finds the single busiest chunk. Bounded by
      * {@code lagCensusMaxEntities} so a runaway world can never turn diagnostics into an outage.
      */
-    private static String censusNow(MinecraftServer server) {
+    static String censusNow(MinecraftServer server) {
         try {
             Map<String, Integer> byType = new HashMap<>();
             Map<ChunkKey, Integer> byChunk = new HashMap<>();
@@ -359,6 +443,8 @@ public final class LagAttributor {
 
                 String near = nearestPlayer(server, k);
                 if (near != null) sb.append("\n• Nearest player: ").append(near);
+                String owner = ClaimOwner.of(server, k.dim(), k.cx(), k.cz());
+                if (owner != null) sb.append("\n• Claimed by: ").append(owner);
 
                 if (hot.size() > 1) {
                     sb.append("\n• Also hot: ");
@@ -366,7 +452,12 @@ public final class LagAttributor {
                         ChunkKey o = hot.get(i).getKey();
                         if (i > 1) sb.append("; ");
                         sb.append(o.dim()).append(' ').append(o.blockX()).append(',').append(o.blockZ())
-                          .append(" (").append(hot.get(i).getValue()).append(')');
+                          .append(" (").append(hot.get(i).getValue());
+                        Map<String, Integer> types = chunkTypes.get(o);
+                        if (types != null && !types.isEmpty()) sb.append(", mostly ").append(topN(types, 1));
+                        String ow = ClaimOwner.of(server, o.dim(), o.cx(), o.cz());
+                        if (ow != null) sb.append(", claim ").append(ow);
+                        sb.append(')');
                     }
                 }
             }
@@ -414,11 +505,11 @@ public final class LagAttributor {
 
     // ── Reporting ─────────────────────────────────────────────────────────────
 
-    private record Report(double worstMs, int samples, String mods, String frames) {}
+    private record Report(double stallMs, int samples, String mods, String frames) {}
 
-    private static Report snapshotAndReset() {
+    private static Report snapshotAndReset(double stallMs) {
         synchronized (LOCK) {
-            Report r = new Report(worstTickMs, totalSamples, topN(modSamples, 5), topN(frameSamples, 5));
+            Report r = new Report(stallMs, totalSamples, topN(modSamples, 5), topN(frameSamples, 5));
             resetCounters();
             return r;
         }
@@ -428,6 +519,7 @@ public final class LagAttributor {
         modSamples.clear();
         frameSamples.clear();
         totalSamples = 0;
+        idleSamples  = 0;
         worstTickMs  = 0;
     }
 
@@ -446,18 +538,25 @@ public final class LagAttributor {
         return sb.toString();
     }
 
-    private static void post(Report r, String census, int players) {
+    private static void post(StallMath.Kind kind, Report r, String cause, String pressure, String census, int players) {
         try {
-            CoffeesAeroAuth.LOGGER.warn("[LagAttributor] Spike {}ms | mods: {} | frames: {} | {}",
-                String.format("%.0f", r.worstMs()), r.mods(), r.frames(), census);
+            String text = String.format(java.util.Locale.ROOT,
+                "[LagAttributor] Stall %.0fms %s | cause: %s | mods: %s | frames: %s | %s | %s",
+                r.stallMs(), kind.label.toUpperCase(java.util.Locale.ROOT), cause,
+                r.mods().isEmpty() ? "(no samples)" : r.mods(), r.frames().isEmpty() ? "(no samples)" : r.frames(),
+                pressure, census);
+            lastReport = text;
+            CoffeesAeroAuth.LOGGER.warn(text);
             if (CoffeesAeroAuth.WATCHDOG == null) return;
             CoffeesAeroAuth.WATCHDOG.alert(WatchdogEvent.of(Severity.MEDIUM,
-                "Lag Spike — attributed",
+                "Server stall — " + kind.label,
                 "Diagnostic only; no action taken",
-                "Worst tick",  String.format("%.0f ms", r.worstMs()),
+                "Stall",       String.format(java.util.Locale.ROOT, "%.1f s", r.stallMs() / 1000.0),
+                "Likely cause", cause,
                 "Samples",     String.valueOf(r.samples()),
                 "By mod",      r.mods().isEmpty() ? "(none)" : r.mods(),
                 "Hot methods", r.frames().isEmpty() ? "(none)" : r.frames(),
+                "GC / CPU",    pressure,
                 "Entities",    census,
                 "Players",     String.valueOf(players)));
         } catch (Throwable t) {

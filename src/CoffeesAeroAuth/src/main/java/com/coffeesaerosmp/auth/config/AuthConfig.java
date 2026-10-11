@@ -13,6 +13,7 @@ public class AuthConfig {
     public static final ModConfigSpec.BooleanValue BROADCAST_NEW_PLAYERS;
     public static final ModConfigSpec.BooleanValue LAG_WARN_ENABLED;
     public static final ModConfigSpec.IntValue     LAG_WARN_MSPT;
+    public static final ModConfigSpec.IntValue     LAG_WARN_TPS;
     public static final ModConfigSpec.IntValue     LAG_WARN_SUSTAIN_SECONDS;
     public static final ModConfigSpec.IntValue     LAG_WARN_COOLDOWN_SECONDS;
     public static final ModConfigSpec.BooleanValue SOUND_FEEDBACK;
@@ -116,6 +117,9 @@ public class AuthConfig {
     public static final ModConfigSpec.IntValue             LAG_SPIKE_REPORT_MS;
     public static final ModConfigSpec.IntValue             LAG_REPORT_COOLDOWN_MINUTES;
     public static final ModConfigSpec.IntValue             LAG_CENSUS_MAX_ENTITIES;
+    public static final ModConfigSpec.IntValue             STALL_REPORT_MS;
+    public static final ModConfigSpec.IntValue             STALL_BETWEEN_SAMPLE_AFTER_MS;
+    public static final ModConfigSpec.BooleanValue         PRESSURE_LOG_ENABLED;
     public static final ModConfigSpec.BooleanValue         RESOLVE_DISPLAY_NAMES;
     public static final ModConfigSpec.IntValue             WELCOME_INTERVAL_HOURS;
     public static final ModConfigSpec.BooleanValue         MASK_ADVANCEMENT_NAMES;
@@ -652,7 +656,8 @@ public class AuthConfig {
                      "attribution and more overhead. 50ms (20/sec) is a deliberately safe default.")
             .defineInRange("lagSampleIntervalMs", 50, 10, 1000);
         LAG_SPIKE_REPORT_MS = b
-            .comment("A single tick this slow (ms) triggers a report. Note this pack routinely",
+            .comment("UNUSED since 1.13.29 (see stallReportMs). Kept so older configs still parse.",
+                     "A single tick this slow (ms) triggers a report. Note this pack routinely",
                      "produces multi-second spikes during chunk loading, so keep it high enough that",
                      "reports stay meaningful rather than constant.")
             .defineInRange("lagSpikeReportMs", 500, 100, 60000);
@@ -666,6 +671,19 @@ public class AuthConfig {
                      "diagnostics must never become the outage. A runaway world stops at this count",
                      "and the report says so.")
             .defineInRange("lagCensusMaxEntities", 20000, 1000, 500000);
+        STALL_REPORT_MS = b
+            .comment("1.13.29: a stall this long (ms), INSIDE a tick or BETWEEN ticks, is reported with the samples",
+                     "taken during that stall only. Replaces lagSpikeReportMs (500 ms): 2026-10-11 audit found 69% of",
+                     "reports were sub-second hiccups and 45% had no real backlog. 2000 ms = players felt it.")
+            .defineInRange("stallReportMs", 2000, 250, 60000);
+        STALL_BETWEEN_SAMPLE_AFTER_MS = b
+            .comment("Between ticks the server thread normally sleeps under 50 ms. Once the gap since the last tick",
+                     "exceeds this (ms), it is busy with queued tasks (packets, chunk loads, mod jobs) and is sampled.")
+            .defineInRange("stallBetweenSampleAfterMs", 150, 60, 5000);
+        PRESSURE_LOG_ENABLED = b
+            .comment("Log garbage-collection pauses and container CPU throttling (watchdog/RuntimePressure): a WARN",
+                     "when a 30 s window holds over 1 s of either, an INFO summary every 5 minutes.")
+            .define("pressureLogEnabled", true);
         b.pop();
 
         b.comment("Watchdog — Security Monitoring").push("watchdog");
@@ -1354,14 +1372,20 @@ public class AuthConfig {
                      "to guess whether it is them or the server.")
             .define("lagWarnEnabled", true);
         LAG_WARN_MSPT = b
-            .comment("Average milliseconds-per-tick that counts as BAD lag. 50 = a perfect 20 TPS.",
+            .comment("UNUSED since 1.13.29 (see lagWarnTps). Kept so older configs still parse.",
+                     "Average milliseconds-per-tick that counts as BAD lag. 50 = a perfect 20 TPS.",
                      "Default 250 (~4 TPS) — deliberately high, so this fires on real trouble and not",
                      "on the routine 4s spikes this pack already produces. Lower it and players get",
                      "spammed during normal chunk loading, which trains them to ignore it.")
             .defineInRange("lagWarnMsptThreshold", 250, 100, 5000);
+        LAG_WARN_TPS = b
+            .comment("1.13.29: warn players when TPS over the last lagWarnSustainSeconds of WALL time drops below this.",
+                     "Replaces lagWarnMsptThreshold, which never fired in 99 h of S3 logs: a frozen server is one huge",
+                     "tick-to-tick gap that an average over a minute dilutes away. Counting ticks per wall second does not.")
+            .defineInRange("lagWarnTps", 12, 1, 19);
         LAG_WARN_SUSTAIN_SECONDS = b
-            .comment("How long the average must stay above the threshold before anyone is told.",
-                     "Stops a single garbage-collection pause from announcing itself.")
+            .comment("Window (seconds of wall time) the TPS for lagWarnTps is measured over. A short GC pause in a",
+                     "long window cannot drag the average under the bar; a real freeze can.")
             .defineInRange("lagWarnSustainSeconds", 10, 1, 300);
         LAG_WARN_COOLDOWN_SECONDS = b
             .comment("Minimum seconds between lag warnings, so a long bad patch warns once, not forever.")

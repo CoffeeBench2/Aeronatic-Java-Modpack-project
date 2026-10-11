@@ -499,6 +499,8 @@ public class CoffeesAeroAuth {
         // watches from its own thread so a wedged tick loop cannot stop it from noticing.
         com.coffeesaerosmp.auth.watchdog.StallWatchdog.start(event.getServer(), dataDir);
         com.coffeesaerosmp.auth.watchdog.LagAttributor.start(event.getServer());
+        // GC pauses + container CPU throttling: the whole-server freezes nothing inside a tick can see.
+        com.coffeesaerosmp.auth.watchdog.RuntimePressure.start();
 
         // ── Lobby + name approval ─────────────────────────────────────────────
         LOBBY_MANAGER   = new LobbyManager(event.getServer());

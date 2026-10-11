@@ -51,6 +51,12 @@ import net.minecraft.server.level.ServerPlayer;
  * whole session once, so the monitor now states its conclusion outright instead of leaving a bare
  * average to be misread. See {@code lag-is-blocking-not-compute} in the vault.
  *
+ * <h2>1.13.29 — judged by ticks per wall second (2026-10-11 audit)</h2>
+ * The old rule ("mean tick-to-tick time >= 250 ms for 10 s") fired ZERO times in 99 h of S3 logs, through 32 s
+ * freezes: a frozen server is one enormous gap that an average over a minute of normal ticks dilutes away. The
+ * warning now uses {@link StallMath#tpsOverWindow}: ticks completed per second of WALL time over the last
+ * {@code lagWarnSustainSeconds}, below {@code lagWarnTps} (default 12). A freeze says so, with its length.
+ *
  * <h2>Deliberately hard to trigger</h2>
  * This pack routinely produces multi-second spikes under normal chunk loading. Warning on those
  * would fire constantly and train everyone to ignore the message, which is worse than saying
@@ -98,8 +104,14 @@ public final class LagMonitor {
     private static double totalSum;
     private static int    totalCount;
 
-    private static long badSinceMs;   // when the current bad patch began; 0 = healthy
     private static long lastWarnMs;
+    /** Warnings sent since boot — read by the GameTest. */
+    static volatile int warnings;
+
+    /** GameTest hook: forget the cooldown so a test's own freeze can warn. */
+    static void resetCooldownForTest() {
+        lastWarnMs = 0;
+    }
 
     public static synchronized void reset() {
         lastTickNanos = 0; curSum = 0; curMax = 0; curCount = 0; bucketStartMs = 0;
@@ -107,7 +119,7 @@ public final class LagMonitor {
         java.util.Arrays.fill(bMax, 0);
         java.util.Arrays.fill(bCount, 0);
         cursor = 0; filled = 0; totalSum = 0; totalCount = 0;
-        badSinceMs = 0; lastWarnMs = 0;
+        lastWarnMs = 0;
     }
 
     // ── Reporting surface ─────────────────────────────────────────────────────
@@ -223,37 +235,41 @@ public final class LagMonitor {
 
     /** Decides whether to warn. Runs once a second, after the bucket roll. */
     private static void evaluate(MinecraftServer server, long now) {
-        if (!AuthConfig.LAG_WARN_ENABLED.get()) { badSinceMs = 0; return; }
+        if (!AuthConfig.LAG_WARN_ENABLED.get()) return;
         if (filled < 5) return;                                   // need a few seconds to judge
-        if (server.getPlayerList().getPlayerCount() == 0) { badSinceMs = 0; return; }
+        if (server.getPlayerList().getPlayerCount() == 0) return;
 
-        Snapshot s = snapshot();
-        if (s.meanMs() < AuthConfig.LAG_WARN_MSPT.get()) { badSinceMs = 0; return; }
-
-        if (badSinceMs == 0) { badSinceMs = now; return; }        // bad patch just started
-        if (now - badSinceMs < AuthConfig.LAG_WARN_SUSTAIN_SECONDS.get() * 1000L) return;
+        double windowMs = AuthConfig.LAG_WARN_SUSTAIN_SECONDS.get() * 1000.0;
+        int newest = (cursor - 1 + BUCKETS) % BUCKETS;
+        double tps, worst;
+        synchronized (LagMonitor.class) {
+            tps   = StallMath.tpsOverWindow(bSum, bCount, filled, newest, windowMs);
+            worst = StallMath.worstOverWindow(bSum, bMax, filled, newest, windowMs);
+        }
+        if (tps >= AuthConfig.LAG_WARN_TPS.get()) return;
         if (now - lastWarnMs < AuthConfig.LAG_WARN_COOLDOWN_SECONDS.get() * 1000L) return;
 
         lastWarnMs = now;
-        warn(server, s);
+        warnings++;
+        warn(server, snapshot(), tps, worst);
     }
 
     // ── Output ────────────────────────────────────────────────────────────────
 
-    private static void warn(MinecraftServer server, Snapshot s) {
-        // Console/log line: the diagnostic one. States the conclusion, not just the number, so
-        // whoever reads it at 3am does not have to remember the ratio rule.
-        CoffeesAeroAuth.LOGGER.warn("[LagMonitor] Sustained lag — {} (ratio worst/typical = {}x)",
-            s.describe(), String.format(java.util.Locale.ROOT, "%.1f",
-                s.meanMs() > 0 ? s.worstMs() / s.meanMs() : 0.0));
+    private static void warn(MinecraftServer server, Snapshot s, double tps, double worstMs) {
+        boolean froze = worstMs >= 2000;
+        // Console/log line: the diagnostic one. States the conclusion, not just the number.
+        CoffeesAeroAuth.LOGGER.warn("[LagMonitor] {} — {} TPS over the last {}s (longest gap {} ms) · minute view: {}",
+            froze ? "Server FROZE" : "Sustained lag",
+            String.format(java.util.Locale.ROOT, "%.1f", tps), AuthConfig.LAG_WARN_SUSTAIN_SECONDS.get(),
+            String.format(java.util.Locale.ROOT, "%.0f", worstMs), s.describe());
 
-        // Player line: plain language. Nobody outside this repo knows what MSPT is, and "4 TPS"
-        // is jargon too — so lead with what they can actually observe, and say the one thing they
-        // most need to hear, which is that relogging will not help.
-        Component msg = Component.literal(
-            TextUtil.PREFIX + "§e⚠ The server is running slow right now §7(" + speedWord(s.tps())
-            + ", ~" + String.format(java.util.Locale.ROOT, "%.1f", s.tps()) + " TPS)§e — "
-            + "§7it's us, not your connection. Nothing is being lost; relogging won't help.");
+        // Player line: plain language, and the one thing they most need to hear — relogging will not help.
+        String what = froze
+            ? "§e⚠ The server froze for about " + Math.round(worstMs / 1000.0) + " seconds just now"
+            : "§e⚠ The server is running slow right now §7(" + speedWord(tps) + ")§e";
+        Component msg = Component.literal(TextUtil.PREFIX + what
+            + " §7— it's us, not your connection. Nothing is being lost; relogging won't help.");
         for (ServerPlayer p : server.getPlayerList().getPlayers()) {
             p.sendSystemMessage(msg);
             Sounds.error(p);
