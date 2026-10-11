@@ -39,7 +39,15 @@ public final class Entitlements {
         /** Custom join and leave message (moderated). */
         JOIN_MESSAGE,
         /** Custom chat title (moderated). Admiral only, and not purchasable with Beans. */
-        CHAT_TITLE
+        CHAT_TITLE,
+        /** 1.13.30: the entry walking trail (Cloud Walker). Deckhand. */
+        TRAIL_BASIC,
+        /** The rank walking trails. Navigator. */
+        TRAIL,
+        /** The rank airship contrails. Captain. */
+        CONTRAIL,
+        /** Rank-exclusive contrail (Aurora Ribbon), never sold for Beans. Admiral. */
+        CONTRAIL_EXCLUSIVE
     }
 
     // ── cosmetic id vocabulary ────────────────────────────────────────────────────
@@ -49,6 +57,10 @@ public final class Entitlements {
     public static final String GRADIENT_PREFIX = "gradient:";
     public static final String BOLD_ID         = "bold";
     public static final String JOIN_MESSAGE_ID = "join_message";
+    /** 1.13.30. Same rule as the join message: one capability covers both lines. */
+    public static final String LEAVE_MESSAGE_ID = "leave_message";
+    public static final String TRAIL_PREFIX    = "trail:";
+    public static final String CONTRAIL_PREFIX = "contrail:";
 
     private Entitlements() {}
 
@@ -56,10 +68,10 @@ public final class Entitlements {
     public static Set<Capability> of(Rank rank) {
         EnumSet<Capability> caps = EnumSet.noneOf(Capability.class);
         if (rank == null || rank == Rank.NONE) return Collections.unmodifiableSet(caps);
-        if (rank.includes(Rank.DECKHAND))  caps.add(Capability.SOLID_BASIC);
-        if (rank.includes(Rank.NAVIGATOR)) { caps.add(Capability.SOLID_FULL); caps.add(Capability.BOLD); }
-        if (rank.includes(Rank.CAPTAIN))   { caps.add(Capability.GRADIENT_2); caps.add(Capability.JOIN_MESSAGE); }
-        if (rank.includes(Rank.ADMIRAL))   { caps.add(Capability.GRADIENT_3); caps.add(Capability.CHAT_TITLE); }
+        if (rank.includes(Rank.DECKHAND))  { caps.add(Capability.SOLID_BASIC); caps.add(Capability.TRAIL_BASIC); }
+        if (rank.includes(Rank.NAVIGATOR)) { caps.add(Capability.SOLID_FULL); caps.add(Capability.BOLD); caps.add(Capability.TRAIL); }
+        if (rank.includes(Rank.CAPTAIN))   { caps.add(Capability.GRADIENT_2); caps.add(Capability.JOIN_MESSAGE); caps.add(Capability.CONTRAIL); }
+        if (rank.includes(Rank.ADMIRAL))   { caps.add(Capability.GRADIENT_3); caps.add(Capability.CHAT_TITLE); caps.add(Capability.CONTRAIL_EXCLUSIVE); }
         return Collections.unmodifiableSet(caps);
     }
 
@@ -74,9 +86,27 @@ public final class Entitlements {
      * @param owned ids bought outright with Beans; never null — pass an empty set
      */
     public static boolean mayUse(String id, Rank rank, Set<String> owned) {
+        return mayUse(id, rank, owned, false);
+    }
+
+    /**
+     * As {@link #mayUse(String, Rank, Set)}, with {@code preview} = the player is an op testing cosmetics before
+     * any shop exists (owner 2026-10-12). Preview bypasses rank and ownership but NEVER the allowlist or the
+     * staff-colour rule: an unknown id is still refused and staff red is still unwearable. It is computed live
+     * from the op level and never stored, so de-opping removes it at the next sanitise.
+     */
+    public static boolean mayUse(String id, Rank rank, Set<String> owned, boolean preview) {
         if (id == null || id.isBlank()) return false;
         String key = id.trim().toLowerCase(Locale.ROOT);
         Set<String> own = owned == null ? Set.of() : owned;
+
+        if (key.startsWith(TRAIL_PREFIX) || key.startsWith(CONTRAIL_PREFIX)) {
+            var c = CosmeticCatalog.get(key);
+            if (c.isEmpty()) return false;
+            if (preview || own.contains(key)) return true;
+            return c.get().requires() != null && has(rank, c.get().requires());
+        }
+        if (preview) return known(key);
 
         if (key.startsWith(COLOUR_PREFIX)) {
             String colour = key.substring(COLOUR_PREFIX.length());
@@ -103,15 +133,37 @@ public final class Entitlements {
         if (key.equals(BOLD_ID)) {
             return own.contains(BOLD_ID) || has(rank, Capability.BOLD);
         }
-        if (key.equals(JOIN_MESSAGE_ID)) {
+        if (key.equals(JOIN_MESSAGE_ID) || key.equals(LEAVE_MESSAGE_ID)) {
             return own.contains(JOIN_MESSAGE_ID) || has(rank, Capability.JOIN_MESSAGE);
         }
         return false;   // unknown id → refused. Allowlist, not blacklist.
     }
 
+    /** Is this an id the store knows and that anyone could ever wear? Staff colours are never "known". */
+    private static boolean known(String key) {
+        if (key.startsWith(COLOUR_PREFIX)) {
+            String colour = key.substring(COLOUR_PREFIX.length());
+            return Palette.isColour(colour) && !Palette.isStaffReserved(colour);
+        }
+        if (key.startsWith(GRADIENT_PREFIX)) {
+            String grad = key.substring(GRADIENT_PREFIX.length());
+            if (Palette.gradientStops(grad) == 0) return false;
+            for (String c : Palette.gradient(grad)) if (Palette.isStaffReserved(c)) return false;
+            return true;
+        }
+        return key.equals(BOLD_ID) || key.equals(JOIN_MESSAGE_ID) || key.equals(LEAVE_MESSAGE_ID)
+            || CosmeticCatalog.get(key).isPresent();
+    }
+
     /** A player's current cosmetic choices. Any field may be null/false meaning "default". */
-    public record Selection(String nameStyle, boolean bold, String chatTitle, String joinMessage) {
-        public static final Selection DEFAULT = new Selection(null, false, null, null);
+    public record Selection(String nameStyle, boolean bold, String chatTitle, String joinMessage,
+                            String trail, String contrail, String leaveMessage) {
+        public static final Selection DEFAULT = new Selection(null, false, null, null, null, null, null);
+
+        /** The pre-1.13.30 shape: no trail, contrail or leave message. */
+        public Selection(String nameStyle, boolean bold, String chatTitle, String joinMessage) {
+            this(nameStyle, bold, chatTitle, joinMessage, null, null, null);
+        }
     }
 
     /**
@@ -135,26 +187,43 @@ public final class Entitlements {
      * changes colour on every restart and generates a bug report per restart.
      */
     public static Sanitised sanitise(Selection current, Rank rank, Set<String> owned) {
+        return sanitise(current, rank, owned, false);
+    }
+
+    /** {@link #sanitise(Selection, Rank, Set)} for an op previewing — see {@link #mayUse(String, Rank, Set, boolean)}. */
+    public static Sanitised sanitise(Selection current, Rank rank, Set<String> owned, boolean preview) {
         Selection cur = current == null ? Selection.DEFAULT : current;
         Set<String> own = owned == null ? Set.of() : owned;
         Set<String> removed = new LinkedHashSet<>();
 
         String style = cur.nameStyle();
-        if (style != null && !mayUse(style, rank, own)) {
+        if (style != null && !mayUse(style, rank, own, preview)) {
             removed.add(style);
             style = firstOwnedColour(own, rank);
         }
 
         boolean bold = cur.bold();
-        if (bold && !mayUse(BOLD_ID, rank, own)) { removed.add(BOLD_ID); bold = false; }
+        if (bold && !mayUse(BOLD_ID, rank, own, preview)) { removed.add(BOLD_ID); bold = false; }
 
         String title = cur.chatTitle();
-        if (title != null && !has(rank, Capability.CHAT_TITLE)) { removed.add("chat_title"); title = null; }
+        if (title != null && !preview && !has(rank, Capability.CHAT_TITLE)) { removed.add("chat_title"); title = null; }
 
         String join = cur.joinMessage();
-        if (join != null && !mayUse(JOIN_MESSAGE_ID, rank, own)) { removed.add(JOIN_MESSAGE_ID); join = null; }
+        if (join != null && !mayUse(JOIN_MESSAGE_ID, rank, own, preview)) { removed.add(JOIN_MESSAGE_ID); join = null; }
 
-        Selection out = new Selection(style, bold, title, join);
+        String leave = cur.leaveMessage();
+        if (leave != null && !mayUse(LEAVE_MESSAGE_ID, rank, own, preview)) { removed.add(LEAVE_MESSAGE_ID); leave = null; }
+
+        String trail = cur.trail();
+        if (trail != null && !(trail.startsWith(TRAIL_PREFIX) && mayUse(trail, rank, own, preview))) {
+            removed.add(trail); trail = null;
+        }
+        String contrail = cur.contrail();
+        if (contrail != null && !(contrail.startsWith(CONTRAIL_PREFIX) && mayUse(contrail, rank, own, preview))) {
+            removed.add(contrail); contrail = null;
+        }
+
+        Selection out = new Selection(style, bold, title, join, trail, contrail, leave);
         return new Sanitised(out, !removed.isEmpty(), Collections.unmodifiableSet(removed));
     }
 

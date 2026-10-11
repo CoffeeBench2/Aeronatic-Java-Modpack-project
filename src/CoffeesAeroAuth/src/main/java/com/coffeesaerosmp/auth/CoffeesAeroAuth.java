@@ -396,6 +396,7 @@ public class CoffeesAeroAuth {
         com.coffeesaerosmp.auth.pvp.BackCountdown.register(NeoForge.EVENT_BUS);
         com.coffeesaerosmp.auth.pvp.GhostState.register(NeoForge.EVENT_BUS);
         com.coffeesaerosmp.auth.world.ProjectileJanitor.register(NeoForge.EVENT_BUS);
+        com.coffeesaerosmp.auth.cosmetics.CosmeticEngine.register(NeoForge.EVENT_BUS);
 
         // Confiscation enforcement: command blocking, on-join notice, and cleaning up the pinned
         // freeze position when a held player disconnects. The freeze itself lives in

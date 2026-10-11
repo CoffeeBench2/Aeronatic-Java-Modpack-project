@@ -110,5 +110,28 @@ public final class StoreSchema {
                 "  INDEX idx_pending (mojang_uuid, applied_at)" +
                 ")");
         }
+        migrate(c);
+    }
+
+    /**
+     * 1.13.30 cosmetics columns. MySQL has no ADD COLUMN IF NOT EXISTS (that is MariaDB), so each ALTER runs on
+     * its own and swallows ONLY errno 1060 (duplicate column) — any other DDL failure is logged, not hidden.
+     */
+    static void migrate(Connection c) {
+        String[] alters = {
+            "ALTER TABLE cosmetic_selection ADD COLUMN trail VARCHAR(64) NULL",
+            "ALTER TABLE cosmetic_selection ADD COLUMN contrail VARCHAR(64) NULL",
+            "ALTER TABLE cosmetic_selection ADD COLUMN leave_message VARCHAR(128) NULL",
+            "ALTER TABLE cosmetic_selection ADD COLUMN pending_leave_message VARCHAR(128) NULL",
+        };
+        for (String sql : alters) {
+            try (Statement s = c.createStatement()) {
+                s.executeUpdate(sql);
+            } catch (SQLException e) {
+                if (e.getErrorCode() != 1060) {
+                    com.coffeesaerosmp.auth.CoffeesAeroAuth.LOGGER.warn("[Store] migration failed ({}): {}", sql, e.getMessage());
+                }
+            }
+        }
     }
 }

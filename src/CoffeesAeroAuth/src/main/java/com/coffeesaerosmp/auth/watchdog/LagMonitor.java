@@ -105,6 +105,13 @@ public final class LagMonitor {
     private static int    totalCount;
 
     private static long lastWarnMs;
+
+    /**
+     * TPS (ticks per WALL second) and the longest tick gap over the last 5 s, refreshed once a second at the bucket
+     * roll. Read lock-free by the cosmetic engine (cosmetics pause when the server struggles) — cheap, current.
+     */
+    public static volatile double recentTps = 20.0;
+    public static volatile double recentWorstGapMs = 0.0;
     /** Warnings sent since boot — read by the GameTest. */
     static volatile int warnings;
 
@@ -228,9 +235,12 @@ public final class LagMonitor {
         bCount[cursor] = curCount;
         totalSum      += curSum;
         totalCount    += curCount;
+        int newest = cursor;
         cursor = (cursor + 1) % BUCKETS;
 
         curSum = 0; curMax = 0; curCount = 0;
+        recentTps = StallMath.tpsOverWindow(bSum, bCount, filled, newest, 5000);
+        recentWorstGapMs = StallMath.worstOverWindow(bSum, bMax, filled, newest, 5000);
     }
 
     /** Decides whether to warn. Runs once a second, after the bucket roll. */

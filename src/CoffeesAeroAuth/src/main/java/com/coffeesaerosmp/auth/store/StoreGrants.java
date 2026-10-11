@@ -200,6 +200,32 @@ public final class StoreGrants {
         }
     }
 
+    /** Which particle slot to write. Maps to a fixed column — never interpolated from caller data. */
+    public enum Slot {
+        TRAIL("trail"), CONTRAIL("contrail");
+        final String column;
+        Slot(String column) { this.column = column; }
+    }
+
+    /** Store the chosen trail / contrail id (null = off). Validation is the caller's job. */
+    public static boolean setSlot(UUID mojangUuid, Slot slot, String cosmeticId) {
+        if (mojangUuid == null || slot == null || down()) return false;
+        String col = slot.column;
+        String sql = "INSERT INTO cosmetic_selection (mojang_uuid, " + col + ", updated_at) VALUES (?,?,?) " +
+                     "ON DUPLICATE KEY UPDATE " + col + " = VALUES(" + col + "), updated_at = VALUES(updated_at)";
+        try (Connection c = db().getConnection(); PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setString(1, mojangUuid.toString());
+            ps.setString(2, cosmeticId);
+            ps.setLong(3, System.currentTimeMillis());
+            ps.executeUpdate();
+            refresh(mojangUuid);
+            return true;
+        } catch (SQLException e) {
+            CoffeesAeroAuth.LOGGER.warn("[Store] setSlot {} failed: {}", slot, e.getMessage());
+            return false;
+        }
+    }
+
     /**
      * Submit free text for moderation. Writes ONLY the pending column, so nothing renders until
      * {@link #approveText} copies it across.
@@ -210,6 +236,7 @@ public final class StoreGrants {
         String col = switch (which) {
             case "chat_title"   -> "pending_chat_title";
             case "join_message" -> "pending_join_message";
+            case "leave_message" -> "pending_leave_message";
             default -> null;
         };
         if (mojangUuid == null || col == null || down()) return false;
@@ -234,6 +261,7 @@ public final class StoreGrants {
         String live = switch (which) {
             case "chat_title"   -> "chat_title";
             case "join_message" -> "join_message";
+            case "leave_message" -> "leave_message";
             default -> null;
         };
         if (mojangUuid == null || live == null || down()) return false;
@@ -257,6 +285,7 @@ public final class StoreGrants {
         String col = switch (which) {
             case "chat_title"   -> "pending_chat_title";
             case "join_message" -> "pending_join_message";
+            case "leave_message" -> "pending_leave_message";
             default -> null;
         };
         if (mojangUuid == null || col == null || down()) return false;

@@ -118,6 +118,16 @@ public class AuthConfig {
     public static final ModConfigSpec.IntValue             LAG_REPORT_COOLDOWN_MINUTES;
     public static final ModConfigSpec.IntValue             LAG_CENSUS_MAX_ENTITIES;
     public static final ModConfigSpec.IntValue             STALL_REPORT_MS;
+    public static final ModConfigSpec.BooleanValue         COSMETICS_ENABLED;
+    public static final ModConfigSpec.BooleanValue         TRAILS_ENABLED;
+    public static final ModConfigSpec.BooleanValue         CONTRAILS_ENABLED;
+    public static final ModConfigSpec.BooleanValue         JOIN_MESSAGES_ENABLED;
+    public static final ModConfigSpec.IntValue             COSMETICS_PAUSE_TPS;
+    public static final ModConfigSpec.IntValue             COSMETICS_RESUME_TPS;
+    public static final ModConfigSpec.IntValue             TRAIL_VIEW_RADIUS;
+    public static final ModConfigSpec.IntValue             CONTRAIL_VIEW_RADIUS;
+    public static final ModConfigSpec.IntValue             COSMETICS_MAX_PACKETS_PER_TICK;
+    public static final ModConfigSpec.IntValue             MAX_CONTRAILS;
     public static final ModConfigSpec.IntValue             STALL_BETWEEN_SAMPLE_AFTER_MS;
     public static final ModConfigSpec.BooleanValue         PRESSURE_LOG_ENABLED;
     public static final ModConfigSpec.BooleanValue         RESOLVE_DISPLAY_NAMES;
@@ -885,6 +895,30 @@ public class AuthConfig {
             .defineInRange("ghostSeconds", 60, 0, 600);
         COMBAT_LOG_PUNISH     = b.comment("Kill players who disconnect while combat-tagged (items drop at the fight).")
             .define("combatLogPunish", true);
+        b.pop();
+
+        b.comment("Particle cosmetics (trails, airship contrails) and custom join/leave lines. 1.13.30, ops-only",
+                  "until the shop opens: ops (permission 2+) can preview everything. Plan: Obaa",
+                  "planning/cosmetics-plan-2026-10-12.md").push("cosmetics");
+        COSMETICS_ENABLED = b.comment("Master switch for particle cosmetics. Only ever runs on serverRole = SMP.")
+            .define("cosmeticsEnabled", true);
+        TRAILS_ENABLED = b.comment("Walking trails.").define("trailsEnabled", true);
+        CONTRAILS_ENABLED = b.comment("Airship contrails (Sable). OFF until tested on a real airship.")
+            .define("contrailsEnabled", false);
+        JOIN_MESSAGES_ENABLED = b.comment("Broadcast approved custom join/leave lines (SMP only, once per session).")
+            .define("joinMessagesEnabled", true);
+        COSMETICS_PAUSE_TPS = b.comment("Cosmetics pause when TPS (ticks per wall second, last 5 s) drops below this.")
+            .defineInRange("cosmeticsPauseTps", 15, 1, 19);
+        COSMETICS_RESUME_TPS = b.comment("...and resume only after TPS held at or above this for 10 s (no flapping).")
+            .defineInRange("cosmeticsResumeTps", 17, 2, 20);
+        TRAIL_VIEW_RADIUS = b.comment("Blocks: only players this close receive trail particles.")
+            .defineInRange("trailViewRadius", 24, 8, 32);
+        CONTRAIL_VIEW_RADIUS = b.comment("Blocks: only players this close receive contrail particles.")
+            .defineInRange("contrailViewRadius", 96, 16, 128);
+        COSMETICS_MAX_PACKETS_PER_TICK = b.comment("Hard budget of particle packets per tick, shared fairly (round robin).")
+            .defineInRange("cosmeticsMaxPacketsPerTick", 64, 8, 128);
+        MAX_CONTRAILS = b.comment("At most this many ships stream a contrail at once.")
+            .defineInRange("maxContrails", 8, 0, 16);
         b.pop();
 
         b.comment("/ticket: player support tickets posted to a Discord channel with Acknowledge / Reply / Close buttons.").push("ticket");

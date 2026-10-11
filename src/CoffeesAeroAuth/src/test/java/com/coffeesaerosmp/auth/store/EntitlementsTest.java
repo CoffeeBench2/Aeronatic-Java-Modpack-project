@@ -26,9 +26,13 @@ class EntitlementsTest {
     @Test
     void capabilitiesMatchTheSpecTable() {
         assertEquals(Set.of(), Entitlements.of(Rank.NONE));
-        assertEquals(Set.of(Capability.SOLID_BASIC), Entitlements.of(Rank.DECKHAND));
-        assertEquals(Set.of(Capability.SOLID_BASIC, Capability.SOLID_FULL, Capability.BOLD),
-                     Entitlements.of(Rank.NAVIGATOR));
+        // 1.13.30 cosmetics plan (Obaa planning/cosmetics-plan-2026-10-12.md): each tier also adds one trail/contrail rung.
+        assertEquals(Set.of(Capability.SOLID_BASIC, Capability.TRAIL_BASIC), Entitlements.of(Rank.DECKHAND));
+        assertEquals(Set.of(Capability.SOLID_BASIC, Capability.TRAIL_BASIC, Capability.SOLID_FULL, Capability.BOLD,
+                            Capability.TRAIL), Entitlements.of(Rank.NAVIGATOR));
+        assertTrue(Entitlements.of(Rank.CAPTAIN).contains(Capability.CONTRAIL));
+        assertFalse(Entitlements.of(Rank.CAPTAIN).contains(Capability.CONTRAIL_EXCLUSIVE));
+        assertTrue(Entitlements.of(Rank.ADMIRAL).contains(Capability.CONTRAIL_EXCLUSIVE));
         assertTrue(Entitlements.of(Rank.CAPTAIN).containsAll(
                    Set.of(Capability.GRADIENT_2, Capability.JOIN_MESSAGE, Capability.BOLD)));
         assertFalse(Entitlements.of(Rank.CAPTAIN).contains(Capability.GRADIENT_3));

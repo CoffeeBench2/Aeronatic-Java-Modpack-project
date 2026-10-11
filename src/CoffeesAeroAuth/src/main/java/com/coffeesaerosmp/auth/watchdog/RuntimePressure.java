@@ -46,6 +46,8 @@ public final class RuntimePressure {
     private static volatile boolean running;
     private static volatile Path cpuStat;
     private static CgroupCpuStat lastStat;
+    /** CPU time per thread id at the last 5-minute summary, to report the spend since then. */
+    private static final java.util.Map<Long, Long> lastThreadCpu = new java.util.HashMap<>();
     private static long lastSummaryMs, lastWarnMs;
 
     private RuntimePressure() {}
@@ -133,7 +135,33 @@ public final class RuntimePressure {
         }
         if (now - lastSummaryMs >= 5 * 60_000L) {
             lastSummaryMs = now;
-            CoffeesAeroAuth.LOGGER.info("[RuntimePressure] last 5 min — {}", summary(5 * 60_000L));
+            CoffeesAeroAuth.LOGGER.info("[RuntimePressure] last 5 min — {} · CPU by thread: {}", summary(5 * 60_000L), threadCpuSinceLast());
+        }
+    }
+
+    /** CPU each thread group spent since the previous call (top 6). Cheap: one MXBean pass every 5 min. */
+    static String threadCpuSinceLast() {
+        try {
+            java.lang.management.ThreadMXBean mx = ManagementFactory.getThreadMXBean();
+            if (!mx.isThreadCpuTimeSupported()) return "not supported on this JVM";
+            if (!mx.isThreadCpuTimeEnabled()) mx.setThreadCpuTimeEnabled(true);
+            java.util.Map<String, Long> spent = new java.util.HashMap<>();
+            java.util.Map<Long, Long> now = new java.util.HashMap<>();
+            for (java.lang.management.ThreadInfo ti : mx.getThreadInfo(mx.getAllThreadIds())) {
+                if (ti == null) continue;
+                long cpu = mx.getThreadCpuTime(ti.getThreadId());
+                if (cpu < 0) continue;
+                now.put(ti.getThreadId(), cpu);
+                long before = lastThreadCpu.getOrDefault(ti.getThreadId(), 0L);
+                spent.merge(ThreadGroups.group(ti.getThreadName()), Math.max(0, cpu - before), Long::sum);
+            }
+            boolean first = lastThreadCpu.isEmpty();
+            lastThreadCpu.clear();
+            lastThreadCpu.putAll(now);
+            String top = ThreadGroups.top(spent, 6);
+            return first ? top + " [since boot]" : top;
+        } catch (Throwable t) {
+            return "unavailable (" + t.getClass().getSimpleName() + ")";
         }
     }
 

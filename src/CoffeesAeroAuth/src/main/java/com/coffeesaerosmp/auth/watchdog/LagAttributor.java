@@ -128,10 +128,10 @@ public final class LagAttributor {
         sampler = new Thread(LagAttributor::sampleLoop, "AeroLagSampler");
         sampler.setDaemon(true);
         sampler.start();
-        CoffeesAeroAuth.LOGGER.info("[LagAttributor] Sampling armed — attributes ticks over {}ms, "
-            + "reports spikes over {}ms (cooldown {}min).",
-            AuthConfig.LAG_SAMPLE_AFTER_MS.get(), AuthConfig.LAG_SPIKE_REPORT_MS.get(),
-            AuthConfig.LAG_REPORT_COOLDOWN_MINUTES.get());
+        CoffeesAeroAuth.LOGGER.info("[LagAttributor] Sampling armed — samples ticks over {}ms and between-tick gaps over "
+            + "{}ms, reports stalls over {}ms (cooldown {}min per kind).",
+            AuthConfig.LAG_SAMPLE_AFTER_MS.get(), AuthConfig.STALL_BETWEEN_SAMPLE_AFTER_MS.get(),
+            AuthConfig.STALL_REPORT_MS.get(), AuthConfig.LAG_REPORT_COOLDOWN_MINUTES.get());
     }
 
     public static void stop() {

@@ -54,7 +54,7 @@ public final class NameRender {
         if (localUuid == null || plainDisplayName == null || plainDisplayName.isEmpty()) return null;
 
         StoreState.Snapshot snap = StoreState.get(localUuid);
-        Selection sel = snap.liveSelection();
+        Selection sel = StoreState.selectionFor(localUuid);
         String style = sel.nameStyle();
         boolean bold = sel.bold();
         if (style == null && !bold) return null;                  // nothing purchased or selected
@@ -131,7 +131,7 @@ public final class NameRender {
      */
     public static String nameplateColourCode(UUID localUuid) {
         if (localUuid == null) return null;
-        Selection sel = StoreState.get(localUuid).liveSelection();
+        Selection sel = StoreState.selectionFor(localUuid);
         String style = sel.nameStyle();
         if (style == null) return null;
 

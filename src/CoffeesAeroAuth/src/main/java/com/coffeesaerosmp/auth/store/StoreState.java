@@ -68,6 +68,22 @@ public final class StoreState {
     private static final Map<UUID, Snapshot> CACHE = new ConcurrentHashMap<>();
 
     /**
+     * What this player is wearing RIGHT NOW — the one entry point every surface should use (name render, chat,
+     * the cosmetic engine, /cosmetics). Applies the ops preview rule ({@link Previewers}), which a bare
+     * {@link Snapshot#liveSelection()} cannot know about, and the session-only choices of unlinked ops
+     * ({@link PreviewSelections}).
+     */
+    public static Selection selectionFor(UUID localUuid) {
+        boolean preview = Previewers.isPreview(localUuid);
+        var session = PreviewSelections.get(localUuid);
+        if (session.isPresent()) {
+            return Entitlements.sanitise(session.get(), Rank.NONE, Set.of(), preview).selection();
+        }
+        Snapshot snap = get(localUuid);
+        return Entitlements.sanitise(snap.selection(), snap.effectiveRank(), snap.owned(), preview).selection();
+    }
+
+    /**
      * Notified with the local uuid whenever a snapshot is republished.
      *
      * <p>🔴 This is not a convenience. Two of the three name surfaces refresh themselves — the tab list
@@ -198,13 +214,14 @@ public final class StoreState {
                 }
             }
             try (PreparedStatement ps = c.prepareStatement(
-                    "SELECT name_style, bold, chat_title, join_message FROM cosmetic_selection " +
+                    "SELECT name_style, bold, chat_title, join_message, trail, contrail, leave_message " +
+                    "FROM cosmetic_selection " +
                     "WHERE mojang_uuid = ?")) {
                 ps.setString(1, mojang.toString());
                 try (ResultSet rs = ps.executeQuery()) {
                     if (rs.next()) {
-                        sel = new Selection(rs.getString(1), rs.getBoolean(2),
-                                            rs.getString(3), rs.getString(4));
+                        sel = new Selection(rs.getString(1), rs.getBoolean(2), rs.getString(3), rs.getString(4),
+                                            rs.getString(5), rs.getString(6), rs.getString(7));
                     }
                 }
             }
