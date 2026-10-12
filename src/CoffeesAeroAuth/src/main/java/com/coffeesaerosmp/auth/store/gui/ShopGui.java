@@ -70,9 +70,34 @@ public final class ShopGui {
 
     // ── opening ───────────────────────────────────────────────────────────────
 
+    /** /shop: the AeroCore Wardrobe screen when the client has it, else the chest windows. */
     public static void openMain(ServerPlayer p) {
         if (!PremiumGate.check(p)) return;
+        if (WardrobeSync.supported(p)) { WardrobeSync.open(p); return; }
         withBalance(p, bal -> showMain(p, bal));
+    }
+
+    /** /shop classic: always the chest windows. */
+    public static void openClassic(ServerPlayer p) {
+        if (!PremiumGate.check(p)) return;
+        withBalance(p, bal -> showMain(p, bal));
+    }
+
+    /** /shop tryon <id> (the Wardrobe's "Try in world" button). */
+    public static void tryOnById(ServerPlayer p, String id) {
+        if (!PremiumGate.check(p)) return;
+        if (CosmeticCatalog.get(id).isEmpty()) return;
+        tryOn(p, new Entry(id, label(id), null, categoryOf(id), BeanPrices.price(id), rankNeeded(id), false, false, false));
+    }
+
+    /** /shop purchase <id> (the Wardrobe's Buy, after its own confirm dialog): buy, then wear it. */
+    public static void purchaseById(ServerPlayer p, String id) {
+        if (!PremiumGate.check(p)) return;
+        if (BeanPrices.price(id).isEmpty()) {
+            p.sendSystemMessage(Component.literal(TextUtil.PREFIX + "§cThat isn't for sale."));
+            return;
+        }
+        buy(p, new Entry(id, label(id), null, categoryOf(id), BeanPrices.price(id), rankNeeded(id), false, false, false), null, 0);
     }
 
     public static void openCategory(ServerPlayer p, Category cat, int page) {
@@ -278,7 +303,7 @@ public final class ShopGui {
                     p.sendSystemMessage(Component.literal(TextUtil.PREFIX + "§aBought §f" + e.label() + "§a! §7You have §f"
                         + o.balance() + "§7 Beans left."));
                     wear(p, new Entry(e.id(), e.label(), e.blurb(), e.cat(), e.price(), e.rankNeeded(), true, true, false));
-                    openCategory(p, back, page);
+                    if (back != null) openCategory(p, back, page);
                 }));
                 return;
             }

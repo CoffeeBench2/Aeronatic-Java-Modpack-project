@@ -87,6 +87,7 @@ public final class CosmeticEngine {
     public static void forget(UUID uuid) {
         TryOn.stop(uuid);
         com.coffeesaerosmp.auth.store.gui.ShopGui.forget(uuid);
+        com.coffeesaerosmp.auth.store.gui.WardrobeSync.forget(uuid);
         Previewers.forget(uuid);
         PreviewSelections.forget(uuid);
         LAST_EMIT_POS.remove(uuid);

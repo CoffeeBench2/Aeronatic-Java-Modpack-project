@@ -37,6 +37,8 @@ public final class AeroNetworking {
     public static void register(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar registrar = event.registrar("1.0.0").optional();
         registrar.playToServer(PlayerTypePayload.TYPE, PlayerTypePayload.STREAM_CODEC, AeroNetworking::handle);
+        // 1.13.35: the AeroCore Wardrobe screen. Server -> client only; the handler never runs on a server.
+        registrar.playToClient(WardrobePayload.TYPE, WardrobePayload.STREAM_CODEC, (payload, ctx) -> { });
         // (aerosmp:self_skin was retired in auth 1.6.0 — skin sync now lives in CoffeesAeroSkins
         // on its own aerosmp:skin_sync channel.)
         CoffeesAeroAuth.LOGGER.info("[Net] Registered aerosmp:player_type (playToServer), optional.");

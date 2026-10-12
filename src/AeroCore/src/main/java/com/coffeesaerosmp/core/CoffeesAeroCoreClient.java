@@ -11,6 +11,9 @@ public class CoffeesAeroCoreClient {
     private static boolean xaeroMigrationChecked = false;
 
     public static void init(IEventBus modBus) {
+        // DEV ONLY: visual test of the Wardrobe screen (does nothing unless -Daerocore.wardrobeHarness is set).
+        com.coffeesaerosmp.core.wardrobe.WardrobeDevHarness.maybeInit();
+
         // Delete files left by dropped mods, as early as the mod system allows. KubeJS reads
         // kubejs/client_scripts/ during its own early init, so this races it -- hence the mod
         // CONSTRUCTOR rather than a screen event. Losing the race only costs one more launch of the

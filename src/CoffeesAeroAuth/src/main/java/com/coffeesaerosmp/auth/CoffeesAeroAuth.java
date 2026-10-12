@@ -136,6 +136,7 @@ public class CoffeesAeroAuth {
                 net.minecraft.server.level.ServerPlayer p = srv.getPlayerList().getPlayer(localUuid);
                 // `premium` is unused by reveal() now; the offline marker comes from the profile.
                 if (p != null) com.coffeesaerosmp.auth.auth.NameVisibility.reveal(p, true);
+                if (p != null) com.coffeesaerosmp.auth.store.gui.WardrobeSync.onChange(p);
             });
         });
 

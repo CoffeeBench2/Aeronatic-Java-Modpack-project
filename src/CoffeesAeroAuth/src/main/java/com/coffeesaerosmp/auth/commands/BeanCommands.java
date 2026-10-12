@@ -67,6 +67,13 @@ public final class BeanCommands {
             .then(Commands.literal("trails").executes(ctx -> shop(ctx.getSource(), BeanPrices.Group.TRAIL)))
             .then(Commands.literal("contrails").executes(ctx -> shop(ctx.getSource(), BeanPrices.Group.CONTRAIL)))
             .then(Commands.literal("name").executes(ctx -> shop(ctx.getSource(), BeanPrices.Group.NAME)))
+            .then(Commands.literal("classic").executes(ctx -> withPlayer(ctx.getSource(), com.coffeesaerosmp.auth.store.gui.ShopGui::openClassic)))
+            .then(Commands.literal("tryon").then(Commands.argument("id", StringArgumentType.word())
+                .executes(ctx -> withPlayer(ctx.getSource(), p -> com.coffeesaerosmp.auth.store.gui.ShopGui.tryOnById(p,
+                    StringArgumentType.getString(ctx, "id"))))))
+            .then(Commands.literal("purchase").then(Commands.argument("id", StringArgumentType.word())
+                .executes(ctx -> withPlayer(ctx.getSource(), p -> com.coffeesaerosmp.auth.store.gui.ShopGui.purchaseById(p,
+                    StringArgumentType.getString(ctx, "id"))))))
             .then(Commands.literal("list").executes(ctx -> shopList(ctx.getSource(), null))
                 .then(Commands.literal("trails").executes(ctx -> shopList(ctx.getSource(), BeanPrices.Group.TRAIL)))
                 .then(Commands.literal("contrails").executes(ctx -> shopList(ctx.getSource(), BeanPrices.Group.CONTRAIL)))
@@ -281,6 +288,13 @@ public final class BeanCommands {
     }
 
     // ── helpers ───────────────────────────────────────────────────────────────
+
+    private static int withPlayer(CommandSourceStack src, java.util.function.Consumer<ServerPlayer> action) {
+        ServerPlayer p = player(src);
+        if (p == null) return 0;
+        action.accept(p);
+        return 1;
+    }
 
     private static String notLinked() {
         return "§cBeans need a premium (Mojang) account that has joined through the gate.";
