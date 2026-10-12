@@ -58,6 +58,8 @@ public final class CosmeticEngine {
     private static final Map<String, ParticleOptions> OPTIONS = new HashMap<>();
     private static final Set<String> BROKEN = new HashSet<>();
     private static final Map<UUID, Vec3> LAST_EMIT_POS = new HashMap<>();
+    /** Emit count per wearer: the patterns alternate feet and keep rhythm with it. */
+    private static final Map<UUID, Long> STEPS = new HashMap<>();
     private static final Set<UUID> HIDE_OTHERS = ConcurrentHashMap.newKeySet();
 
     private static List<UUID> trailEmitters = List.of();
@@ -86,6 +88,8 @@ public final class CosmeticEngine {
 
     public static void forget(UUID uuid) {
         TryOn.stop(uuid);
+        STEPS.remove(uuid);
+        FittingRoom.forget(uuid);
         com.coffeesaerosmp.auth.store.gui.ShopGui.forget(uuid);
         com.coffeesaerosmp.auth.store.gui.WardrobeSync.forget(uuid);
         Previewers.forget(uuid);
@@ -147,8 +151,9 @@ public final class CosmeticEngine {
         }
         if (tick % 2 != 0) return;
         if (!on(AuthConfig.COSMETICS_ENABLED) || LobbyHandoff.isLobbyRole()) { lastTickPackets = 0; return; }
-        // Shop try-ons go to the previewer alone: outside the shared budget and the lag pause on purpose.
+        // Shop try-ons and the fitting room go to the previewer alone: outside the shared budget and the lag pause.
         try { TryOn.emit(server, tick); } catch (Throwable t) { CoffeesAeroAuth.LOGGER.debug("[Cosmetics] try-on: {}", t.toString()); }
+        try { FittingRoom.tick(server, tick); } catch (Throwable t) { CoffeesAeroAuth.LOGGER.debug("[Cosmetics] fitting room: {}", t.toString()); }
         if (LOAD.paused()) { lastTickPackets = 0; return; }
         try {
             emit(server);
@@ -204,6 +209,18 @@ public final class CosmeticEngine {
             Vec3 last = LAST_EMIT_POS.get(id);
             if (last != null && last.distanceToSqr(pos) < 0.15 * 0.15) { skipped("standing still"); continue; }
             LAST_EMIT_POS.put(id, pos);
+            // Designed effect first (1.13.36); the catalog's single particle is only the fallback.
+            double[] fwd = forward(last == null ? null : pos.subtract(last), p.getLookAngle());
+            long step = STEPS.merge(id, 1L, Long::sum);
+            var ctx = new com.coffeesaerosmp.auth.cosmetics.fx.FxPatterns.Ctx(pos.x, pos.y, pos.z, fwd[0], fwd[1], 0,
+                p.getBbHeight(), tick, step);
+            ServerLevel lvl = p.serverLevel();
+            if (com.coffeesaerosmp.auth.cosmetics.fx.FxPatterns.emit(c.id(), ctx, (o, lr, x, y, z, dx, dy, dz, sp, cnt) ->
+                    sent[0] += sendNear(lvl, new Vec3(x, y, z), r, new ClientboundLevelParticlesPacket(o, lr, x, y, z, dx, dy, dz, sp, cnt),
+                        Math.max(0, budget - sent[0])))) {
+                cursor = (start + k + 1) % Math.max(1, n);
+                continue;
+            }
             ParticleOptions opt = options(c);
             if (opt == null) { skipped("bad particle"); continue; }
             var fx = c.fx();
@@ -238,6 +255,14 @@ public final class CosmeticEngine {
             ShipTracker.Motion m = motionOf.get(e.getKey());
             double[] tail = ContrailMath.tail(m.centre(), m.velocity(), m.min(), m.max());
             if (tail == null) continue;
+            var ctx = contrailCtx(tail, m, tick, STEPS.merge(e.getKey(), 1L, Long::sum));
+            ServerLevel lvl = p.serverLevel();
+            if (com.coffeesaerosmp.auth.cosmetics.fx.FxPatterns.emit(c.id(), ctx, (o, lr, x, y, z, dx, dy, dz, sp, cnt) ->
+                    sent[0] += sendNear(lvl, new Vec3(x, y, z), r, new ClientboundLevelParticlesPacket(o, lr, x, y, z, dx, dy, dz, sp, cnt),
+                        Math.max(0, budget - sent[0])))) {
+                ships++;
+                continue;
+            }
             ParticleOptions opt = options(c);
             if (opt == null) continue;
             var fx = c.fx();
@@ -248,6 +273,26 @@ public final class CosmeticEngine {
             sent[0] += sendNear(p.serverLevel(), new Vec3(tail[0], tail[1], tail[2]), r, pkt, budget - sent[0]);
             ships++;
         }
+    }
+
+    /** Horizontal unit direction of travel; falls back to where the player looks. Package-private for TryOn. */
+    static double[] forward(Vec3 moved, Vec3 look) {
+        double x = moved == null ? 0 : moved.x, z = moved == null ? 0 : moved.z;
+        double len = Math.sqrt(x * x + z * z);
+        if (len < 1e-4) { x = look.x; z = look.z; len = Math.sqrt(x * x + z * z); }
+        if (len < 1e-4) return new double[]{1, 0};
+        return new double[]{x / len, z / len};
+    }
+
+    /** Pattern context for a ship's tail: travel direction from the ship's velocity, beam from its bounds. */
+    static com.coffeesaerosmp.auth.cosmetics.fx.FxPatterns.Ctx contrailCtx(double[] tail, ShipTracker.Motion m, long tick, long step) {
+        double vx = m.velocity()[0], vz = m.velocity()[2];
+        double len = Math.sqrt(vx * vx + vz * vz);
+        double fx = len < 1e-4 ? 1 : vx / len, fz = len < 1e-4 ? 0 : vz / len;
+        double sx = m.max()[0] - m.min()[0], sz = m.max()[2] - m.min()[2];
+        // Beam = the ship's extent across its direction of travel.
+        double beam = Math.abs(-fz * sx) + Math.abs(fx * sz);
+        return new com.coffeesaerosmp.auth.cosmetics.fx.FxPatterns.Ctx(tail[0], tail[1], tail[2], fx, fz, Math.min(8, Math.max(1, beam / 2)), 0, tick, step);
     }
 
     private static boolean outranks(ServerPlayer a, ServerPlayer b) {

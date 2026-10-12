@@ -119,6 +119,7 @@ public final class ShopGui {
 
     private static void open(ServerPlayer p, int rows, String title, SimpleContainer box, ButtonMenu.Handler h) {
         p.openMenu(new SimpleMenuProvider((id, inv, pl) -> new ButtonMenu(id, inv, rows, box, h), Component.literal(title)));
+        com.coffeesaerosmp.auth.cosmetics.FittingRoom.ensure(p);
     }
 
     // ── main ──────────────────────────────────────────────────────────────────
@@ -184,7 +185,7 @@ public final class ShopGui {
             case GRADIENTS -> "Gradients"; case EXTRAS -> "Bold & messages"; case WARDROBE -> "Wardrobe";
         } + (pages > 1 ? " (" + (pg + 1) + "/" + pages + ")" : "");
         open(p, 6, title, box, (slot, click) -> {
-            if (slot == 45) { openMain(p); return; }
+            if (slot == 45) { openClassic(p); return; }      // stay in the chest shop (openMain prefers the Wardrobe)
             if (slot == 48 && pg > 0) { openCategory(p, cat, pg - 1); return; }
             if (slot == 50 && pg < pages - 1) { openCategory(p, cat, pg + 1); return; }
             if (slot == 53) { p.closeContainer(); return; }
@@ -195,23 +196,28 @@ public final class ShopGui {
     }
 
     /** What a click on an entry does. */
+    /**
+     * Left = preview on your mannequin beside the window (the window stays open). Right = wear it / take it off if
+     * you have it, otherwise buy. Shift = try it on in the world for 30 s (closes the window).
+     */
     private static void act(ServerPlayer p, Entry e, Click click, Category back, int page, int bal) {
         boolean particle = e.cat() == Category.TRAILS || e.cat() == Category.CONTRAILS
             || e.id().startsWith(Entitlements.TRAIL_PREFIX) || e.id().startsWith(Entitlements.CONTRAIL_PREFIX);
-        boolean primary = click != Click.RIGHT;
-        if (e.available()) {
-            if (primary) {
-                wear(p, e);
-                openCategory(p, back, page);
-            } else if (particle) {
-                tryOn(p, e);
-            } else {
-                previewName(p, e);
-            }
+        if (click == Click.LEFT) {
+            if (particle) com.coffeesaerosmp.auth.cosmetics.FittingRoom.preview(p, e.id());
+            else if (e.id().equals(Entitlements.BOLD_ID)) com.coffeesaerosmp.auth.cosmetics.FittingRoom.previewName(p, null, true);
+            else if (e.cat() == Category.COLOURS || e.cat() == Category.GRADIENTS)
+                com.coffeesaerosmp.auth.cosmetics.FittingRoom.previewName(p, e.id(), false);
+            else previewName(p, e);
             return;
         }
-        if (primary) {
+        if (click == Click.SHIFT) {
             if (particle) tryOn(p, e); else previewName(p, e);
+            return;
+        }
+        if (e.available()) {
+            wear(p, e);
+            openCategory(p, back, page);
             return;
         }
         if (e.price().isPresent()) showConfirm(p, e, bal, back, page);
@@ -337,7 +343,7 @@ public final class ShopGui {
         }
         box.setItem(22, icon(Items.ARROW, title("Back", ChatFormatting.WHITE), List.of(), false));
         open(p, 3, "Shop · Ranks", box, (slot, click) -> {
-            if (slot == 22) { openMain(p); return; }
+            if (slot == 22) { openClassic(p); return; }
             for (int s : slots) if (s == slot) { p.closeContainer(); storeLink(p); return; }
         });
     }
@@ -451,13 +457,10 @@ public final class ShopGui {
         else if (e.price().isPresent()) lore.add(line(e.price().getAsInt() + " Coffee Beans" + (bal >= 0 && bal < e.price().getAsInt() ? "  (you have " + bal + ")" : ""), ChatFormatting.GOLD));
         else if (e.rankNeeded() != null) lore.add(line("Comes with " + e.rankNeeded().displayName(), ChatFormatting.LIGHT_PURPLE));
         else lore.add(line("Event only", ChatFormatting.LIGHT_PURPLE));
-        if (e.available()) {
-            lore.add(line(e.equipped() ? "Left-click: take it off" : "Left-click: wear it", ChatFormatting.YELLOW));
-            lore.add(line(particle ? "Right-click: try it on (30 s)" : "Right-click: preview in chat", ChatFormatting.YELLOW));
-        } else {
-            lore.add(line(particle ? "Left-click: try it on (30 s, only you see it)" : "Left-click: preview in chat", ChatFormatting.YELLOW));
-            if (e.price().isPresent()) lore.add(line("Right-click: buy", ChatFormatting.YELLOW));
-        }
+        lore.add(line("Left-click: preview it on your mannequin", ChatFormatting.YELLOW));
+        if (e.available()) lore.add(line(e.equipped() ? "Right-click: take it off" : "Right-click: wear it", ChatFormatting.YELLOW));
+        else if (e.price().isPresent()) lore.add(line("Right-click: buy", ChatFormatting.YELLOW));
+        if (particle) lore.add(line("Shift-click: try it in the world (30 s)", ChatFormatting.YELLOW));
         return icon(iconFor(e.id()), name, lore, e.equipped());
     }
 

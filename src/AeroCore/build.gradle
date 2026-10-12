@@ -14,6 +14,11 @@ neoForge {
         client {
             client()
             // Dev-only visual test: ./gradlew runClient -PwardrobeHarness=<path to wardrobe-sample.json>
+            if (project.hasProperty('fittingHarness')) {
+                systemProperty 'aerocore.fittingHarness', project.property('fittingHarness')
+                if (project.hasProperty('fittingSecret')) systemProperty 'aerocore.fittingSecret', project.property('fittingSecret')
+                programArguments.addAll('--width', '1600', '--height', '900')
+            }
             if (project.hasProperty('wardrobeHarness')) {
                 systemProperty 'aerocore.wardrobeHarness', project.property('wardrobeHarness')
                 programArguments.addAll('--width', '1600', '--height', '900')

@@ -28,9 +28,21 @@ public final class PremiumGate {
     /** GameTest hook: mock players are offline accounts; tests add them here to exercise the premium paths. */
     public static final Set<UUID> TEST_PREMIUM = ConcurrentHashMap.newKeySet();
 
+    /**
+     * DEV ONLY: {@code -Daerosmp.devPremium=<name>} on a dev server's JVM treats that account as premium, for the
+     * scripted client test of the shop. Only whoever controls the server's launch command can set it; it's never
+     * set on live, and it logs a WARN every time it's used so it can't go unnoticed.
+     */
+    private static final String DEV_PREMIUM = System.getProperty("aerosmp.devPremium", "");
+
     public static boolean isPremium(ServerPlayer p) {
         if (p == null) return false;
         if (TEST_PREMIUM.contains(p.getUUID())) return true;
+        if (!DEV_PREMIUM.isBlank() && DEV_PREMIUM.equalsIgnoreCase(p.getGameProfile().getName())) {
+            com.coffeesaerosmp.auth.CoffeesAeroAuth.LOGGER.warn("[Store] DEV premium override (-Daerosmp.devPremium) used for {}",
+                p.getGameProfile().getName());
+            return true;
+        }
         var store = CoffeesAeroAuth.PROFILE_STORE;
         PlayerProfile prof = store == null ? null : store.get(p.getUUID());
         return prof != null && prof.isPremium();

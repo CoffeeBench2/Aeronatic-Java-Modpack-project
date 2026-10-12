@@ -33,6 +33,7 @@ public final class TryOn {
 
     private static final Map<UUID, Session> ACTIVE = new ConcurrentHashMap<>();
     private static final Map<UUID, Vec3> LAST = new ConcurrentHashMap<>();
+    private static final Map<UUID, Long> STEP = new ConcurrentHashMap<>();
     /** Test hook: packets sent by previews (never counted in the shared budget). */
     static volatile long packets;
 
@@ -81,24 +82,35 @@ public final class TryOn {
             if (opt == null) { stop(id); continue; }
             var fx = s.cosmetic().fx();
             if (!Stagger.due(tick, id.hashCode(), fx.everyTicks())) continue;
+            long step = STEP.merge(id, 1L, Long::sum);
+            com.coffeesaerosmp.auth.cosmetics.fx.FxPatterns.Sink self = (o, lr, x, y, z, dx, dy, dz, sp, cnt) ->
+                send(p, new ClientboundLevelParticlesPacket(o, lr, x, y, z, dx, dy, dz, sp, cnt));
             if (s.cosmetic().type() == CosmeticCatalog.Type.TRAIL) {
                 Vec3 pos = p.position();
                 Vec3 last = LAST.put(id, pos);
                 if (last != null && last.distanceToSqr(pos) < 0.15 * 0.15) continue;     // standing still: nothing, like the real one
-                send(p, new ClientboundLevelParticlesPacket(opt, false, pos.x, pos.y + fx.yOffset(), pos.z,
-                    fx.spread(), fx.spread() * 0.5f, fx.spread(), fx.speed(), fx.count()));
+                double[] f = CosmeticEngine.forward(last == null ? null : pos.subtract(last), p.getLookAngle());
+                var ctx = new com.coffeesaerosmp.auth.cosmetics.fx.FxPatterns.Ctx(pos.x, pos.y, pos.z, f[0], f[1], 0, p.getBbHeight(), tick, step);
+                if (!com.coffeesaerosmp.auth.cosmetics.fx.FxPatterns.emit(s.cosmetic().id(), ctx, self)) {
+                    send(p, new ClientboundLevelParticlesPacket(opt, false, pos.x, pos.y + fx.yOffset(), pos.z,
+                        fx.spread(), fx.spread() * 0.5f, fx.spread(), fx.speed(), fx.count()));
+                }
             } else {
                 ShipTracker.Motion m = ShipTracker.available() ? ShipTracker.motion(p, tick) : null;
                 double[] tail = m == null ? null : ContrailMath.tail(m.centre(), m.velocity(), m.min(), m.max());
+                com.coffeesaerosmp.auth.cosmetics.fx.FxPatterns.Ctx ctx;
                 if (tail != null) {
-                    send(p, new ClientboundLevelParticlesPacket(opt, true, tail[0], tail[1], tail[2],
-                        fx.spread(), fx.spread(), fx.spread(), fx.speed(), fx.count()));
+                    ctx = CosmeticEngine.contrailCtx(tail, m, tick, step);
                 } else {
-                    // Demo stream: puffs marching away along the look direction, 3 to 15 blocks out.
+                    // Demo from the ground: the wake marches away along the look direction, 3 to 15 blocks out.
                     Vec3 look = p.getLookAngle();
                     double d = 3 + (tick / 2 % 7) * 2;
                     Vec3 at = p.getEyePosition().add(look.scale(d));
-                    send(p, new ClientboundLevelParticlesPacket(opt, true, at.x, at.y, at.z,
+                    double[] f = CosmeticEngine.forward(null, look);
+                    ctx = new com.coffeesaerosmp.auth.cosmetics.fx.FxPatterns.Ctx(at.x, at.y, at.z, f[0], f[1], 2, 0, tick, step);
+                }
+                if (!com.coffeesaerosmp.auth.cosmetics.fx.FxPatterns.emit(s.cosmetic().id(), ctx, self)) {
+                    send(p, new ClientboundLevelParticlesPacket(opt, true, ctx.x(), ctx.y(), ctx.z(),
                         fx.spread(), fx.spread(), fx.spread(), fx.speed(), fx.count()));
                 }
             }

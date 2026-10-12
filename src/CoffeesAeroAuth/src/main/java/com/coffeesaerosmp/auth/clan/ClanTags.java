@@ -92,8 +92,11 @@ public final class ClanTags {
             Optional<Team> team = FTBTeamsAPI.api().getManager().getTeamForPlayer(player);
             if (team.isEmpty() || !team.get().isPartyTeam()) return null;
             return TAGS.get(team.get().getId());
-        } catch (Exception e) {
-            return null;   // FTB Teams not ready yet — render untagged rather than break login
+        } catch (Exception | LinkageError e) {
+            // FTB Teams not ready yet, or not installed at all: render untagged rather than break login. LinkageError
+            // matters: without FTB Teams this threw NoClassDefFoundError on every join and crashed the server
+            // (found 2026-10-12 by the scripted client test on a dev server without FTB Teams).
+            return null;
         }
     }
 
@@ -134,7 +137,7 @@ public final class ClanTags {
             if (!t.get().getRankForPlayer(player.getUUID()).isOwner())
                 return "Only the party OWNER can change the tag color.";
             team = t.get();
-        } catch (Exception e) {
+        } catch (Exception | LinkageError e) {
             return "Teams are not available right now — try again in a moment.";
         }
         Entry prev = TAGS.get(team.getId());
@@ -161,7 +164,7 @@ public final class ClanTags {
             Optional<Team> team = FTBTeamsAPI.api().getManager().getTeamForPlayer(player);
             if (team.isEmpty() || !team.get().isPartyTeam()) return null;
             return team.get().getRankForPlayer(player.getUUID()).isOfficerOrBetter() ? team.get() : null;
-        } catch (Exception e) {
+        } catch (Exception | LinkageError e) {
             return null;
         }
     }

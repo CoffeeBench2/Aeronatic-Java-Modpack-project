@@ -29,6 +29,8 @@ neoForge {
             server()
             programArgument '--nogui'
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+            // Dev-only scripted shop test: ./gradlew runServer -PdevPremium=Dev
+            if (project.hasProperty('devPremium')) systemProperty 'aerosmp.devPremium', project.property('devPremium')
         }
         gameTestServer {
             type = "gameTestServer"
