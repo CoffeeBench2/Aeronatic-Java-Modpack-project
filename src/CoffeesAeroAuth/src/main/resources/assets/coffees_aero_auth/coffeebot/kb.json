@@ -163,7 +163,7 @@
       "id": "offline-accounts",
       "title": "Do I need to buy Minecraft?",
       "when": [["offline", "non premium", "without buying", "free minecraft", "no account", "premium", "buy minecraft", "own minecraft", "original minecraft", "legit account"]],
-      "answer": "No. The server is **hybrid**: premium and offline (non-premium) accounts both join at **`{address}`** and get the same features, custom skins included.\nOffline players register a password on first join (`/register <password>`) and use `/login <password>` after that.",
+      "answer": "No. The server is **hybrid**: premium and offline (non-premium) accounts both join at **`{address}`** and get the same features, custom skins included.\nOffline players register a password on first join (`/register <password> <password>`, typed twice) and use `/login <password>` after that.",
       "see": "faq",
       "related": ["register-login"]
     },
@@ -172,7 +172,7 @@
       "title": "Register and log in",
       "when": [["register", "login", "log in", "sign in", "password"]],
       "not": ["forgot", "forget", "reset", "lost", "change"],
-      "answer": "Offline accounts: `/register <password>` on your first join, then `/login <password>` every time after. You have **3 minutes** to log in before you're kicked; just reconnect if that happens.\nPremium accounts are verified automatically and never need a password.",
+      "answer": "Offline accounts: `/register <password> <password>` on your first join (the same password twice), then `/login <password>` every time after. You have **3 minutes** to log in before you're kicked; just reconnect if that happens.\nPremium accounts are verified automatically and never need a password.",
       "see": "commands",
       "related": ["forgot-password"]
     },
@@ -571,6 +571,27 @@
       "not": ["ship", "shipname"],
       "answer": "`/changename <newName>` changes your display name **once per account**, and staff approve it first. Premium players who change their Mojang name should contact staff.",
       "see": "commands"
+    },
+    {
+      "id": "clan",
+      "title": "Clan tags",
+      "when": [["clan", "clan tag", "guild", "tag next name"]],
+      "answer": "`/clan tag <tag>` puts a clan tag beside your name, `/clan color <color>` colours it and `/clan untag` removes it.",
+      "see": "commands"
+    },
+    {
+      "id": "profile",
+      "title": "Profiles and bios",
+      "when": [["profile", "bio", "setbio"]],
+      "answer": "`/profile` shows your profile and `/profile <player>` shows someone else's. Set your bio with `/setbio <text>`.",
+      "see": "commands"
+    },
+    {
+      "id": "sidebar",
+      "title": "The sidebar",
+      "when": [["sidebar", "scoreboard", "side bar", "hide sidebar"]],
+      "answer": "The sidebar shows your level, Season 3 playtime and more. `/sidebar` turns it on or off for you.",
+      "see": "progression"
     },
     {
       "id": "corpse-gone",
