@@ -26,6 +26,11 @@ public final class Previewers {
         PREVIEW.addAll(ops);
     }
 
+    /** Add one previewer without touching the others (GameTests; the engine refresh replaces the whole set). */
+    public static void add(UUID localUuid) {
+        if (localUuid != null) PREVIEW.add(localUuid);
+    }
+
     public static void forget(UUID localUuid) {
         if (localUuid != null) PREVIEW.remove(localUuid);
     }

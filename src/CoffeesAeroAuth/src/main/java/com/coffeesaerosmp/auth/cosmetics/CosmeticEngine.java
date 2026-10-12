@@ -54,19 +54,27 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public final class CosmeticEngine {
 
-    private static final CosmeticLoad LOAD = new CosmeticLoad();
+    private static CosmeticLoad LOAD = new CosmeticLoad();
     private static final Map<String, ParticleOptions> OPTIONS = new HashMap<>();
     private static final Set<String> BROKEN = new HashSet<>();
     private static final Map<UUID, Vec3> LAST_EMIT_POS = new HashMap<>();
     private static final Set<UUID> HIDE_OTHERS = ConcurrentHashMap.newKeySet();
 
     private static List<UUID> trailEmitters = List.of();
+    static volatile long lastTick;
+    static String debugState() {
+        return "paused=" + LOAD.paused() + " trailEmitters=" + trailEmitters + " skips=" + SKIPS + " tick=" + lastTick
+            + " enabled=" + on(AuthConfig.COSMETICS_ENABLED) + "/" + on(AuthConfig.TRAILS_ENABLED) + " lobby=" + LobbyHandoff.isLobbyRole();
+    }
     private static List<UUID> contrailEmitters = List.of();
     private static long tick;
     private static int cursor;
 
     /** Packets sent since boot / in the last emit tick — read by GameTests and /aerostore cosmetics status. */
     static volatile long packetsSent;
+    /** Why trail emits were skipped, since boot — diagnostics for GameTests and /aerostore cosmetics status. */
+    static final Map<String, Integer> SKIPS = new ConcurrentHashMap<>();
+    private static void skipped(String why) { SKIPS.merge(why, 1, Integer::sum); }
     static volatile int lastTickPackets;
 
     private CosmeticEngine() {}
@@ -81,6 +89,7 @@ public final class CosmeticEngine {
         PreviewSelections.forget(uuid);
         LAST_EMIT_POS.remove(uuid);
         HIDE_OTHERS.remove(uuid);
+        com.coffeesaerosmp.auth.display.JoinAnnouncer.forget(uuid);
     }
 
     // ── controls (commands) ────────────────────────────────────────────────────
@@ -95,12 +104,27 @@ public final class CosmeticEngine {
 
     public static String status() {
         return String.format(java.util.Locale.ROOT,
-            "%s · %d trail / %d contrail wearers · %d packets last emit tick · %,d since boot · TPS %.1f",
+            "%s · %d trail / %d contrail wearers · %d packets last emit tick · %,d since boot · TPS %.1f · skips %s",
             LOAD.paused() ? "§cPAUSED" : "§aRUNNING", trailEmitters.size(), contrailEmitters.size(),
-            lastTickPackets, packetsSent, LagMonitor.recentTps);
+            lastTickPackets, packetsSent, LagMonitor.recentTps, SKIPS);
     }
 
     static boolean paused() { return LOAD.paused(); }
+
+    /**
+     * GameTest hook: players to treat as ops. The GameTest server grants opped players permission level 0, so a
+     * test cannot make a real op; empty in production.
+     */
+    static final Set<UUID> TEST_OPS = ConcurrentHashMap.newKeySet();
+
+    /**
+     * GameTest hook: ignore the REAL server load. Stall tests in other batches freeze the test server, which
+     * (correctly) pauses cosmetics and would make the trail tests measure that instead. A forced pause still applies.
+     */
+    static volatile boolean ignoreServerLoadForTest;
+
+    /** GameTest hook: a fresh pause state (another batch's stall must not leave cosmetics paused). */
+    static void resetLoadForTest() { LOAD = new CosmeticLoad(); }
 
     // ── tick ───────────────────────────────────────────────────────────────────
 
@@ -114,6 +138,7 @@ public final class CosmeticEngine {
 
     static void onTick(MinecraftServer server) {
         tick++;
+        lastTick = tick;
         if (tick % 20 == 0) {
             try { refresh(server); } catch (Throwable t) { CoffeesAeroAuth.LOGGER.debug("[Cosmetics] refresh: {}", t.toString()); }
         }
@@ -128,7 +153,7 @@ public final class CosmeticEngine {
 
     /** 1 Hz: who previews, who wears something, and whether to pause. Package-private for GameTests. */
     static void refresh(MinecraftServer server) {
-        Set<UUID> ops = new HashSet<>();
+        Set<UUID> ops = new HashSet<>(TEST_OPS);
         List<UUID> trails = new ArrayList<>(), contrails = new ArrayList<>();
         for (ServerPlayer p : server.getPlayerList().getPlayers()) {
             if (p.hasPermissions(2)) ops.add(p.getUUID());
@@ -141,7 +166,7 @@ public final class CosmeticEngine {
         }
         trailEmitters = trails;
         contrailEmitters = contrails;
-        LOAD.update(LagMonitor.recentTps, LagMonitor.recentWorstGapMs, System.currentTimeMillis(),
+        if (!ignoreServerLoadForTest) LOAD.update(LagMonitor.recentTps, LagMonitor.recentWorstGapMs, System.currentTimeMillis(),
             num(AuthConfig.COSMETICS_PAUSE_TPS, 15), num(AuthConfig.COSMETICS_RESUME_TPS, 17), 10_000L);
         ShipTracker.prune(tick);
     }
@@ -164,16 +189,17 @@ public final class CosmeticEngine {
         for (int k = 0; k < n && sent[0] < budget; k++) {
             UUID id = list.get((start + k) % n);
             ServerPlayer p = server.getPlayerList().getPlayer(id);
-            if (p == null || skip(p)) continue;
+            if (p == null) { skipped("offline"); continue; }
+            if (skip(p)) { skipped("not eligible"); continue; }
             Cosmetic c = CosmeticCatalog.get(StoreState.selectionFor(id).trail()).orElse(null);
-            if (c == null) continue;
-            if ((tick + (id.hashCode() & 0x7fff)) % c.fx().everyTicks() != 0) continue;   // stagger
+            if (c == null) { skipped("no trail now"); continue; }
+            if (!Stagger.due(tick, id.hashCode(), c.fx().everyTicks())) continue;          // stagger (not a skip)
             Vec3 pos = p.position();
             Vec3 last = LAST_EMIT_POS.get(id);
-            if (last != null && last.distanceToSqr(pos) < 0.15 * 0.15) continue;           // standing still
+            if (last != null && last.distanceToSqr(pos) < 0.15 * 0.15) { skipped("standing still"); continue; }
             LAST_EMIT_POS.put(id, pos);
             ParticleOptions opt = options(c);
-            if (opt == null) continue;
+            if (opt == null) { skipped("bad particle"); continue; }
             var fx = c.fx();
             var pkt = new ClientboundLevelParticlesPacket(opt, false, pos.x, pos.y + fx.yOffset(), pos.z,
                 fx.spread(), fx.spread() * 0.5f, fx.spread(), fx.speed(), fx.count());
@@ -202,7 +228,7 @@ public final class CosmeticEngine {
             if (ships >= max || sent[0] >= budget) break;
             ServerPlayer p = e.getValue();
             Cosmetic c = CosmeticCatalog.get(StoreState.selectionFor(p.getUUID()).contrail()).orElse(null);
-            if (c == null || (tick + (e.getKey().hashCode() & 0x7fff)) % c.fx().everyTicks() != 0) continue;
+            if (c == null || !Stagger.due(tick, e.getKey().hashCode(), c.fx().everyTicks())) continue;
             ShipTracker.Motion m = motionOf.get(e.getKey());
             double[] tail = ContrailMath.tail(m.centre(), m.velocity(), m.min(), m.max());
             if (tail == null) continue;

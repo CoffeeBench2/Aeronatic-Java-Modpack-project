@@ -2,6 +2,7 @@ package com.coffeesaerosmp.auth.commands;
 
 import com.coffeesaerosmp.auth.CoffeesAeroAuth;
 import com.coffeesaerosmp.auth.config.AuthConfig;
+import com.coffeesaerosmp.auth.store.CosmeticCatalog;
 import com.coffeesaerosmp.auth.store.Entitlements;
 import com.coffeesaerosmp.auth.store.MojangIds;
 import com.coffeesaerosmp.auth.store.Palette;
@@ -54,7 +55,8 @@ public final class StoreCommands {
 
     private static void registerCosmetics(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(Commands.literal("cosmetics")
-            .requires(src -> AuthConfig.STORE_ENABLED.get())
+            // 1.13.30: ops (permission 2+) can preview every cosmetic while the shop is off (owner 2026-10-12).
+            .requires(src -> AuthConfig.STORE_ENABLED.get() || src.hasPermission(2))
             .executes(ctx -> show(ctx.getSource()))
             .then(Commands.literal("colour")
                 .then(Commands.argument("id", StringArgumentType.word())
@@ -79,6 +81,23 @@ public final class StoreCommands {
                 .then(Commands.argument("text", StringArgumentType.greedyString())
                     .executes(ctx -> submitText(ctx.getSource(), "join_message",
                         StringArgumentType.getString(ctx, "text")))))
+            .then(Commands.literal("leavemsg")
+                .then(Commands.argument("text", StringArgumentType.greedyString())
+                    .executes(ctx -> submitText(ctx.getSource(), "leave_message",
+                        StringArgumentType.getString(ctx, "text")))))
+            .then(Commands.literal("trail")
+                .then(Commands.argument("id", StringArgumentType.word())
+                    .suggests((c, bld) -> { bld.suggest("off"); CosmeticCatalog.all(CosmeticCatalog.Type.TRAIL)
+                        .forEach(x -> bld.suggest(x.id().substring(x.id().indexOf(':') + 1))); return bld.buildFuture(); })
+                    .executes(ctx -> CosmeticCommands.setParticle(ctx.getSource(), CosmeticCatalog.Type.TRAIL,
+                        StringArgumentType.getString(ctx, "id")))))
+            .then(Commands.literal("contrail")
+                .then(Commands.argument("id", StringArgumentType.word())
+                    .suggests((c, bld) -> { bld.suggest("off"); CosmeticCatalog.all(CosmeticCatalog.Type.CONTRAIL)
+                        .forEach(x -> bld.suggest(x.id().substring(x.id().indexOf(':') + 1))); return bld.buildFuture(); })
+                    .executes(ctx -> CosmeticCommands.setParticle(ctx.getSource(), CosmeticCatalog.Type.CONTRAIL,
+                        StringArgumentType.getString(ctx, "id")))))
+            .then(Commands.literal("hideothers").executes(ctx -> CosmeticCommands.hideOthers(ctx.getSource())))
         );
     }
 
@@ -88,7 +107,8 @@ public final class StoreCommands {
 
         var snap = StoreState.get(p.getUUID());
         Rank rank = snap.effectiveRank();
-        var sel = snap.liveSelection();
+        var sel = StoreState.selectionFor(p.getUUID());
+        boolean preview = CosmeticCommands.preview(p);
 
         src.sendSystemMessage(Component.literal("§8§m                                        "));
         src.sendSystemMessage(Component.literal(" §6☕ §eYour cosmetics"));
@@ -108,7 +128,7 @@ public final class StoreCommands {
         // a paywall in the middle of your own settings screen.
         StringBuilder colours = new StringBuilder();
         for (String c : Palette.allColours()) {
-            if (Entitlements.mayUse(Entitlements.COLOUR_PREFIX + c, rank, snap.owned())) {
+            if (Entitlements.mayUse(Entitlements.COLOUR_PREFIX + c, rank, snap.owned(), preview)) {
                 colours.append(Palette.code(c)).append(c).append("§7 ");
             }
         }
@@ -117,13 +137,14 @@ public final class StoreCommands {
 
         StringBuilder grads = new StringBuilder();
         for (String g : Palette.allGradients()) {
-            if (Entitlements.mayUse(Entitlements.GRADIENT_PREFIX + g, rank, snap.owned())) {
+            if (Entitlements.mayUse(Entitlements.GRADIENT_PREFIX + g, rank, snap.owned(), preview)) {
                 grads.append("§f").append(g).append("§7 ");
             }
         }
         src.sendSystemMessage(Component.literal(" §7Gradients: "
             + (grads.isEmpty() ? "§8none yet" : grads.toString())));
         src.sendSystemMessage(Component.literal(" §8/cosmetics colour <id> §7· §8/cosmetics gradient <id> §7· §8/cosmetics clear"));
+        CosmeticCommands.showParticles(src, p);
         src.sendSystemMessage(Component.literal("§8§m                                        "));
         return 1;
     }
@@ -134,7 +155,7 @@ public final class StoreCommands {
         UUID local = p.getUUID();
         var snap = StoreState.get(local);
 
-        if (id != null && !Entitlements.mayUse(id, snap.effectiveRank(), snap.owned())) {
+        if (id != null && !Entitlements.mayUse(id, snap.effectiveRank(), snap.owned(), CosmeticCommands.preview(p))) {
             // Distinguish "not yours" from "not a thing", because they need different next steps.
             boolean exists = id.startsWith(Entitlements.COLOUR_PREFIX)
                 ? Palette.isColour(id.substring(Entitlements.COLOUR_PREFIX.length()))
@@ -145,18 +166,11 @@ public final class StoreCommands {
             return 0;
         }
 
-        boolean bold = snap.liveSelection().bold();
-        AsyncIo.submit(() -> {
-            UUID mojang = MojangIds.toMojang(local).orElse(null);
-            if (mojang == null) {
-                reply(p, "§cYour account isn't linked for cosmetics yet. §7Rejoin once and try again.");
-                return;
-            }
-            boolean ok = StoreGrants.setNameSelection(mojang, id, bold);
-            reply(p, ok
-                ? (id == null ? "§aName style cleared." : "§aName style set to §f" + id + "§a.")
-                : "§cCould not save that right now — try again in a moment.");
-        });
+        boolean bold = StoreState.selectionFor(local).bold();
+        CosmeticCommands.persist(p,
+            sel -> new Entitlements.Selection(id, sel.bold(), sel.chatTitle(), sel.joinMessage(), sel.trail(), sel.contrail(), sel.leaveMessage()),
+            mojang -> StoreGrants.setNameSelection(mojang, id, bold),
+            id == null ? "§aName style cleared." : "§aName style set to §f" + id + "§a.");
         return 1;
     }
 
@@ -165,17 +179,15 @@ public final class StoreCommands {
         try { p = src.getPlayerOrException(); } catch (Exception e) { return 0; }
         UUID local = p.getUUID();
         var snap = StoreState.get(local);
-        if (on && !Entitlements.mayUse(Entitlements.BOLD_ID, snap.effectiveRank(), snap.owned())) {
+        if (on && !Entitlements.mayUse(Entitlements.BOLD_ID, snap.effectiveRank(), snap.owned(), CosmeticCommands.preview(p))) {
             src.sendFailure(Component.literal("§cBold isn't unlocked for you yet. §7See §f/buy§7."));
             return 0;
         }
-        String style = snap.liveSelection().nameStyle();
-        AsyncIo.submit(() -> {
-            UUID mojang = MojangIds.toMojang(local).orElse(null);
-            if (mojang == null) { reply(p, "§cYour account isn't linked for cosmetics yet."); return; }
-            boolean ok = StoreGrants.setNameSelection(mojang, style, on);
-            reply(p, ok ? (on ? "§aBold on." : "§aBold off.") : "§cCould not save that right now.");
-        });
+        String style = StoreState.selectionFor(local).nameStyle();
+        CosmeticCommands.persist(p,
+            sel -> new Entitlements.Selection(sel.nameStyle(), on, sel.chatTitle(), sel.joinMessage(), sel.trail(), sel.contrail(), sel.leaveMessage()),
+            mojang -> StoreGrants.setNameSelection(mojang, style, on),
+            on ? "§aBold on." : "§aBold off.");
         return 1;
     }
 
@@ -189,9 +201,11 @@ public final class StoreCommands {
         var snap = StoreState.get(p.getUUID());
         Rank rank = snap.effectiveRank();
 
+        boolean preview = CosmeticCommands.preview(p);
         boolean allowed = which.equals("chat_title")
-            ? Entitlements.has(rank, Entitlements.Capability.CHAT_TITLE)
-            : Entitlements.mayUse(Entitlements.JOIN_MESSAGE_ID, rank, snap.owned());
+            ? (preview || Entitlements.has(rank, Entitlements.Capability.CHAT_TITLE))
+            : Entitlements.mayUse(which.equals("leave_message") ? Entitlements.LEAVE_MESSAGE_ID : Entitlements.JOIN_MESSAGE_ID,
+                                  rank, snap.owned(), preview);
         if (!allowed) {
             src.sendFailure(Component.literal("§cThat isn't unlocked for you yet. §7See §f/buy§7."));
             return 0;
@@ -205,6 +219,17 @@ public final class StoreCommands {
         UUID local = p.getUUID();
         AsyncIo.submit(() -> {
             UUID mojang = MojangIds.toMojang(local).orElse(null);
+            if (mojang == null && preview) {
+                // Unlinked op testing: session-only, never written, so no moderation queue is involved.
+                var cur = com.coffeesaerosmp.auth.store.PreviewSelections.get(local).orElse(StoreState.selectionFor(local));
+                com.coffeesaerosmp.auth.store.PreviewSelections.put(local, switch (which) {
+                    case "chat_title" -> new Entitlements.Selection(cur.nameStyle(), cur.bold(), clean, cur.joinMessage(), cur.trail(), cur.contrail(), cur.leaveMessage());
+                    case "leave_message" -> new Entitlements.Selection(cur.nameStyle(), cur.bold(), cur.chatTitle(), cur.joinMessage(), cur.trail(), cur.contrail(), clean);
+                    default -> new Entitlements.Selection(cur.nameStyle(), cur.bold(), cur.chatTitle(), clean, cur.trail(), cur.contrail(), cur.leaveMessage());
+                });
+                reply(p, "§aSet for this session §8(op preview, not saved)§a.");
+                return;
+            }
             if (mojang == null) { reply(p, "§cYour account isn't linked for cosmetics yet."); return; }
             boolean ok = StoreGrants.submitTextForApproval(mojang, which, clean);
             reply(p, ok
@@ -258,6 +283,20 @@ public final class StoreCommands {
     private static void registerAdmin(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(Commands.literal("aerostore")
             .requires(src -> src.hasPermission(OP))
+
+            .then(Commands.literal("cosmetics")
+                .then(Commands.literal("status").executes(ctx -> {
+                    ctx.getSource().sendSystemMessage(Component.literal(TextUtil.PREFIX + "§7Cosmetics: "
+                        + com.coffeesaerosmp.auth.cosmetics.CosmeticEngine.status()));
+                    return 1; }))
+                .then(Commands.literal("pause").executes(ctx -> {
+                    com.coffeesaerosmp.auth.cosmetics.CosmeticEngine.forcePause(true);
+                    ctx.getSource().sendSystemMessage(Component.literal(TextUtil.PREFIX + "§7Cosmetics §cpaused§7 until resume or restart."));
+                    return 1; }))
+                .then(Commands.literal("resume").executes(ctx -> {
+                    com.coffeesaerosmp.auth.cosmetics.CosmeticEngine.forcePause(false);
+                    ctx.getSource().sendSystemMessage(Component.literal(TextUtil.PREFIX + "§7Cosmetics §aresumed§7 (the lag pause still applies)."));
+                    return 1; })))
 
             .then(Commands.literal("grant")
                 .then(Commands.literal("rank")
@@ -349,14 +388,14 @@ public final class StoreCommands {
             .then(Commands.literal("approve")
                 .then(Commands.argument("mojangUuid", StringArgumentType.word())
                     .then(Commands.argument("what", StringArgumentType.word())
-                        .suggests((c, b) -> { b.suggest("chat_title"); b.suggest("join_message"); return b.buildFuture(); })
+                        .suggests((c, b) -> { b.suggest("chat_title"); b.suggest("join_message"); b.suggest("leave_message"); return b.buildFuture(); })
                         .executes(ctx -> textDecision(ctx.getSource(),
                             StringArgumentType.getString(ctx, "mojangUuid"),
                             StringArgumentType.getString(ctx, "what"), true)))))
             .then(Commands.literal("reject")
                 .then(Commands.argument("mojangUuid", StringArgumentType.word())
                     .then(Commands.argument("what", StringArgumentType.word())
-                        .suggests((c, b) -> { b.suggest("chat_title"); b.suggest("join_message"); return b.buildFuture(); })
+                        .suggests((c, b) -> { b.suggest("chat_title"); b.suggest("join_message"); b.suggest("leave_message"); return b.buildFuture(); })
                         .executes(ctx -> textDecision(ctx.getSource(),
                             StringArgumentType.getString(ctx, "mojangUuid"),
                             StringArgumentType.getString(ctx, "what"), false)))))

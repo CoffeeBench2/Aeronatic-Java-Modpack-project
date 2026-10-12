@@ -63,6 +63,9 @@ public abstract class LeaveMessageMixin {
                 Component.translatable("multiplayer.player.left",
                         Component.literal(seg.prefix() + seg.name()))
                     .withStyle(net.minecraft.ChatFormatting.YELLOW), overlay);
+            // 1.13.30 custom leave line. Its own try (inside the announcer): a cosmetics fault must never
+            // cost the vanilla announcement, which has already gone out above.
+            com.coffeesaerosmp.auth.display.JoinAnnouncer.announceLeave(list, leaving);
             return;
         } catch (Exception e) {
             com.coffeesaerosmp.auth.CoffeesAeroAuth.LOGGER.warn(

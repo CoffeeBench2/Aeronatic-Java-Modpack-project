@@ -844,7 +844,11 @@ public class AuthManager {
                         // They may have left in the interval — re-resolve rather than capturing the
                         // ServerPlayer, which would be a stale object after a disconnect.
                         ServerPlayer live = server.getPlayerList().getPlayer(uuid);
-                        if (live != null) NameVisibility.reveal(live, premium);
+                        if (live != null) {
+                            NameVisibility.reveal(live, premium);
+                            // 1.13.30: the player's custom join line, now that their cosmetics have loaded.
+                            com.coffeesaerosmp.auth.display.JoinAnnouncer.announceJoin(live);
+                        }
                     });
                 });
             }
