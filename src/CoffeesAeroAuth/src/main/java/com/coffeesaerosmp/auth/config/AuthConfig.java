@@ -130,6 +130,8 @@ public class AuthConfig {
     public static final ModConfigSpec.IntValue             MAX_CONTRAILS;
     public static final ModConfigSpec.IntValue             STALL_BETWEEN_SAMPLE_AFTER_MS;
     public static final ModConfigSpec.BooleanValue         PRESSURE_LOG_ENABLED;
+    public static final ModConfigSpec.IntValue             THROTTLE_ALERT_MS;
+    public static final ModConfigSpec.IntValue             THROTTLE_ALERT_COOLDOWN_MINUTES;
     public static final ModConfigSpec.BooleanValue         RESOLVE_DISPLAY_NAMES;
     public static final ModConfigSpec.IntValue             WELCOME_INTERVAL_HOURS;
     public static final ModConfigSpec.BooleanValue         MASK_ADVANCEMENT_NAMES;
@@ -694,6 +696,15 @@ public class AuthConfig {
             .comment("Log garbage-collection pauses and container CPU throttling (watchdog/RuntimePressure): a WARN",
                      "when a 30 s window holds over 1 s of either, an INFO summary every 5 minutes.")
             .define("pressureLogEnabled", true);
+        THROTTLE_ALERT_MS = b
+            .comment("Alert online ops (in game) and the Discord watchdog channel when the host throttles the container's",
+                     "CPU for at least this many ms within one minute. Throttled time is time the WHOLE server is frozen by",
+                     "the host, so 3000 = the server was stopped for 5% of that minute. 0 disables the alert.",
+                     "Owner 2026-10-12: admins must be told when the host throttles us.")
+            .defineInRange("throttleAlertMs", 3000, 0, 60000);
+        THROTTLE_ALERT_COOLDOWN_MINUTES = b
+            .comment("Minimum minutes between two throttle alerts.")
+            .defineInRange("throttleAlertCooldownMinutes", 15, 1, 1440);
         b.pop();
 
         b.comment("Watchdog — Security Monitoring").push("watchdog");

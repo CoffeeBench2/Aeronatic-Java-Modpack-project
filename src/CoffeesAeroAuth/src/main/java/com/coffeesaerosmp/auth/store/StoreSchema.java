@@ -109,6 +109,30 @@ public final class StoreSchema {
                 "  tebex_txn    VARCHAR(64)  NULL," +
                 "  INDEX idx_pending (mojang_uuid, applied_at)" +
                 ")");
+
+            // 1.13.31 Coffee Beans (store/BeanLedger). Balance row is the lock target for every change; the ledger
+            // is append-only history (Mojang's purchase-history rule) and carries the balance after each row.
+            s.executeUpdate(
+                "CREATE TABLE IF NOT EXISTS beans_balance (" +
+                "  mojang_uuid  CHAR(36)  NOT NULL PRIMARY KEY," +
+                "  balance      INT       NOT NULL DEFAULT 0," +
+                "  updated_at   BIGINT    NOT NULL" +
+                ")");
+            s.executeUpdate(
+                "CREATE TABLE IF NOT EXISTS beans_ledger (" +
+                "  id             BIGINT AUTO_INCREMENT PRIMARY KEY," +
+                "  mojang_uuid    CHAR(36)     NOT NULL," +
+                "  delta          INT          NOT NULL," +
+                "  balance_after  INT          NOT NULL," +
+                "  kind           VARCHAR(16)  NOT NULL," +
+                // Tebex transaction id: UNIQUE per player makes a retried delivery a no-op. NULL for staff grants
+                // and spends (MySQL allows many NULLs under a UNIQUE key).
+                "  ref            VARCHAR(96)  NULL," +
+                "  note           VARCHAR(128) NULL," +
+                "  created_at     BIGINT       NOT NULL," +
+                "  UNIQUE KEY uniq_beans_ref (mojang_uuid, ref)," +
+                "  INDEX idx_beans_player (mojang_uuid, id)" +
+                ")");
         }
         migrate(c);
     }

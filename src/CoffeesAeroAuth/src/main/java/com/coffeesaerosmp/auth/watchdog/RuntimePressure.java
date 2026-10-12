@@ -48,7 +48,12 @@ public final class RuntimePressure {
     private static CgroupCpuStat lastStat;
     /** CPU time per thread id at the last 5-minute summary, to report the spend since then. */
     private static final java.util.Map<Long, Long> lastThreadCpu = new java.util.HashMap<>();
-    private static long lastSummaryMs, lastWarnMs;
+    private static long lastSummaryMs, lastWarnMs, lastAlertMs;
+    private static volatile long startedMs;
+    /** Boot itself throttles hard (class loading, datapacks); alerting on it would cry wolf every restart. */
+    static final long ALERT_GRACE_MS = 5 * 60_000L;
+    /** GameTest hook: alerts raised (counted even when no WatchdogManager is up). */
+    static volatile int alertsRaised;
 
     private RuntimePressure() {}
 
@@ -56,6 +61,7 @@ public final class RuntimePressure {
     public static synchronized void start() {
         if (running) return;
         running = true;
+        startedMs = System.currentTimeMillis();
         for (GarbageCollectorMXBean bean : ManagementFactory.getGarbageCollectorMXBeans()) {
             if (bean instanceof NotificationEmitter em) {
                 NotificationListener l = (n, h) -> onGc(n.getUserData());
@@ -133,10 +139,52 @@ public final class RuntimePressure {
             lastWarnMs = now;
             CoffeesAeroAuth.LOGGER.warn("[RuntimePressure] whole-server pause pressure in the last {}s — {}", SAMPLE_SECONDS, summary(win));
         }
+        maybeAlert(now);
         if (now - lastSummaryMs >= 5 * 60_000L) {
             lastSummaryMs = now;
             CoffeesAeroAuth.LOGGER.info("[RuntimePressure] last 5 min — {} · CPU by thread: {}", summary(5 * 60_000L), threadCpuSinceLast());
         }
+    }
+
+    /**
+     * Pure: should a throttle alert fire now? Throttled ms over the last minute against the threshold, outside the
+     * boot grace period and the cooldown. {@code thresholdMs <= 0} disables it.
+     */
+    static boolean shouldAlert(long throttledLastMinuteMs, long thresholdMs, long uptimeMs, long sinceLastAlertMs,
+                               long cooldownMs) {
+        if (thresholdMs <= 0) return false;
+        if (uptimeMs < ALERT_GRACE_MS) return false;
+        if (sinceLastAlertMs < cooldownMs) return false;
+        return throttledLastMinuteMs >= thresholdMs;
+    }
+
+    private static void maybeAlert(long now) {
+        long threshold, cooldownMs;
+        try {
+            threshold = AuthConfig.THROTTLE_ALERT_MS.get();
+            cooldownMs = AuthConfig.THROTTLE_ALERT_COOLDOWN_MINUTES.get() * 60_000L;
+        } catch (Throwable t) { return; }    // config not loaded yet
+        long minute = throttledMs(60_000L);
+        if (!shouldAlert(minute, threshold, now - startedMs, now - lastAlertMs, cooldownMs)) return;
+        lastAlertMs = now;
+        raiseAlert(minute, summary(60_000L));
+    }
+
+    /** Package-private so the GameTest can fire one without waiting for a real throttle. */
+    static void raiseAlert(long throttledMinuteMs, String detail) {
+        alertsRaised++;
+        double pct = throttledMinuteMs / 600.0;    // % of the minute the host had the server stopped
+        CoffeesAeroAuth.LOGGER.warn("[RuntimePressure] HOST CPU THROTTLING — the server was frozen by the host for {} ms "
+            + "of the last minute ({}%). {}", throttledMinuteMs, String.format(Locale.ROOT, "%.1f", pct), detail);
+        WatchdogManager w = CoffeesAeroAuth.WATCHDOG;
+        if (w == null) return;
+        WatchdogEvent ev = WatchdogEvent.of(Severity.HIGH, "Host CPU throttling",
+            "None automatic. Ask Lagless about the CPU quota, or cut server-side load (Distant Horizons, chunk gen).",
+            "Frozen by host", String.format(Locale.ROOT, "%,d ms in the last minute (%.1f%%)", throttledMinuteMs, pct),
+            "Detail", detail,
+            "Meaning", "The host's CPU quota ran out, so every thread paused at once. Players feel this as lag and ping spikes; it is not our code.");
+        try { w.alert(ev); }
+        catch (Throwable t) { CoffeesAeroAuth.LOGGER.warn("[RuntimePressure] throttle alert failed: {}", t.toString()); }
     }
 
     /** CPU each thread group spent since the previous call (top 6). Cheap: one MXBean pass every 5 min. */
