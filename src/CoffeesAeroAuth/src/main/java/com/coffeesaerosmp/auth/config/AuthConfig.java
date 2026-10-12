@@ -7,6 +7,9 @@ public class AuthConfig {
     public static final ModConfigSpec SERVER_SPEC;
 
     public static final ModConfigSpec.ConfigValue<String> DISCORD_INVITE_URL;
+    public static final ModConfigSpec.BooleanValue        COFFEEBOT_EXPERT_ENABLED;
+    public static final ModConfigSpec.ConfigValue<String> COFFEEBOT_WIKI_URL;
+    public static final ModConfigSpec.ConfigValue<String> COFFEEBOT_JOIN_ADDRESS;
     public static final ModConfigSpec.BooleanValue        STORE_ENABLED;
     public static final ModConfigSpec.ConfigValue<String> STORE_URL;
     public static final ModConfigSpec.ConfigValue<String> STORE_SUPPORT_EMAIL;
@@ -1405,6 +1408,17 @@ public class AuthConfig {
             .comment("Discord invite shown to new players in the first-join welcome (clickable).",
                      "Blank = the Discord line is omitted entirely.")
             .define("discordInviteUrl", "https://discord.gg/AnFUh5vTz6");
+        COFFEEBOT_EXPERT_ENABLED = b
+            .comment("CoffeeBot expert system (1.13.31): when someone @mentions the bot with a question, answer it from",
+                     "the knowledge base (bundled, plus config/coffeebot-kb.json). Small talk still goes to the banter",
+                     "table. Never answers from the LOBBY role, so one shared bot token can't reply twice.")
+            .define("coffeeBotExpertEnabled", true);
+        COFFEEBOT_WIKI_URL = b
+            .comment("Public wiki the bot links to in its answers.")
+            .define("coffeeBotWikiUrl", "https://coffeebench2.github.io/aerosmp-wiki");
+        COFFEEBOT_JOIN_ADDRESS = b
+            .comment("The PUBLIC join address the bot gives out. Only the gate hostname belongs here, never a backend IP.")
+            .define("coffeeBotJoinAddress", "coffeeaerosmp.duckdns.org");
         BROADCAST_NEW_PLAYERS = b
             .comment("Announce a brand-new player's arrival to everyone online. First join only —",
                      "never on a returning login.")

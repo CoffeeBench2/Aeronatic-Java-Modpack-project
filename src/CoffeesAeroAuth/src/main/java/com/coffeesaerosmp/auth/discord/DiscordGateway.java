@@ -210,9 +210,19 @@ public class DiscordGateway {
                 // Replies go straight out over REST rather than through the MC chat bridge: this is
                 // Discord-side chatter and has no business appearing in game.
                 if (mentionsSelf(d)) {
+                    String messageId = d.has("id") ? d.get("id").getAsString() : null;
+                    // 1.13.31: questions go to the CoffeeBot expert system first (its own worker thread); small
+                    // talk it declines falls through to the banter table exactly as before.
+                    if (com.coffeesaerosmp.auth.discord.expert.CoffeeBot.active()) {
+                        com.coffeesaerosmp.auth.discord.expert.CoffeeBot.ask(authorId, content, answer -> {
+                            String reply = answer != null ? answer : BotBanter.replyTo(authorId, content);
+                            if (reply != null) postBanter(chan, reply, messageId);
+                        });
+                        return;
+                    }
                     String reply = BotBanter.replyTo(authorId, content);
                     if (reply != null) {
-                        postBanter(chan, reply);
+                        postBanter(chan, reply, messageId);
                         return;
                     }
                 }
@@ -270,6 +280,11 @@ public class DiscordGateway {
      * be able to add a millisecond to a tick.
      */
     private void postBanter(String channelId, String text) {
+        postBanter(channelId, text, null);
+    }
+
+    /** As above, threaded as a reply to {@code replyToMessageId} (without pinging its author) when given. */
+    private void postBanter(String channelId, String text, String replyToMessageId) {
         DiscordRest r = banterRest;
         if (r == null) {
             synchronized (this) {
@@ -286,6 +301,12 @@ public class DiscordGateway {
         JsonObject allowed = new JsonObject();
         allowed.add("parse", new JsonArray());
         body.add("allowed_mentions", allowed);
+        if (replyToMessageId != null) {
+            JsonObject ref = new JsonObject();
+            ref.addProperty("message_id", replyToMessageId);
+            ref.addProperty("fail_if_not_exists", false);
+            body.add("message_reference", ref);
+        }
 
         final DiscordRest rest = r;
         final String json = body.toString();

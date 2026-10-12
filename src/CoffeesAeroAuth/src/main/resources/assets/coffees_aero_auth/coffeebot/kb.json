@@ -1,0 +1,585 @@
+{
+  "version": 1,
+  "_note": "CoffeeBot knowledge base. A topic fires when EVERY 'when' group matches at least one phrase. Public facts only: never the backend IP, panel, database or how auth works. Placeholders: {address} {discord} {wiki} {status} {online} {max} {tps} {tpsVerdict} {uptimeDays} {session} {me.*}. Server-side additions/overrides: config/coffeebot-kb.json, then /aerobot reload.",
+  "topics": [
+    {
+      "id": "address",
+      "title": "How to join",
+      "when": [["address", "domain", "hostname", "join", "connect", "server name"]],
+      "boost": ["server address", "join server"],
+      "answer": "Join with **`{address}`** (no port needed), or press the **Join** button on the pack's main menu.\nYou need the modpack first: {wiki}/getting-started",
+      "see": "getting-started",
+      "related": ["install", "cant-join"]
+    },
+    {
+      "id": "install",
+      "title": "Installing the pack",
+      "when": [["install", "download", "setup", "set up", "modrinth", "launcher", "prism", "atlauncher", "where pack", "pack link"]],
+      "answer": "Install **Coffee's Create: Aeronautics SMP** from Modrinth (Modrinth App, Prism, ATLauncher or any launcher that takes an `.mrpack`).\nOn the very first launch it downloads a few mods Modrinth can't host, so: launch, wait for the title screen, close it, launch again.\nUsing CurseForge? Grab the CurseForge zip from our Discord and import it.",
+      "see": "getting-started",
+      "related": ["curseforge", "first-launch", "ram"]
+    },
+    {
+      "id": "curseforge",
+      "title": "CurseForge",
+      "when": [["curseforge", "overwolf"]],
+      "answer": "The Season 3 CurseForge listing is waiting on CurseForge's review. Until then, get the CurseForge zip from our Discord and import it: CurseForge app, *Create Custom Profile*, *Import*, pick the zip. It keeps itself up to date just like the Modrinth version.",
+      "see": "getting-started"
+    },
+    {
+      "id": "first-launch",
+      "title": "First launch",
+      "when": [["first launch", "launch twice", "first time launch", "missing ftb", "ftb missing", "ftb library", "stuck title screen", "first start"]],
+      "answer": "On Modrinth the first launch downloads FTB and the mods that depend on it. Let it reach the title screen, **close the game, then launch it again**. After that it behaves normally.",
+      "see": "getting-started"
+    },
+    {
+      "id": "pack-version",
+      "title": "Pack version and updates",
+      "when": [["version", "outdated", "latest", "updater", "update pack", "pack update", "new update", "update"]],
+      "not": ["server update", "restart"],
+      "answer": "The pack updates itself from the title screen: when a new version is out you get a prompt, accept it and restart the game.\nIf the server says your mods don't match, update first. Full notes are on the News screen in game.",
+      "see": "changelog",
+      "related": ["mod-mismatch", "hash-mismatch"]
+    },
+    {
+      "id": "cant-join",
+      "title": "Can't join",
+      "when": [["join", "connect", "log in", "enter", "server"], ["cannot", "not work", "fail", "error", "problem", "issue", "stuck", "broken", "not let"]],
+      "answer": "Work through these in order:\n1. Is the server up? Right now it's **{status}** ({online}/{max} online).\n2. Use **`{address}`**, or the Join button on the pack's main menu.\n3. Make sure the pack is up to date (the title screen prompts you).\n4. RAM: **8 GB** is the sweet spot.\nIf it still fails, tell me the exact error text (for example *timed out*, *hash mismatch* or *missing mods*) and I'll narrow it down.",
+      "see": "status",
+      "related": ["timed-out", "mod-mismatch", "hash-mismatch", "whitelist", "server-status"]
+    },
+    {
+      "id": "hash-mismatch",
+      "title": "\"Hash mismatch after download\"",
+      "when": [["hash mismatch", "hash", "checksum", "download failed", "update failed", "updater error"]],
+      "priority": 2,
+      "answer": "That's the in-game updater catching a half-fresh download right after we publish an update. GitHub's servers can serve old files for about **5 minutes** after a release.\nWait five minutes, then restart the game and accept the update again. It fixes itself.",
+      "see": "changelog"
+    },
+    {
+      "id": "mod-mismatch",
+      "title": "Mod or version mismatch",
+      "when": [["missing mod", "mod mismatch", "mismatched mod", "incompatible", "missing registr", "version mismatch", "outdated client", "channel", "mods rejected", "mod list", "different mod", "neoforge version", "mismatched"]],
+      "priority": 1,
+      "answer": "Your pack doesn't match the server's. Restart the game and accept the update on the title screen.\nIf you added or removed mods by hand, undo that, since the updater manages the `mods` folder. If it still won't match, reinstall the pack from Modrinth (or the CurseForge zip from Discord).",
+      "see": "getting-started"
+    },
+    {
+      "id": "timed-out",
+      "title": "Timed out / can't reach the server",
+      "when": [["timed out", "timeout", "time out", "connection refused", "cannot reach", "unknown host", "no route", "connection lost", "netty", "cant resolve", "failed connect"]],
+      "priority": 1,
+      "answer": "Right now the server is **{status}** ({online}/{max} online).\nIf it's up: double check the address is **`{address}`** with no port, try once more (the first join after a restart is slow), and if you're on a VPN or school/work network, try without it.\nIf it's down it's almost always a restart or maintenance. Watch the announcements here.",
+      "see": "status"
+    },
+    {
+      "id": "whitelist",
+      "title": "Whitelist",
+      "when": [["whitelist", "whitelisted", "not white listed"]],
+      "answer": "The whitelist only goes on for testing or maintenance. If you're seeing it, the server is mid-maintenance. Check announcements here and try again shortly.",
+      "see": "status"
+    },
+    {
+      "id": "server-status",
+      "title": "Is the server up?",
+      "when": [["server down", "down", "server up", "server online", "server status", "status", "dead", "maintenance", "working right now", "server working", "alive", "server open", "open"]],
+      "not": ["nether", "end"],
+      "answer": "The server is **{status}**: {online}/{max} pilots online, running at **{tps} TPS** ({tpsVerdict}).\nLive status page: {wiki}/status",
+      "see": "status",
+      "related": ["player-count", "restart"]
+    },
+    {
+      "id": "player-count",
+      "title": "Who's online",
+      "when": [["player", "people", "pilot", "many"], ["online", "playing", "on server", "count"]],
+      "priority": 1,
+      "answer": "**{online}/{max}** pilots online right now.",
+      "related": ["server-status"]
+    },
+    {
+      "id": "restart",
+      "title": "Restarts",
+      "when": [["restart", "restarting", "reboot", "restart time", "daily restart"]],
+      "answer": "The server restarts daily at **10:30 IST**, with a 10-minute warning in game, plus short restarts for updates. Restarts are announced here. Current session: up for {session}.",
+      "related": ["server-status"]
+    },
+    {
+      "id": "uptime",
+      "title": "Uptime",
+      "when": [["uptime", "how long server", "server age", "how old server"]],
+      "answer": "Coffee's Aero SMP has been flying for **{uptimeDays} days**. This session has been up for {session}. The `/uptime` slash command shows the same."
+    },
+    {
+      "id": "lag",
+      "title": "Lag and ping",
+      "when": [["lag", "tps", "ping", "rubberband", "rubber band", "rubberbanding", "server slow", "slow server", "delay", "high ping", "mspt"]],
+      "answer": "Right now the server is at **{tps} TPS** ({tpsVerdict}).\nIf TPS is near 20, what you feel is your connection or your FPS, not the server. Your ping can read high for the first minutes after joining while map data and distant terrain stream in, then it settles.\nIf the server itself is struggling, staff can see it too and are on it.",
+      "see": "performance",
+      "related": ["fps"]
+    },
+    {
+      "id": "fps",
+      "title": "Low FPS",
+      "when": [["fps", "frame", "game slow", "slow game", "laggy game", "performance", "potato", "low end", "bad pc", "weak pc", "laptop", "optimise", "optimize"]],
+      "answer": "In this order:\n1. RAM: **8 GB**\n2. Shaders off, or a lower preset\n3. Render distance 8 to 12 and let Distant Horizons draw the horizon\n4. **Potato mode**: the Mode button in Aero Settings (the gear tile on the main menu). It switches off the heaviest client extras and can be flipped back anytime\n5. Close the browser and other heavy apps",
+      "see": "performance",
+      "related": ["ram", "shaders", "distant-horizons"]
+    },
+    {
+      "id": "ram",
+      "title": "How much RAM",
+      "when": [["ram", "gb", "xmx", "java argument", "jvm argument", "how much ram", "heap"]],
+      "answer": "**8 GB** for most people.\n- Under 6 GB: runs out of memory and stutters\n- 10 to 12 GB: fine **only if your PC has 32 GB or more**\n- More than about half your PC's RAM: the game dies while loading with **no crash report**, because your graphics driver and Distant Horizons need memory outside Minecraft's share",
+      "see": "performance",
+      "related": ["crash-no-report"]
+    },
+    {
+      "id": "crash-no-report",
+      "title": "Game closes with no crash report",
+      "when": [["crash", "close", "vanish", "disappear", "exit code", "stops loading", "game close", "shut down", "closes itself"], ["no report", "no crash report", "loading", "without error", "no error", "log stop", "while loading", "startup", "start up", "on launch", "launching"]],
+      "priority": 2,
+      "answer": "That's almost always **too much RAM**, not too little. Minecraft's allocation is only part of what the game uses; give it so much that nothing is left for your graphics driver and Distant Horizons, and it dies mid-load with no report.\nLower the allocation by 2 GB and try again. **8 GB** is the sweet spot.",
+      "see": "performance",
+      "related": ["ram", "mac"]
+    },
+    {
+      "id": "crash",
+      "title": "Crashes",
+      "when": [["crash", "crash report", "exit code", "game crash"]],
+      "answer": "Two quick checks first:\n1. RAM: **8 GB**. More than half your PC's memory crashes the game without a report.\n2. Shaders off, if you turned them on.\nStill crashing? Post the crash report (in `crash-reports` inside your instance folder) in our Discord, or open a ticket in game with `/ticket <what happened>`.",
+      "see": "performance",
+      "related": ["crash-no-report", "mac"]
+    },
+    {
+      "id": "mac",
+      "title": "macOS",
+      "when": [["mac", "macos", "macbook", "apple", "m1", "m2", "m3", "m4"]],
+      "answer": "On a Mac: use the default Java garbage collector (G1), **not ZGC**, keep `-XstartOnFirstThread` in the JVM arguments, and give it 4 to 8 GB depending on your Mac's memory.",
+      "see": "performance"
+    },
+    {
+      "id": "offline-accounts",
+      "title": "Do I need to buy Minecraft?",
+      "when": [["offline", "non premium", "without buying", "free minecraft", "no account", "premium", "buy minecraft", "own minecraft", "original minecraft", "legit account"]],
+      "answer": "No. The server is **hybrid**: premium and offline (non-premium) accounts both join at **`{address}`** and get the same features, custom skins included.\nOffline players register a password on first join (`/register <password>`) and use `/login <password>` after that.",
+      "see": "faq",
+      "related": ["register-login"]
+    },
+    {
+      "id": "register-login",
+      "title": "Register and log in",
+      "when": [["register", "login", "log in", "sign in", "password"]],
+      "not": ["forgot", "forget", "reset", "lost", "change"],
+      "answer": "Offline accounts: `/register <password>` on your first join, then `/login <password>` every time after. You have **3 minutes** to log in before you're kicked; just reconnect if that happens.\nPremium accounts are verified automatically and never need a password.",
+      "see": "commands",
+      "related": ["forgot-password"]
+    },
+    {
+      "id": "forgot-password",
+      "title": "Forgot or change password",
+      "when": [["password"], ["forgot", "forget", "reset", "lost", "change", "wrong", "dont remember", "recover"]],
+      "priority": 1,
+      "answer": "Know your old password? Change it in game with `/changepassword <old> <new>`.\nForgot it? Ask staff in Discord to reset it; they'll check it's really your account first.\nStaff will **never** ask you for your password. Anyone who does is not staff.",
+      "see": "rules"
+    },
+    {
+      "id": "login-kick",
+      "title": "Kicked at login",
+      "when": [["kick", "kicked"], ["login", "log in", "3 minute", "password", "joining", "join"]],
+      "priority": 1,
+      "answer": "You get **3 minutes** after joining to `/login <password>` (offline accounts). Past that you're kicked; reconnect and log in straight away.",
+      "see": "commands"
+    },
+    {
+      "id": "afk",
+      "title": "AFK",
+      "when": [["afk", "idle", "away keyboard", "sent lobby", "sent back lobby", "kicked lobby", "afk kick"]],
+      "answer": "Idle for **10 minutes** and you're marked AFK: that time stops counting toward playtime and level, and you're sent back to the lobby. Press Join to carry on.\nAFK machines and auto-clickers to dodge it count as cheating.",
+      "see": "progression"
+    },
+    {
+      "id": "lobby",
+      "title": "The lobby",
+      "when": [["lobby", "stuck lobby", "in lobby", "waiting room"]],
+      "answer": "Everyone arrives in the lobby first; from there you're sent on to the survival world. If you were sent back mid-game, it was the AFK timer (10 minutes idle). Press Join to go back in.",
+      "see": "getting-started",
+      "related": ["afk"]
+    },
+    {
+      "id": "skin",
+      "title": "Skins and capes",
+      "when": [["skin", "cape"]],
+      "answer": "Use `/skin <name>` in game to wear any Minecraft player's skin. **Offline players can use it too.**",
+      "see": "commands"
+    },
+    {
+      "id": "commands",
+      "title": "Commands",
+      "when": [["command", "cmd", "list command"]],
+      "priority": -1,
+      "answer": "**Getting around:** `/spawn`, `/home` (to your bed, 5 min cooldown), `/rtp` (random wilderness, 15 min), `/back` (after a death or teleport, 3 min)\n**Rewards:** `/mail`, `/daily`, `/vote`\n**Ships:** `/shipname <name>`\n**Account:** `/register`, `/login`, `/changepassword`, `/skin <name>`, `/discord link`\n**Help:** `/ticket <message>`\n`/tpa` and warps are off for Season 3. Full list: {wiki}/commands",
+      "see": "commands"
+    },
+    {
+      "id": "teleport",
+      "title": "Teleporting",
+      "when": [["teleport", "tpa", "warp", "go to friend", "tp friend", "tp player", "teleport friend", "visit friend"]],
+      "answer": "Season 3 keeps teleporting to a minimum. You can use `/spawn`, `/home` (to your bed), `/rtp` (random wilderness) and `/back`.\n`/tpa` and warps are **off**, so you can't teleport to other players. Build a railway or an airship.",
+      "see": "commands",
+      "related": ["rtp", "home", "back"]
+    },
+    {
+      "id": "rtp",
+      "title": "/rtp",
+      "when": [["rtp", "random teleport", "wild", "wilderness", "random tp"]],
+      "priority": 1,
+      "answer": "`/rtp` drops you **1,500 to 10,000 blocks** out into the Overworld wilderness, every **15 minutes**.\n**Stand perfectly still** until you arrive: the server is preparing your destination, and moving cancels it. A cancelled teleport doesn't use up your cooldown. Doesn't work while combat-tagged.",
+      "see": "commands"
+    },
+    {
+      "id": "home",
+      "title": "/home",
+      "when": [["home", "sethome", "set home", "bed"]],
+      "answer": "`/home` takes you to your **bed / respawn point**, with a 5-minute cooldown. There's no separate sethome: sleep in a bed (or set your spawn) where you want home to be.",
+      "see": "commands"
+    },
+    {
+      "id": "spawn",
+      "title": "/spawn",
+      "when": [["spawn", "world spawn"]],
+      "not": ["mob spawn", "spawner", "spawning", "spawn rate", "spawn egg"],
+      "answer": "`/spawn` takes you back to world spawn. It doesn't work while you're combat-tagged.",
+      "see": "commands"
+    },
+    {
+      "id": "back",
+      "title": "/back",
+      "when": [["back command", "death point", "where died", "death location", "back", "last location"]],
+      "not": ["come back", "back lobby", "go back in", "back online", "back up"],
+      "answer": "`/back` returns you to where you died or last teleported from (within 5 minutes). It has a **3-minute** cooldown and a **5-second** countdown. You arrive as a ghost for up to 60 seconds: nothing can hurt you and mobs ignore you until you interact with something other than your corpse. It doesn't work while combat-tagged.",
+      "see": "commands",
+      "related": ["death"]
+    },
+    {
+      "id": "death",
+      "title": "When you die",
+      "when": [["die", "died", "death", "corpse", "lost item", "lose item", "keep inventory", "keepinventory", "keep inv", "drop item", "my stuff"]],
+      "answer": "Your items stay in a **corpse** where you died, so you can go back for them. `/back` takes you there (3-minute cooldown, and you arrive as a ghost so you can grab your things safely).\nDisconnecting during a fight is different: see combat logging.",
+      "see": "faq",
+      "related": ["back", "combat-log"]
+    },
+    {
+      "id": "combat-log",
+      "title": "Combat logging",
+      "when": [["combat", "combat log", "combat tag", "log out fight", "logout fight", "leave fight", "disconnect fight"]],
+      "answer": "Hit or get hit by a player and you're combat-tagged for **30 seconds**. Disconnect while tagged and you **die**, dropping your items where the fight was. It's automatic. `/spawn`, `/home`, `/rtp` and `/back` are blocked while tagged.",
+      "see": "rules"
+    },
+    {
+      "id": "pvp",
+      "title": "PvP",
+      "when": [["pvp", "player kill", "kill player", "pvp on", "fighting player"]],
+      "answer": "PvP is **on**. If you don't want a fight, don't start one and don't linger where one is happening. Spawn-camping and hunting the same new player is harassment.",
+      "see": "rules",
+      "related": ["combat-log"]
+    },
+    {
+      "id": "claims",
+      "title": "Land claims",
+      "when": [["claim", "protect", "protection", "grief protection", "ftb chunks"]],
+      "answer": "Open the map with **M** and click chunks to claim them.\nYou start with **5 chunks** and get **2 more every level**, up to **150**. Claims are full-height columns from bedrock to sky.\nShips need their own claim, separate from land (see ship claims). Read before you build: {wiki}/claims",
+      "see": "claims",
+      "related": ["ship-claim", "teams", "cant-break"]
+    },
+    {
+      "id": "cant-break",
+      "title": "Can't break or place blocks",
+      "when": [["break", "place", "interact", "open chest", "use block", "mine", "build"], ["cannot", "not", "not allowed", "no permission", "denied", "wont let"]],
+      "priority": 1,
+      "answer": "Almost always a claim:\n1. Are you inside someone else's claim? Press **M**. Claims are full-height, so check even while flying high above them\n2. Is the ship claimed by someone else? Ship claims are separate from land\n3. Did you pick your ship up and re-place it after claiming? That orphans the claim; claim it again",
+      "see": "claims",
+      "related": ["claims", "ship-orphan"]
+    },
+    {
+      "id": "teams",
+      "title": "Teams and sharing claims",
+      "when": [["team", "party", "share claim", "friend build", "trust", "ally", "add friend claim"]],
+      "answer": "Form a party so friends can build with you. **Everyone brings their own allowance**: each member's chunks add to the team's pool, and everything the team claims works for everyone in it. If someone leaves, the pool shrinks with them.",
+      "see": "claims"
+    },
+    {
+      "id": "ship-claim",
+      "title": "Claiming a ship",
+      "when": [["ship"], ["claim", "protect", "lock", "secure", "protection"]],
+      "priority": 2,
+      "answer": "Place a **claim block** on the ship. Each claim covers **250 ship blocks** and spends one chunk from your land allowance.\nThe order that matters: **place, then claim, then name**. Never pick a claimed ship up with a portable structure item: re-placing it gives it a new ID and orphans the claim.",
+      "see": "claims",
+      "related": ["ship-orphan", "shipname"]
+    },
+    {
+      "id": "ship-orphan",
+      "title": "Ship lost its claim",
+      "when": [["ship"], ["lost claim", "claim gone", "unclaimed", "recapture", "capture", "portable structure", "pick up", "orphan", "not protected", "claim disappeared", "abandoned"]],
+      "priority": 3,
+      "answer": "A ship claim is bound to the ship's internal ID. Picking the ship up with a portable structure item and placing it again creates a **new ID**, so the old claim no longer protects it and is wasted.\nClaim it again with a claim block, and stop capturing it after that.",
+      "see": "airships"
+    },
+    {
+      "id": "shipname",
+      "title": "Naming a ship",
+      "when": [["shipname", "name ship", "rename ship", "ship name", "naming ship"]],
+      "priority": 2,
+      "answer": "Stand on the ship and run `/shipname <name>`. `/shipname info` shows the current name, `/shipname clear` removes it. Only the owner can rename a claimed ship.",
+      "see": "airships"
+    },
+    {
+      "id": "ship-over-claim",
+      "title": "Can't use my ship over someone's land",
+      "when": [["ship", "fly", "flying"], ["cannot", "not work", "controls", "interact", "frozen", "stuck"]],
+      "priority": 1,
+      "answer": "Land claims are full-height columns. Flying over someone's claimed chunk puts you inside **their** claim at any altitude, and you can't interact with your own ship there. Move off their land and try again.",
+      "see": "airships"
+    },
+    {
+      "id": "airships",
+      "title": "Airships",
+      "when": [["ship", "fly", "flying", "build ship", "drive by wire", "steer"]],
+      "priority": -1,
+      "answer": "Create: Aeronautics is why the server exists. Build your ship on the ground as a normal structure, then assemble it and it flies with real physics. Drive-By-Wire lets you steer from the cockpit.\nTest small first, claim before you fly off, and name it right after claiming. Guide: {wiki}/airships",
+      "see": "airships",
+      "related": ["ship-claim", "shipname"]
+    },
+    {
+      "id": "stress",
+      "title": "Create: machine stopped",
+      "when": [["stress", "overstressed", "stopped work", "not spinning", "stopped spinning", "rpm", "rotation", "su"]],
+      "answer": "When a Create machine stops for no obvious reason it's almost always **stress**: you're asking for more work than your generators supply. Add another generator, or slow things down. Wear **Goggles** and look at any Create block to see its speed and stress.",
+      "see": "create-basics"
+    },
+    {
+      "id": "create-start",
+      "title": "New to Create",
+      "when": [["create", "new create", "start create", "beginner", "first machine", "andesite alloy", "start create"]],
+      "priority": -1,
+      "answer": "Create runs on rotation. Something spins, shafts and cogs carry it, machines use it. Start with **Andesite Alloy** (zinc and iron), a **Water Wheel** for power, then a Millstone or Mechanical Press. Wear **Goggles** to see speed and stress on any block.\nShortest path to your first airship: {wiki}/create-basics",
+      "see": "create-basics",
+      "related": ["stress"]
+    },
+    {
+      "id": "mail",
+      "title": "Mail and the starter kit",
+      "when": [["mail", "starter kit", "kit", "reward", "claim reward", "gift", "where reward"]],
+      "answer": "Everything the server gives you arrives as **mail**: the starter kit (300 spurs, bread and saplings), level rewards, `/daily` and votes. Type `/mail` and claim the attachments. Unclaimed mail expires after **60 days**.",
+      "see": "economy",
+      "related": ["daily", "vote"]
+    },
+    {
+      "id": "daily",
+      "title": "/daily",
+      "when": [["daily", "daily reward", "streak"]],
+      "priority": 1,
+      "answer": "`/daily` every **20 hours**, in the Overworld. It runs a 7-day cycle of items plus XP; the XP lands right away and the items arrive in `/mail`. Leave it longer than 40 hours and the streak resets.",
+      "see": "economy"
+    },
+    {
+      "id": "vote",
+      "title": "Voting",
+      "when": [["vote", "voting", "vote link", "vote reward"]],
+      "priority": 1,
+      "answer": "Run `/vote` in game for the link. Voting pays spurs and diamonds by mail, even if you're offline, and grows with your streak: **2 to 10 spurs** and **1 to 5 diamonds**. Once every 24 hours; miss 48 and the streak restarts. Your first 30 votes are rewarded.",
+      "see": "economy"
+    },
+    {
+      "id": "spurs",
+      "title": "Money (spurs)",
+      "when": [["spur", "economy", "earn spur", "make spur", "sell", "trade", "shop", "player shop"]],
+      "answer": "The currency is **spurs** from Create: Numismatics, real items you can put on a belt. The server only pays spurs through the starter kit and voting; the rest is the player economy: sell to players and build shops (most trade gets arranged here in Discord). Coins drop when you die, so don't carry your savings into a fight.",
+      "see": "economy"
+    },
+    {
+      "id": "levels",
+      "title": "How levels work",
+      "when": [["level", "level up", "rank up", "progression"]],
+      "priority": -1,
+      "answer": "Your level comes from **advancements** (10 XP each) and **Season 3 playtime** (6 XP per hour): `Level = 1 + √(XP ÷ 5)`. Every level adds **2 claim chunks** (up to 150) and mails you a reward; every 5th level is a milestone with 4 diamonds and 16 bottles o' enchanting. AFK time doesn't count.",
+      "see": "progression",
+      "related": ["my-stats"]
+    },
+    {
+      "id": "my-stats",
+      "title": "Your stats",
+      "personal": true,
+      "when": [["my level", "my playtime", "my hour", "my stat", "my rank", "my time", "me level", "my claim", "level am", "how long played", "how long have played", "my progress"]],
+      "priority": 3,
+      "answer": "**{me.name}**: {me.seasonHours} h this season, {me.totalHours} h all time.\n{me.levelLine}",
+      "unlinked": "I don't know who you are in game yet. Link your account: run `/discord link` in game, then `/link <code>` here in Discord. After that, ask me again.",
+      "see": "progression"
+    },
+    {
+      "id": "leaderboard",
+      "title": "Leaderboard",
+      "when": [["leaderboard", "top player", "most hour", "top 10", "ranking", "who played most"]],
+      "answer": "Use the `/leaderboard` slash command here in Discord: top 10 by playtime this season (there's an all-time board too). Link your account (`/discord link` in game, then `/link <code>` here) to appear on it.",
+      "see": "progression"
+    },
+    {
+      "id": "link-discord",
+      "title": "Linking Discord",
+      "when": [["link", "linking", "linked", "connect"], ["discord", "account", "code"]],
+      "priority": 1,
+      "answer": "In game, run `/discord link` to get a code. Then here in Discord run `/link <code>`. Linked players show their server identity in chat and appear on `/leaderboard`.",
+      "see": "faq"
+    },
+    {
+      "id": "nether-end",
+      "title": "The Nether and the End",
+      "when": [["nether", "end dimension", "go end", "enter end", "end portal", "dragon", "stronghold", "end open", "end closed", "elytra", "end city"]],
+      "answer": "The **Nether is open**. The **End is closed** for now; when it opens it'll be announced here, and the dragon's island can never be claimed.",
+      "see": "faq"
+    },
+    {
+      "id": "season",
+      "title": "Seasons and resets",
+      "when": [["season", "wipe", "reset world", "new world", "next season", "season end", "world reset"]],
+      "answer": "We're in **Season 3**. A new season resets the world so everyone starts fresh together. Your account, password, skin and lifetime playtime carry over; builds, items, claims and level don't. Season endings are announced here well ahead.",
+      "see": "progression"
+    },
+    {
+      "id": "rules",
+      "title": "Rules",
+      "when": [["rule", "allowed", "banned", "ban", "griefing", "grief", "stealing"]],
+      "priority": -1,
+      "answer": "Short version: don't take or break other people's stuff, don't cheat, don't be a nuisance. English in main chat, no slurs, harassment or advertising, one account per person for claims. Full rules: {wiki}/rules\nThink a decision was wrong? Appeal here in Discord, not in game chat.",
+      "see": "rules",
+      "related": ["client-mods", "alts"]
+    },
+    {
+      "id": "alts",
+      "title": "Alt accounts",
+      "when": [["alt", "alt account", "second account", "multiple account", "two account"]],
+      "answer": "One account per person for claim purposes: using alts to multiply your chunk allowance isn't allowed. Sharing an account is at your own risk.",
+      "see": "rules"
+    },
+    {
+      "id": "client-mods",
+      "title": "Adding your own mods",
+      "when": [["xray", "x ray", "hack", "cheat", "freecam", "own mod", "add mod", "extra mod", "optifine", "allowed mod", "client mod", "minimap", "litematica", "schematic mod"]],
+      "answer": "Client-side visual mods are usually fine (minimaps, shaders, sound mods). Anything that gives an unfair advantage, like x-ray, radars or cheat clients, gets you removed.\nThe updater manages the `mods` folder and removes older duplicates of pack mods, so only add things the pack doesn't already ship. Unsure? Ask staff first.",
+      "see": "rules"
+    },
+    {
+      "id": "shaders",
+      "title": "Shaders",
+      "when": [["shader"]],
+      "answer": "Shaders ship **off** and are the most expensive thing you can turn on. Start from a low preset and work up: compiling a heavy pack needs extra memory outside the game's allocation at the same moment Distant Horizons wants it.",
+      "see": "performance"
+    },
+    {
+      "id": "distant-horizons",
+      "title": "Distant Horizons",
+      "when": [["distant horizon", "distant", "horizon", "far terrain", "render distance", "view distance"]],
+      "answer": "Distant Horizons draws terrain far past your render distance, which is most of the point of flying. Struggling? **Lower your render distance before turning DH off**: vanilla chunks cost far more than DH's simplified terrain. Potato mode in Aero Settings switches it off for you.",
+      "see": "performance"
+    },
+    {
+      "id": "voice",
+      "title": "Voice chat",
+      "when": [["voice", "voice chat", "talk game", "simple voice"]],
+      "answer": "The pack includes **Simple Voice Chat** (proximity voice). Press **V** in game to open its menu and pick your mic. By default you talk with push-to-talk on **Caps Lock**. Groups let you talk to friends anywhere.",
+      "see": "getting-started"
+    },
+    {
+      "id": "ticket",
+      "title": "Getting help from staff",
+      "when": [["ticket", "report", "bug", "appeal", "contact admin", "ask admin", "talk admin", "report player", "griefed", "stolen", "stuck"]],
+      "answer": "In game: `/ticket <what happened>` (up to 2 a day) sends it straight to staff with your location. Staff reply by mail; `/ticket list` shows yours.\nOr ask here in Discord with your coordinates. Found a dupe or exploit? Report it instead of using it: reporters get credit, not a ban.",
+      "see": "rules"
+    },
+    {
+      "id": "staff",
+      "title": "Staff",
+      "when": [["admin", "who own", "owner", "server owner", "who run", "who made"]],
+      "priority": -1,
+      "answer": "The server is run by **MrCoffeeBench** and the staff team. For anything that needs staff, use `/ticket <message>` in game or ask here. Staff will never ask for your password.",
+      "related": ["ticket"]
+    },
+    {
+      "id": "store",
+      "title": "Store or ranks",
+      "when": [["store", "donate", "donation", "buy rank", "vip", "paid rank", "pay", "purchase", "patreon"]],
+      "answer": "There's no store right now. Everything on the server is earned by playing.",
+      "see": "faq"
+    },
+    {
+      "id": "quests",
+      "title": "Quest book",
+      "when": [["quest", "quest book", "ftb quest"]],
+      "answer": "There's no quest book in Season 3 at launch. Working through the advancement tree counts toward your level, so it's a guided path of its own. Any quest book would be announced here.",
+      "see": "quests"
+    },
+    {
+      "id": "vr",
+      "title": "VR",
+      "when": [["vr", "virtual reality", "vivecraft", "quest 2", "quest 3"]],
+      "priority": 1,
+      "answer": "VR isn't part of the Season 3 pack. It was a Season 2 feature.",
+      "see": "vr"
+    },
+    {
+      "id": "bedrock",
+      "title": "Bedrock / mobile / console",
+      "when": [["bedrock", "pocket edition", "mobile", "phone", "console", "xbox", "playstation", "ps4", "ps5", "switch", "ipad", "tablet", "pojav"]],
+      "answer": "The server is **Java Edition only**, and it needs the modpack (180+ mods), so you need a PC or Mac. Bedrock, consoles and phones can't join.",
+      "see": "getting-started"
+    },
+    {
+      "id": "java",
+      "title": "Java version",
+      "when": [["java", "java version", "jdk", "jre"]],
+      "not": ["java argument", "jvm argument"],
+      "answer": "Minecraft 1.21.1 runs on **Java 21**. Modrinth App, Prism and the CurseForge app install the right Java for you, so you normally don't have to do anything.",
+      "see": "getting-started"
+    },
+    {
+      "id": "mod-list",
+      "title": "What's in the pack",
+      "when": [["mod list", "list mod", "modlist", "mods in pack", "what in pack", "pack content"]],
+      "priority": 1,
+      "answer": "It's a Minecraft **1.21.1 NeoForge** pack with 180+ mods built around **Create** and **Create: Aeronautics** airships, plus Tectonic terrain, YUNG's structures, Numismatics, Distant Horizons, Simple Voice Chat and more. The full list is under **Mods** on the title screen.",
+      "see": "index"
+    },
+    {
+      "id": "wiki",
+      "title": "Wiki",
+      "when": [["wiki", "guide", "docs", "documentation", "website", "tutorial"]],
+      "answer": "Everything's on the wiki: {wiki}\nStart with *Getting Started*, then *Claims* before you build.",
+      "see": "index"
+    },
+    {
+      "id": "discord-invite",
+      "title": "Discord invite",
+      "when": [["invite", "discord link", "discord invite", "invite link", "invite friend"]],
+      "answer": "Invite link: {discord}",
+      "related": ["address"]
+    },
+    {
+      "id": "change-name",
+      "title": "Changing your name",
+      "when": [["change name", "rename", "changename", "display name", "nickname", "nick"]],
+      "not": ["ship", "shipname"],
+      "answer": "`/changename <newName>` changes your display name **once per account**, and staff approve it first. Premium players who change their Mojang name should contact staff.",
+      "see": "commands"
+    },
+    {
+      "id": "corpse-gone",
+      "title": "My corpse is gone",
+      "when": [["corpse", "item", "stuff"], ["gone", "missing", "disappeared", "cant find", "cannot find", "lost"]],
+      "priority": 2,
+      "answer": "Your corpse stays where you died. Use `/back` (within 5 minutes of dying) to go straight there. If it's genuinely gone, open `/ticket <what happened and where>` and staff will look into it.",
+      "see": "faq",
+      "related": ["back"]
+    }
+  ]
+}

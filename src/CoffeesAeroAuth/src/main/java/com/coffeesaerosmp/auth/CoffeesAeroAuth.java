@@ -483,6 +483,7 @@ public class CoffeesAeroAuth {
         gateway.setReadyCallback(() -> DISCORD_REST.setGlobalCommands(
             gateway.getApplicationId(),
             com.coffeesaerosmp.auth.discord.DiscordInteractions.GLOBAL_COMMANDS_JSON));
+        com.coffeesaerosmp.auth.discord.expert.CoffeeBot.init(event.getServer(), dataDir);
         DISCORD_BRIDGE = new DiscordBridge(WEBHOOK_QUEUE, gateway);
         DISCORD_BRIDGE.initMilestones(dataDir);
         if (AuthConfig.DISCORD_ENABLED.get() && !discordToken.isBlank()) {
@@ -912,6 +913,7 @@ public class CoffeesAeroAuth {
         com.coffeesaerosmp.auth.commands.NameColorCommands.register(event.getDispatcher());
         com.coffeesaerosmp.auth.commands.StoreCommands.register(event.getDispatcher());
         com.coffeesaerosmp.auth.commands.BeanCommands.register(event.getDispatcher());
+        com.coffeesaerosmp.auth.commands.CoffeeBotCommands.register(event.getDispatcher());
         com.coffeesaerosmp.auth.commands.IdentityCommands.register(event.getDispatcher());
         com.coffeesaerosmp.auth.commands.AfkCommands.register(event.getDispatcher());
         com.coffeesaerosmp.auth.commands.MailCommands.register(event.getDispatcher());
