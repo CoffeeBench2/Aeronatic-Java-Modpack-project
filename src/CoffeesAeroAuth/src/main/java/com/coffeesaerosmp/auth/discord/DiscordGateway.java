@@ -211,20 +211,15 @@ public class DiscordGateway {
                 // Discord-side chatter and has no business appearing in game.
                 if (mentionsSelf(d)) {
                     String messageId = d.has("id") ? d.get("id").getAsString() : null;
-                    // 1.13.31: questions go to the CoffeeBot expert system first (its own worker thread); small
-                    // talk it declines falls through to the banter table exactly as before.
+                    // 1.13.33: every mention goes to the CoffeeBot expert system (its own worker thread). The old
+                    // banter table is gone (owner 2026-10-12: "remove those things"); small talk is answered by the
+                    // expert itself. A null answer means the asker is on the 2.5 s cooldown: stay quiet.
                     if (com.coffeesaerosmp.auth.discord.expert.CoffeeBot.active()) {
                         com.coffeesaerosmp.auth.discord.expert.CoffeeBot.ask(authorId, content, answer -> {
-                            String reply = answer != null ? answer : BotBanter.replyTo(authorId, content);
-                            if (reply != null) postBanter(chan, reply, messageId);
+                            if (answer != null) postBanter(chan, answer, messageId);
                         });
-                        return;
                     }
-                    String reply = BotBanter.replyTo(authorId, content);
-                    if (reply != null) {
-                        postBanter(chan, reply, messageId);
-                        return;
-                    }
+                    return;
                 }
 
                 // Feature B: admin console channel → run as server command (admin-role gated).

@@ -37,6 +37,7 @@ public final class CoffeeBot {
     private static volatile KnowledgeBase kb;
     private static volatile MinecraftServer server;
     private static volatile Path overridePath, unansweredLog;
+    private static volatile LearnedExamples learned;
     private static volatile Map<String, String> lastGlobal = Map.of();
     private static volatile long lastGlobalMs;
     private static final ExecutorService WORKER = Executors.newSingleThreadExecutor(r -> {
@@ -50,6 +51,7 @@ public final class CoffeeBot {
     public static void init(MinecraftServer srv, Path dataDir) {
         server = srv;
         overridePath = srv.getServerDirectory().resolve("config").resolve("coffeebot-kb.json");
+        learned = new LearnedExamples(srv.getServerDirectory().resolve("config").resolve("coffeebot-learned.json"));
         unansweredLog = dataDir.resolve("coffeebot-unanswered.log");
         String err = reload();
         if (err != null) CoffeesAeroAuth.LOGGER.error("[CoffeeBot] knowledge base failed to load: {}", err);
@@ -59,13 +61,21 @@ public final class CoffeeBot {
     public static String reload() {
         try {
             KnowledgeBase loaded = KnowledgeBase.load(overridePath);
+            // Options must point at real topics: a typo in a hand-edited override would offer a dead choice.
+            for (var t : loaded.topics()) for (var o : t.options())
+                if (loaded.get(o.topic()) == null) throw new IllegalArgumentException(t.id() + ": option -> unknown topic " + o.topic());
+            if (learned != null) learned.load();
             kb = loaded;
             if (expert == null) {
-                CoffeeBotExpert e = new CoffeeBotExpert(() -> kb, new ServerFacts(), wiki());
+                var wikiIndex = new Bm25Index(WikiCorpus.load(wiki()));
+                CoffeeBotExpert e = new CoffeeBotExpert(() -> kb, new ServerFacts(), wiki(), wikiIndex, learned,
+                    server == null ? null : new ServerLiveAnswers(server));
                 e.setUnansweredSink(CoffeeBot::logUnanswered);
                 expert = e;
+                CoffeesAeroAuth.LOGGER.info("[CoffeeBot] wiki index: {} sections", wikiIndex.size());
             }
-            CoffeesAeroAuth.LOGGER.info("[CoffeeBot] knowledge base loaded: {} topics{}", loaded.size(),
+            CoffeesAeroAuth.LOGGER.info("[CoffeeBot] knowledge base loaded: {} topics, {} taught phrasings{}", loaded.size(),
+                learned == null ? 0 : learned.size(),
                 overridePath != null && Files.isRegularFile(overridePath) ? " (with " + overridePath.getFileName() + ")" : "");
             return null;
         } catch (Exception e) {
@@ -83,11 +93,27 @@ public final class CoffeeBot {
 
     public static int topicCount() { return kb == null ? 0 : kb.size(); }
 
+    public static int learnedCount() { return learned == null ? 0 : learned.size(); }
+
+    public static KnowledgeBase knowledge() { return kb; }
+
+    /** Teach: "a question like this means that topic". Returns an error message, or null on success. */
+    public static String teach(String topicId, String question) {
+        KnowledgeBase base = kb;
+        if (base == null || learned == null) return "CoffeeBot isn't loaded.";
+        if (base.get(topicId) == null) return "No topic '" + topicId + "'. See /aerobot topics.";
+        try {
+            return learned.teach(topicId, question) ? null : "Nothing new to learn (empty, or already taught).";
+        } catch (Exception e) {
+            return "Couldn't save: " + e.getMessage();
+        }
+    }
+
     public static java.util.List<String> unanswered() {
         return expert == null ? java.util.List.of() : expert.unanswered();
     }
 
-    /** Answer off-thread. {@code onReply} gets the text, or null when it's small talk for BotBanter. */
+    /** Answer off-thread. {@code onReply} gets the text, or null while the asker is on cooldown. */
     public static void ask(String discordUserId, String content, java.util.function.Consumer<String> onReply) {
         CoffeeBotExpert e = expert;
         if (e == null) { onReply.accept(null); return; }

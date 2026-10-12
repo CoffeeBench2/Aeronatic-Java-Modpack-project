@@ -32,7 +32,14 @@ public final class KnowledgeBase {
     /** One rule. {@code when} and {@code boost} hold already-normalised token phrases. */
     public record Topic(String id, String title, List<List<List<String>>> when, List<List<String>> boost,
                         List<List<String>> not, String answer, String unlinked, String see, List<String> related,
-                        int priority, boolean personal, List<List<String>> rawWhen) {}
+                        int priority, boolean personal, List<List<String>> rawWhen, String ask, List<Option> options) {}
+
+    /**
+     * A follow-up choice offered after the answer — the troubleshooting dialogue. The player replies with the
+     * number and gets {@code topic}'s answer, which may ask its own follow-up: a decision tree, walked one
+     * question at a time.
+     */
+    public record Option(String label, String topic) {}
 
     private final List<Topic> topics;
     private final Map<String, Topic> byId;
@@ -109,7 +116,9 @@ public final class KnowledgeBase {
                 strings(o.getAsJsonArray("related")),
                 o.has("priority") ? o.get("priority").getAsInt() : 0,
                 o.has("personal") && o.get("personal").getAsBoolean(),
-                rawWhen));
+                rawWhen,
+                str(o, "ask", null),
+                options(o.getAsJsonArray("options"))));
         }
         // All problems at once: a hand-edited override should get one complete list, not one error per reload.
         if (!errors.isEmpty()) throw new IllegalArgumentException(String.join("; ", errors));
@@ -144,6 +153,15 @@ public final class KnowledgeBase {
                 + "' (stop words removed); reword it or drop it";
         }
         return null;
+    }
+
+    private static List<Option> options(JsonArray a) {
+        List<Option> out = new ArrayList<>();
+        if (a != null) for (JsonElement e : a) {
+            JsonObject o = e.getAsJsonObject();
+            out.add(new Option(o.get("label").getAsString(), o.get("topic").getAsString()));
+        }
+        return out;
     }
 
     private static List<String> strings(JsonArray a) {

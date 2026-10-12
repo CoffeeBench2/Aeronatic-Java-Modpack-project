@@ -24,11 +24,29 @@ class CoffeeBotExpertTest {
         "address", "coffeeaerosmp.duckdns.org", "status", "online", "online", "7", "max", "30", "tps", "19.9",
         "tpsVerdict", "full speed", "uptimeDays", "120", "session", "3h 2m", "discord", "https://discord.gg/x");
 
+    static Bm25Index wikiIndex;
+
+    /** A stand-in for the server: answers "is <name> online" so the pipeline order can be tested. */
+    static final CoffeeBotExpert.LiveAnswers FAKE_LIVE = (raw, tokens) -> {
+        var i = LiveIntent.parse(raw);
+        if (i == null) return null;
+        return switch (i.kind()) {
+            case PLAYER_SEEN -> new CoffeeBotExpert.LiveReply("Player lookup", i.subject() + " is online right now.", "live");
+            case WHO_ONLINE -> new CoffeeBotExpert.LiveReply("Who's online", "**3** online: A, B, C", "live");
+            default -> null;   // no item/mod registry in a unit test: falls through like an unknown name would
+        };
+    };
+
     static CoffeeBotExpert expert(Map<String, String> me) {
+        return expert(me, null);
+    }
+
+    static CoffeeBotExpert expert(Map<String, String> me, LearnedExamples learned) {
+        if (wikiIndex == null) wikiIndex = new Bm25Index(WikiCorpus.load("https://wiki.example/aerosmp-wiki"));
         CoffeeBotExpert e = new CoffeeBotExpert(() -> kb, new CoffeeBotExpert.FactSource() {
             public Map<String, String> global() { return GLOBAL; }
             public Map<String, String> personal(String id) { return me; }
-        }, "https://wiki.example/aerosmp-wiki");
+        }, "https://wiki.example/aerosmp-wiki", wikiIndex, learned, FAKE_LIVE);
         e.cooldownEnabled = false;
         return e;
     }
@@ -146,7 +164,7 @@ class CoffeeBotExpertTest {
         {"server not letting me in", "cant-join"},
         {"getting timed out every time", "timed-out"},
         {"is smp online rn", "server-status"},
-        {"anyone playing right now?", "player-count"},
+        {"anyone playing right now?", "live"},
         {"game keeps crashing on startup with no report", "crash-no-report"},
         {"how many gigs of ram for this pack", "ram"},
         {"is this server cracked friendly", "offline-accounts"},
@@ -189,12 +207,145 @@ class CoffeeBotExpertTest {
         assertTrue(pct >= 80, String.format("held-out accuracy %.0f%%:%n%s", pct, String.join(" | ", misses)));
     }
 
+    /** Second held-out set, written after v2 was finished and scored once, untuned (12 Oct 2026). */
+    static final String[][] HELD_OUT_2 = {
+        {"yo", "hello"},
+        {"ty bot", "thanks"},
+        {"whos on rn", "live"},
+        {"is MrCoffeeBench online", "live"},
+        {"server ip?", "address"},
+        {"i keep getting timed out", "timed-out"},
+        {"game crashes at startup no crash log", "crash-no-report"},
+        {"how much ram for 16gb pc", "ram"},
+        {"lost my password", "forgot-password"},
+        {"can my friend tp to me", "teleport"},
+        {"where did my stuff go after dying", "death"},
+        {"how many claims do i get", "claims"},
+        {"why cant i open chests here", "cant-break"},
+        {"how do i lock my ship", "ship-claim"},
+        {"my mechanical press stopped working", "stress"},
+        {"how does voting work", "vote"},
+        {"is there a store", "store"},
+        {"is the nether open yet", "nether-end"},
+        {"can i use optifine", "client-mods"},
+        {"where is the wiki", "wiki"},
+        {"how do i report someone", "ticket"},
+        {"do i lose my level next season", "season"},
+        {"is there voice chat", "voice"},
+        {"what do i do as a new player", "create-start"},
+        {"can i play on my phone", "bedrock"},
+        {"what java do i need", "java"},
+        {"how do i get the curseforge version", "curseforge"},
+        {"whats my playtime", "my-stats"},
+        {"how do i set my clan tag", "clan"},
+        {"how long until restart", "live"},
+    };
+
     @Test
-    void smallTalkIsLeftToBanter() {
+    void secondHeldOutSet() {
+        int ok = 0;
+        List<String> misses = new ArrayList<>();
+        CoffeeBotExpert.LiveAnswers liveAll = (raw, tokens) -> {
+            var i = LiveIntent.parse(raw);
+            return i == null || i.kind() == LiveIntent.Kind.RECIPE || i.kind() == LiveIntent.Kind.MOD_INFO ? null
+                : new CoffeeBotExpert.LiveReply("live", "live", "live");
+        };
+        for (String[] c : HELD_OUT_2) {
+            if (wikiIndex == null) expert(null);
+            CoffeeBotExpert e = new CoffeeBotExpert(() -> kb, new CoffeeBotExpert.FactSource() {
+                public Map<String, String> global() { return GLOBAL; }
+                public Map<String, String> personal(String id) { return Map.of("me.name", "P", "me.seasonHours", "1", "me.totalHours", "2", "me.levelLine", "L"); }
+            }, "https://wiki.example/aerosmp-wiki", wikiIndex, null, liveAll);
+            e.cooldownEnabled = false;
+            var r = e.answer("h2", c[0]);
+            String got = r == null ? "null" : String.valueOf(r.topicId());
+            if (c[1].equals(got)) ok += 2;
+            else if (r != null && r.kind() == Kind.CLARIFY && kb.get(c[1]) != null && r.text().contains(kb.get(c[1]).title())) ok += 1;
+            else misses.add("'" + c[0] + "' " + Normalizer.tokens(c[0]) + " -> " + got + " (want " + c[1] + ")");
+        }
+        double pct = ok * 50.0 / HELD_OUT_2.length;
+        System.out.printf("[CoffeeBot] held-out-2 accuracy %.0f%%; misses: %s%n", pct, misses);
+        assertTrue(pct >= 80, String.format("held-out-2 %.0f%%: %s", pct, String.join(" | ", misses)));
+    }
+
+    @Test
+    void smallTalkIsAnsweredUsefullyNeverWithAShrug() {
+        // Owner 2026-10-12: the old banter ("I'm here. Not sure what you want") is gone.
         CoffeeBotExpert e = expert(null);
-        assertNull(e.answer("u1", "<@1> hi"));
-        assertNull(e.answer("u2", "<@1> thanks"));
-        assertNull(e.answer("u3", "<@1> good bot"));
+        assertEquals("hello", e.answer("u1", "<@1>").topicId(), "a bare mention introduces the bot");
+        assertEquals("hello", e.answer("u2", "<@1> hi").topicId());
+        assertEquals("hello", e.answer("u3", "hey coffeebot!").topicId());
+        assertEquals("thanks", e.answer("u4", "<@1> thanks!").topicId());
+        assertEquals("how-are-you", e.answer("u5", "how are you?").topicId());
+        assertEquals("about-bot", e.answer("u6", "what can you do").topicId());
+        assertEquals("compliment", e.answer("u7", "good bot").topicId());
+        assertEquals("insult", e.answer("u8", "useless bot").topicId());
+        assertEquals("address", e.answer("u9", "hey whats the ip").topicId(), "a greeting in front of a question");
+        var intro = e.answer("u10", "<@1>");
+        assertTrue(intro.text().contains("7/30") && intro.text().contains("how do I join"), intro.text());
+        assertFalse(intro.text().contains("Not sure what you want"));
+    }
+
+    @Test
+    void cooldownIsTheOnlyNull() {
+        CoffeeBotExpert e = expert(null);
+        e.cooldownEnabled = true;
+        assertNotNull(e.answer("c1", "how do i join"));
+        assertNull(e.answer("c1", "how do i join"), "second ask inside 2.5 s is ignored");
+        assertNotNull(e.answer("c2", "how do i join"), "per user, not global");
+    }
+
+    @Test
+    void troubleshootingDialogueWalksByNumber() {
+        CoffeeBotExpert e = expert(null);
+        var first = e.answer("d1", "i cant join the server");
+        assertEquals("cant-join", first.topicId());
+        assertTrue(first.text().contains("What do you see when it fails?") && first.text().contains("**1.**"), first.text());
+        assertEquals("timed-out", e.answer("d1", "1").topicId());
+        var crash = e.answer("d2", "my game crashed");
+        assertEquals("crash", crash.topicId());
+        assertEquals("crash-no-report", e.answer("d2", "<@1> 1").topicId());
+    }
+
+    @Test
+    void wikiSearchAnswersWhatNoRuleCovers() {
+        CoffeeBotExpert e = expert(null);
+        var r = e.answer("w1", "where do i turn on spatial gui inventories");
+        assertNotNull(r);
+        assertTrue(r.topicId() != null && r.topicId().startsWith("wiki:performance"), r.topicId() + " " + r.text());
+        assertTrue(r.text().contains("Spatial GUI") && r.text().contains("https://wiki.example/aerosmp-wiki/performance#"), r.text());
+        assertTrue(e.answer("w1", "why").text().contains("searched the wiki"));
+    }
+
+    @Test
+    void liveLookupsComeFirst() {
+        var r = expert(null).answer("l1", "is steve online?");
+        assertEquals("live", r.topicId());
+        assertTrue(r.text().contains("steve is online"), r.text());
+    }
+
+    @Test
+    void taughtPhrasingsWin(@org.junit.jupiter.api.io.TempDir java.nio.file.Path dir) throws Exception {
+        LearnedExamples learned = new LearnedExamples(dir.resolve("learned.json"));
+        CoffeeBotExpert e = expert(null, learned);
+        String q = "how far does the random thingy throw me";
+        assertNotEquals("rtp", String.valueOf(e.answer("t1", q).topicId()), "not known before teaching");
+        assertTrue(learned.teach("rtp", q));
+        assertFalse(learned.teach("rtp", q), "no duplicates");
+        assertEquals("rtp", e.answer("t2", "How far does the random thingy throw me??").topicId());
+        assertTrue(e.answer("t2", "why").text().contains("Staff taught me"));
+        LearnedExamples reloaded = new LearnedExamples(dir.resolve("learned.json"));
+        reloaded.load();
+        assertEquals(1, reloaded.size(), "persisted");
+    }
+
+    @Test
+    void wikiAnchorsMatchQuartz() {
+        assertEquals("why-cant-i-tpa", WikiCorpus.anchor("Why can't I /tpa?"));
+        assertEquals("what-happens-when-i-die", WikiCorpus.anchor("What happens when I die?"));
+        assertEquals("ships--claims", WikiCorpus.anchor("Ships & claims"));
+        expert(null);
+        assertTrue(wikiIndex.size() > 40, "wiki sections indexed: " + wikiIndex.size());
     }
 
     @Test
@@ -203,7 +354,7 @@ class CoffeeBotExpertTest {
         List<String> sink = new ArrayList<>();
         e.setUnansweredSink(sink::add);
         var r = e.answer("u1", "<@1> what is the airspeed velocity of an unladen swallow?");
-        assertEquals(Kind.UNKNOWN, r.kind());
+        assertEquals(Kind.UNKNOWN, r.kind(), r.text());
         assertEquals(1, sink.size());
         assertFalse(sink.get(0).contains("<@1>"), "mention markup stripped");
         assertEquals(1, e.unanswered().size());
