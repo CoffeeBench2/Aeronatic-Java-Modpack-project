@@ -67,6 +67,10 @@ public final class BeanCommands {
             .then(Commands.literal("trails").executes(ctx -> shop(ctx.getSource(), BeanPrices.Group.TRAIL)))
             .then(Commands.literal("contrails").executes(ctx -> shop(ctx.getSource(), BeanPrices.Group.CONTRAIL)))
             .then(Commands.literal("name").executes(ctx -> shop(ctx.getSource(), BeanPrices.Group.NAME)))
+            .then(Commands.literal("list").executes(ctx -> shopList(ctx.getSource(), null))
+                .then(Commands.literal("trails").executes(ctx -> shopList(ctx.getSource(), BeanPrices.Group.TRAIL)))
+                .then(Commands.literal("contrails").executes(ctx -> shopList(ctx.getSource(), BeanPrices.Group.CONTRAIL)))
+                .then(Commands.literal("name").executes(ctx -> shopList(ctx.getSource(), BeanPrices.Group.NAME))))
             .then(Commands.literal("buy")
                 .then(Commands.argument("id", StringArgumentType.greedyString())
                     .suggests((c, b) -> { BeanPrices.catalogue().forEach(i -> b.suggest(i.id())); return b.buildFuture(); })
@@ -104,6 +108,7 @@ public final class BeanCommands {
     private static int beans(CommandSourceStack src) {
         ServerPlayer p = player(src);
         if (p == null) return 0;
+        if (!com.coffeesaerosmp.auth.store.PremiumGate.check(p)) return 0;
         UUID local = p.getUUID();
         AsyncIo.submit(() -> {
             UUID mojang = MojangIds.toMojang(local).orElse(null);
@@ -137,6 +142,20 @@ public final class BeanCommands {
     private static int shop(CommandSourceStack src, BeanPrices.Group group) {
         ServerPlayer p = player(src);
         if (p == null) return 0;
+        // 1.13.34: the shop is a GUI now (premium only, checked inside). The chat list below stays for /shop list.
+        if (group == null) { com.coffeesaerosmp.auth.store.gui.ShopGui.openMain(p); return 1; }
+        com.coffeesaerosmp.auth.store.gui.ShopGui.openCategory(p, switch (group) {
+            case TRAIL -> com.coffeesaerosmp.auth.store.gui.ShopGui.Category.TRAILS;
+            case CONTRAIL -> com.coffeesaerosmp.auth.store.gui.ShopGui.Category.CONTRAILS;
+            case NAME -> com.coffeesaerosmp.auth.store.gui.ShopGui.Category.COLOURS;
+        }, 0);
+        return 1;
+    }
+
+    private static int shopList(CommandSourceStack src, BeanPrices.Group group) {
+        ServerPlayer p = player(src);
+        if (p == null) return 0;
+        if (!com.coffeesaerosmp.auth.store.PremiumGate.check(p)) return 0;
         UUID local = p.getUUID();
         AsyncIo.submit(() -> {
             UUID mojang = MojangIds.toMojang(local).orElse(null);
@@ -176,6 +195,7 @@ public final class BeanCommands {
     private static int askConfirm(CommandSourceStack src, String rawId) {
         ServerPlayer p = player(src);
         if (p == null) return 0;
+        if (!com.coffeesaerosmp.auth.store.PremiumGate.check(p)) return 0;
         String id = rawId.trim().toLowerCase(java.util.Locale.ROOT);
         var item = BeanPrices.catalogue().stream().filter(i -> i.id().equals(id)).findFirst();
         if (item.isEmpty()) { src.sendFailure(Component.literal("§cThat isn't for sale.")); return 0; }
@@ -189,6 +209,7 @@ public final class BeanCommands {
     private static int confirm(CommandSourceStack src, String rawId) {
         ServerPlayer p = player(src);
         if (p == null) return 0;
+        if (!com.coffeesaerosmp.auth.store.PremiumGate.check(p)) return 0;
         String id = rawId.trim().toLowerCase(java.util.Locale.ROOT);
         Pending pend = PENDING.remove(p.getUUID());
         if (pend == null || !pend.id().equals(id) || System.currentTimeMillis() - pend.atMs() > CONFIRM_WINDOW_MS) {

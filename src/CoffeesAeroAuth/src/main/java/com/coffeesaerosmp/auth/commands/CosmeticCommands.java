@@ -57,6 +57,7 @@ public final class CosmeticCommands {
     static int setParticle(CommandSourceStack src, Type type, String raw) {
         ServerPlayer p;
         try { p = src.getPlayerOrException(); } catch (Exception e) { return 0; }
+        if (!com.coffeesaerosmp.auth.store.PremiumGate.check(p)) return 0;
         String prefix = type == Type.TRAIL ? Entitlements.TRAIL_PREFIX : Entitlements.CONTRAIL_PREFIX;
         String id = null;
         if (raw != null && !raw.equalsIgnoreCase("off")) {

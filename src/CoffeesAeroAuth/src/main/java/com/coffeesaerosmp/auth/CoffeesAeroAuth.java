@@ -914,6 +914,7 @@ public class CoffeesAeroAuth {
         com.coffeesaerosmp.auth.commands.StoreCommands.register(event.getDispatcher());
         com.coffeesaerosmp.auth.commands.BeanCommands.register(event.getDispatcher());
         com.coffeesaerosmp.auth.commands.CoffeeBotCommands.register(event.getDispatcher());
+        com.coffeesaerosmp.auth.commands.TebexCommands.register(event.getDispatcher());
         com.coffeesaerosmp.auth.commands.IdentityCommands.register(event.getDispatcher());
         com.coffeesaerosmp.auth.commands.AfkCommands.register(event.getDispatcher());
         com.coffeesaerosmp.auth.commands.MailCommands.register(event.getDispatcher());

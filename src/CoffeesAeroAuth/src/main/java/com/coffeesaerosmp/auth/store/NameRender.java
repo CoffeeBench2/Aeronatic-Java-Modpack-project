@@ -70,6 +70,11 @@ public final class NameRender {
         return built;
     }
 
+    /** Any name in any style, for previews (the shop shows YOUR name in each colour before you buy). */
+    public static Component preview(String text, String style, boolean bold) {
+        return build(text, style, bold);
+    }
+
     private static Component build(String text, String style, boolean bold) {
         if (style != null && style.startsWith(Entitlements.GRADIENT_PREFIX)) {
             String id = style.substring(Entitlements.GRADIENT_PREFIX.length());

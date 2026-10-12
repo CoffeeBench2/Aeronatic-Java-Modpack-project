@@ -85,6 +85,8 @@ public final class CosmeticEngine {
     }
 
     public static void forget(UUID uuid) {
+        TryOn.stop(uuid);
+        com.coffeesaerosmp.auth.store.gui.ShopGui.forget(uuid);
         Previewers.forget(uuid);
         PreviewSelections.forget(uuid);
         LAST_EMIT_POS.remove(uuid);
@@ -143,7 +145,10 @@ public final class CosmeticEngine {
             try { refresh(server); } catch (Throwable t) { CoffeesAeroAuth.LOGGER.debug("[Cosmetics] refresh: {}", t.toString()); }
         }
         if (tick % 2 != 0) return;
-        if (!on(AuthConfig.COSMETICS_ENABLED) || LOAD.paused() || LobbyHandoff.isLobbyRole()) { lastTickPackets = 0; return; }
+        if (!on(AuthConfig.COSMETICS_ENABLED) || LobbyHandoff.isLobbyRole()) { lastTickPackets = 0; return; }
+        // Shop try-ons go to the previewer alone: outside the shared budget and the lag pause on purpose.
+        try { TryOn.emit(server, tick); } catch (Throwable t) { CoffeesAeroAuth.LOGGER.debug("[Cosmetics] try-on: {}", t.toString()); }
+        if (LOAD.paused()) { lastTickPackets = 0; return; }
         try {
             emit(server);
         } catch (Throwable t) {

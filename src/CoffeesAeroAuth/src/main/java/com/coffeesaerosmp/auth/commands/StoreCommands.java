@@ -104,6 +104,7 @@ public final class StoreCommands {
     private static int show(CommandSourceStack src) {
         ServerPlayer p;
         try { p = src.getPlayerOrException(); } catch (Exception e) { return 0; }
+        if (!com.coffeesaerosmp.auth.store.PremiumGate.check(p)) return 0;
 
         var snap = StoreState.get(p.getUUID());
         Rank rank = snap.effectiveRank();
@@ -152,6 +153,7 @@ public final class StoreCommands {
     private static int select(CommandSourceStack src, String id) {
         ServerPlayer p;
         try { p = src.getPlayerOrException(); } catch (Exception e) { return 0; }
+        if (!com.coffeesaerosmp.auth.store.PremiumGate.check(p)) return 0;
         UUID local = p.getUUID();
         var snap = StoreState.get(local);
 
@@ -177,6 +179,7 @@ public final class StoreCommands {
     private static int setBold(CommandSourceStack src, boolean on) {
         ServerPlayer p;
         try { p = src.getPlayerOrException(); } catch (Exception e) { return 0; }
+        if (!com.coffeesaerosmp.auth.store.PremiumGate.check(p)) return 0;
         UUID local = p.getUUID();
         var snap = StoreState.get(local);
         if (on && !Entitlements.mayUse(Entitlements.BOLD_ID, snap.effectiveRank(), snap.owned(), CosmeticCommands.preview(p))) {
@@ -198,6 +201,7 @@ public final class StoreCommands {
     private static int submitText(CommandSourceStack src, String which, String text) {
         ServerPlayer p;
         try { p = src.getPlayerOrException(); } catch (Exception e) { return 0; }
+        if (!com.coffeesaerosmp.auth.store.PremiumGate.check(p)) return 0;
         var snap = StoreState.get(p.getUUID());
         Rank rank = snap.effectiveRank();
 
@@ -248,6 +252,7 @@ public final class StoreCommands {
                 CommandSourceStack src = ctx.getSource();
                 ServerPlayer p;
                 try { p = src.getPlayerOrException(); } catch (Exception e) { return 0; }
+                if (!com.coffeesaerosmp.auth.store.PremiumGate.check(p)) return 0;
 
                 String url = AuthConfig.STORE_URL.get();
                 if (url == null || url.isBlank()) {

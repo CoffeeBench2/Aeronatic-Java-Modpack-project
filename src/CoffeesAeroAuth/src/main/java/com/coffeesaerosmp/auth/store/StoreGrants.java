@@ -50,13 +50,62 @@ public final class StoreGrants {
             MojangIds.queue(mojangUuid, MojangIds.Kind.RANK, rank.name() + ":" + days, 0L, txn);
             return Outcome.QUEUED;
         }
+        boolean tracked = isTebexTxn(txn);
         // A rank is worth nothing until it can be rendered, and rendering needs the local uuid. If we
         // cannot resolve the player yet, park it — the column backfills on their next gate-verified
         // join. Dropping it here would consume a paid order silently.
         if (MojangIds.toLocal(mojangUuid).isEmpty()) {
+            if (tracked && !claim("queued:" + txn, "RANK", mojangUuid, rank.name() + ":" + days)) {
+                CoffeesAeroAuth.LOGGER.info("[Store] txn {} already parked for {}; retry ignored", txn, mojangUuid);
+                return Outcome.QUEUED;
+            }
             boolean q = MojangIds.queue(mojangUuid, MojangIds.Kind.RANK, rank.name() + ":" + days, 0L, txn);
             return q ? Outcome.QUEUED : Outcome.FAILED;
         }
+        // 🔴 Once per transaction, ever. This method EXTENDS a subscription, so a Tebex retry of the same
+        // order would otherwise hand out another period for free (found 2026-10-12 before the store opened).
+        if (tracked && !claim(txn, "RANK", mojangUuid, rank.name() + ":" + days)) {
+            CoffeesAeroAuth.LOGGER.info("[Store] txn {} already delivered to {}; retry ignored", txn, mojangUuid);
+            return Outcome.APPLIED;
+        }
+        Outcome o = grantRankNow(mojangUuid, rank, days, txn);
+        if (o != Outcome.APPLIED && tracked) unclaim(txn);     // failed: let the retry try again
+        return o;
+    }
+
+    /** A real Tebex transaction id, as opposed to a staff command ("cmd") or nothing. */
+    static boolean isTebexTxn(String txn) {
+        return txn != null && !txn.isBlank() && !txn.equals("cmd");
+    }
+
+    /** Claim a delivery key. True = first time (go ahead); false = already claimed (a retry: do nothing). */
+    public static boolean claim(String key, String kind, UUID mojangUuid, String payload) {
+        try (Connection c = db().getConnection();
+             PreparedStatement ps = c.prepareStatement(
+                 "INSERT IGNORE INTO store_deliveries (txn_key, kind, mojang_uuid, payload, claimed_at) VALUES (?,?,?,?,?)")) {
+            ps.setString(1, key.length() > 120 ? key.substring(0, 120) : key);
+            ps.setString(2, kind);
+            ps.setString(3, mojangUuid.toString());
+            ps.setString(4, payload);
+            ps.setLong(5, System.currentTimeMillis());
+            return ps.executeUpdate() == 1;
+        } catch (SQLException e) {
+            CoffeesAeroAuth.LOGGER.error("[Store] delivery claim failed for {}: {}", key, e.getMessage());
+            return false;      // unsure = do NOT grant; Tebex will retry and we try again
+        }
+    }
+
+    static void unclaim(String key) {
+        try (Connection c = db().getConnection();
+             PreparedStatement ps = c.prepareStatement("DELETE FROM store_deliveries WHERE txn_key = ?")) {
+            ps.setString(1, key);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            CoffeesAeroAuth.LOGGER.error("[Store] delivery unclaim failed for {}: {}", key, e.getMessage());
+        }
+    }
+
+    private static Outcome grantRankNow(UUID mojangUuid, Rank rank, int days, String txn) {
 
         long now = System.currentTimeMillis();
         long addMs = days * 86_400_000L;

@@ -110,6 +110,18 @@ public final class StoreSchema {
                 "  INDEX idx_pending (mojang_uuid, applied_at)" +
                 ")");
 
+            // 1.13.34: one row per Tebex transaction, claimed BEFORE anything is granted. Tebex re-runs a delivery
+            // it isn't sure about; grantRank EXTENDS a subscription, so without this a retry gave free months.
+            // "queued:<txn>" and "<txn>" are separate keys: parking a grant and applying it are each once-only.
+            s.executeUpdate(
+                "CREATE TABLE IF NOT EXISTS store_deliveries (" +
+                "  txn_key      VARCHAR(120) NOT NULL PRIMARY KEY," +
+                "  kind         VARCHAR(24)  NOT NULL," +
+                "  mojang_uuid  CHAR(36)     NOT NULL," +
+                "  payload      VARCHAR(96)  NULL," +
+                "  claimed_at   BIGINT       NOT NULL" +
+                ")");
+
             // 1.13.31 Coffee Beans (store/BeanLedger). Balance row is the lock target for every change; the ledger
             // is append-only history (Mojang's purchase-history rule) and carries the balance after each row.
             s.executeUpdate(
