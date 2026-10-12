@@ -28,6 +28,7 @@ public final class FittingRoomHarness {
 
     private static final List<Step> STEPS = new ArrayList<>();
     private static int idx = -1, wait = 0, stage = 0, inWorld = 0;
+    private static net.minecraft.client.gui.screens.Screen hidden;
 
     public static void maybeInit() {
         String addr = System.getProperty("aerocore.fittingHarness", "");
@@ -108,8 +109,9 @@ public final class FittingRoomHarness {
                 transfer = new net.minecraft.client.multiplayer.TransferState(
                     java.util.Map.of(net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("aerosmp", "auth"), cookie));
             }
-            ConnectScreen.startConnecting(mc.screen, mc, ServerAddress.parseString(addr),
-                new ServerData("dev", addr, ServerData.Type.OTHER), false, transfer);
+            ServerData sd = new ServerData("dev", addr, ServerData.Type.OTHER);
+            sd.setResourcePackStatus(ServerData.ServerPackStatus.ENABLED);    // accept the required pack, no prompt
+            ConnectScreen.startConnecting(mc.screen, mc, ServerAddress.parseString(addr), sd, false, transfer);
             return;
         }
         if (stage == 1 && mc.level != null && mc.player != null && ++inWorld > 60) {
@@ -117,9 +119,21 @@ public final class FittingRoomHarness {
             stage = 2;
         }
         if (stage != 2) return;
-        if (wait > 0) { wait--; return; }
-        if (idx >= 0 && STEPS.get(idx).shot() != null) {
-            Screenshot.grab(mc.gameDirectory, STEPS.get(idx).shot() + ".png", mc.getMainRenderTarget(), m -> { });
+        if (hidden != null) {                           // a frame has rendered without the window: the world shot
+            Screenshot.grab(mc.gameDirectory, STEPS.get(idx).shot() + "-world.png", mc.getMainRenderTarget(), m -> { });
+            mc.screen = hidden;                         // put it straight back; the server never saw it close
+            hidden = null;
+        } else {
+            if (wait > 0) { wait--; return; }
+            if (idx >= 0 && STEPS.get(idx).shot() != null) {
+                Screenshot.grab(mc.gameDirectory, STEPS.get(idx).shot() + ".png", mc.getMainRenderTarget(), m -> { });
+                dumpDisplays(mc, STEPS.get(idx).shot());
+                if (mc.screen != null) {                // next frame without the window (field write: no close packet)
+                    hidden = mc.screen;
+                    mc.screen = null;
+                    return;
+                }
+            }
         }
         idx++;
         if (idx >= STEPS.size()) {
@@ -131,5 +145,21 @@ public final class FittingRoomHarness {
         com.mojang.logging.LogUtils.getLogger().info("[FittingHarness] step {}: {}", idx, s.what());
         s.action().run();
         wait = s.ticks();
+    }
+
+    /** What the client really has: every display entity near the player with its synced data. */
+    private static void dumpDisplays(Minecraft mc, String shot) {
+        var log = com.mojang.logging.LogUtils.getLogger();
+        int n = 0;
+        for (var e : mc.level.entitiesForRendering()) {
+            if (!(e instanceof net.minecraft.world.entity.Display d) || e.distanceTo(mc.player) > 16) continue;
+            n++;
+            var vals = d.getEntityData().getNonDefaultValues();
+            StringBuilder sb = new StringBuilder();
+            if (vals != null) for (var v : vals) sb.append(v.id()).append('=').append(v.value()).append(' ');
+            log.info("[FittingHarness] {} {} id={} at {} {}", shot, e.getType().toShortString(), e.getId(),
+                String.format("%.2f,%.2f,%.2f", e.getX(), e.getY(), e.getZ()), sb);
+        }
+        log.info("[FittingHarness] {} displays={}", shot, n);
     }
 }

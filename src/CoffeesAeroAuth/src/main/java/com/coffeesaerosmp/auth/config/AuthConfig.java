@@ -401,10 +401,12 @@ public class AuthConfig {
 
         b.comment("Resource Pack").push("resourcepack");
         RESOURCE_PACK_URL = b
-            .comment("Direct-download URL of the server resource pack. Leave empty to disable.")
+            .comment("Direct-download URL of the server resource pack (built by src/ShopResourcePack/build_rp.py: shop",
+                     "window skins, fitting-room stage, airship model, effect sprites). Pushed as REQUIRED: declining it",
+                     "disconnects the player (owner 2026-10-12). Empty = no pack, and every visual falls back to vanilla.")
             .define("url", "");
         RESOURCE_PACK_HASH = b
-            .comment("SHA-1 hex hash of the resource pack file.")
+            .comment("SHA-1 hex hash of the resource pack file (build_rp.py prints it). Must match the file exactly.")
             .define("hash", "");
         b.pop();
 

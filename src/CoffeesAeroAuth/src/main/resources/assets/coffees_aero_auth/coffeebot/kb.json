@@ -1696,6 +1696,23 @@
       "related": [
         "back"
       ]
+    },
+    {
+      "id": "resource-pack",
+      "title": "The server resource pack",
+      "when": [
+        [
+          "resource pack",
+          "resourcepack",
+          "server pack",
+          "texture pack",
+          "pack prompt",
+          "declined the pack"
+        ]
+      ],
+      "priority": 1,
+      "answer": "The server uses a small resource pack for the shop window, the fitting room and the cosmetic effects. It downloads by itself the first time you join (only once), and it's required: if you click **No**, or it fails to download, you're disconnected.\nTo fix it: **Multiplayer** → select the server → **Edit** → set **Server Resource Packs** to **Enabled** (or **Prompt**, then click Yes) → join again.",
+      "see": "faq"
     }
   ]
 }

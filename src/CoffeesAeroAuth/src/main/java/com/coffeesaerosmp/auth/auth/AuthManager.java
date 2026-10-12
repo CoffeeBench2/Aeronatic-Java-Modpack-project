@@ -687,7 +687,8 @@ public class AuthManager {
             try {
                 player.connection.send(new ClientboundResourcePackPushPacket(
                     PACK_UUID, packUrl, packHash, true,
-                    Optional.of(Component.literal("§6Coffees Aero SMP §7Resource Pack"))));
+                    Optional.of(Component.literal("§6☕ Coffee's Aero SMP §7needs its resource pack for the shop, previews "
+                        + "and effects.\n§7It's small and only downloads once.\n§cDeclining it disconnects you."))));
             } catch (Exception ignored) {}
         }
     }

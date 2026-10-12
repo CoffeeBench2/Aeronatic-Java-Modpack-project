@@ -2,6 +2,7 @@ package com.coffeesaerosmp.auth.cosmetics;
 
 import com.coffeesaerosmp.auth.CoffeesAeroAuth;
 import com.coffeesaerosmp.auth.cosmetics.fx.FxPatterns;
+import com.coffeesaerosmp.auth.cosmetics.fx.SpriteChoreo;
 import com.coffeesaerosmp.auth.store.CosmeticCatalog;
 import com.coffeesaerosmp.auth.store.NameRender;
 import com.coffeesaerosmp.auth.store.StoreState;
@@ -25,6 +26,7 @@ import net.minecraft.network.protocol.game.ClientboundRotateHeadPacket;
 import net.minecraft.network.protocol.game.ClientboundSetEntityDataPacket;
 import net.minecraft.network.protocol.game.ClientboundSetPlayerTeamPacket;
 import net.minecraft.network.protocol.game.ClientboundTeleportEntityPacket;
+import net.minecraft.network.protocol.game.ClientboundUpdateAttributesPacket;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ClientInformation;
 import net.minecraft.server.level.ServerLevel;
@@ -34,6 +36,7 @@ import net.minecraft.server.network.ServerGamePacketListenerImpl;
 import net.minecraft.world.entity.Display;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.HumanoidArm;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.ChatVisiblity;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -57,6 +60,11 @@ import java.util.concurrent.ConcurrentHashMap;
  * becomes a little airship made of display blocks with the wake streaming off its tail. Works on a completely
  * vanilla client: nothing here needs AeroCore.
  *
+ * <p>With the server resource pack ({@link RpModels#enabled()}) it becomes a lit stage: a glowing platform and a
+ * backdrop behind a larger mannequin, a modelled airship, and the effects drawn as SPRITES (display entities with
+ * pack models) whose keyframes the client interpolates, so they glide instead of flickering like particles.
+ * Without the pack it falls back to block displays and particles.
+ *
  * <p>Costs the server nothing: every entity is FAKE. No entity is added to the world; the mannequin, its nameplate
  * and the ship exist only as packets sent to the one viewer, and vanish when the shop closes. A few packets a
  * second to one player while previewing, none otherwise.
@@ -73,6 +81,7 @@ public final class FittingRoom {
         final Vec3 origin;                    // where the viewer stood when it opened
         final Vec3 anchor;                    // where the mannequin / ship stands
         final double faceYaw;                 // mannequin faces the viewer
+        double lookX, lookZ = 1;              // the viewer's horizontal look when it opened (unit)
         ServerPlayer mannequin;               // fake, never in the world
         String teamName;
         Display.TextDisplay plate;
@@ -84,6 +93,10 @@ public final class FittingRoom {
         long born, step, lastActive;
         boolean infoRemoved;
         float shipYaw;
+        final boolean rp;                     // the resource pack's models are available
+        Display.ItemDisplay stage, backdrop, shipModel;
+        final List<Display.ItemDisplay> sprites = new ArrayList<>();
+        String spritesFor;                    // the cosmetic the sprites were spawned for
 
         Room(ServerPlayer v, Vec3 origin, Vec3 anchor, double faceYaw) {
             this.viewer = v;
@@ -91,6 +104,7 @@ public final class FittingRoom {
             this.origin = origin;
             this.anchor = anchor;
             this.faceYaw = faceYaw;
+            this.rp = RpModels.enabled();
         }
     }
 
@@ -117,6 +131,7 @@ public final class FittingRoom {
         if (c == null) return;
         r.cosmetic = c.id();
         r.lastActive = now(viewer);
+        if (!c.id().equals(r.spritesFor)) despawnSprites(r);
         setMode(r, c.type() == CosmeticCatalog.Type.CONTRAIL ? Mode.SHIP : Mode.PERSON);
     }
 
@@ -127,6 +142,12 @@ public final class FittingRoom {
         if (r == null) return;
         r.nameStyle = style;
         r.bold = bold;
+        // A name preview is shown on the mannequin: a contrail being previewed has no ship to leave any more.
+        var cur = r.cosmetic == null ? null : CosmeticCatalog.get(r.cosmetic).orElse(null);
+        if (cur != null && cur.type() == CosmeticCatalog.Type.CONTRAIL) {
+            r.cosmetic = null;
+            despawnSprites(r);
+        }
         r.lastActive = now(viewer);
         setMode(r, Mode.PERSON);
         sendPlate(r);
@@ -177,14 +198,33 @@ public final class FittingRoom {
             if (clear(viewer.serverLevel(), c)) { anchor = c; break; }
         }
         if (anchor == null) anchor = new Vec3(viewer.getX() + lx * 5.0 + leftX * 2.6, viewer.getY(), viewer.getZ() + lz * 5.0 + leftZ * 2.6);
+        anchor = ground(viewer.serverLevel(), anchor);
         double dx = viewer.getX() - anchor.x, dz = viewer.getZ() - anchor.z;
         double faceYaw = Math.toDegrees(Math.atan2(-dx, dz));
         Room r = new Room(viewer, viewer.position(), anchor, faceYaw);
+        r.lookX = lx;
+        r.lookZ = lz;
         r.born = CosmeticEngine.lastTick;
         r.lastActive = r.born;
         ROOMS.put(viewer.getUUID(), r);
+        if (r.rp) spawnSet(r);
         spawnMannequin(r);
         spawnPlate(r);
+    }
+
+    /**
+     * Stand it on the ground: the spot is picked at the viewer's height, and on a slope that left it floating in
+     * mid-air (or, with the stage, a platform hanging off a hillside). Drops up to 4 blocks to the first solid top.
+     */
+    static Vec3 ground(ServerLevel level, Vec3 at) {
+        net.minecraft.core.BlockPos p = net.minecraft.core.BlockPos.containing(at);
+        for (int i = 0; i < 4; i++) {
+            var below = p.below();
+            var shape = level.getBlockState(below).getCollisionShape(level, below);
+            if (!shape.isEmpty()) return new Vec3(at.x, below.getY() + shape.max(net.minecraft.core.Direction.Axis.Y), at.z);
+            p = below;
+        }
+        return at;
     }
 
     /** Room for a player-sized mannequin: the two blocks it would occupy have no collision. */
@@ -200,12 +240,15 @@ public final class FittingRoom {
     private static void setMode(Room r, Mode m) {
         if (r.mode == m) return;
         r.mode = m;
+        despawnSprites(r);
         if (m == Mode.SHIP) {
             despawnMannequin(r);
             despawnPlate(r);
+            despawnBackdrop(r);                       // the wake streams behind the ship: keep the view open
             spawnShip(r);
         } else {
             despawnShip(r);
+            if (r.rp) spawnBackdrop(r);
             spawnMannequin(r);
             spawnPlate(r);
         }
@@ -241,7 +284,19 @@ public final class FittingRoom {
         var data = fake.getEntityData().getNonDefaultValues();
         if (data != null) send(r, new ClientboundSetEntityDataPacket(fake.getId(), data));
         send(r, new ClientboundRotateHeadPacket(fake, (byte) Math.floor(r.faceYaw * 256 / 360)));
+        if (r.rp) {
+            var scale = fake.getAttribute(Attributes.SCALE);
+            if (scale != null) {
+                scale.setBaseValue(MANNEQUIN_SCALE);
+                send(r, new ClientboundUpdateAttributesPacket(fake.getId(), List.of(scale)));
+            }
+        }
     }
+
+    /** With the pack the mannequin stands a quarter bigger: you're looking at the effect, so make it big. */
+    static final float MANNEQUIN_SCALE = 1.25f;
+
+    private static float figureScale(Room r) { return r.rp ? MANNEQUIN_SCALE : 1f; }
 
     private static void spawnPlate(Room r) {
         Display.TextDisplay plate = new Display.TextDisplay(EntityType.TEXT_DISPLAY, r.level);
@@ -274,7 +329,7 @@ public final class FittingRoom {
         t.putInt("background", 0x40000000);
         t.putBoolean("shadow", true);
         r.plate.load(t);
-        r.plate.setPos(r.anchor.x, r.anchor.y + 2.15, r.anchor.z);
+        r.plate.setPos(r.anchor.x, r.anchor.y + 2.15 * figureScale(r) + (r.rp ? STAGE_TOP : 0), r.anchor.z);
     }
 
     private static void sendPlate(Room r) {
@@ -305,7 +360,12 @@ public final class FittingRoom {
     static final Vector3f SHIP_TAIL = new Vector3f(-2.0f, 1.4f, 0f);
 
     private static void spawnShip(Room r) {
-        r.shipYaw = (float) r.faceYaw + 90f;
+        r.shipYaw = shipYawAt(r, CosmeticEngine.lastTick);
+        if (r.rp) {
+            r.shipModel = spawnItem(r, RpModels.AIRSHIP, r.anchor.x, r.anchor.y + SHIP_RP_Y, r.anchor.z);
+            shipModelPose(r, CosmeticEngine.lastTick, 0);
+            return;
+        }
         for (Part p : SHIP) {
             Display.BlockDisplay d = new Display.BlockDisplay(EntityType.BLOCK_DISPLAY, r.level);
             r.ship.add(d);
@@ -314,6 +374,7 @@ public final class FittingRoom {
                 EntityType.BLOCK_DISPLAY, 0, Vec3.ZERO, 0));
             var data = d.getEntityData().getNonDefaultValues();
             if (data != null) send(r, new ClientboundSetEntityDataPacket(d.getId(), data));
+            d.getEntityData().packDirty();
         }
     }
 
@@ -332,7 +393,7 @@ public final class FittingRoom {
         tr.put("right_rotation", floats(0, 0, 0, 1));
         tag.put("transformation", tr);
         if (interpolate) {
-            tag.putInt("interpolation_duration", 10);
+            tag.putInt("interpolation_duration", KEY);
             tag.putInt("start_interpolation", 0);
         }
         d.load(tag);
@@ -353,28 +414,61 @@ public final class FittingRoom {
             send(r, new ClientboundPlayerInfoRemovePacket(List.of(r.mannequin.getUUID())));
             r.infoRemoved = true;
         }
-        if (r.mode == Mode.PERSON && r.mannequin != null && tick % 2 == 0) {
-            float yaw = (float) (r.faceYaw + Math.sin(tick * 0.05) * 30);       // turns a little, like it's posing
+        if (r.mode == Mode.PERSON && r.mannequin != null) {             // every tick: the client lerps between them
+            float yaw = (float) (r.faceYaw + Math.sin(tick * 0.04) * 32);       // turns a little, like it's posing
             r.mannequin.setYRot(yaw);
             r.mannequin.setYHeadRot(yaw);
             send(r, new ClientboundTeleportEntityPacket(r.mannequin));
             send(r, new ClientboundRotateHeadPacket(r.mannequin, (byte) Math.floor(yaw * 256 / 360)));
         }
-        if (r.mode == Mode.SHIP && tick % 10 == 0) {
-            r.shipYaw = (float) (r.faceYaw + 90 + Math.sin(tick * 0.02) * 35);
+        if (r.mode == Mode.SHIP && tick % KEY == 0) {
+            r.shipYaw = shipYawAt(r, tick);
+            if (r.shipModel != null) {
+                shipModelPose(r, tick, KEY);
+            }
             for (int i = 0; i < r.ship.size(); i++) {
                 Display.BlockDisplay d = r.ship.get(i);
                 loadShipPart(r, d, SHIP.get(i), true);
-                var data = d.getEntityData().getNonDefaultValues();
-                if (data != null) send(r, new ClientboundSetEntityDataPacket(d.getId(), data));
+                sendDirty(r, d);
             }
         }
+    }
+
+    /** Keyframe spacing in ticks: positions are sent this often and the client interpolates in between. */
+    static final int KEY = 3;
+
+    /**
+     * The ship flies three-quarters on: bow towards the viewer and off to their LEFT, so its wake streams away and
+     * to the right, across the open sky between the ship and the shop window. Bow-on hid the wake behind the ship;
+     * broadside sent it at the camera or off the screen edge.
+     */
+    static float shipYawAt(Room r, long tick) {
+        double vx = r.origin.x - r.anchor.x, vz = r.origin.z - r.anchor.z, len = Math.sqrt(vx * vx + vz * vz);
+        if (len < 1e-3) { vx = 0; vz = 1; len = 1; }
+        double fx = vx / len + r.lookZ, fz = vz / len - r.lookX;        // toward viewer minus the viewer's right
+        double base = Math.toDegrees(Math.atan2(fz, fx));               // yaw with (cos, sin) = forward
+        return (float) (base + Math.sin(tick * 0.02) * 20);
+    }
+
+    /**
+     * Send only what changed since the last packet. NOT getNonDefaultValues(): that drops start_interpolation=0
+     * (it equals the default), and without that key the client never starts an interpolation, so every keyframe
+     * snapped instead of gliding. Display's setter forces it dirty, so packDirty() always carries it.
+     */
+    private static void sendDirty(Room r, net.minecraft.world.entity.Entity e) {
+        var dirty = e.getEntityData().packDirty();
+        if (dirty != null && !dirty.isEmpty()) send(r, new ClientboundSetEntityDataPacket(e.getId(), dirty));
     }
 
     private static void emitEffect(Room r, long tick) {
         if (r.cosmetic == null) return;
         var c = CosmeticCatalog.get(r.cosmetic).orElse(null);
         if (c == null) return;
+        if (r.rp && SpriteChoreo.count(c.id()) > 0) {
+            if (!c.id().equals(r.spritesFor)) respawnSprites(r, c.id());
+            if (tick % KEY == 0) animateSprites(r, tick);
+            return;
+        }
         if (!Stagger.due(tick, r.viewer.getUUID().hashCode(), c.fx().everyTicks())) return;
         r.step++;
         FxPatterns.Sink self = (o, lr, x, y, z, dx, dy, dz, sp, n) ->
@@ -400,7 +494,208 @@ public final class FittingRoom {
         }
     }
 
+    // ── resource-pack visuals: stage, airship model, sprites ──────────────────
+
+    /** Height of the stage's lit top above the ground; the mannequin's nameplate rides above it. */
+    static final double STAGE_TOP = 0.0;
+    static final float STAGE_SIZE = 2.6f, BACKDROP_SIZE = 4.2f;
+    /** Airship model: the pack model is one block long; this makes it ~2.6 blocks, centred at eye level. */
+    static final float SHIP_RP_SCALE = 2.6f, SHIP_RP_Y = 1.6f;
+    /** Model-space point of the propeller, where the contrail leaves the ship (model is centred on the origin). */
+    static final Vector3f SHIP_RP_TAIL = new Vector3f(-0.5f, -0.34f, 0f);
+
+    /** ItemDisplay draws its model turned 180° about Y; this cancels it so the transform means what it says. */
+    private static final Quaternionf UNFLIP = new Quaternionf().rotateY((float) Math.PI);
+
+    /** A fake item display with a pack model, full-bright (no shading from the time of day or a cave). */
+    private static Display.ItemDisplay spawnItem(Room r, int model, double x, double y, double z) {
+        Display.ItemDisplay d = new Display.ItemDisplay(EntityType.ITEM_DISPLAY, r.level);
+        CompoundTag tag = new CompoundTag();
+        tag.put("item", item(model));
+        tag.putString("item_display", "none");
+        tag.put("brightness", fullBright());
+        tag.putFloat("view_range", 2.0f);
+        d.load(tag);
+        d.setPos(x, y, z);
+        send(r, new ClientboundAddEntityPacket(d.getId(), d.getUUID(), x, y, z, 0, 0, EntityType.ITEM_DISPLAY, 0, Vec3.ZERO, 0));
+        var data = d.getEntityData().getNonDefaultValues();
+        if (data != null) send(r, new ClientboundSetEntityDataPacket(d.getId(), data));
+        d.getEntityData().packDirty();
+        return d;
+    }
+
+    private static CompoundTag fullBright() {
+        CompoundTag light = new CompoundTag();
+        light.putInt("block", 15);
+        light.putInt("sky", 15);
+        return light;
+    }
+
+    private static CompoundTag item(int model) {
+        CompoundTag it = new CompoundTag();
+        it.putString("id", "minecraft:paper");
+        it.putInt("count", 1);
+        CompoundTag comps = new CompoundTag();
+        comps.putInt("minecraft:custom_model_data", model);
+        it.put("components", comps);
+        return it;
+    }
+
+    /**
+     * Re-pose a display: transformation, interpolated over {@code ticks} (0 = jump), showing {@code model}.
+     * {@code billboard} null leaves it as it is. Sends only the changed values.
+     *
+     * <p>The item and brightness go in EVERY time: Display.load resets a missing "brightness" to none and
+     * ItemDisplay resets a missing "item" to EMPTY, so a keyframe without them blanked the model (2026-10-12:
+     * the stage, backdrop, ship and every sprite were invisible; only the aurora showed, because its colour
+     * changes re-sent the item).
+     */
+    private static void pose(Room r, Display d, Vector3f translation, Quaternionf left, Vector3f scale, int ticks,
+                             String billboard, int model) {
+        CompoundTag tag = new CompoundTag();
+        CompoundTag tr = new CompoundTag();
+        tr.put("translation", floats(translation.x, translation.y, translation.z));
+        tr.put("left_rotation", floats(left.x, left.y, left.z, left.w));
+        tr.put("scale", floats(scale.x, scale.y, scale.z));
+        tr.put("right_rotation", floats(UNFLIP.x, UNFLIP.y, UNFLIP.z, UNFLIP.w));
+        tag.put("transformation", tr);
+        tag.putInt("interpolation_duration", ticks);
+        tag.putInt("start_interpolation", 0);
+        if (billboard != null) tag.putString("billboard", billboard);
+        tag.put("item", item(model));
+        tag.put("brightness", fullBright());
+        double x = d.getX(), y = d.getY(), z = d.getZ();
+        d.load(tag);                                   // Entity.load zeroes the position; it is not synced, but keep it
+        d.setPos(x, y, z);
+        sendDirty(r, d);
+    }
+
+    /** Unit vector from the anchor towards the viewer (horizontal). */
+    private static double[] towardViewer(Room r) {
+        double dx = r.origin.x - r.anchor.x, dz = r.origin.z - r.anchor.z, len = Math.sqrt(dx * dx + dz * dz);
+        return len < 1e-3 ? new double[]{0, 1} : new double[]{dx / len, dz / len};
+    }
+
+    /** The lit platform under the mannequin and the backdrop behind it, facing the viewer. */
+    private static void spawnSet(Room r) {
+        double[] v = towardViewer(r);
+        r.stage = spawnItem(r, RpModels.STAGE, r.anchor.x, r.anchor.y, r.anchor.z);
+        // The model is a 16x1x16 slab centred on the origin: lift it so its top sits just above the ground.
+        float lift = (0.5f - 1f / 16f) * STAGE_SIZE + 0.015f;
+        pose(r, r.stage, new Vector3f(0, lift, 0), new Quaternionf().rotateY((float) Math.atan2(-v[0], -v[1])),
+            new Vector3f(STAGE_SIZE), 0, "fixed", RpModels.STAGE);
+        spawnBackdrop(r);
+    }
+
+    private static void spawnBackdrop(Room r) {
+        if (r.backdrop != null) return;
+        double[] v = towardViewer(r);
+        r.backdrop = spawnItem(r, RpModels.BACKDROP, r.anchor.x, r.anchor.y, r.anchor.z);
+        // A flat quad whose face points -Z: turn it to face the viewer, stand it 1.5 blocks behind the mannequin.
+        Quaternionf face = new Quaternionf().rotateY((float) Math.atan2(-v[0], -v[1]));
+        pose(r, r.backdrop, new Vector3f((float) (-v[0] * 1.5), BACKDROP_SIZE / 2f, (float) (-v[1] * 1.5)), face,
+            new Vector3f(BACKDROP_SIZE, BACKDROP_SIZE, 1), 0, "fixed", RpModels.BACKDROP);
+    }
+
+    /** Ship pose at a keyframe: yaw swing plus a gentle bob and roll, interpolated over {@code ticks}. */
+    private static void shipModelPose(Room r, long tick, int ticks) {
+        Quaternionf rot = shipRotation(r, tick);
+        float bob = (float) (Math.sin(tick * 0.07) * 0.08);
+        pose(r, r.shipModel, new Vector3f(0, bob, 0), rot, new Vector3f(SHIP_RP_SCALE), ticks, "fixed", RpModels.AIRSHIP);
+    }
+
+    static Quaternionf shipRotation(Room r, long tick) {
+        return new Quaternionf().rotateY((float) Math.toRadians(-shipYawAt(r, tick)))
+            .rotateX((float) (Math.sin(tick * 0.05) * 0.06));             // a slight roll, like it's riding air
+    }
+
+    /** Rotation that turns a quad (facing +Z) at (x,y,z) towards {@code eye}. */
+    static Quaternionf facing(double x, double y, double z, Vec3 eye) {
+        double dx = eye.x - x, dy = eye.y - y, dz = eye.z - z, h = Math.sqrt(dx * dx + dz * dz);
+        return new Quaternionf().rotateY((float) Math.atan2(dx, dz)).rotateX((float) -Math.atan2(dy, h));
+    }
+
+    private static void respawnSprites(Room r, String id) {
+        despawnSprites(r);
+        int n = SpriteChoreo.count(id);
+        Vec3 o = spriteOrigin(r, CosmeticEngine.lastTick);
+        var first = SpriteChoreo.frames(id, seconds(r, CosmeticEngine.lastTick), KEY / 20.0, 1, 0, 1.8);
+        for (int k = 0; k < n; k++) {
+            int model = first.get(k).model();
+            r.sprites.add(spawnItem(r, model, o.x, o.y, o.z));
+        }
+        r.spritesFor = id;
+        animateSprites(r, CosmeticEngine.lastTick, true);
+    }
+
+    private static double seconds(Room r, long tick) { return (tick - r.born) / 20.0; }
+
+    /** Where sprite offsets are measured from: the mannequin's feet, or the airship's propeller. */
+    private static Vec3 spriteOrigin(Room r, long tick) {
+        if (r.mode == Mode.SHIP) return new Vec3(r.anchor.x, r.anchor.y + SHIP_RP_Y, r.anchor.z);
+        return new Vec3(r.anchor.x, r.anchor.y + STAGE_TOP, r.anchor.z);
+    }
+
+    private static void animateSprites(Room r, long tick) { animateSprites(r, tick, false); }
+
+    private static void animateSprites(Room r, long tick, boolean jump) {
+        if (r.sprites.isEmpty() || r.spritesFor == null) return;
+        double fx, fz, height = 1.8 * figureScale(r);
+        float k = 1f;
+        Vector3f base = new Vector3f();
+        if (r.mode == Mode.SHIP) {
+            Quaternionf rot = shipRotation(r, tick);
+            Vector3f fwd = rot.transform(new Vector3f(1, 0, 0));
+            fx = fwd.x;
+            fz = fwd.z;
+            double len = Math.sqrt(fx * fx + fz * fz);
+            fx /= len;
+            fz /= len;
+            base = rot.transform(new Vector3f(SHIP_RP_TAIL).mul(SHIP_RP_SCALE));
+        } else {
+            double yaw = Math.toRadians(r.mannequin == null ? r.faceYaw : r.mannequin.getYRot());
+            fx = -Math.sin(yaw);
+            fz = Math.cos(yaw);
+            k = figureScale(r);
+        }
+        var frames = SpriteChoreo.frames(r.spritesFor, seconds(r, tick), KEY / 20.0, fx, fz, height / k);
+        Vec3 origin = spriteOrigin(r, tick);
+        Vec3 eye = r.viewer.getEyePosition();
+        for (int i = 0; i < frames.size() && i < r.sprites.size(); i++) {
+            var f = frames.get(i);
+            Vector3f t = new Vector3f((float) f.x() * k, (float) f.y() * k, (float) f.z() * k).add(base);
+            Quaternionf left = f.flat()
+                ? new Quaternionf().rotateX((float) (-Math.PI / 2)).rotateZ(-f.spin())
+                : facing(origin.x + t.x, origin.y + t.y, origin.z + t.z, eye).rotateZ(f.spin());
+            // Billboard FIXED, never CENTER: a camera-facing billboard applies the camera rotation BEFORE the
+            // translation, so the offsets came out in camera space and the wakes streamed at the camera. Instead
+            // each keyframe turns the sprite to the viewer's eye; they stand still in a menu, so it reads the same.
+            pose(r, r.sprites.get(i), t, left, new Vector3f(f.scale() * k), jump || f.wrap() ? 0 : KEY,
+                "fixed", f.model());
+        }
+    }
+
     // ── despawn ───────────────────────────────────────────────────────────────
+
+    private static void despawnSprites(Room r) {
+        if (r.sprites.isEmpty()) return;
+        send(r, new ClientboundRemoveEntitiesPacket(r.sprites.stream().mapToInt(Display.ItemDisplay::getId).toArray()));
+        r.sprites.clear();
+        r.spritesFor = null;
+    }
+
+    private static void despawnBackdrop(Room r) {
+        if (r.backdrop == null) return;
+        send(r, new ClientboundRemoveEntitiesPacket(r.backdrop.getId()));
+        r.backdrop = null;
+    }
+
+    private static void despawnSet(Room r) {
+        if (r.stage != null) send(r, new ClientboundRemoveEntitiesPacket(r.stage.getId()));
+        if (r.backdrop != null) send(r, new ClientboundRemoveEntitiesPacket(r.backdrop.getId()));
+        r.stage = null;
+        r.backdrop = null;
+    }
 
     private static void despawnMannequin(Room r) {
         if (r.mannequin == null) return;
@@ -421,6 +716,10 @@ public final class FittingRoom {
     }
 
     private static void despawnShip(Room r) {
+        if (r.shipModel != null) {
+            send(r, new ClientboundRemoveEntitiesPacket(r.shipModel.getId()));
+            r.shipModel = null;
+        }
         if (r.ship.isEmpty()) return;
         int[] ids = r.ship.stream().mapToInt(Display.BlockDisplay::getId).toArray();
         send(r, new ClientboundRemoveEntitiesPacket(ids));
@@ -432,6 +731,8 @@ public final class FittingRoom {
             despawnMannequin(r);
             despawnPlate(r);
             despawnShip(r);
+            despawnSprites(r);
+            despawnSet(r);
         } catch (Exception e) {
             CoffeesAeroAuth.LOGGER.debug("[FittingRoom] despawn: {}", e.toString());
         }
@@ -453,6 +754,31 @@ public final class FittingRoom {
         if (r.mannequin != null) out.add(r.mannequin.getId());
         if (r.plate != null) out.add(r.plate.getId());
         for (var d : r.ship) out.add(d.getId());
+        if (r.shipModel != null) out.add(r.shipModel.getId());
+        if (r.stage != null) out.add(r.stage.getId());
+        if (r.backdrop != null) out.add(r.backdrop.getId());
+        for (var d : r.sprites) out.add(d.getId());
+        return out;
+    }
+
+    /** Test hook: every pack-model display in the room still carries its item and full-bright override. */
+    static List<String> blankDisplays(UUID viewer) {
+        Room r = ROOMS.get(viewer);
+        List<String> out = new ArrayList<>();
+        if (r == null) return out;
+        List<Display.ItemDisplay> all = new ArrayList<>(r.sprites);
+        if (r.stage != null) all.add(r.stage);
+        if (r.backdrop != null) all.add(r.backdrop);
+        if (r.shipModel != null) all.add(r.shipModel);
+        for (var d : all) {
+            boolean item = false, light = false;
+            var vals = d.getEntityData().getNonDefaultValues();
+            if (vals != null) for (var v : vals) {
+                if (v.value() instanceof net.minecraft.world.item.ItemStack st && !st.isEmpty()) item = true;
+                if (v.value() instanceof Integer i && i == ((15 << 20) | (15 << 4))) light = true;   // packed 15/15
+            }
+            if (!item || !light) out.add(d.getId() + (item ? "" : " no-item") + (light ? "" : " no-light"));
+        }
         return out;
     }
 

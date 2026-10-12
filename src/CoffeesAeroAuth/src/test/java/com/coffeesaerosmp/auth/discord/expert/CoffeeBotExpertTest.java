@@ -57,6 +57,8 @@ class CoffeeBotExpertTest {
         {"how do i join the server", "address"},
         {"where do i download the modpack", "install"},
         {"can i play on curseforge?", "curseforge"},
+        {"i got kicked when it asked about the resource pack", "resource-pack"},
+        {"<@123> do i have to accept the server pack?", "resource-pack"},
         {"i cant join the server it doesnt work", "cant-join"},
         {"cant join, says hash mismatch after download", "hash-mismatch"},
         {"it says missing mods when i connect", "mod-mismatch"},

@@ -152,8 +152,8 @@ public final class CosmeticEngine {
         if (tick % 2 != 0) return;
         if (!on(AuthConfig.COSMETICS_ENABLED) || LobbyHandoff.isLobbyRole()) { lastTickPackets = 0; return; }
         // Shop try-ons and the fitting room go to the previewer alone: outside the shared budget and the lag pause.
-        try { TryOn.emit(server, tick); } catch (Throwable t) { CoffeesAeroAuth.LOGGER.debug("[Cosmetics] try-on: {}", t.toString()); }
-        try { FittingRoom.tick(server, tick); } catch (Throwable t) { CoffeesAeroAuth.LOGGER.debug("[Cosmetics] fitting room: {}", t.toString()); }
+        try { TryOn.emit(server, tick); } catch (Throwable t) { warnOnce("try-on", t); }
+        try { FittingRoom.tick(server, tick); } catch (Throwable t) { warnOnce("fitting room", t); }
         if (LOAD.paused()) { lastTickPackets = 0; return; }
         try {
             emit(server);
@@ -364,5 +364,12 @@ public final class CosmeticEngine {
 
     private static Vector3f rgb(int rgb) {
         return new Vector3f(((rgb >> 16) & 0xFF) / 255f, ((rgb >> 8) & 0xFF) / 255f, (rgb & 0xFF) / 255f);
+    }
+
+    private static final java.util.Set<String> WARNED = java.util.concurrent.ConcurrentHashMap.newKeySet();
+
+    /** A preview failing every tick would flood the log; a silent one hides the bug. Each distinct error once. */
+    private static void warnOnce(String where, Throwable t) {
+        if (WARNED.size() < 64 && WARNED.add(where + t)) CoffeesAeroAuth.LOGGER.warn("[Cosmetics] {} failed", where, t);
     }
 }

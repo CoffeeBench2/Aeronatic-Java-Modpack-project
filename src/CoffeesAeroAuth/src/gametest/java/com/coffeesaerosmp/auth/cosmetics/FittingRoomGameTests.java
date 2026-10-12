@@ -84,4 +84,63 @@ public class FittingRoomGameTests {
             }
         });
     }
+
+    /**
+     * With the resource pack: a lit stage + backdrop, the model airship, and sprites that KEEP their model through
+     * every keyframe (2026-10-12: re-posing without "item"/"brightness" blanked every display).
+     */
+    @GameTest(template = "empty", batch = "fitting_room_rp", timeoutTicks = 600)
+    public static void resourcePackStageShipAndSprites(GameTestHelper h) {
+        GameTestPlayers.floor(h);
+        RpModels.testForce = true;
+        var p = GameTestPlayers.survival(h, new BlockPos(3, 1, 3), "fittingrp");
+        PremiumGate.TEST_PREMIUM.add(p.getUUID());
+        ShopGui.openClassic(p);
+        int[] stage = {0};
+        long[] at = {0};
+        h.succeedWhen(() -> {
+            var ids = FittingRoom.entityIds(p.getUUID());
+            switch (stage[0]) {
+                case 0 -> {
+                    if (!FittingRoom.isOpen(p.getUUID())) throw new GameTestAssertException("waiting for the room");
+                    if (ids.size() != 4) h.fail("mannequin + plate + stage + backdrop expected: " + ids.size());
+                    FittingRoom.preview(p, "trail:petal");
+                    at[0] = h.getTick();
+                    stage[0] = 1;
+                    throw new GameTestAssertException("petals");
+                }
+                case 1 -> {
+                    if (h.getTick() - at[0] < 40) throw new GameTestAssertException("letting keyframes run");
+                    if (ids.size() != 4 + 10) h.fail("10 petal sprites expected: " + ids.size());
+                    var blank = FittingRoom.blankDisplays(p.getUUID());
+                    if (!blank.isEmpty()) h.fail("displays lost their model/light after keyframes: " + blank);
+                    FittingRoom.preview(p, "contrail:aurora");
+                    if (!"SHIP".equals(FittingRoom.mode(p.getUUID()))) h.fail("contrail did not switch to the ship");
+                    at[0] = h.getTick();
+                    stage[0] = 2;
+                    throw new GameTestAssertException("aurora");
+                }
+                case 2 -> {
+                    if (h.getTick() - at[0] < 40) throw new GameTestAssertException("letting keyframes run");
+                    // stage + ship model + 12 ribbons; the backdrop and mannequin are gone
+                    if (ids.size() != 1 + 1 + 12) h.fail("stage + ship + 12 ribbons expected: " + ids.size());
+                    var blank = FittingRoom.blankDisplays(p.getUUID());
+                    if (!blank.isEmpty()) h.fail("ship/ribbons lost their model/light: " + blank);
+                    FittingRoom.previewName(p, "colour:gold", false);
+                    if (!"PERSON".equals(FittingRoom.mode(p.getUUID()))) h.fail("name preview did not bring the mannequin back");
+                    if (FittingRoom.entityIds(p.getUUID()).size() != 4) h.fail("contrail sprites left behind: " + FittingRoom.entityIds(p.getUUID()).size());
+                    p.closeContainer();
+                    stage[0] = 3;
+                    throw new GameTestAssertException("closing");
+                }
+                case 3 -> {
+                    if (FittingRoom.isOpen(p.getUUID())) throw new GameTestAssertException("waiting for the room to close");
+                    RpModels.testForce = false;
+                    PremiumGate.TEST_PREMIUM.remove(p.getUUID());
+                    GameTestPlayers.remove(h, p);
+                }
+                default -> { }
+            }
+        });
+    }
 }

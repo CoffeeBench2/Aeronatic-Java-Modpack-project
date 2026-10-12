@@ -118,7 +118,8 @@ public final class ShopGui {
     }
 
     private static void open(ServerPlayer p, int rows, String title, SimpleContainer box, ButtonMenu.Handler h) {
-        p.openMenu(new SimpleMenuProvider((id, inv, pl) -> new ButtonMenu(id, inv, rows, box, h), Component.literal(title)));
+        p.openMenu(new SimpleMenuProvider((id, inv, pl) -> new ButtonMenu(id, inv, rows, box, h),
+            com.coffeesaerosmp.auth.cosmetics.RpModels.windowTitle(title, rows)));
         com.coffeesaerosmp.auth.cosmetics.FittingRoom.ensure(p);
     }
 
@@ -530,6 +531,9 @@ public final class ShopGui {
 
     private static SimpleContainer filled(int size) {
         SimpleContainer box = new SimpleContainer(size);
+        // With the resource pack the window skin IS the background; grey panes would hide it. Empty slots are
+        // safe: ButtonMenu takes every click in the shop's own slots.
+        if (com.coffeesaerosmp.auth.cosmetics.RpModels.enabled()) return box;
         ItemStack pane = new ItemStack(Items.GRAY_STAINED_GLASS_PANE);
         pane.set(DataComponents.CUSTOM_NAME, Component.literal(" "));
         pane.set(DataComponents.HIDE_TOOLTIP, net.minecraft.util.Unit.INSTANCE);
