@@ -280,15 +280,21 @@ public class AeroTitleScreen extends Screen {
                     Component.literal("Admin Settings"),
                     b -> this.minecraft.setScreen(new AdminSettingsScreen(this))
             ).bounds(5, this.height - 50, 90, 20).build());
-
-            this.addRenderableWidget(AeroButton.aero(
-                    Component.literal("◄ Vanilla Menu"),
-                    b -> {
-                        TitleReplacer.useCustom = false;
-                        this.minecraft.setScreen(new TitleScreen());
-                    }
-            ).bounds(5, this.height - 25, 90, 20).build());
         }
+
+        // Vanilla menu toggle — for everyone since 1.4.0 (was admin-only, bottom-left). Bottom-right is
+        // the one free corner: top-left has the pack version, top-right the News/Updates column, and
+        // bottom-left the MC/NeoForge detail lines. TitleReplacer remembers the choice across launches.
+        AeroButton vanilla = AeroButton.aero(
+                Component.literal("◄ Vanilla Menu"),
+                b -> {
+                    TitleReplacer.setUseCustom(false);
+                    this.minecraft.setScreen(new TitleScreen());
+                }
+        ).bounds(this.width - 95, this.height - 25, 90, 20).build();
+        vanilla.setTooltip(net.minecraft.client.gui.components.Tooltip.create(
+                Component.literal("Switch to the plain Minecraft menu. An \"Aero Menu\" button brings you back.")));
+        this.addRenderableWidget(vanilla);
     }
 
     /** Our own background — overriding this is what keeps vanilla's menu BLUR pass away. */
