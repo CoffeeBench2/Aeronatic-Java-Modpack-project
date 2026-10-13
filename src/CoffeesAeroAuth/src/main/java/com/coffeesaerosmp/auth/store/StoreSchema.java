@@ -159,6 +159,9 @@ public final class StoreSchema {
             "ALTER TABLE cosmetic_selection ADD COLUMN contrail VARCHAR(64) NULL",
             "ALTER TABLE cosmetic_selection ADD COLUMN leave_message VARCHAR(128) NULL",
             "ALTER TABLE cosmetic_selection ADD COLUMN pending_leave_message VARCHAR(128) NULL",
+            // 1.14.0: wings and auras (drawn by AeroCore)
+            "ALTER TABLE cosmetic_selection ADD COLUMN wings VARCHAR(64) NULL",
+            "ALTER TABLE cosmetic_selection ADD COLUMN aura VARCHAR(64) NULL",
         };
         for (String sql : alters) {
             try (Statement s = c.createStatement()) {

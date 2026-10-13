@@ -25,7 +25,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 @PrefixGameTestTemplate(false)
 public class FittingRoomGameTests {
 
-    /** Every cosmetic has a designed pattern, and no emit ever sends more than the budget. */
+    private static final java.util.Set<String> LEGACY = java.util.Set.of("trail:cloudwalk", "trail:brass", "trail:clockwork",
+        "trail:espresso", "trail:kettle", "trail:petal", "trail:ember", "trail:snow", "contrail:vapour", "contrail:steam",
+        "contrail:espresso", "contrail:sakura", "contrail:aurora");
+
+    /** Every 1.13 cosmetic has a designed pattern, and no emit ever sends more than the budget. */
     @GameTest(template = "empty", batch = "fx_budget", timeoutTicks = 20)
     public static void everyEffectIsDesignedAndWithinBudget(GameTestHelper h) {
         List<String> bad = new ArrayList<>();
@@ -35,10 +39,17 @@ public class FittingRoomGameTests {
                 AtomicInteger n = new AtomicInteger();
                 boolean designed = FxPatterns.emit(c.id(),
                     new FxPatterns.Ctx(0, 64, 0, 1, 0, 2.5, 1.8, t, t / 2), (o, lr, x, y, z, dx, dy, dz, sp, cnt) -> n.incrementAndGet());
-                if (!designed) { bad.add(c.id() + " has no designed pattern"); break; }
+                // The 1.13 trails and contrails have server-designed patterns; the 1.14 cosmetics are drawn by
+                // AeroCore on each client, and the server only has their plain catalog fallback.
+                if (!designed) {
+                    if (LEGACY.contains(c.id())) bad.add(c.id() + " has no designed pattern");
+                    max = -1;
+                    break;
+                }
                 max = Math.max(max, n.get());
                 min = Math.min(min, n.get());
             }
+            if (max < 0) continue;
             if (max > FxPatterns.BUDGET) bad.add(c.id() + " sends " + max + " packets in one emit");
             if (min == 0 && max == 0) bad.add(c.id() + " never sends anything");
         }
@@ -102,6 +113,16 @@ public class FittingRoomGameTests {
             var ids = FittingRoom.entityIds(p.getUUID());
             switch (stage[0]) {
                 case 0 -> {
+                    // With the pack, the shop is the pack-drawn Wardrobe and the in-world room stays shut
+                    if (!(p.containerMenu instanceof com.coffeesaerosmp.auth.store.gui.ButtonMenu bm) || !bm.hidesInventory()) {
+                        throw new GameTestAssertException("waiting for the pack Wardrobe");
+                    }
+                    if (FittingRoom.isOpen(p.getUUID())) h.fail("the pack Wardrobe left the in-world fitting room open");
+                    FittingRoom.ensure(p);                     // the room itself still works with the pack
+                    stage[0] = 10;
+                    throw new GameTestAssertException("room");
+                }
+                case 10 -> {
                     if (!FittingRoom.isOpen(p.getUUID())) throw new GameTestAssertException("waiting for the room");
                     if (ids.size() != 4) h.fail("mannequin + plate + stage + backdrop expected: " + ids.size());
                     FittingRoom.preview(p, "trail:petal");

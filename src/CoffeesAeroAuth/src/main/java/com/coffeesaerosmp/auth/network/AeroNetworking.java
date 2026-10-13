@@ -39,6 +39,14 @@ public final class AeroNetworking {
         registrar.playToServer(PlayerTypePayload.TYPE, PlayerTypePayload.STREAM_CODEC, AeroNetworking::handle);
         // 1.13.35: the AeroCore Wardrobe screen. Server -> client only; the handler never runs on a server.
         registrar.playToClient(WardrobePayload.TYPE, WardrobePayload.STREAM_CODEC, (payload, ctx) -> { });
+        // 1.14.0: the AeroCore handshake and the cosmetics table AeroCore draws from.
+        // commonToServer (configuration AND play): the gate checks for this channel during CONFIGURATION, and a
+        // configuration listener's hasChannel() only knows configuration-phase channels — play-only would make
+        // every client look Core-less there and lock everyone out (found in testing, 2026-10-13).
+        registrar.commonToServer(CoreHelloPayload.TYPE, CoreHelloPayload.STREAM_CODEC, (payload, ctx) -> ctx.enqueueWork(() -> {
+            if (ctx.player() instanceof ServerPlayer sp) com.coffeesaerosmp.auth.cosmetics.CoreGate.onHello(sp, payload.version());
+        }));
+        registrar.playToClient(CosmeticsPayload.TYPE, CosmeticsPayload.STREAM_CODEC, (payload, ctx) -> { });
         // (aerosmp:self_skin was retired in auth 1.6.0 — skin sync now lives in CoffeesAeroSkins
         // on its own aerosmp:skin_sync channel.)
         CoffeesAeroAuth.LOGGER.info("[Net] Registered aerosmp:player_type (playToServer), optional.");

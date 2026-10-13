@@ -47,15 +47,22 @@ public final class TryOn {
         if (c == null) return false;
         ACTIVE.put(p.getUUID(), new Session(c, System.currentTimeMillis() + SECONDS * 1000L, c.label()));
         LAST.remove(p.getUUID());
+        CosmeticSync.markDirty();
         return true;
     }
 
     public static void stop(UUID id) {
-        ACTIVE.remove(id);
+        if (ACTIVE.remove(id) != null) CosmeticSync.markDirty();
         LAST.remove(id);
     }
 
     public static boolean isTrying(UUID id) { return ACTIVE.containsKey(id); }
+
+    /** The cosmetic being tried on, or null. */
+    public static String activeId(UUID id) {
+        Session s = ACTIVE.get(id);
+        return s == null ? null : s.cosmetic().id();
+    }
 
     public static long packetsSent() { return packets; }
 
@@ -78,6 +85,7 @@ public final class TryOn {
                 p.connection.send(new ClientboundSetActionBarTextPacket(Component.literal(
                     "§6☕ Trying on §f" + s.label() + " §8· §7" + left + "s §8· §f/shop§7 to buy")));
             }
+            if (CosmeticSync.supported(p)) continue;             // AeroCore draws the try-on itself (self entry)
             var opt = CosmeticEngine.options(s.cosmetic());
             if (opt == null) { stop(id); continue; }
             var fx = s.cosmetic().fx();

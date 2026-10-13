@@ -214,14 +214,14 @@ public final class StoreState {
                 }
             }
             try (PreparedStatement ps = c.prepareStatement(
-                    "SELECT name_style, bold, chat_title, join_message, trail, contrail, leave_message " +
+                    "SELECT name_style, bold, chat_title, join_message, trail, contrail, leave_message, wings, aura " +
                     "FROM cosmetic_selection " +
                     "WHERE mojang_uuid = ?")) {
                 ps.setString(1, mojang.toString());
                 try (ResultSet rs = ps.executeQuery()) {
                     if (rs.next()) {
                         sel = new Selection(rs.getString(1), rs.getBoolean(2), rs.getString(3), rs.getString(4),
-                                            rs.getString(5), rs.getString(6), rs.getString(7));
+                                            rs.getString(5), rs.getString(6), rs.getString(7), rs.getString(8), rs.getString(9));
                     }
                 }
             }

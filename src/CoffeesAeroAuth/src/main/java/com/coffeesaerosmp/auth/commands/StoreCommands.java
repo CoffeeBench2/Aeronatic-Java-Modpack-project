@@ -97,8 +97,20 @@ public final class StoreCommands {
                         .forEach(x -> bld.suggest(x.id().substring(x.id().indexOf(':') + 1))); return bld.buildFuture(); })
                     .executes(ctx -> CosmeticCommands.setParticle(ctx.getSource(), CosmeticCatalog.Type.CONTRAIL,
                         StringArgumentType.getString(ctx, "id")))))
+            .then(slotCommand("wings", CosmeticCatalog.Type.WINGS))
+            .then(slotCommand("aura", CosmeticCatalog.Type.AURA))
             .then(Commands.literal("hideothers").executes(ctx -> CosmeticCommands.hideOthers(ctx.getSource())))
         );
+    }
+
+    /** {@code /cosmetics <slot> <id|off>} for a catalog slot. */
+    private static com.mojang.brigadier.builder.LiteralArgumentBuilder<CommandSourceStack> slotCommand(String literal,
+            CosmeticCatalog.Type type) {
+        return Commands.literal(literal)
+            .then(Commands.argument("id", StringArgumentType.word())
+                .suggests((c, bld) -> { bld.suggest("off"); CosmeticCatalog.all(type)
+                    .forEach(x -> bld.suggest(x.id().substring(x.id().indexOf(':') + 1))); return bld.buildFuture(); })
+                .executes(ctx -> CosmeticCommands.setParticle(ctx.getSource(), type, StringArgumentType.getString(ctx, "id"))));
     }
 
     private static int show(CommandSourceStack src) {

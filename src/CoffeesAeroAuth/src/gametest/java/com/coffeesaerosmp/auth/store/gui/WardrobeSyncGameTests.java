@@ -33,7 +33,7 @@ public class WardrobeSyncGameTests {
             Files.writeString(Path.of("wardrobe-sample.json"), s);
             if (s.length() > 64_000) h.fail("payload too big: " + s.length() + " bytes");
             var items = json.getAsJsonArray("items");
-            int trails = 0, contrails = 0, colours = 0, grads = 0, extras = 0;
+            int trails = 0, contrails = 0, colours = 0, grads = 0, extras = 0, wings = 0, auras = 0;
             String name = json.get("name").getAsString();
             for (var el : items) {
                 var o = el.getAsJsonObject();
@@ -43,6 +43,8 @@ public class WardrobeSyncGameTests {
                     case "COLOURS" -> colours++;
                     case "GRADIENTS" -> grads++;
                     case "EXTRAS" -> extras++;
+                    case "WINGS" -> wings++;
+                    case "AURAS" -> auras++;
                     default -> h.fail("unknown category " + o);
                 }
                 String id = o.get("id").getAsString();
@@ -52,8 +54,15 @@ public class WardrobeSyncGameTests {
                 if (id.equals("trail:kettle") && o.get("price").getAsInt() != 150) h.fail("kettle price");
                 if (id.equals("contrail:aurora") && !"Admiral".equals(o.get("rank").getAsString())) h.fail("aurora rank");
             }
-            if (trails != 8 || contrails != 5 || colours < 10 || grads < 8 || extras != 2)
-                h.fail("counts t" + trails + " c" + contrails + " col" + colours + " g" + grads + " x" + extras);
+            int catTrails = com.coffeesaerosmp.auth.store.CosmeticCatalog.all(com.coffeesaerosmp.auth.store.CosmeticCatalog.Type.TRAIL).size();
+            int catContrails = com.coffeesaerosmp.auth.store.CosmeticCatalog.all(com.coffeesaerosmp.auth.store.CosmeticCatalog.Type.CONTRAIL).size();
+            int catWings = com.coffeesaerosmp.auth.store.CosmeticCatalog.all(com.coffeesaerosmp.auth.store.CosmeticCatalog.Type.WINGS).size();
+            int catAuras = com.coffeesaerosmp.auth.store.CosmeticCatalog.all(com.coffeesaerosmp.auth.store.CosmeticCatalog.Type.AURA).size();
+            if (trails != catTrails || contrails != catContrails || wings != catWings || auras != catAuras
+                || colours < 10 || grads < 8 || extras != 2)
+                h.fail("counts t" + trails + " c" + contrails + " w" + wings + " a" + auras + " col" + colours + " g" + grads + " x" + extras);
+            if (auras < 8) h.fail("the 1.14 auras are missing from the payload");
+            if (!com.coffeesaerosmp.auth.store.CosmeticCatalog.WINGS_ON && wings != 0) h.fail("parked wings leaked into the payload");
             if (json.get("balance").getAsInt() != 1250) h.fail("balance");
         } finally {
             PremiumGate.TEST_PREMIUM.remove(p.getUUID());

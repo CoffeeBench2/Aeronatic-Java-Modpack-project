@@ -171,6 +171,42 @@ public final class ShipNameCommand {
         }
     }
 
+    // ── shared with /shipcontrail ─────────────────────────────────────────────
+
+    /** The id of the Sable ship this player stands on, or null. */
+    public static String shipIdUnder(ServerPlayer player) {
+        Object sub = trackingSubLevel(player);
+        return sub == null ? null : uniqueIdOf(sub);
+    }
+
+    /**
+     * The AeroClaims owner of a ship, or null when it is unclaimed or AeroClaims can't be asked. Callers that GRANT
+     * something must treat null as "no" (a positive match is required), unlike rename's allow-unless-denied rule.
+     */
+    public static UUID claimOwner(ServerPlayer player, String shipId) {
+        if (shipId == null) return null;
+        try {
+            if (!net.neoforged.fml.ModList.get().isLoaded("aeroclaims")) return null;
+            Class<?> claimManager = Class.forName("com.mapter.aeroclaims.claim.ClaimManager");
+            Method m = find(claimManager, "getClaimByShipId", 2);
+            if (m == null) return null;
+            Object claim = m.invoke(null, player.serverLevel(), shipId);
+            if (claim == null) return null;
+            Method ownerGetter = find(claim.getClass(), "getOwner", 0);
+            Object owner = ownerGetter != null ? ownerGetter.invoke(claim) : null;
+            return owner instanceof UUID u ? u : null;
+        } catch (Throwable t) {
+            CoffeesAeroAuth.LOGGER.debug("[ShipName] claim owner lookup unavailable: {}", t.toString());
+            return null;
+        }
+    }
+
+    /** A player's display name for messages. */
+    public static String ownerNameOf(UUID id) {
+        var profile = CoffeesAeroAuth.PROFILE_STORE != null ? CoffeesAeroAuth.PROFILE_STORE.get(id) : null;
+        return profile != null && profile.displayName != null ? profile.displayName : "someone else";
+    }
+
     // ── AeroClaims (best effort, never fails the command) ─────────────────────
 
     /**

@@ -56,7 +56,7 @@ public class BeanLedgerGameTests {
         var again = BeanLedger.buy(who, "trail:kettle");
         if (again.result() != BeanLedger.Result.ALREADY_OWNED || BeanLedger.balance(who) != 250) return "double buy charged: " + again;
 
-        var poor = BeanLedger.buy(who, "contrail:espresso");              // 500 > 250
+        var poor = BeanLedger.buy(who, "trail:rainbow");                  // 300 > 250 (a trail: contrails can be parked)
         if (poor.result() != BeanLedger.Result.INSUFFICIENT || BeanLedger.balance(who) != 250) return "insufficient: " + poor;
         if (BeanLedger.buy(who, "trail:cloudwalk").result() != BeanLedger.Result.NOT_FOR_SALE) return "rank item was sold";
 

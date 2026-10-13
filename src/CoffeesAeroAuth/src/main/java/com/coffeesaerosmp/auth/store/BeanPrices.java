@@ -23,7 +23,7 @@ import java.util.OptionalInt;
  */
 public final class BeanPrices {
 
-    public enum Group { TRAIL, CONTRAIL, NAME }
+    public enum Group { TRAIL, CONTRAIL, WINGS, AURA, NAME }
 
     public record Item(String id, String label, int price, Group group) {}
 
@@ -33,18 +33,46 @@ public final class BeanPrices {
     public static final int MESSAGES = 200;
 
     /** Particle prices. Only {@code requires == null} catalog entries may appear here (unit-tested). */
-    private static final Map<String, Integer> PARTICLES = Map.of(
-        "trail:kettle", 150,
-        "trail:ember", 150,
-        "trail:petal", 200,
-        "contrail:sakura", 450,
-        "contrail:espresso", 500);
+    private static final Map<String, Integer> PARTICLES = Map.ofEntries(
+        Map.entry("trail:kettle", 150),
+        Map.entry("trail:ember", 150),
+        Map.entry("trail:petal", 200),
+        Map.entry("trail:soulfire", 200),
+        Map.entry("trail:notes", 200),
+        Map.entry("trail:bubbles", 200),
+        Map.entry("trail:livewire", 250),
+        Map.entry("trail:starfall", 250),
+        Map.entry("trail:rainbow", 300),
+        Map.entry("trail:rosequartz", 200),
+        Map.entry("trail:honey", 250),
+        Map.entry("trail:chocolate", 250),
+        Map.entry("contrail:levitite", 550),
+        Map.entry("wings:windmill", 750),
+        Map.entry("wings:glider", 750),
+        Map.entry("wings:rotors", 850),
+        Map.entry("wings:aeroplane", 900),
+        Map.entry("aura:propeller", 350),
+        Map.entry("contrail:sakura", 450),
+        Map.entry("contrail:espresso", 500),
+        Map.entry("contrail:starlight", 500),
+        Map.entry("contrail:sparkler", 550),
+        Map.entry("contrail:rainbow", 600),
+        // 1.14.0. Wings are the biggest thing on a player, so they sit at the top of the range.
+        Map.entry("wings:monarch", 700),
+        Map.entry("wings:seraph", 800),
+        Map.entry("wings:wyvern", 800),
+        Map.entry("wings:phoenix", 900),
+        Map.entry("aura:raincloud", 300),
+        Map.entry("aura:enchanted", 350),
+        Map.entry("aura:spectrum", 400));
 
     private BeanPrices() {}
 
     public static OptionalInt price(String id) {
         if (id == null) return OptionalInt.empty();
         String key = id.trim().toLowerCase(Locale.ROOT);
+        // a catalog id that isn't offered right now (parked wings, parked contrails) is never for sale
+        if (Entitlements.isCatalogId(key) && !CosmeticCatalog.offered(key)) return OptionalInt.empty();
         Integer p = PARTICLES.get(key);
         if (p != null) return OptionalInt.of(p);
         if (key.equals(Entitlements.BOLD_ID)) return OptionalInt.of(BOLD);
@@ -68,11 +96,10 @@ public final class BeanPrices {
     /** Everything for sale, in shop order: trails, contrails, then name items. */
     public static List<Item> catalogue() {
         List<Item> out = new ArrayList<>();
-        for (var t : new CosmeticCatalog.Type[]{CosmeticCatalog.Type.TRAIL, CosmeticCatalog.Type.CONTRAIL}) {
+        for (var t : CosmeticCatalog.Type.values()) {
             for (var c : CosmeticCatalog.all(t)) {
                 OptionalInt p = price(c.id());
-                if (p.isPresent()) out.add(new Item(c.id(), c.label(), p.getAsInt(),
-                    t == CosmeticCatalog.Type.TRAIL ? Group.TRAIL : Group.CONTRAIL));
+                if (p.isPresent()) out.add(new Item(c.id(), c.label(), p.getAsInt(), Group.valueOf(t.name())));
             }
         }
         out.add(new Item(Entitlements.JOIN_MESSAGE_ID, "Join & leave messages", MESSAGES, Group.NAME));

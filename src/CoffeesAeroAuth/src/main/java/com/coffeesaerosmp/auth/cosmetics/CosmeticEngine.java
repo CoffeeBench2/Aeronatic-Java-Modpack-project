@@ -87,6 +87,8 @@ public final class CosmeticEngine {
     }
 
     public static void forget(UUID uuid) {
+        CoreGate.onLogout(uuid);
+        CosmeticSync.onLogout(uuid);
         TryOn.stop(uuid);
         STEPS.remove(uuid);
         FittingRoom.forget(uuid);
@@ -146,6 +148,10 @@ public final class CosmeticEngine {
     static void onTick(MinecraftServer server) {
         tick++;
         lastTick = tick;
+        CosmeticSync.tick(server);
+        if (tick % 20 == 0) {
+            try { CoreGate.tick(server); } catch (Throwable t) { warnOnce("core gate", t); }
+        }
         if (tick % 20 == 0) {
             try { refresh(server); } catch (Throwable t) { CoffeesAeroAuth.LOGGER.debug("[Cosmetics] refresh: {}", t.toString()); }
         }
@@ -232,6 +238,7 @@ public final class CosmeticEngine {
     }
 
     private static void emitContrails(MinecraftServer server, int budget, int[] sent) {
+        if (!com.coffeesaerosmp.auth.store.CosmeticCatalog.CONTRAILS_ON) return;   // parked for a later update
         if (contrailEmitters.isEmpty() || !ShipTracker.available()) return;
         int max = num(AuthConfig.MAX_CONTRAILS, 8);
         double r = num(AuthConfig.CONTRAIL_VIEW_RADIUS, 96);
@@ -250,7 +257,10 @@ public final class CosmeticEngine {
         for (var e : captainOf.entrySet()) {
             if (ships >= max || sent[0] >= budget) break;
             ServerPlayer p = e.getValue();
-            Cosmetic c = CosmeticCatalog.get(StoreState.selectionFor(p.getUUID()).contrail()).orElse(null);
+            // a contrail the ship's owner fitted to it wins over whatever its riders wear
+            var fitted = ShipContrails.get(e.getKey());
+            Cosmetic c = CosmeticCatalog.get(fitted != null ? fitted.contrail()
+                : StoreState.selectionFor(p.getUUID()).contrail()).orElse(null);
             if (c == null || !Stagger.due(tick, e.getKey().hashCode(), c.fx().everyTicks())) continue;
             ShipTracker.Motion m = motionOf.get(e.getKey());
             double[] tail = ContrailMath.tail(m.centre(), m.velocity(), m.min(), m.max());
@@ -328,6 +338,7 @@ public final class CosmeticEngine {
         for (ServerPlayer viewer : level.players()) {
             if (n >= room) break;
             if (HIDE_OTHERS.contains(viewer.getUUID())) continue;
+            if (CosmeticSync.supported(viewer)) continue;        // AeroCore draws it on that client itself
             if (viewer.position().distanceToSqr(at) > r2) continue;
             viewer.connection.send(pkt);
             n++;

@@ -197,7 +197,8 @@ public final class FittingRoom {
             Vec3 c = new Vec3(viewer.getX() + lx * t[0] + leftX * t[1], viewer.getY(), viewer.getZ() + lz * t[0] + leftZ * t[1]);
             if (clear(viewer.serverLevel(), c)) { anchor = c; break; }
         }
-        if (anchor == null) anchor = new Vec3(viewer.getX() + lx * 5.0 + leftX * 2.6, viewer.getY(), viewer.getZ() + lz * 5.0 + leftZ * 2.6);
+        if (anchor == null) anchor = new Vec3(viewer.getX() + lx * tries[0][0] + leftX * tries[0][1], viewer.getY(),
+            viewer.getZ() + lz * tries[0][0] + leftZ * tries[0][1]);
         anchor = ground(viewer.serverLevel(), anchor);
         double dx = viewer.getX() - anchor.x, dz = viewer.getZ() - anchor.z;
         double faceYaw = Math.toDegrees(Math.atan2(-dx, dz));

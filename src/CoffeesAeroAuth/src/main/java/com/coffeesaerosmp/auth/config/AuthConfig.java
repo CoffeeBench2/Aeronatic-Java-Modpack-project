@@ -131,6 +131,9 @@ public class AuthConfig {
     public static final ModConfigSpec.IntValue             CONTRAIL_VIEW_RADIUS;
     public static final ModConfigSpec.IntValue             COSMETICS_MAX_PACKETS_PER_TICK;
     public static final ModConfigSpec.IntValue             MAX_CONTRAILS;
+    public static final ModConfigSpec.BooleanValue         REQUIRE_AEROCORE;
+    public static final ModConfigSpec.ConfigValue<String>  MIN_AEROCORE_VERSION;
+    public static final ModConfigSpec.IntValue             AEROCORE_HELLO_GRACE_SECONDS;
     public static final ModConfigSpec.IntValue             STALL_BETWEEN_SAMPLE_AFTER_MS;
     public static final ModConfigSpec.BooleanValue         PRESSURE_LOG_ENABLED;
     public static final ModConfigSpec.IntValue             THROTTLE_ALERT_MS;
@@ -935,6 +938,19 @@ public class AuthConfig {
             .defineInRange("cosmeticsMaxPacketsPerTick", 64, 8, 128);
         MAX_CONTRAILS = b.comment("At most this many ships stream a contrail at once.")
             .defineInRange("maxContrails", 8, 0, 16);
+        b.pop();
+
+        b.comment("AeroCore handshake (1.14.0). AeroCore says hello with its version on join; with requireAeroCore on,",
+                  "a client without it (or older than minAeroCoreVersion) is disconnected with instructions. AeroCore",
+                  "also draws every cosmetic on the client, so players with it get no particle packets from the server.",
+                  "Turn requireAeroCore on ONLY after a modpack release with that Core has had time to reach players.")
+            .push("aerocore");
+        REQUIRE_AEROCORE = b.comment("Refuse clients without AeroCore (or with one older than minAeroCoreVersion).")
+            .define("requireAeroCore", false);
+        MIN_AEROCORE_VERSION = b.comment("Oldest AeroCore accepted when requireAeroCore is on, e.g. 1.4.0.")
+            .define("minAeroCoreVersion", "1.4.0");
+        AEROCORE_HELLO_GRACE_SECONDS = b.comment("Seconds after joining that a client with the channel has to say hello.")
+            .defineInRange("aeroCoreHelloGraceSeconds", 15, 3, 120);
         b.pop();
 
         b.comment("/ticket: player support tickets posted to a Discord channel with Acknowledge / Reply / Close buttons.").push("ticket");

@@ -251,7 +251,7 @@ public final class StoreGrants {
 
     /** Which particle slot to write. Maps to a fixed column — never interpolated from caller data. */
     public enum Slot {
-        TRAIL("trail"), CONTRAIL("contrail");
+        TRAIL("trail"), CONTRAIL("contrail"), WINGS("wings"), AURA("aura");
         final String column;
         Slot(String column) { this.column = column; }
     }

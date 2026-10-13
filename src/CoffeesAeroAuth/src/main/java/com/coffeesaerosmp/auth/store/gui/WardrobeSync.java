@@ -90,6 +90,8 @@ public final class WardrobeSync {
         JsonObject eq = new JsonObject();
         if (sel.trail() != null) eq.addProperty("trail", sel.trail());
         if (sel.contrail() != null) eq.addProperty("contrail", sel.contrail());
+        if (sel.wings() != null) eq.addProperty("wings", sel.wings());
+        if (sel.aura() != null) eq.addProperty("aura", sel.aura());
         if (sel.nameStyle() != null) eq.addProperty("nameStyle", sel.nameStyle());
         eq.addProperty("bold", sel.bold());
         root.add("equipped", eq);
@@ -97,6 +99,7 @@ public final class WardrobeSync {
 
         JsonArray items = new JsonArray();
         for (ShopGui.Category cat : new ShopGui.Category[]{ShopGui.Category.TRAILS, ShopGui.Category.CONTRAILS,
+                ShopGui.Category.WINGS, ShopGui.Category.AURAS,
                 ShopGui.Category.COLOURS, ShopGui.Category.GRADIENTS, ShopGui.Category.EXTRAS}) {
             for (ShopGui.Entry e : ShopGui.entries(p, cat)) {
                 JsonObject o = new JsonObject();

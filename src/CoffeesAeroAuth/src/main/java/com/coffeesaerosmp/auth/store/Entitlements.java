@@ -47,7 +47,15 @@ public final class Entitlements {
         /** The rank airship contrails. Captain. */
         CONTRAIL,
         /** Rank-exclusive contrail (Aurora Ribbon), never sold for Beans. Admiral. */
-        CONTRAIL_EXCLUSIVE
+        CONTRAIL_EXCLUSIVE,
+        /** 1.14.0: the entry aura (Updraft). Navigator. */
+        AURA_BASIC,
+        /** The rank auras (Halo, Clockwork Orbit). Captain. */
+        AURA,
+        /** The rank wings (Ornithopter). Captain. */
+        WINGS,
+        /** Rank-exclusive wings (Prism), never sold for Beans. Admiral. */
+        WINGS_EXCLUSIVE
     }
 
     // ── cosmetic id vocabulary ────────────────────────────────────────────────────
@@ -61,6 +69,15 @@ public final class Entitlements {
     public static final String LEAVE_MESSAGE_ID = "leave_message";
     public static final String TRAIL_PREFIX    = "trail:";
     public static final String CONTRAIL_PREFIX = "contrail:";
+    /** 1.14.0, drawn by AeroCore on every client (3D wings, auras around the player). */
+    public static final String WINGS_PREFIX    = "wings:";
+    public static final String AURA_PREFIX     = "aura:";
+
+    /** Any id that lives in the {@link CosmeticCatalog} (trails, contrails, wings, auras). */
+    public static boolean isCatalogId(String key) {
+        return key.startsWith(TRAIL_PREFIX) || key.startsWith(CONTRAIL_PREFIX)
+            || key.startsWith(WINGS_PREFIX) || key.startsWith(AURA_PREFIX);
+    }
 
     private Entitlements() {}
 
@@ -69,9 +86,11 @@ public final class Entitlements {
         EnumSet<Capability> caps = EnumSet.noneOf(Capability.class);
         if (rank == null || rank == Rank.NONE) return Collections.unmodifiableSet(caps);
         if (rank.includes(Rank.DECKHAND))  { caps.add(Capability.SOLID_BASIC); caps.add(Capability.TRAIL_BASIC); }
-        if (rank.includes(Rank.NAVIGATOR)) { caps.add(Capability.SOLID_FULL); caps.add(Capability.BOLD); caps.add(Capability.TRAIL); }
-        if (rank.includes(Rank.CAPTAIN))   { caps.add(Capability.GRADIENT_2); caps.add(Capability.JOIN_MESSAGE); caps.add(Capability.CONTRAIL); }
-        if (rank.includes(Rank.ADMIRAL))   { caps.add(Capability.GRADIENT_3); caps.add(Capability.CHAT_TITLE); caps.add(Capability.CONTRAIL_EXCLUSIVE); }
+        if (rank.includes(Rank.NAVIGATOR)) { caps.add(Capability.SOLID_FULL); caps.add(Capability.BOLD); caps.add(Capability.TRAIL); caps.add(Capability.AURA_BASIC); }
+        if (rank.includes(Rank.CAPTAIN))   { caps.add(Capability.GRADIENT_2); caps.add(Capability.JOIN_MESSAGE); caps.add(Capability.CONTRAIL);
+                                             caps.add(Capability.AURA); caps.add(Capability.WINGS); }
+        if (rank.includes(Rank.ADMIRAL))   { caps.add(Capability.GRADIENT_3); caps.add(Capability.CHAT_TITLE); caps.add(Capability.CONTRAIL_EXCLUSIVE);
+                                             caps.add(Capability.WINGS_EXCLUSIVE); }
         return Collections.unmodifiableSet(caps);
     }
 
@@ -100,7 +119,7 @@ public final class Entitlements {
         String key = id.trim().toLowerCase(Locale.ROOT);
         Set<String> own = owned == null ? Set.of() : owned;
 
-        if (key.startsWith(TRAIL_PREFIX) || key.startsWith(CONTRAIL_PREFIX)) {
+        if (isCatalogId(key)) {
             var c = CosmeticCatalog.get(key);
             if (c.isEmpty()) return false;
             if (preview || own.contains(key)) return true;
@@ -157,8 +176,31 @@ public final class Entitlements {
 
     /** A player's current cosmetic choices. Any field may be null/false meaning "default". */
     public record Selection(String nameStyle, boolean bold, String chatTitle, String joinMessage,
-                            String trail, String contrail, String leaveMessage) {
-        public static final Selection DEFAULT = new Selection(null, false, null, null, null, null, null);
+                            String trail, String contrail, String leaveMessage, String wings, String aura) {
+        public static final Selection DEFAULT = new Selection(null, false, null, null, null, null, null, null, null);
+
+        /** The 1.13.30 shape: no wings or aura. */
+        public Selection(String nameStyle, boolean bold, String chatTitle, String joinMessage,
+                         String trail, String contrail, String leaveMessage) {
+            this(nameStyle, bold, chatTitle, joinMessage, trail, contrail, leaveMessage, null, null);
+        }
+
+        /** What is worn in a catalog slot (trail, contrail, wings or aura). */
+        public String slot(CosmeticCatalog.Type t) {
+            return switch (t) { case TRAIL -> trail; case CONTRAIL -> contrail; case WINGS -> wings; case AURA -> aura; };
+        }
+
+        /** This selection with one catalog slot changed (null = off). */
+        public Selection with(CosmeticCatalog.Type t, String id) {
+            return new Selection(nameStyle, bold, chatTitle, joinMessage,
+                t == CosmeticCatalog.Type.TRAIL ? id : trail, t == CosmeticCatalog.Type.CONTRAIL ? id : contrail,
+                leaveMessage, t == CosmeticCatalog.Type.WINGS ? id : wings, t == CosmeticCatalog.Type.AURA ? id : aura);
+        }
+
+        /** Is {@code id} worn in any catalog slot? */
+        public boolean wears(String id) {
+            return id != null && (id.equals(trail) || id.equals(contrail) || id.equals(wings) || id.equals(aura));
+        }
 
         /** The pre-1.13.30 shape: no trail, contrail or leave message. */
         public Selection(String nameStyle, boolean bold, String chatTitle, String joinMessage) {
@@ -223,7 +265,16 @@ public final class Entitlements {
             removed.add(contrail); contrail = null;
         }
 
-        Selection out = new Selection(style, bold, title, join, trail, contrail, leave);
+        String wings = cur.wings();
+        if (wings != null && !(wings.startsWith(WINGS_PREFIX) && mayUse(wings, rank, own, preview))) {
+            removed.add(wings); wings = null;
+        }
+        String aura = cur.aura();
+        if (aura != null && !(aura.startsWith(AURA_PREFIX) && mayUse(aura, rank, own, preview))) {
+            removed.add(aura); aura = null;
+        }
+
+        Selection out = new Selection(style, bold, title, join, trail, contrail, leave, wings, aura);
         return new Sanitised(out, !removed.isEmpty(), Collections.unmodifiableSet(removed));
     }
 

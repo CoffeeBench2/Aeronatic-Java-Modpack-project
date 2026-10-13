@@ -68,10 +68,10 @@ public final class BeanCommands {
             .then(Commands.literal("contrails").executes(ctx -> shop(ctx.getSource(), BeanPrices.Group.CONTRAIL)))
             .then(Commands.literal("name").executes(ctx -> shop(ctx.getSource(), BeanPrices.Group.NAME)))
             .then(Commands.literal("classic").executes(ctx -> withPlayer(ctx.getSource(), com.coffeesaerosmp.auth.store.gui.ShopGui::openClassic)))
-            .then(Commands.literal("tryon").then(Commands.argument("id", StringArgumentType.word())
+            .then(Commands.literal("tryon").then(Commands.argument("id", StringArgumentType.greedyString())
                 .executes(ctx -> withPlayer(ctx.getSource(), p -> com.coffeesaerosmp.auth.store.gui.ShopGui.tryOnById(p,
                     StringArgumentType.getString(ctx, "id"))))))
-            .then(Commands.literal("purchase").then(Commands.argument("id", StringArgumentType.word())
+            .then(Commands.literal("purchase").then(Commands.argument("id", StringArgumentType.greedyString())
                 .executes(ctx -> withPlayer(ctx.getSource(), p -> com.coffeesaerosmp.auth.store.gui.ShopGui.purchaseById(p,
                     StringArgumentType.getString(ctx, "id"))))))
             .then(Commands.literal("list").executes(ctx -> shopList(ctx.getSource(), null))
@@ -151,18 +151,26 @@ public final class BeanCommands {
         if (p == null) return 0;
         // 1.13.34: the shop is a GUI now (premium only, checked inside). The chat list below stays for /shop list.
         if (group == null) { com.coffeesaerosmp.auth.store.gui.ShopGui.openMain(p); return 1; }
+        if (group == BeanPrices.Group.CONTRAIL && !com.coffeesaerosmp.auth.store.CosmeticCatalog.CONTRAILS_ON) { parkedContrails(p); return 0; }
         com.coffeesaerosmp.auth.store.gui.ShopGui.openCategory(p, switch (group) {
             case TRAIL -> com.coffeesaerosmp.auth.store.gui.ShopGui.Category.TRAILS;
             case CONTRAIL -> com.coffeesaerosmp.auth.store.gui.ShopGui.Category.CONTRAILS;
+            case WINGS -> com.coffeesaerosmp.auth.store.gui.ShopGui.Category.WINGS;
+            case AURA -> com.coffeesaerosmp.auth.store.gui.ShopGui.Category.AURAS;
             case NAME -> com.coffeesaerosmp.auth.store.gui.ShopGui.Category.COLOURS;
         }, 0);
         return 1;
+    }
+
+    private static void parkedContrails(ServerPlayer p) {
+        p.sendSystemMessage(Component.literal("§7Airship contrails are coming in a later update."));
     }
 
     private static int shopList(CommandSourceStack src, BeanPrices.Group group) {
         ServerPlayer p = player(src);
         if (p == null) return 0;
         if (!com.coffeesaerosmp.auth.store.PremiumGate.check(p)) return 0;
+        if (group == BeanPrices.Group.CONTRAIL && !com.coffeesaerosmp.auth.store.CosmeticCatalog.CONTRAILS_ON) { parkedContrails(p); return 0; }
         UUID local = p.getUUID();
         AsyncIo.submit(() -> {
             UUID mojang = MojangIds.toMojang(local).orElse(null);
@@ -181,8 +189,9 @@ public final class BeanCommands {
             p.sendSystemMessage(Component.literal(" ")
                 .append(link("§b[Trails]", "/shop trails", "Walking trails"))
                 .append(Component.literal(" "))
-                .append(link("§b[Contrails]", "/shop contrails", "Airship contrails"))
-                .append(Component.literal(" "))
+                .append(com.coffeesaerosmp.auth.store.CosmeticCatalog.CONTRAILS_ON
+                    ? link("§b[Contrails]", "/shop contrails", "Airship contrails").append(Component.literal(" "))
+                    : Component.empty())
                 .append(link("§b[Name]", "/shop name", "Name colours, gradients, bold, join & leave messages")));
             p.sendSystemMessage(Component.literal(" §7Everything here is cosmetic and yours to keep. Try them first with ")
                 .append(link("§f/cosmetics", "/cosmetics", "Your cosmetics")).append(Component.literal("§7.")));

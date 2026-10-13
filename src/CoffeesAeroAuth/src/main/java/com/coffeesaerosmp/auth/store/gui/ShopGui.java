@@ -58,7 +58,7 @@ public final class ShopGui {
 
     private ShopGui() {}
 
-    public enum Category { TRAILS, CONTRAILS, COLOURS, GRADIENTS, EXTRAS, WARDROBE }
+    public enum Category { TRAILS, CONTRAILS, COLOURS, GRADIENTS, EXTRAS, WARDROBE, WINGS, AURAS }
 
     /** One thing in the shop, and where it stands for this player. */
     record Entry(String id, String label, String blurb, Category cat, OptionalInt price, Rank rankNeeded,
@@ -74,25 +74,33 @@ public final class ShopGui {
     public static void openMain(ServerPlayer p) {
         if (!PremiumGate.check(p)) return;
         if (WardrobeSync.supported(p)) { WardrobeSync.open(p); return; }
-        withBalance(p, bal -> showMain(p, bal));
+        openClassic(p);
+    }
+
+    /** With the server resource pack, the "classic" shop is the pack-drawn Wardrobe. */
+    static boolean packWardrobe() {
+        return com.coffeesaerosmp.auth.cosmetics.RpModels.enabled();
     }
 
     /** /shop classic: always the chest windows. */
     public static void openClassic(ServerPlayer p) {
         if (!PremiumGate.check(p)) return;
+        if (packWardrobe()) { openCategory(p, PackWardrobe.lastTab(p.getUUID()), 0); return; }
         withBalance(p, bal -> showMain(p, bal));
     }
 
     /** /shop tryon <id> (the Wardrobe's "Try in world" button). */
     public static void tryOnById(ServerPlayer p, String id) {
         if (!PremiumGate.check(p)) return;
-        if (CosmeticCatalog.get(id).isEmpty()) return;
+        id = id.trim().toLowerCase(java.util.Locale.ROOT);
+        if (!CosmeticCatalog.offered(id)) return;
         tryOn(p, new Entry(id, label(id), null, categoryOf(id), BeanPrices.price(id), rankNeeded(id), false, false, false));
     }
 
     /** /shop purchase <id> (the Wardrobe's Buy, after its own confirm dialog): buy, then wear it. */
     public static void purchaseById(ServerPlayer p, String id) {
         if (!PremiumGate.check(p)) return;
+        id = id.trim().toLowerCase(java.util.Locale.ROOT);
         if (BeanPrices.price(id).isEmpty()) {
             p.sendSystemMessage(Component.literal(TextUtil.PREFIX + "§cThat isn't for sale."));
             return;
@@ -102,6 +110,13 @@ public final class ShopGui {
 
     public static void openCategory(ServerPlayer p, Category cat, int page) {
         if (!PremiumGate.check(p)) return;
+        if (packWardrobe()) {
+            // Redraws use the last known balance at once (no flicker of "-" while the DB answers), then refresh.
+            Integer known = BALANCE.get(p.getUUID());
+            if (known != null) PackWardrobe.show(p, cat, page, known);
+            else withBalance(p, bal -> PackWardrobe.show(p, cat, page, bal));
+            return;
+        }
         withBalance(p, bal -> showCategory(p, cat, page, bal));
     }
 
@@ -118,9 +133,10 @@ public final class ShopGui {
     }
 
     private static void open(ServerPlayer p, int rows, String title, SimpleContainer box, ButtonMenu.Handler h) {
-        p.openMenu(new SimpleMenuProvider((id, inv, pl) -> new ButtonMenu(id, inv, rows, box, h),
-            com.coffeesaerosmp.auth.cosmetics.RpModels.windowTitle(title, rows)));
-        com.coffeesaerosmp.auth.cosmetics.FittingRoom.ensure(p);
+        ButtonMenu.open(p, new SimpleMenuProvider((id, inv, pl) -> new ButtonMenu(id, inv, rows, box, h),
+            com.coffeesaerosmp.auth.cosmetics.RpModels.windowTitle(title, rows)), false);
+        // The pack Wardrobe covers the screen (its own doll is the preview), so no mannequin in the world then.
+        if (!packWardrobe()) com.coffeesaerosmp.auth.cosmetics.FittingRoom.ensure(p);
     }
 
     // ── main ──────────────────────────────────────────────────────────────────
@@ -134,7 +150,8 @@ public final class ShopGui {
             line("No gameplay advantages, ever.", ChatFormatting.GRAY)), true));
         box.setItem(13, head(p, rank, bal));
         box.setItem(20, icon(Items.FEATHER, title("Trails", ChatFormatting.AQUA), List.of(line("Particles at your feet while you walk", ChatFormatting.GRAY)), false));
-        box.setItem(21, icon(Items.PHANTOM_MEMBRANE, title("Airship contrails", ChatFormatting.AQUA), List.of(line("A wake behind the ship you're on", ChatFormatting.GRAY)), false));
+        if (CosmeticCatalog.CONTRAILS_ON)
+            box.setItem(21, icon(Items.PHANTOM_MEMBRANE, title("Airship contrails", ChatFormatting.AQUA), List.of(line("A wake behind the ship you're on", ChatFormatting.GRAY)), false));
         box.setItem(22, icon(Items.ORANGE_DYE, title("Name colours", ChatFormatting.AQUA), List.of(line("See your own name in each colour", ChatFormatting.GRAY)), false));
         box.setItem(23, icon(Items.PRISMARINE_CRYSTALS, title("Gradient names", ChatFormatting.AQUA), List.of(line("Two colours blended across your name", ChatFormatting.GRAY)), false));
         box.setItem(24, icon(Items.NAME_TAG, title("Bold & messages", ChatFormatting.AQUA), List.of(line("Bold name, custom join and leave lines", ChatFormatting.GRAY)), false));
@@ -150,7 +167,7 @@ public final class ShopGui {
         open(p, 6, "Coffee's Aero Shop", box, (slot, click) -> {
             switch (slot) {
                 case 20 -> openCategory(p, Category.TRAILS, 0);
-                case 21 -> openCategory(p, Category.CONTRAILS, 0);
+                case 21 -> { if (CosmeticCatalog.CONTRAILS_ON) openCategory(p, Category.CONTRAILS, 0); }
                 case 22 -> openCategory(p, Category.COLOURS, 0);
                 case 23 -> openCategory(p, Category.GRADIENTS, 0);
                 case 24 -> openCategory(p, Category.EXTRAS, 0);
@@ -184,6 +201,7 @@ public final class ShopGui {
         String title = "Shop · " + switch (cat) {
             case TRAILS -> "Trails"; case CONTRAILS -> "Contrails"; case COLOURS -> "Name colours";
             case GRADIENTS -> "Gradients"; case EXTRAS -> "Bold & messages"; case WARDROBE -> "Wardrobe";
+            case WINGS -> "Wings"; case AURAS -> "Auras";
         } + (pages > 1 ? " (" + (pg + 1) + "/" + pages + ")" : "");
         open(p, 6, title, box, (slot, click) -> {
             if (slot == 45) { openClassic(p); return; }      // stay in the chest shop (openMain prefers the Wardrobe)
@@ -201,9 +219,14 @@ public final class ShopGui {
      * Left = preview on your mannequin beside the window (the window stays open). Right = wear it / take it off if
      * you have it, otherwise buy. Shift = try it on in the world for 30 s (closes the window).
      */
-    private static void act(ServerPlayer p, Entry e, Click click, Category back, int page, int bal) {
-        boolean particle = e.cat() == Category.TRAILS || e.cat() == Category.CONTRAILS
-            || e.id().startsWith(Entitlements.TRAIL_PREFIX) || e.id().startsWith(Entitlements.CONTRAIL_PREFIX);
+    static void act(ServerPlayer p, Entry e, Click click, Category back, int page, int bal) {
+        boolean particle = e.id().startsWith(Entitlements.TRAIL_PREFIX) || e.id().startsWith(Entitlements.CONTRAIL_PREFIX);
+        boolean worn = e.id().startsWith(Entitlements.WINGS_PREFIX) || e.id().startsWith(Entitlements.AURA_PREFIX);
+        if (worn && click != Click.RIGHT) {                     // wings / auras: only AeroCore draws them
+            p.sendSystemMessage(Component.literal(TextUtil.PREFIX + "§7" + e.label()
+                + " shows in the §fWardrobe§7 (§f/shop§7) and on you in the world."));
+            return;
+        }
         if (click == Click.LEFT) {
             if (particle) com.coffeesaerosmp.auth.cosmetics.FittingRoom.preview(p, e.id());
             else if (e.id().equals(Entitlements.BOLD_ID)) com.coffeesaerosmp.auth.cosmetics.FittingRoom.previewName(p, null, true);
@@ -234,9 +257,10 @@ public final class ShopGui {
         p.closeContainer();
         TryOn.start(p, e.id());
         boolean contrail = e.id().startsWith(Entitlements.CONTRAIL_PREFIX);
+        boolean worn = e.id().startsWith(Entitlements.WINGS_PREFIX) || e.id().startsWith(Entitlements.AURA_PREFIX);
         p.sendSystemMessage(Component.literal(TextUtil.PREFIX + "§7Trying on §f" + e.label() + "§7 for " + TryOn.SECONDS
             + " seconds. " + (contrail ? "Fly your ship to see it behind you, or look around: the demo stream follows your view."
-                : "Walk around to see it.") + " §8Only you can see it."));
+                : worn ? "Press §fF5§7 to see yourself." : "Walk around to see it.") + " §8Only you can see it."));
     }
 
     private static void previewName(ServerPlayer p, Entry e) {
@@ -254,6 +278,8 @@ public final class ShopGui {
         String id = e.id();
         if (id.startsWith(Entitlements.TRAIL_PREFIX)) cmd = "cosmetics trail " + (e.equipped() ? "off" : id.substring(6));
         else if (id.startsWith(Entitlements.CONTRAIL_PREFIX)) cmd = "cosmetics contrail " + (e.equipped() ? "off" : id.substring(9));
+        else if (id.startsWith(Entitlements.WINGS_PREFIX)) cmd = "cosmetics wings " + (e.equipped() ? "off" : id.substring(6));
+        else if (id.startsWith(Entitlements.AURA_PREFIX)) cmd = "cosmetics aura " + (e.equipped() ? "off" : id.substring(5));
         else if (id.startsWith(Entitlements.COLOUR_PREFIX)) cmd = e.equipped() ? "cosmetics clear" : "cosmetics colour " + id.substring(7);
         else if (id.startsWith(Entitlements.GRADIENT_PREFIX)) cmd = e.equipped() ? "cosmetics clear" : "cosmetics gradient " + id.substring(9);
         else if (id.equals(Entitlements.BOLD_ID)) cmd = "cosmetics bold " + !e.equipped();
@@ -327,7 +353,7 @@ public final class ShopGui {
 
     // ── ranks ─────────────────────────────────────────────────────────────────
 
-    private static void showRanks(ServerPlayer p) {
+    static void showRanks(ServerPlayer p) {
         Rank mine = StoreState.get(p.getUUID()).effectiveRank();
         SimpleContainer box = filled(27);
         int[] slots = {10, 12, 14, 16};
@@ -355,8 +381,10 @@ public final class ShopGui {
         switch (r) {
             case DECKHAND -> { out.add("Rank badge ⚓"); out.add("8 name colours"); out.add("Cloud Walker trail"); }
             case NAVIGATOR -> { out.add("Everything in Deckhand"); out.add("Every name colour, bold"); out.add("All rank trails"); }
-            case CAPTAIN -> { out.add("Everything in Navigator"); out.add("Two-colour gradient names"); out.add("Join and leave messages"); out.add("Airship contrails"); }
-            case ADMIRAL -> { out.add("Everything in Captain"); out.add("Three-colour gradients"); out.add("Custom chat title"); out.add("Aurora Ribbon contrail (Admiral only)"); }
+            case CAPTAIN -> { out.add("Everything in Navigator"); out.add("Two-colour gradient names"); out.add("Join and leave messages");
+                if (CosmeticCatalog.CONTRAILS_ON) out.add("Airship contrails"); }
+            case ADMIRAL -> { out.add("Everything in Captain"); out.add("Three-colour gradients"); out.add("Custom chat title");
+                if (CosmeticCatalog.CONTRAILS_ON) out.add("Aurora Ribbon contrail (Admiral only)"); }
             default -> { }
         }
         return out;
@@ -375,11 +403,14 @@ public final class ShopGui {
         switch (cat) {
             case TRAILS -> CosmeticCatalog.all(CosmeticCatalog.Type.TRAIL).forEach(c -> ids.add(c.id()));
             case CONTRAILS -> CosmeticCatalog.all(CosmeticCatalog.Type.CONTRAIL).forEach(c -> ids.add(c.id()));
+            case WINGS -> CosmeticCatalog.all(CosmeticCatalog.Type.WINGS).forEach(c -> ids.add(c.id()));
+            case AURAS -> CosmeticCatalog.all(CosmeticCatalog.Type.AURA).forEach(c -> ids.add(c.id()));
             case COLOURS -> Palette.allColours().forEach(c -> { if (!Palette.isStaffReserved(c)) ids.add(Entitlements.COLOUR_PREFIX + c); });
             case GRADIENTS -> Palette.allGradients().forEach(g -> ids.add(Entitlements.GRADIENT_PREFIX + g));
             case EXTRAS -> { ids.add(Entitlements.BOLD_ID); ids.add(Entitlements.JOIN_MESSAGE_ID); }
             case WARDROBE -> {
-                for (Category c : new Category[]{Category.TRAILS, Category.CONTRAILS, Category.COLOURS, Category.GRADIENTS, Category.EXTRAS}) {
+                for (Category c : new Category[]{Category.TRAILS, Category.CONTRAILS, Category.WINGS, Category.AURAS,
+                        Category.COLOURS, Category.GRADIENTS, Category.EXTRAS}) {
                     for (Entry e : entries(p, c)) if (e.available()) ids.add(e.id());
                 }
             }
@@ -388,7 +419,7 @@ public final class ShopGui {
         for (String id : ids) {
             boolean own = owned.contains(id);
             boolean avail = Entitlements.mayUse(id, rank, owned, preview);
-            boolean eq = id.equals(sel.trail()) || id.equals(sel.contrail()) || id.equals(sel.nameStyle())
+            boolean eq = sel.wears(id) || id.equals(sel.nameStyle())
                 || (id.equals(Entitlements.BOLD_ID) && sel.bold())
                 || (id.equals(Entitlements.JOIN_MESSAGE_ID) && (sel.joinMessage() != null || sel.leaveMessage() != null));
             out.add(new Entry(id, label(id), blurb(id), categoryOf(id), BeanPrices.price(id), rankNeeded(id), own, avail, eq));
@@ -399,6 +430,8 @@ public final class ShopGui {
     static Category categoryOf(String id) {
         if (id.startsWith(Entitlements.TRAIL_PREFIX)) return Category.TRAILS;
         if (id.startsWith(Entitlements.CONTRAIL_PREFIX)) return Category.CONTRAILS;
+        if (id.startsWith(Entitlements.WINGS_PREFIX)) return Category.WINGS;
+        if (id.startsWith(Entitlements.AURA_PREFIX)) return Category.AURAS;
         if (id.startsWith(Entitlements.COLOUR_PREFIX)) return Category.COLOURS;
         if (id.startsWith(Entitlements.GRADIENT_PREFIX)) return Category.GRADIENTS;
         return Category.EXTRAS;
@@ -437,7 +470,7 @@ public final class ShopGui {
 
     // ── icons ─────────────────────────────────────────────────────────────────
 
-    private static ItemStack entryIcon(Entry e, String playerName, int bal) {
+    static ItemStack entryIcon(Entry e, String playerName, int bal) {
         Component name;
         if (e.cat() == Category.COLOURS || e.cat() == Category.GRADIENTS) {
             // The title IS the preview: your own name in this style.
@@ -465,21 +498,60 @@ public final class ShopGui {
         return icon(iconFor(e.id()), name, lore, e.equipped());
     }
 
+    /**
+     * The item that stands for a cosmetic in the shop and the Wardrobe. Create and Aeronautics items where the
+     * cosmetic is about them (owner 2026-10-13: "work with create stuff too, not just vanilla"); a namespaced id
+     * that isn't registered falls back to the vanilla one after the {@code |}.
+     */
     static Item iconFor(String id) {
         String path = switch (id) {
             case "trail:cloudwalk" -> "feather";
-            case "trail:brass" -> "gold_nugget";
-            case "trail:clockwork" -> "clock";
+            case "trail:brass" -> "create:brass_nugget|gold_nugget";
+            case "trail:clockwork" -> "create:cogwheel|clock";
+            case "trail:rosequartz" -> "create:polished_rose_quartz|pink_dye";
+            case "trail:honey" -> "create:honey_bucket|honey_bottle";
+            case "trail:chocolate" -> "create:bar_of_chocolate|cocoa_beans";
+            case "contrail:levitite" -> "aeronautics:pearlescent_levitite|amethyst_shard";
+            case "wings:windmill" -> "create:white_sail|white_wool";
+            case "wings:aeroplane" -> "createpropulsion:tempered_wing|createpropulsion:wing|elytra";
+            case "wings:rotors" -> "createpropulsion:propeller|create:propeller|elytra";
+            case "wings:glider" -> "createwingsplus:angled_sail|create:white_sail|white_wool";
+            case "aura:propeller" -> "aeronautics:wooden_propeller|oak_trapdoor";
             case "trail:espresso" -> "cocoa_beans";
-            case "trail:kettle" -> "cauldron";
+            case "trail:kettle" -> "create:spout|cauldron";
             case "trail:petal" -> "pink_petals";
             case "trail:ember" -> "blaze_powder";
             case "trail:snow" -> "snowball";
-            case "contrail:vapour" -> "phantom_membrane";
-            case "contrail:steam" -> "campfire";
+            case "contrail:vapour" -> "aeronautics:andesite_propeller|phantom_membrane";
+            case "contrail:steam" -> "create:steam_engine|campfire";
             case "contrail:espresso" -> "brown_dye";
             case "contrail:sakura" -> "cherry_sapling";
             case "contrail:aurora" -> "amethyst_shard";
+            case "trail:rainbow" -> "glow_berries";
+            case "trail:starfall" -> "nether_star";
+            case "trail:livewire" -> "create:electron_tube|lightning_rod";
+            case "trail:soulfire" -> "soul_lantern";
+            case "trail:notes" -> "jukebox";
+            case "trail:fireflies" -> "glow_ink_sac";
+            case "trail:bubbles" -> "heart_of_the_sea";
+            case "contrail:rainbow" -> "firework_star";
+            case "contrail:starlight" -> "end_rod";
+            case "contrail:storm" -> "create:steam_whistle|trident";
+            case "contrail:sparkler" -> "firework_rocket";
+            case "wings:ornithopter" -> "create:propeller|elytra";
+            case "wings:seraph" -> "feather";
+            case "wings:phoenix" -> "fire_charge";
+            case "wings:wyvern" -> "dragon_breath";
+            case "wings:monarch" -> "orange_tulip";
+            case "wings:prism" -> "prismarine_crystals";
+            case "wings:frost" -> "blue_ice";
+            case "aura:updraft" -> "wind_charge";
+            case "aura:halo" -> "create:golden_sheet|gold_ingot";
+            case "aura:orbit" -> "create:large_cogwheel|clock";
+            case "aura:spectrum" -> "beacon";
+            case "aura:raincloud" -> "water_bucket";
+            case "aura:enchanted" -> "enchanting_table";
+            case "aura:snowglobe" -> "snow_block";
             case "bold" -> "book";
             case "join_message" -> "oak_sign";
             default -> null;
@@ -487,8 +559,13 @@ public final class ShopGui {
         if (path == null && id.startsWith(Entitlements.COLOUR_PREFIX)) path = dyeFor(id.substring(7));
         if (path == null && id.startsWith(Entitlements.GRADIENT_PREFIX)) path = "prismarine_crystals";
         if (path == null) path = "paper";
-        Item item = BuiltInRegistries.ITEM.get(ResourceLocation.withDefaultNamespace(path));
-        return item == Items.AIR ? Items.PAPER : item;
+        for (String option : path.split("\\|")) {
+            ResourceLocation rl = ResourceLocation.tryParse(option.contains(":") ? option : "minecraft:" + option);
+            if (rl == null || !BuiltInRegistries.ITEM.containsKey(rl)) continue;
+            Item item = BuiltInRegistries.ITEM.get(rl);
+            if (item != Items.AIR) return item;
+        }
+        return Items.PAPER;
     }
 
     private static String dyeFor(String colour) {
@@ -549,7 +626,7 @@ public final class ShopGui {
         return Component.literal(s).withStyle(st -> st.withItalic(false).withColor(colour));
     }
 
-    private static void storeLink(ServerPlayer p) {
+    static void storeLink(ServerPlayer p) {
         String url;
         try { url = AuthConfig.STORE_URL.get(); } catch (Throwable t) { url = ""; }
         if (url == null || url.isBlank()) {
@@ -566,5 +643,6 @@ public final class ShopGui {
     /** Cleared on logout. */
     public static void forget(UUID id) {
         BALANCE.remove(id);
+        PackWardrobe.forget(id);
     }
 }

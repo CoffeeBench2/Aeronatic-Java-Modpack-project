@@ -39,7 +39,8 @@ class BeanPricesTest {
         assertEquals(100, BeanPrices.price("bold").getAsInt());
         assertEquals(200, BeanPrices.price("join_message").getAsInt());
         assertEquals(150, BeanPrices.price("trail:kettle").getAsInt());
-        assertEquals(500, BeanPrices.price("contrail:espresso").getAsInt());
+        if (CosmeticCatalog.CONTRAILS_ON) assertEquals(500, BeanPrices.price("contrail:espresso").getAsInt());
+        else assertTrue(BeanPrices.price("contrail:espresso").isEmpty(), "parked contrails are never for sale");
         assertEquals(150, BeanPrices.price("  TRAIL:Kettle ").getAsInt(), "case and whitespace insensitive");
     }
 
@@ -53,6 +54,7 @@ class BeanPricesTest {
             // Everything sold must actually be wearable once owned.
             assertTrue(Entitlements.mayUse(i.id(), Rank.NONE, Set.of(i.id())), i.id() + " can't be worn after buying");
         }
-        assertTrue(seen.contains("trail:petal") && seen.contains("contrail:sakura") && seen.contains("bold"));
+        assertTrue(seen.contains("trail:petal") && seen.contains("bold"));
+        assertEquals(CosmeticCatalog.CONTRAILS_ON, seen.contains("contrail:sakura"), "contrails sold iff not parked");
     }
 }

@@ -9,9 +9,16 @@ class SpriteChoreoTest {
 
     @Test
     void everyCosmeticHasAChoreographyMatchingItsCount() {
+        // The in-world fitting room is the pre-AeroCore preview: the 1.13 trails and contrails have sprites; the
+        // 1.14 cosmetics are previewed by AeroCore's Wardrobe and draw nothing here (count 0, never a crash).
+        for (String id : java.util.List.of("trail:cloudwalk", "trail:brass", "trail:clockwork", "trail:espresso",
+                "trail:kettle", "trail:petal", "trail:ember", "trail:snow", "contrail:vapour", "contrail:steam",
+                "contrail:espresso", "contrail:sakura", "contrail:aurora")) {
+            assertTrue(SpriteChoreo.count(id) > 0, id + " lost its fitting-room sprites");
+        }
         for (var c : CosmeticCatalog.all()) {
             int n = SpriteChoreo.count(c.id());
-            assertTrue(n > 0 && n <= 12, c.id() + " count " + n);
+            assertTrue(n >= 0 && n <= 12, c.id() + " count " + n);
             for (double t = 0; t < 10; t += 0.15) {
                 var f = SpriteChoreo.frames(c.id(), t, 0.15, 1, 0, 1.8);
                 assertEquals(n, f.size(), c.id() + " at " + t);

@@ -58,15 +58,19 @@ public final class CosmeticCommands {
         ServerPlayer p;
         try { p = src.getPlayerOrException(); } catch (Exception e) { return 0; }
         if (!com.coffeesaerosmp.auth.store.PremiumGate.check(p)) return 0;
-        String prefix = type == Type.TRAIL ? Entitlements.TRAIL_PREFIX : Entitlements.CONTRAIL_PREFIX;
+        String prefix = type.prefix;
+        String noun = type.name().toLowerCase(Locale.ROOT);
         String id = null;
         if (raw != null && !raw.equalsIgnoreCase("off")) {
+            if (!CosmeticCatalog.offered(type)) {
+                src.sendFailure(Component.literal("§7Airship contrails are coming in a later update."));
+                return 0;
+            }
             String name = raw.toLowerCase(Locale.ROOT);
             id = name.startsWith(prefix) ? name : prefix + name;
             var c = CosmeticCatalog.get(id);
             if (c.isEmpty() || c.get().type() != type) {
-                src.sendFailure(Component.literal("§cNo such " + (type == Type.TRAIL ? "trail" : "contrail")
-                    + ". §7Try §f/cosmetics§7 for the list."));
+                src.sendFailure(Component.literal("§cNo such " + noun + ". §7Try §f/cosmetics§7 for the list."));
                 return 0;
             }
             var snap = StoreState.get(p.getUUID());
@@ -77,12 +81,10 @@ public final class CosmeticCommands {
         }
         final String chosen = id;
         String label = chosen == null ? "off" : CosmeticCatalog.get(chosen).map(CosmeticCatalog.Cosmetic::label).orElse(chosen);
-        String what = type == Type.TRAIL ? "Trail" : "Contrail";
+        String what = Character.toUpperCase(noun.charAt(0)) + noun.substring(1);
         persist(p,
-            s -> type == Type.TRAIL
-                ? new Selection(s.nameStyle(), s.bold(), s.chatTitle(), s.joinMessage(), chosen, s.contrail(), s.leaveMessage())
-                : new Selection(s.nameStyle(), s.bold(), s.chatTitle(), s.joinMessage(), s.trail(), chosen, s.leaveMessage()),
-            mojang -> StoreGrants.setSlot(mojang, type == Type.TRAIL ? StoreGrants.Slot.TRAIL : StoreGrants.Slot.CONTRAIL, chosen),
+            s -> s.with(type, chosen),
+            mojang -> StoreGrants.setSlot(mojang, StoreGrants.Slot.valueOf(type.name()), chosen),
             "§a" + what + ": §f" + label + (type == Type.CONTRAIL && chosen != null
                 ? " §7(streams behind your ship once it flies faster than a run)" : ""));
         return 1;
@@ -103,19 +105,23 @@ public final class CosmeticCommands {
         Selection sel = StoreState.selectionFor(p.getUUID());
         var snap = StoreState.get(p.getUUID());
         boolean preview = preview(p);
-        src.sendSystemMessage(Component.literal(" §7Trail: §f" + label(sel.trail()) + " §7· Contrail: §f" + label(sel.contrail())));
+        src.sendSystemMessage(Component.literal(" §7Trail: §f" + label(sel.trail())
+            + (CosmeticCatalog.CONTRAILS_ON ? " §7· Contrail: §f" + label(sel.contrail()) : "")
+            + " §7· Wings: §f" + label(sel.wings()) + " §7· Aura: §f" + label(sel.aura())));
         if (sel.leaveMessage() != null) src.sendSystemMessage(Component.literal(" §7Leave message: §f" + sel.leaveMessage()));
         for (Type t : Type.values()) {
+            if (!CosmeticCatalog.offered(t)) continue;                  // parked types get no line at all
+            if (t == Type.WINGS && !CosmeticCatalog.WINGS_ON) continue;
             StringBuilder sb = new StringBuilder();
             for (var c : CosmeticCatalog.all(t)) {
                 if (Entitlements.mayUse(c.id(), snap.effectiveRank(), snap.owned(), preview)) {
                     sb.append("§f").append(c.id().substring(c.id().indexOf(':') + 1)).append("§7 ");
                 }
             }
-            src.sendSystemMessage(Component.literal(" §7" + (t == Type.TRAIL ? "Trails" : "Contrails") + ": "
+            src.sendSystemMessage(Component.literal(" §7" + switch (t) { case TRAIL -> "Trails"; case CONTRAIL -> "Contrails"; case WINGS -> "Wings"; case AURA -> "Auras"; } + ": "
                 + (sb.isEmpty() ? "§8none yet" : sb.toString())));
         }
-        src.sendSystemMessage(Component.literal(" §8/cosmetics trail <id|off> §7· §8contrail <id|off> §7· §8leavemsg <text> §7· §8hideothers"));
+        src.sendSystemMessage(Component.literal(" §8/cosmetics trail <id|off> §7· " + (CosmeticCatalog.CONTRAILS_ON ? "§8contrail <id|off> §7· " : "") + "§8leavemsg <text> §7· §8hideothers"));
         if (preview) src.sendSystemMessage(Component.literal(" §8(op preview: everything unlocked for testing)"));
     }
 

@@ -29,7 +29,11 @@ class EntitlementsTest {
         // 1.13.30 cosmetics plan (Obaa planning/cosmetics-plan-2026-10-12.md): each tier also adds one trail/contrail rung.
         assertEquals(Set.of(Capability.SOLID_BASIC, Capability.TRAIL_BASIC), Entitlements.of(Rank.DECKHAND));
         assertEquals(Set.of(Capability.SOLID_BASIC, Capability.TRAIL_BASIC, Capability.SOLID_FULL, Capability.BOLD,
-                            Capability.TRAIL), Entitlements.of(Rank.NAVIGATOR));
+                            Capability.TRAIL, Capability.AURA_BASIC), Entitlements.of(Rank.NAVIGATOR));
+        // 1.14.0: wings and the rank auras from Captain, the exclusive wings at Admiral.
+        assertTrue(Entitlements.of(Rank.CAPTAIN).containsAll(Set.of(Capability.WINGS, Capability.AURA)));
+        assertFalse(Entitlements.of(Rank.CAPTAIN).contains(Capability.WINGS_EXCLUSIVE));
+        assertTrue(Entitlements.of(Rank.ADMIRAL).contains(Capability.WINGS_EXCLUSIVE));
         assertTrue(Entitlements.of(Rank.CAPTAIN).contains(Capability.CONTRAIL));
         assertFalse(Entitlements.of(Rank.CAPTAIN).contains(Capability.CONTRAIL_EXCLUSIVE));
         assertTrue(Entitlements.of(Rank.ADMIRAL).contains(Capability.CONTRAIL_EXCLUSIVE));

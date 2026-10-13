@@ -118,6 +118,7 @@ public class CoffeesAeroAuth {
 
         // Networking: receive premium/cracked tag from the AeroVelocity proxy (mod bus event)
         modBus.addListener(AeroNetworking::register);
+        modBus.addListener(com.coffeesaerosmp.auth.cosmetics.CoreGate::onConfigure);
 
         // Global Loot Modifier codecs. The TYPE must be registered in code; the RULES stay in a
         // datapack (coffees_aero_auth:loot_modifiers/rarity_nerf.json) so they are /reload-tunable.
@@ -137,6 +138,7 @@ public class CoffeesAeroAuth {
                 // `premium` is unused by reveal() now; the offline marker comes from the profile.
                 if (p != null) com.coffeesaerosmp.auth.auth.NameVisibility.reveal(p, true);
                 if (p != null) com.coffeesaerosmp.auth.store.gui.WardrobeSync.onChange(p);
+                com.coffeesaerosmp.auth.cosmetics.CosmeticSync.markDirty();
             });
         });
 
@@ -252,6 +254,9 @@ public class CoffeesAeroAuth {
         NeoForge.EVENT_BUS.addListener(
             (net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent e) -> {
                 if (e.getEntity() instanceof net.minecraft.server.level.ServerPlayer sp) {
+                    com.coffeesaerosmp.auth.cosmetics.CoreGate.onLogin(sp);
+                    if (sp.hasDisconnected()) return;
+                    com.coffeesaerosmp.auth.cosmetics.CosmeticSync.onLogin(sp);
                     com.coffeesaerosmp.auth.leveling.LevelService.onJoin(sp);
                     com.coffeesaerosmp.auth.mail.MailService.onJoin(sp);
                     com.coffeesaerosmp.auth.admin.SpawnOnNextJoin.onJoin(sp);
@@ -522,6 +527,7 @@ public class CoffeesAeroAuth {
         DAILY_REWARDS  = new com.coffeesaerosmp.auth.daily.DailyRewardManager(dataDir);
         VOTE_REWARDS   = new com.coffeesaerosmp.auth.vote.VoteRewards(dataDir);
         com.coffeesaerosmp.auth.clan.ClanTags.initialize(dataDir);
+        com.coffeesaerosmp.auth.cosmetics.ShipContrails.initialize(dataDir);
         com.coffeesaerosmp.auth.display.HiddenOps.initialize(dataDir);
         com.coffeesaerosmp.auth.display.TpsHud.initialize(dataDir);
         com.coffeesaerosmp.auth.world.ItemClearer.initialize();
@@ -911,6 +917,8 @@ public class CoffeesAeroAuth {
         com.coffeesaerosmp.auth.commands.TpaCommands.register(event.getDispatcher());
         com.coffeesaerosmp.auth.commands.RtpCommand.register(event.getDispatcher());
         com.coffeesaerosmp.auth.commands.ShipNameCommand.register(event.getDispatcher());
+        if (com.coffeesaerosmp.auth.store.CosmeticCatalog.CONTRAILS_ON)      // parked for a later update
+            com.coffeesaerosmp.auth.commands.ShipContrailCommand.register(event.getDispatcher());
         com.coffeesaerosmp.auth.commands.NameColorCommands.register(event.getDispatcher());
         com.coffeesaerosmp.auth.commands.StoreCommands.register(event.getDispatcher());
         com.coffeesaerosmp.auth.commands.BeanCommands.register(event.getDispatcher());

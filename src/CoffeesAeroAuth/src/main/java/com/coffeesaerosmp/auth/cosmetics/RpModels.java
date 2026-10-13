@@ -24,7 +24,7 @@ public final class RpModels {
 
     public static final int AIRSHIP = 9001, STAGE = 9002, BACKDROP = 9003;
 
-    /** Font with the shop window skins:  = 6-row window,  = 3-row,  = -8px,  = -169px. */
+    /** Font with the shop window skins: \uE000 = 6-row window, \uE001 = 3-row, \uF801 = -8px, \uF802 = -169px. */
     public static final ResourceLocation SHOP_FONT = ResourceLocation.fromNamespaceAndPath("aerosmp", "shop");
 
     /** GameTest hook: act as if a pack is configured. */
@@ -49,7 +49,7 @@ public final class RpModels {
         if (!enabled()) return Component.literal(text);
         Style font = Style.EMPTY.withFont(SHOP_FONT).withColor(0xFFFFFF);
         MutableComponent out = Component.empty();
-        out.append(Component.literal("" + (rows >= 6 ? "" : "") + "").withStyle(font));
+        out.append(Component.literal("\uF801" + (rows >= 6 ? "\uE000" : "\uE001") + "\uF802").withStyle(font));
         out.append(Component.literal(text).withStyle(Style.EMPTY.withColor(0xF0C05A)));
         return out;
     }

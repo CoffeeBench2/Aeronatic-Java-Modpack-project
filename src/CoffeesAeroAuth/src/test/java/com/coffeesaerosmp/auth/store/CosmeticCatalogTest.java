@@ -30,7 +30,7 @@ class CosmeticCatalogTest {
         Set<String> seen = new HashSet<>();
         for (Cosmetic c : CosmeticCatalog.all()) {
             assertTrue(seen.add(c.id()), "duplicate " + c.id());
-            String prefix = c.type() == Type.TRAIL ? Entitlements.TRAIL_PREFIX : Entitlements.CONTRAIL_PREFIX;
+            String prefix = c.type().prefix;
             assertTrue(c.id().startsWith(prefix), c.id() + " lacks " + prefix);
             assertEquals(c.id(), c.id().toLowerCase(), "ids are lower-case data");
             assertFalse(c.label().isBlank());
@@ -51,7 +51,8 @@ class CosmeticCatalogTest {
     @Test
     void everyRankRungHasSomethingToShowFor() {
         for (var cap : new Entitlements.Capability[]{Entitlements.Capability.TRAIL_BASIC, Entitlements.Capability.TRAIL,
-                Entitlements.Capability.CONTRAIL, Entitlements.Capability.CONTRAIL_EXCLUSIVE}) {
+                Entitlements.Capability.CONTRAIL, Entitlements.Capability.CONTRAIL_EXCLUSIVE,
+                Entitlements.Capability.AURA_BASIC, Entitlements.Capability.AURA}) {
             assertTrue(CosmeticCatalog.all().stream().anyMatch(c -> c.requires() == cap), "nothing unlocks with " + cap);
         }
         assertTrue(CosmeticCatalog.all().stream().anyMatch(c -> c.requires() == null), "there should be Beans/event items");
@@ -62,6 +63,8 @@ class CosmeticCatalogTest {
         assertTrue(CosmeticCatalog.get("TRAIL:CloudWalk").isPresent());
         assertTrue(CosmeticCatalog.get("trail:nope").isEmpty());
         assertTrue(CosmeticCatalog.get(null).isEmpty());
-        assertFalse(CosmeticCatalog.all(Type.CONTRAIL).isEmpty());
+        assertEquals(CosmeticCatalog.CONTRAILS_ON, !CosmeticCatalog.all(Type.CONTRAIL).isEmpty(), "contrails offered iff not parked");
+        // parked or not, owned contrail ids must keep resolving, or a player's purchase would be orphaned
+        assertTrue(CosmeticCatalog.get("contrail:sakura").isPresent());
     }
 }

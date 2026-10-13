@@ -24,15 +24,60 @@ public class ButtonMenu extends AbstractContainerMenu {
 
     private final int size;
     private final Handler handler;
+    /** The inventory area is buttons too (pack Wardrobe); the player's real items are re-sent when it closes. */
+    private final boolean hidesInventory;
 
     public ButtonMenu(int id, Inventory inv, int rows, SimpleContainer box, Handler handler) {
+        this(id, inv, rows, box, handler, null);
+    }
+
+    /**
+     * @param lower when not null, the 36 inventory slots show THIS container (27 rows then 9 hotbar) instead of the
+     *              player's items, and clicks there are buttons as well. The client writes what it's sent into its
+     *              own copy of the inventory, so closing the window re-sends the real one (see {@link #removed}).
+     *              The server-side inventory is never touched.
+     */
+    public ButtonMenu(int id, Inventory inv, int rows, SimpleContainer box, Handler handler, SimpleContainer lower) {
         super(type(rows), id);
         this.size = rows * 9;
         this.handler = handler;
+        this.hidesInventory = lower != null;
         for (int i = 0; i < size; i++) addSlot(new ButtonSlot(box, i));
         int yOff = (rows - 4) * 18;
-        for (int r = 0; r < 3; r++) for (int c = 0; c < 9; c++) addSlot(new Locked(inv, c + r * 9 + 9, 8 + c * 18, 103 + r * 18 + yOff));
-        for (int c = 0; c < 9; c++) addSlot(new Locked(inv, c, 8 + c * 18, 161 + yOff));
+        for (int r = 0; r < 3; r++) for (int c = 0; c < 9; c++) {
+            int x = 8 + c * 18, y = 103 + r * 18 + yOff;
+            addSlot(lower != null ? new Locked(lower, c + r * 9, x, y) : new Locked(inv, c + r * 9 + 9, x, y));
+        }
+        for (int c = 0; c < 9; c++) {
+            int x = 8 + c * 18, y = 161 + yOff;
+            addSlot(lower != null ? new Locked(lower, 27 + c, x, y) : new Locked(inv, c, x, y));
+        }
+    }
+
+    private boolean handedOff;
+
+    public boolean hidesInventory() { return hidesInventory; }
+
+    @Override
+    public void removed(Player player) {
+        super.removed(player);
+        // The client drew our buttons into its copy of the inventory: put the real items back on its screen
+        // (unless another button window is replacing this one; it sends its own lower slots next).
+        if (hidesInventory && !handedOff) player.inventoryMenu.sendAllDataToRemote();
+    }
+
+    /**
+     * Open {@code provider}, replacing a button window WITHOUT the close packet in between. openMenu would close
+     * the old window first, and a close/open pair makes the client re-centre the cursor: every click in a list
+     * would throw the mouse to the middle of the screen. Opening straight over the old screen keeps it put.
+     */
+    public static void open(net.minecraft.server.level.ServerPlayer p, net.minecraft.world.MenuProvider provider,
+                            boolean nextHidesInventory) {
+        if (p.containerMenu instanceof ButtonMenu old) {
+            old.handedOff = nextHidesInventory && old.hidesInventory;
+            p.doCloseContainer();                       // server side only: no ClientboundContainerClosePacket
+        }
+        p.openMenu(provider);
     }
 
     static MenuType<?> type(int rows) {
@@ -48,7 +93,7 @@ public class ButtonMenu extends AbstractContainerMenu {
 
     @Override
     public void clicked(int slot, int button, ClickType type, Player player) {
-        if (slot >= 0 && slot < size) {
+        if (slot >= 0 && slot < (hidesInventory ? size + 36 : size)) {
             Click c = null;
             if (type == ClickType.QUICK_MOVE) c = Click.SHIFT;
             else if (type == ClickType.PICKUP) c = button == 1 ? Click.RIGHT : Click.LEFT;
