@@ -5,7 +5,8 @@
     "mixins": [],
     "client": [
         "JemiPluginMixin",
-        "JeiPluginCallerMixin"
+        "JeiPluginCallerMixin",
+        "ContraptionColliderNpeFixMixin"
     ],
     "injectors": {
         "defaultRequire": 0
