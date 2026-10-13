@@ -2,6 +2,13 @@
   "_comment": "Season 3 CurseForge pack news (bundled; newsUrl is blank in this pack).",
   "entries": [
     {
+      "version": "3.0.3",
+      "date": "October 2026",
+      "tag": "UPDATE",
+      "title": "Recipe picker and inventory sorting",
+      "body": "When two recipes share the same ingredients, Polymorph now shows a button so you can pick which one to craft. Create machines also stop fighting over clashing recipes. ClientSort adds one-click sorting to your inventory and chests. Prefer the plain Minecraft menu? Use the Vanilla Menu button in the bottom-right corner of the title screen; it remembers your choice."
+    },
+    {
       "version": "3.0.2",
       "date": "October 2026",
       "tag": "UPDATE",
