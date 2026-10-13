@@ -2,6 +2,13 @@
   "_comment": "Season 3 CurseForge pack news (bundled; newsUrl is blank in this pack).",
   "entries": [
     {
+      "version": "3.0.4",
+      "date": "October 2026",
+      "tag": "HOTFIX",
+      "title": "No more crashes near contraptions",
+      "body": "A Create bug could crash your game the moment you came near a contraption with a dropped item, arrow or XP orb caught at just the wrong spot inside it. Everyone in the area got thrown out, and rejoining crashed again. That spot can no longer crash you."
+    },
+    {
       "version": "3.0.3",
       "date": "October 2026",
       "tag": "UPDATE",
