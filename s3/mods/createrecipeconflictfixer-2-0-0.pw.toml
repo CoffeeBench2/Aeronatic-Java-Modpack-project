@@ -1,0 +1,13 @@
+name = "createrecipeconflictfixer-2.0.0"
+filename = "createrecipeconflictfixer-2.0.0.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/cl9t2797/versions/pQaMqQfv/createrecipeconflictfixer-2.0.0.jar"
+hash-format = "sha512"
+hash = "da1fd95389389d6f67c4a8b7bedddbd4781eef734c23ffeac8303b64c6fa5837f53c52393b97c81d5c43d1519693509fe12582efcb823f794a8d3126629068d1"
+
+[update]
+[update.modrinth]
+mod-id = "cl9t2797"
+version = "pQaMqQfv"
