@@ -1,7 +1,7 @@
 {
-  "version": "3.0.3",
+  "version": "3.0.4",
   "url": "https://modrinth.com/modpack/coffees-create-aeronautics-smp",
   "neoforge": "21.1.251",
   "minecraft": "1.21.1",
-  "notes": "Season 3. Core 1.4.1 (Vanilla Menu toggle), Polymorph, Create recipe-conflict fix, ClientSort, Resourcify."
+  "notes": "Season 3. HOTFIX: Core 1.4.2 stops a Create contraption-collision crash that kicked everyone near a contraption."
 }
