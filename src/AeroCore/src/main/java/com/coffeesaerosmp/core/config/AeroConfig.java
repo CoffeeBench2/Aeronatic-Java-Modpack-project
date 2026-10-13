@@ -19,6 +19,12 @@ public class AeroConfig {
     public static final ModConfigSpec.BooleanValue ANALOG_AUDIO_PROMPT_SHOWN;
     public static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> MANUAL_MODS;
 
+    /** 1.4.0 cosmetics: whose trails, wings and auras this client draws. */
+    public enum CosmeticsShow { EVERYONE, MINE, NONE }
+    public static final ModConfigSpec.EnumValue<CosmeticsShow> COSMETICS_SHOW;
+    public static final ModConfigSpec.DoubleValue COSMETICS_DENSITY;
+    public static final ModConfigSpec.IntValue COSMETICS_RANGE;
+
     static {
         ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
         builder.comment("CoffeesAeroSMP Core — Client Configuration");
@@ -97,6 +103,19 @@ public class AeroConfig {
                     "analogaudio|Analog Audio|https://modrinth.com/mod/analog-audio|the in-game radios and cassettes",
                     "ssrd|Separate Sable Render Distance|https://modrinth.com/mod/ssrd/version/1.8.7|how far away ships render"),
                 o -> o instanceof String str && str.split("\\|").length >= 3);
+
+        builder.push("cosmetics");
+        COSMETICS_SHOW = builder
+            .comment("Whose cosmetics (trails, contrails, wings, auras) to draw: EVERYONE, MINE (only your own) or NONE.")
+            .defineEnum("show", CosmeticsShow.EVERYONE);
+        COSMETICS_DENSITY = builder
+            .comment("Particle density for cosmetics: 0.25 = light, 1.0 = as designed, 2.0 = extra dense.")
+            .defineInRange("density", 1.0, 0.25, 2.0);
+        COSMETICS_RANGE = builder
+            .comment("Blocks: other players' trails, wings and auras are drawn within this distance.",
+                     "Contrails are drawn up to 4x further, they are meant to be seen from the ground.")
+            .defineInRange("range", 48, 16, 128);
+        builder.pop();
 
         CLIENT_SPEC = builder.build();
     }

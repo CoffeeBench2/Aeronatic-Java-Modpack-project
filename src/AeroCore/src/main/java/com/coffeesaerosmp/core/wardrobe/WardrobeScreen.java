@@ -46,8 +46,13 @@ public class WardrobeScreen extends Screen {
     static final int PANEL_TOP = 0xF0261A0E, PANEL_BOT = 0xF0170F07, BRASS = 0xFF9C7430, BRASS_HI = 0xFFF0C05A;
     static final int TEXT = 0xFFEADCC3, MUTED = 0xFFA89880, GOLD = 0xFFF5C451, GREEN = 0xFF7BD88F, PURPLE = 0xFFD39BFF;
 
-    private static final Cat[] TABS = {Cat.TRAILS, Cat.CONTRAILS, Cat.COLOURS, Cat.GRADIENTS, Cat.EXTRAS, null};
-    private static final String[] TAB_LABELS = {"Trails", "Contrails", "Colours", "Gradients", "Extras", "Owned"};
+    private static final Cat[] ALL_TABS = {Cat.TRAILS, Cat.CONTRAILS, Cat.WINGS, Cat.AURAS, Cat.COLOURS, Cat.GRADIENTS, Cat.EXTRAS, null};
+    private static final String[] ALL_LABELS = {"Trails", "Contrails", "Wings", "Auras", "Colours", "Gradients", "Extras", "Owned"};
+    /** The tabs shown: a category the server offers nothing in (wings while they're parked) gets no tab. */
+    private Cat[] TABS = ALL_TABS;
+    private String[] TAB_LABELS = ALL_LABELS;
+    /** Tabs per row: all in one row when there's room, else two rows of four. Set in init(). */
+    private int tabsPerRow = TABS.length;
     private static final int ROW_H = 22;
 
     private WardrobeData data;
@@ -102,7 +107,22 @@ public class WardrobeScreen extends Screen {
         ry = pvY;
         rw = width - rx - pad;
         detH = 56;
-        listY = ry + 22;
+        java.util.List<Cat> shown = new java.util.ArrayList<>();
+        java.util.List<String> labels = new java.util.ArrayList<>();
+        for (int i = 0; i < ALL_TABS.length; i++) {
+            if (ALL_TABS[i] != null && data.in(ALL_TABS[i]).isEmpty()) continue;
+            shown.add(ALL_TABS[i]);
+            labels.add(ALL_LABELS[i]);
+        }
+        Cat current = tab < TABS.length ? TABS[tab] : null;
+        TABS = shown.toArray(new Cat[0]);
+        TAB_LABELS = labels.toArray(new String[0]);
+        tab = Math.max(0, java.util.Arrays.asList(TABS).indexOf(current));
+        int widest = 0;
+        for (String l : TAB_LABELS) widest = Math.max(widest, font.width(l));
+        tabsPerRow = rw / TABS.length >= widest + 10 ? TABS.length : (TABS.length + 1) / 2;
+        int tabRows = (TABS.length + tabsPerRow - 1) / tabsPerRow;
+        listY = ry + 22 * tabRows;
         detY = height - pad - detH;
         listH = detY - 4 - listY;
 
@@ -124,10 +144,9 @@ public class WardrobeScreen extends Screen {
         // Top bar
         int bx = width - pad - 20;
         addRenderableWidget(AeroButton.aero(Component.literal("✕"), b -> onClose()).bounds(bx, 4, 20, 16).plain().build());
-        addRenderableWidget(AeroButton.aero(Component.literal("Classic shop"), b -> { send("shop classic"); onClose(); })
-            .bounds(bx - 4 - 80, 4, 80, 16).plain().build());
+        // (No "Classic shop" button: AeroCore is required, so the chest shop is never needed here. Owner 2026-10-13.)
         addRenderableWidget(AeroButton.aero(Component.literal("Get Beans"), b -> openStore())
-            .bounds(bx - 8 - 80 - 70, 4, 70, 16).plain().build());
+            .bounds(bx - 4 - 70, 4, 70, 16).plain().build());
 
         // Preview mode
         int half = (pvW - 12) / 2;
@@ -137,18 +156,26 @@ public class WardrobeScreen extends Screen {
             .bounds(pvX + 8 + half, pvY + 4, half, 14).plain().build());
 
         // Category tabs
-        int tw = rw / TABS.length;
+        int tw = rw / tabsPerRow;
         for (int i = 0; i < TABS.length; i++) {
             final int idx = i;
             addRenderableWidget(AeroButton.aero(Component.literal(TAB_LABELS[i]), b -> selectTab(idx))
-                .bounds(rx + i * tw, ry, tw - 2, 18).plain().build());
+                .bounds(rx + (i % tabsPerRow) * tw, ry + (i / tabsPerRow) * 22, tw - 2, 18).plain().build());
         }
 
         // Detail actions
         Item sel = selected();
         if (sel != null) {
             int by = detY + detH - 22;
-            int bw = Math.min(120, (rw - 18) / 2);
+            boolean fittable = sel.cat() == Cat.CONTRAILS && sel.available();
+            int bw = fittable ? Math.min(110, (rw - 24) / 3) : Math.min(120, (rw - 18) / 2);
+            if (fittable) {
+                // Fit it to the ship you're standing on (your AeroClaims-claimed ship): it streams whoever flies it.
+                addRenderableWidget(AeroButton.aero(Component.literal("Fit to my ship"), b -> {
+                    send("shipcontrail " + sel.id().substring("contrail:".length()));
+                    toast("Fitting " + sel.label() + "... (stand on your ship)");
+                }).bounds(rx + 18 + bw * 2, by, bw, 18).plain().build());
+            }
             String primary = primaryLabel(sel);
             if (primary != null) {
                 AeroButton p = AeroButton.aero(Component.literal(primary), b -> primaryAction(sel))
@@ -156,7 +183,7 @@ public class WardrobeScreen extends Screen {
                 p.active = sel.available() || (sel.forSale() && pendingBuy == null);
                 addRenderableWidget(p);
             }
-            if (sel.particle()) {
+            if (sel.tryable()) {
                 addRenderableWidget(AeroButton.aero(Component.literal("Try in world"), b -> {
                     send("shop tryon " + sel.id());
                     onClose();
@@ -187,6 +214,8 @@ public class WardrobeScreen extends Screen {
         String cmd = null;
         if (id.startsWith("trail:")) cmd = "cosmetics trail " + (it.equipped() ? "off" : id.substring(6));
         else if (id.startsWith("contrail:")) cmd = "cosmetics contrail " + (it.equipped() ? "off" : id.substring(9));
+        else if (id.startsWith("wings:")) cmd = "cosmetics wings " + (it.equipped() ? "off" : id.substring(6));
+        else if (id.startsWith("aura:")) cmd = "cosmetics aura " + (it.equipped() ? "off" : id.substring(5));
         else if (id.startsWith("colour:")) cmd = it.equipped() ? "cosmetics clear" : "cosmetics colour " + id.substring(7);
         else if (id.startsWith("gradient:")) cmd = it.equipped() ? "cosmetics clear" : "cosmetics gradient " + id.substring(9);
         else if (id.equals("bold")) cmd = "cosmetics bold " + !it.equipped();
@@ -242,6 +271,8 @@ public class WardrobeScreen extends Screen {
         data.items.addAll(next);
         if (it.id().startsWith("trail:")) data.eqTrail = on ? it.id() : null;
         if (it.id().startsWith("contrail:")) data.eqContrail = on ? it.id() : null;
+        if (it.id().startsWith("wings:")) data.eqWings = on ? it.id() : null;
+        if (it.id().startsWith("aura:")) data.eqAura = on ? it.id() : null;
         if (exclusiveName) { data.eqNameStyle = on ? it.id() : null; data.nameRgb = on ? it.nameRgb() : new int[0]; }
         if (it.id().equals("bold")) data.eqBold = on;
     }
@@ -258,7 +289,8 @@ public class WardrobeScreen extends Screen {
         if (pick == null && !rows.isEmpty()) pick = rows.get(0);
         selectedId = pick == null ? null : pick.id();
         if (TABS[tab] == Cat.CONTRAILS) airshipView = true;
-        else if (TABS[tab] == Cat.TRAILS || TABS[tab] == Cat.COLOURS || TABS[tab] == Cat.GRADIENTS) airshipView = false;
+        else if (TABS[tab] == Cat.TRAILS || TABS[tab] == Cat.WINGS || TABS[tab] == Cat.AURAS
+            || TABS[tab] == Cat.COLOURS || TABS[tab] == Cat.GRADIENTS) airshipView = false;
         particles.clear();
         rebuildWidgets();
     }
@@ -268,7 +300,7 @@ public class WardrobeScreen extends Screen {
         selectedId = id;
         Item it = selected();
         if (it != null && it.cat() == Cat.CONTRAILS) airshipView = true;
-        else if (it != null && it.cat() == Cat.TRAILS) airshipView = false;
+        else if (it != null && (it.cat() == Cat.TRAILS || it.cat() == Cat.WINGS || it.cat() == Cat.AURAS)) airshipView = false;
         particles.clear();
         rebuildWidgets();
     }
@@ -386,8 +418,9 @@ public class WardrobeScreen extends Screen {
     }
 
     private void underlineTab(GuiGraphics g) {
-        int tw = rw / TABS.length;
-        g.fill(rx + tab * tw + 2, ry + 17, rx + tab * tw + tw - 4, ry + 19, BRASS_HI);
+        int tw = rw / tabsPerRow;
+        int tx = rx + (tab % tabsPerRow) * tw, ty = ry + (tab / tabsPerRow) * 22;
+        g.fill(tx + 2, ty + 17, tx + tw - 4, ty + 19, BRASS_HI);
         g.fill(airshipView ? pvX + 8 + (pvW - 12) / 2 : pvX + 4, pvY + 18,
             (airshipView ? pvX + 8 + (pvW - 12) / 2 : pvX + 4) + (pvW - 12) / 2, pvY + 20, BRASS_HI);
     }
@@ -409,7 +442,16 @@ public class WardrobeScreen extends Screen {
         Item trail = previewTrail();
         if (trail != null && trail.fx() != null) {
             // Streams out behind, as if you're walking towards the right.
-            particles.emit(trail.fx(), cx + scale * 0.1f, fy - scale * 0.08f, dt, -scale * 0.3f, 0f, scale);
+            particles.emit(GuiParticles.styled(trail.id(), trail.fx(), spinT), cx + scale * 0.1f, fy - scale * 0.08f, dt,
+                -scale * 0.3f, 0f, scale);
+        }
+        Item aura = previewAura();
+        if (aura != null && aura.fx() != null && GuiParticles.auraUsesParticles(aura.id())) {
+            // Around the body: emitted from a ring that turns, so it reads as being AROUND you, not in front.
+            float a = spinT * 3f;
+            float ax = cx + (float) Math.cos(a) * scale * 0.45f;
+            float ay = cy - scale * 0.5f + (float) Math.sin(a * 0.7f) * scale * 0.35f;
+            particles.emit(GuiParticles.styled(aura.id(), aura.fx(), spinT), ax, ay, dt, 0f, -scale * 0.15f, scale, 1.2f, 0.8f);
         }
         particles.update(dt);
 
@@ -419,7 +461,14 @@ public class WardrobeScreen extends Screen {
             // Mostly facing you, swaying gently so the 3D reads; drag to turn all the way round.
             if (!dragging) spinT += dt;
             yaw = dragYaw + (float) Math.sin(spinT * 0.7f) * 32f;
-            renderPlayer(g, player, cx, cy, scale);
+            Item wings = previewWings();
+            com.coffeesaerosmp.core.cosmetics.render.CosmeticLayer.preview = new com.coffeesaerosmp.core.cosmetics.CosmeticsState.Look(
+                null, null, wings == null ? null : wings.id(), aura == null ? null : aura.id(), false);
+            try {
+                renderPlayer(g, player, cx, cy, scale);
+            } finally {
+                com.coffeesaerosmp.core.cosmetics.render.CosmeticLayer.preview = null;
+            }
         }
         // Particles in FRONT of the model: rising flames and puffs would otherwise hide behind the legs.
         g.enableScissor(pvX + 1, areaTop, pvX + pvW - 1, pvY + pvH - 1);
@@ -479,7 +528,8 @@ public class WardrobeScreen extends Screen {
         MiniAirship.Tail tail = MiniAirship.render(g, cx, cy, scale, shipYaw, bob);
         if (con != null && con.fx() != null) {
             float speed = tail.pxPerBlock() * 2.4f;              // the wake stretches out behind the ship
-            particles.emit(con.fx(), tail.x(), tail.y(), dt, tail.dx() * speed, tail.dy() * speed, tail.pxPerBlock() * 1.5f, 2.6f, 2.5f);
+            particles.emit(GuiParticles.styled(con.id(), con.fx(), spinT), tail.x(), tail.y(), dt, tail.dx() * speed,
+                tail.dy() * speed, tail.pxPerBlock() * 1.5f, 2.6f, 2.5f);
         }
         particles.update(dt);
         particles.render(g);
@@ -491,6 +541,18 @@ public class WardrobeScreen extends Screen {
         Item s = selected();
         if (s != null && s.cat() == Cat.TRAILS) return s;
         return data.byId(data.eqTrail);
+    }
+
+    private Item previewWings() {
+        Item s = selected();
+        if (s != null && s.cat() == Cat.WINGS) return s;
+        return data.byId(data.eqWings);
+    }
+
+    private Item previewAura() {
+        Item s = selected();
+        if (s != null && s.cat() == Cat.AURAS) return s;
+        return data.byId(data.eqAura);
     }
 
     private Item previewContrail() {

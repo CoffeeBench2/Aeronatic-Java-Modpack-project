@@ -14,7 +14,7 @@ import java.util.List;
  */
 public final class WardrobeData {
 
-    public enum Cat { TRAILS, CONTRAILS, COLOURS, GRADIENTS, EXTRAS }
+    public enum Cat { TRAILS, CONTRAILS, WINGS, AURAS, COLOURS, GRADIENTS, EXTRAS }
 
     /** Particle settings for a preview. rgb/rgb2 = -1 when unused. */
     public record Fx(String particle, int rgb, int rgb2, float scale, int count, float spread, int every) {}
@@ -23,6 +23,8 @@ public final class WardrobeData {
                        boolean available, boolean equipped, String icon, Fx fx, int[] nameRgb) {
         public boolean forSale() { return price >= 0; }
         public boolean particle() { return cat == Cat.TRAILS || cat == Cat.CONTRAILS; }
+        /** Can be tried on in the world for a few seconds (trails, contrails, wings, auras). */
+        public boolean tryable() { return particle() || cat == Cat.WINGS || cat == Cat.AURAS; }
     }
 
     public int version;
@@ -31,7 +33,7 @@ public final class WardrobeData {
     public String rank = "NONE", rankLabel = "", rankBadge = "";
     public int balance = -1;
     public String storeUrl = "";
-    public String eqTrail, eqContrail, eqNameStyle;
+    public String eqTrail, eqContrail, eqNameStyle, eqWings, eqAura;
     public boolean eqBold;
     public int[] nameRgb = new int[0];
     public final List<Item> items = new ArrayList<>();
@@ -51,6 +53,8 @@ public final class WardrobeData {
             JsonObject e = r.getAsJsonObject("equipped");
             d.eqTrail = str(e, "trail", null);
             d.eqContrail = str(e, "contrail", null);
+            d.eqWings = str(e, "wings", null);
+            d.eqAura = str(e, "aura", null);
             d.eqNameStyle = str(e, "nameStyle", null);
             d.eqBold = bool(e, "bold", false);
         }

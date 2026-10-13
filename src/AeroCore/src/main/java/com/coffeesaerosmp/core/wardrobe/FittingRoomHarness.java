@@ -33,29 +33,96 @@ public final class FittingRoomHarness {
     public static void maybeInit() {
         String addr = System.getProperty("aerocore.fittingHarness", "");
         if (addr.isBlank()) return;
-        STEPS.add(new Step("settle", () -> { }, 60, null));
-        STEPS.add(new Step("noon", () -> { cmd("time set noon"); cmd("weather clear"); cmd("gamerule doDaylightCycle false"); }, 40, null));
-        STEPS.add(new Step("open shop", () -> cmd("shop classic"), 60, "fr-01-main"));
-        STEPS.add(new Step("trails", () -> click(20), 30, null));
-        STEPS.add(new Step("cloudwalk", () -> click(10), 100, "fr-02-cloudwalk"));
-        STEPS.add(new Step("brass", () -> click(11), 100, "fr-03-brass"));
-        STEPS.add(new Step("clockwork", () -> click(12), 120, "fr-04-clockwork"));
-        STEPS.add(new Step("espresso", () -> click(13), 100, "fr-05-espresso"));
-        STEPS.add(new Step("kettle", () -> click(14), 120, "fr-06-kettle"));
-        STEPS.add(new Step("petal", () -> click(15), 120, "fr-07-petal"));
-        STEPS.add(new Step("ember", () -> click(16), 100, "fr-08-ember"));
-        STEPS.add(new Step("snow", () -> click(19), 120, "fr-09-snow"));
-        STEPS.add(new Step("back", () -> click(45), 30, null));
-        STEPS.add(new Step("contrails", () -> click(21), 30, null));
-        STEPS.add(new Step("vapour", () -> click(10), 140, "fr-10-vapour"));
-        STEPS.add(new Step("steam", () -> click(11), 140, "fr-11-steam"));
-        STEPS.add(new Step("espresso wake", () -> click(12), 140, "fr-12-espresso-wake"));
-        STEPS.add(new Step("sakura", () -> click(13), 140, "fr-13-sakura"));
-        STEPS.add(new Step("aurora", () -> click(14), 160, "fr-14-aurora"));
-        STEPS.add(new Step("back", () -> click(45), 30, null));
-        STEPS.add(new Step("gradients", () -> click(23), 30, null));
-        STEPS.add(new Step("aurora gradient", () -> click(20), 60, "fr-15-gradient"));
+        if (Boolean.getBoolean("aerocore.fittingManual")) {        // just log in (premium cookie) and hand over
+            NeoForge.EVENT_BUS.addListener((ClientTickEvent.Post e) -> tick(addr));
+            return;
+        }
+        if (Boolean.getBoolean("aerocore.cosmeticsShots")) {
+            cosmeticSteps();
+            NeoForge.EVENT_BUS.addListener((ClientTickEvent.Post e) -> tick(addr));
+            return;
+        }
+        // The smallest GUI screen in common use: 1280x720 at auto scale = 426x240 (same as 1440p and 4K at auto).
+        STEPS.add(new Step("settle", () -> { Minecraft.getInstance().options.guiScale().set(0);
+            Minecraft.getInstance().getWindow().setWindowed(1280, 720); }, 60, null));
+        STEPS.add(new Step("noon", () -> { cmd("time set noon"); cmd("weather clear"); cmd("gamerule doDaylightCycle false");
+            cmd("clear @s"); cmd("give @s diamond 5"); }, 40, null));
+        STEPS.add(new Step("inventory before", () -> logInventory("before"), 5, null));
+        STEPS.add(new Step("open shop", () -> cmd("shop classic"), 80, "pw-01-trails"));
+        STEPS.add(new Step("select brass", () -> click(18), 80, "pw-02-brass"));
+        STEPS.add(new Step("select petal (inventory row)", () -> click(58), 100, "pw-03-petal"));
+        STEPS.add(new Step("wear petal", () -> clickRight(54), 60, "pw-04-petal-worn"));
+        STEPS.add(new Step("contrails tab", () -> click(1), 60, null));
+        STEPS.add(new Step("select sakura", () -> click(36), 120, "pw-05-sakura"));
+        STEPS.add(new Step("colours tab", () -> click(2), 60, "pw-06-colours"));
+        STEPS.add(new Step("next page", () -> click(89), 60, "pw-07-colours-p2"));
+        STEPS.add(new Step("gradients tab", () -> click(3), 40, null));
+        STEPS.add(new Step("select a gradient", () -> click(27), 60, "pw-08-gradient"));
+        STEPS.add(new Step("owned tab", () -> click(5), 60, "pw-09-owned"));
+        STEPS.add(new Step("close", () -> click(8), 40, null));
+        STEPS.add(new Step("inventory after", () -> logInventory("after"), 5, "pw-10-closed"));
         NeoForge.EVENT_BUS.addListener((ClientTickEvent.Post e) -> tick(addr));
+    }
+
+    /**
+     * 1.4.0 cosmetics shots (-Daerocore.cosmeticsShots=true): a sky platform, then every wing standing, one in the
+     * air, trails while walking, every aura, and the Wardrobe's new tabs. Screens are named cz-*.
+     */
+    private static void cosmeticSteps() {
+        Minecraft mc = Minecraft.getInstance();
+        STEPS.add(new Step("settle", () -> { }, 60, null));
+        STEPS.add(new Step("stage", () -> {
+            cmd("time set noon"); cmd("weather clear"); cmd("gamerule doDaylightCycle false");
+            cmd("fill -6 150 -24 6 150 24 minecraft:polished_andesite");
+            cmd("tp @s 0 151 -18 0 0");
+            mc.options.hideGui = true;
+            mc.options.setCameraType(net.minecraft.client.CameraType.THIRD_PERSON_BACK);
+        }, 60, null));
+        String[] trails = {"brass", "clockwork", "rainbow", "honey", "chocolate", "rosequartz", "ember", "kettle", "cloudwalk"};
+        for (String t : trails) {
+            STEPS.add(new Step("trail " + t, () -> {
+                cmd("tp @s 0 151 -18 0 0"); cmd("cosmetics trail " + t);
+                mc.options.setCameraType(net.minecraft.client.CameraType.THIRD_PERSON_BACK);   // the trail is between you and the camera
+                turn(0);
+                mc.options.keyUp.setDown(true);
+            }, 34, "cz-trail-" + t));
+            STEPS.add(new Step("stop", () -> mc.options.keyUp.setDown(false), 5, null));
+        }
+        STEPS.add(new Step("trail off", () -> { cmd("cosmetics trail off"); cmd("tp @s 0 151 0 200 10"); }, 30, null));
+        String[] auras = {"halo", "propeller", "orbit", "raincloud", "spectrum", "updraft", "enchanted", "snowglobe"};
+        for (String a : auras) {
+            STEPS.add(new Step("aura " + a, () -> cmd("cosmetics aura " + a), 50, "cz-aura-" + a));
+        }
+        STEPS.add(new Step("dressed up", () -> { cmd("cosmetics aura spectrum"); cmd("cosmetics trail rainbow");
+            mc.options.setCameraType(net.minecraft.client.CameraType.THIRD_PERSON_FRONT); turn(140); }, 40, "cz-combo"));
+        STEPS.add(new Step("wardrobe", () -> { mc.options.hideGui = false; cmd("shop"); }, 60, "cz-wardrobe-open"));
+        STEPS.add(new Step("auras tab", () -> { if (mc.screen instanceof WardrobeScreen w) w.selectTab(2); }, 30, "cz-wardrobe-auras"));
+        STEPS.add(new Step("orbit", () -> { if (mc.screen instanceof WardrobeScreen w) w.select("aura:orbit"); }, 40, "cz-wardrobe-orbit"));
+        STEPS.add(new Step("trails tab", () -> { if (mc.screen instanceof WardrobeScreen w) { w.selectTab(0); w.select("trail:honey"); } }, 40, "cz-wardrobe-honey"));
+        for (String c : new String[]{"steam", "rainbow", "vapour"}) {
+            STEPS.add(new Step("airship " + c, () -> { if (mc.screen instanceof WardrobeScreen w) { w.selectTab(1); w.select("contrail:" + c); } },
+                50, "cz-ship-" + c));
+        }
+        STEPS.add(new Step("airship later", () -> { }, 7, "cz-ship-vapour-b"));        // moving parts: compare with -vapour
+        STEPS.add(new Step("close", () -> mc.setScreen(null), 10, null));
+        // Contrail try-ons from the ground: the demo wake streams away along the view (no Sable in a dev client).
+        for (String c : new String[]{"rainbow", "aurora", "sparkler"}) {
+            STEPS.add(new Step("try contrail " + c, () -> { cmd("shop tryon contrail:" + c);
+                mc.options.setCameraType(net.minecraft.client.CameraType.FIRST_PERSON); turn(200); }, 45, "cz-contrail-" + c));
+        }
+        STEPS.add(new Step("try steam", () -> { cmd("shop tryon contrail:steam"); }, 45, "cz-contrail-steam"));
+        STEPS.add(new Step("try vapour", () -> { cmd("shop tryon contrail:vapour"); }, 45, "cz-contrail-vapour"));
+
+    }
+
+    /** Turn the player (and so the third-person camera) to a body yaw. */
+    private static void turn(float yaw) {
+        var p = Minecraft.getInstance().player;
+        if (p == null) return;
+        p.setYRot(yaw);
+        p.yBodyRot = yaw;
+        p.yHeadRot = yaw;
+        p.setXRot(12);
     }
 
     /** Same layout as CoffeesAeroAuth's CookieAuth.sign: v1, premium, uuid, expiry, nonce, name, HMAC-SHA256. */
@@ -88,6 +155,26 @@ public final class FittingRoomHarness {
         if (p != null) p.connection.sendCommand(c);
     }
 
+    private static void clickRight(int slot) {
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.screen instanceof AbstractContainerScreen<?> s && mc.player != null && mc.gameMode != null) {
+            mc.gameMode.handleInventoryMouseClick(s.getMenu().containerId, slot, 1, ClickType.PICKUP, mc.player);
+        }
+    }
+
+    /** The client's own view of the player's inventory (the pack Wardrobe must give it back when it closes). */
+    private static void logInventory(String when) {
+        var p = Minecraft.getInstance().player;
+        if (p == null) return;
+        StringBuilder sb = new StringBuilder();
+        int n = 0;
+        for (int i = 0; i < p.getInventory().getContainerSize(); i++) {
+            var st = p.getInventory().getItem(i);
+            if (!st.isEmpty()) { n++; sb.append(i).append('=').append(st.getCount()).append('x').append(st.getItem()).append(' '); }
+        }
+        com.mojang.logging.LogUtils.getLogger().info("[FittingHarness] inventory {}: {} stacks {}", when, n, sb);
+    }
+
     private static void click(int slot) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.screen instanceof AbstractContainerScreen<?> s && mc.player != null && mc.gameMode != null) {
@@ -118,7 +205,7 @@ public final class FittingRoomHarness {
             mc.getTutorial().setStep(net.minecraft.client.tutorial.TutorialSteps.NONE);
             stage = 2;
         }
-        if (stage != 2) return;
+        if (stage != 2 || Boolean.getBoolean("aerocore.fittingManual")) return;
         if (hidden != null) {                           // a frame has rendered without the window: the world shot
             Screenshot.grab(mc.gameDirectory, STEPS.get(idx).shot() + "-world.png", mc.getMainRenderTarget(), m -> { });
             mc.screen = hidden;                         // put it straight back; the server never saw it close

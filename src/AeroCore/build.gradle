@@ -13,10 +13,15 @@ neoForge {
     runs {
         client {
             client()
+            // Dev runs have no jar version ("${file.jarVersion}"); the AeroCore handshake reports this instead.
+            systemProperty 'aerocore.devVersion', project.version
             // Dev-only visual test: ./gradlew runClient -PwardrobeHarness=<path to wardrobe-sample.json>
             if (project.hasProperty('fittingHarness')) {
                 systemProperty 'aerocore.fittingHarness', project.property('fittingHarness')
                 if (project.hasProperty('fittingSecret')) systemProperty 'aerocore.fittingSecret', project.property('fittingSecret')
+                if (project.hasProperty('fittingManual')) systemProperty 'aerocore.fittingManual', 'true'
+                if (project.hasProperty('cosmeticsShots')) systemProperty 'aerocore.cosmeticsShots', 'true'
+                if (project.hasProperty('devNoHello')) systemProperty 'aerocore.devNoHello', 'true'
                 programArguments.addAll('--width', '1600', '--height', '900')
             }
             if (project.hasProperty('wardrobeHarness')) {
@@ -40,6 +45,13 @@ dependencies {
     // Object" and the mixin silently did not apply (2026-08-18). Never shipped: compileOnly, and
     // JEI is already in the pack at runtime.
     compileOnly fileTree(dir: 'libs', include: ['jei-*.jar'])
+    // 1.4.0: contrails find the ship a player rides through Sable's client sub-level container. Compile-only (the
+    // pack ships Sable); every Sable type is touched only inside cosmetics.ShipProbe.Impl, after ModList says Sable
+    // is loaded, so a client without it (or a Sable API change) just draws no contrails.
+    compileOnly(files("../CoffeesAeroAuth/libs/sable.jar", "../CoffeesAeroAuth/libs/sable-companion.jar"))
+    // 1.4.0: Create's own particles (cubes, steam jets, air, rotation rings, fluid drips) for the cosmetics. Same
+    // isolation: only cosmetics.CreateFx.Impl touches Create types, after ModList says Create is loaded.
+    compileOnly(files("../CoffeesAeroAuth/libs/create.jar"))
 }
 
 // CurseForge distribution: build with -PnoUpdater to EXCLUDE the in-client updater subsystem

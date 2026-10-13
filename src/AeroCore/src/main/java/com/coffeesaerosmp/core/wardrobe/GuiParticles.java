@@ -125,10 +125,43 @@ public final class GuiParticles {
             case "minecraft:cherry_leaves" -> new Look(PETAL, 0xFFC4DD, 0xE88AB0, 1.6f, 2.2f, 18, 10);
             case "minecraft:small_flame" -> new Look(FLAME, 0xFFE07A, 0xFF5A1F, 1.1f, 0.7f, -30, 6);
             case "minecraft:snowflake" -> new Look(FLAKE, 0xFFFFFF, 0xDDEEFF, 1.0f, 2.0f, 20, 6);
+            case "minecraft:end_rod" -> new Look(SPARK, 0xFFFFFF, 0xFFF3C8, 1.0f, 1.4f, 10, 6);
+            case "minecraft:electric_spark" -> new Look(SPARK, 0xBDF6FF, 0x5FD8FF, 0.9f, 0.5f, -4, 30);
+            case "minecraft:soul_fire_flame" -> new Look(FLAME, 0x9FF3FF, 0x2FA6D8, 1.1f, 0.7f, -30, 6);
+            case "minecraft:flame" -> new Look(FLAME, 0xFFE07A, 0xFF5A1F, 1.4f, 0.8f, -30, 6);
+            case "minecraft:note" -> new Look(SPARK, 0x7BE07B, 0x3FB0FF, 1.6f, 1.2f, -20, 8);
+            case "minecraft:glow" -> new Look(SPARK, 0xE6FF8A, 0x9BE07A, 1.0f, 2.2f, -4, 6);
+            case "minecraft:bubble_pop" -> new Look(PUFF, 0xDFF6FF, 0xA9DCF5, 1.4f, 0.9f, -18, 6);
+            case "minecraft:enchant" -> new Look(SPARK, 0xE8E0FF, 0x9A7BFF, 1.0f, 1.0f, -16, 18);
+            case "minecraft:smoke", "minecraft:large_smoke" -> new Look(PUFF, 0x8A8A8A, 0x4A4A4A, 3.0f, 1.6f, -16, 8);
+            case "minecraft:dripping_honey" -> new Look(FLAKE, 0xF5B731, 0xE08A12, 1.2f, 1.4f, 40, 2);
+            case "minecraft:dripping_water" -> new Look(FLAKE, 0x7FC8FF, 0x3F8FE0, 0.9f, 1.2f, 40, 2);
+            case "minecraft:wax_on" -> new Look(SPARK, 0xFFC27A, 0xF08A3C, 1.0f, 0.9f, -8, 22);
             case "minecraft:dust" -> new Look(DUST, fx.rgb() >= 0 ? fx.rgb() : 0xFFFFFF, fx.rgb() >= 0 ? fx.rgb() : 0xFFFFFF, 1.4f, 1.0f, 6, 8);
             case "minecraft:dust_color_transition" -> new Look(DUST, fx.rgb() >= 0 ? fx.rgb() : 0xFFFFFF,
                 fx.rgb2() >= 0 ? fx.rgb2() : 0xFFFFFF, 2.0f, 1.4f, 3, 8);
             default -> new Look(DUST, 0xFFFFFF, 0xCCCCCC, 1.0f, 1.0f, 0, 8);
+        };
+    }
+
+    /**
+     * The fx to emit for a cosmetic right now. Most are their own fx; the rainbow ones are re-coloured as time
+     * passes, so the stream comes out in bands of every colour (a single fixed fade can't show a rainbow).
+     */
+    public static WardrobeData.Fx styled(String id, WardrobeData.Fx fx, float time) {
+        if (fx == null || id == null) return fx;
+        boolean rainbow = id.equals("trail:rainbow") || id.equals("contrail:rainbow") || id.equals("aura:spectrum")
+            || id.equals("wings:prism");
+        if (!rainbow) return fx;
+        int c = com.coffeesaerosmp.core.cosmetics.ParticleFx.hsv(time * 0.35f, 0.85f, 1f);
+        return new WardrobeData.Fx("minecraft:dust", c, -1, Math.max(1f, fx.scale()), fx.count(), fx.spread(), fx.every());
+    }
+
+    /** Auras whose look is mostly particles (the others are 3D objects the doll already wears). */
+    public static boolean auraUsesParticles(String id) {
+        return switch (id) {
+            case "aura:updraft", "aura:spectrum", "aura:enchanted", "aura:snowglobe", "aura:raincloud" -> true;
+            default -> false;
         };
     }
 

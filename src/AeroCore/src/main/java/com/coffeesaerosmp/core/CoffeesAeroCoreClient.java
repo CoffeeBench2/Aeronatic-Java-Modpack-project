@@ -15,6 +15,16 @@ public class CoffeesAeroCoreClient {
         com.coffeesaerosmp.core.wardrobe.WardrobeDevHarness.maybeInit();
         com.coffeesaerosmp.core.wardrobe.FittingRoomHarness.maybeInit();
 
+        // 1.4.0 cosmetics: drawn here for every player from the server's who-wears-what table.
+        com.coffeesaerosmp.core.cosmetics.CosmeticsClient.init();
+        modBus.addListener((net.neoforged.neoforge.client.event.EntityRenderersEvent.AddLayers e) -> {
+            for (var model : e.getSkins()) {
+                if (e.getSkin(model) instanceof net.minecraft.client.renderer.entity.player.PlayerRenderer r) {
+                    r.addLayer(new com.coffeesaerosmp.core.cosmetics.render.CosmeticLayer(r));
+                }
+            }
+        });
+
         // Delete files left by dropped mods, as early as the mod system allows. KubeJS reads
         // kubejs/client_scripts/ during its own early init, so this races it -- hence the mod
         // CONSTRUCTOR rather than a screen event. Losing the race only costs one more launch of the
