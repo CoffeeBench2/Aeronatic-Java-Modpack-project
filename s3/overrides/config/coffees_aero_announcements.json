@@ -2,6 +2,13 @@
   "_comment": "Season 3 CurseForge pack news (bundled; newsUrl is blank in this pack).",
   "entries": [
     {
+      "version": "3.0.6",
+      "date": "October 2026",
+      "tag": "FIX",
+      "title": "Updates clean up after themselves",
+      "body": "When the pack drops a mod, the updater now removes it from your game during the update itself, instead of leaving it behind. Your maps, waypoints, map sync and settings are never touched by an update."
+    },
+    {
       "version": "3.0.5",
       "date": "October 2026",
       "tag": "UPDATE",

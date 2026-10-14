@@ -1,0 +1,12 @@
+# Season 3 retired mods — one filename PREFIX per line (lower-case, matched with startsWith on mods/*.jar).
+#
+# This is the ONE place to list a mod the pack has dropped. build_s3_channel.py publishes it as
+# "retired" in s3/version.json, and AeroCore 1.4.4+ then removes matching jars:
+#   - in the same update that drops the mod (the updater fetches the list fresh), and
+#   - on the next launch for anyone who already updated (StaleMods sweep, removed at game exit).
+# No Core release is needed to remove a mod any more.
+#
+# The build REFUSES a prefix that matches any jar the pack still ships, so a typo cannot delete a live mod.
+# Make prefixes narrow: include the dash or the version when the mod id is a prefix of another mod.
+
+createultimine-        # 3.0.5 — Create Ultimine (FTB Ultimine x Create compat), owner to-do 2026-10-14
