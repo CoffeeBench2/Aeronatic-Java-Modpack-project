@@ -1,0 +1,13 @@
+name = "sable_sa_compat-1.0.4"
+filename = "sable_sa_compat-1.0.4.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/gsAqDfOu/versions/iGTmXDCM/sable_sa_compat-1.0.4.jar"
+hash-format = "sha512"
+hash = "f0b4ecbaaaa1886e392901fc6e131873536af04b51c3dc43b67bcd276f32dcaed07ea9cb19767f62e0d1e91e5b7af6cdb90a8e8e825fea2dc3b1ed885ec957f4"
+
+[update]
+[update.modrinth]
+mod-id = "gsAqDfOu"
+version = "iGTmXDCM"
