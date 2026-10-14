@@ -146,6 +146,29 @@ def write(path, text):
         f.write(text)
 
 
+RETIRED_SRC = os.path.join(ROOT, "scripts", "s3-retired.txt")
+
+
+def retired_prefixes(files):
+    """Prefixes from scripts/s3-retired.txt, refused if any could delete a mod the pack ships."""
+    if not os.path.exists(RETIRED_SRC):
+        return []
+    shipped = sorted(n.lower() for d, n, p in files if d == "mods")
+    out = []
+    for line in open(RETIRED_SRC, encoding="utf-8"):
+        pre = line.split("#", 1)[0].strip().lower()
+        if not pre:
+            continue
+        if len(pre) < 4 or "/" in pre or "\\" in pre:
+            fail("retired prefix %r is too short or contains a path (scripts/s3-retired.txt)" % pre)
+        hit = [n for n in shipped if n.startswith(pre)]
+        if hit:
+            fail("retired prefix %r matches a mod the pack SHIPS: %s -- it would delete it from every player"
+                 % (pre, hit))
+        out.append(pre)
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--version", default="3.0.0")
@@ -216,8 +239,12 @@ def main():
           '[index]\nfile = "index.toml"\nhash-format = "sha256"\nhash = ""\n\n'
           '[versions]\nminecraft = "%s"\nneoforge = "%s"\n' % (a.version, MC, NEOFORGE))
     write(os.path.join(S3, ".packwizignore"), "# Everything under s3/ ships, except packwiz's own files.\nversion.json\n")
+    retired = retired_prefixes(files)
     write(os.path.join(S3, "version.json"), json.dumps({
         "version": a.version, "url": MODRINTH_PAGE, "neoforge": NEOFORGE, "minecraft": MC, "notes": a.notes,
+        # Core 1.4.4+ removes any mods/ jar starting with one of these, on the next launch AND in the
+        # same update that drops it -- no Core release needed. Source: scripts/s3-retired.txt.
+        "retired": retired,
     }, indent=2) + "\n")
     idx_path = os.path.join(S3, "index.toml")
     if not os.path.exists(idx_path):  # packwiz refuses to refresh a pack whose index file is missing
