@@ -133,14 +133,36 @@ public final class ModeApplier {
                     if (p.getFileName().toString().endsWith(ClientMode.DISABLED_SUFFIX)) hits.add(p);
                 }
             }
-            for (Path off : hits) {
+            // Retired prefixes: compiled + the remote list cached from version.json.
+            List<String> retired = new ArrayList<>(com.coffeesaerosmp.core.cleanup.StaleMods.RETIRED);
+            retired.addAll(com.coffeesaerosmp.core.util.AeroState.remoteRetiredPrefixes(gameDir));
+            int skipped = 0;
+            for (Path off : new ArrayList<>(hits)) {
                 String n = off.getFileName().toString();
                 Path jar = off.resolveSibling(n.substring(0, n.length() - ClientMode.DISABLED_SUFFIX.length()));
-                Files.move(off, jar, StandardCopyOption.REPLACE_EXISTING);
+                String low = jar.getFileName().toString().toLowerCase(java.util.Locale.ROOT);
+                // 🔴 (2026-10-15) A disabled copy of a mod the pack has DROPPED must not come back.
+                // This runs at the same exit as StaleModsCleaner; if the rename won the race the
+                // dropped mod was live for a session — a lockout for one with required channels.
+                if (retired.stream().anyMatch(low::startsWith)) {
+                    Files.deleteIfExists(off);
+                    hits.remove(off);
+                    skipped++;
+                    System.out.println("[ModeApplier] dropped retired mod " + n + " instead of re-enabling it.");
+                    continue;
+                }
+                // Never overwrite a live jar with a stale disabled copy of the same file.
+                if (Files.exists(jar)) {
+                    hits.remove(off);
+                    skipped++;
+                    System.out.println("[ModeApplier] kept existing " + jar.getFileName() + "; left " + n + " disabled.");
+                    continue;
+                }
+                Files.move(off, jar);
                 undo.add(() -> { try { Files.move(jar, off, StandardCopyOption.REPLACE_EXISTING); }
                                  catch (IOException ignored) {} });
             }
-            System.out.println("[ModeApplier] re-enabled " + hits.size() + " mod(s).");
+            System.out.println("[ModeApplier] re-enabled " + hits.size() + " mod(s), skipped " + skipped + ".");
         }
         Path backup = gameDir.resolve(ClientMode.OPTIONS_BACKUP);
         Path opts = gameDir.resolve("options.txt");

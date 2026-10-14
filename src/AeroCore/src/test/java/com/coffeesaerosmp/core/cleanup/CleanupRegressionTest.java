@@ -62,6 +62,26 @@ class CleanupRegressionTest {
     }
 
     @Test
+    void switchingToNormalNeverRevivesARetiredModOrOverwritesALiveJar(@TempDir Path game) throws Exception {
+        Path mods = game.resolve("mods");
+        Files.createDirectories(mods);
+        Files.writeString(mods.resolve("distanthorizons-3.3.3.jar.aerodisabled"), "dh");          // normal re-enable
+        Files.writeString(mods.resolve("createultimine-1.21.1-neoforge-1.3.3.jar.aerodisabled"), "x"); // compiled-retired
+        Files.writeString(mods.resolve("remotegone-1.0.jar.aerodisabled"), "x");                   // remote-retired
+        Files.writeString(mods.resolve("sodium-0.6.13.jar"), "NEW");
+        Files.writeString(mods.resolve("sodium-0.6.13.jar.aerodisabled"), "STALE");
+        VersionCheck.cacheRetired(game, List.of("remotegone-"));
+
+        com.coffeesaerosmp.core.mode.ModeApplier.main(new String[]{String.valueOf(Long.MAX_VALUE), game.toString(), "normal"});
+
+        assertEquals("dh", Files.readString(mods.resolve("distanthorizons-3.3.3.jar")));
+        assertFalse(Files.exists(mods.resolve("createultimine-1.21.1-neoforge-1.3.3.jar")));
+        assertFalse(Files.exists(mods.resolve("createultimine-1.21.1-neoforge-1.3.3.jar.aerodisabled")));
+        assertFalse(Files.exists(mods.resolve("remotegone-1.0.jar")));
+        assertEquals("NEW", Files.readString(mods.resolve("sodium-0.6.13.jar")), "live jar never overwritten");
+    }
+
+    @Test
     void postExitAuditIgnoresThisSessionsQueue(@TempDir Path dir) throws Exception {
         Method m = Class.forName("com.coffeesaerosmp.core.util.PostExitAudit")
             .getDeclaredMethod("writtenThisSession", Path.class);
