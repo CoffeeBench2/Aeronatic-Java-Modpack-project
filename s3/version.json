@@ -1,9 +1,9 @@
 {
-  "version": "3.0.6",
+  "version": "3.0.7",
   "url": "https://modrinth.com/modpack/coffees-create-aeronautics-smp",
   "neoforge": "21.1.251",
   "minecraft": "1.21.1",
-  "notes": "Season 3. Updater fix: dropped mods are now removed during the update; map/settings data is protected.",
+  "notes": "Season 3. First update run by the new updater (Core 1.4.4): starts file tracking so dropped mods are removed automatically.",
   "retired": [
     "createultimine-"
   ]
