@@ -1,7 +1,7 @@
 {
-  "version": "3.0.4",
+  "version": "3.0.5",
   "url": "https://modrinth.com/modpack/coffees-create-aeronautics-smp",
   "neoforge": "21.1.251",
   "minecraft": "1.21.1",
-  "notes": "Season 3. HOTFIX: Core 1.4.2 stops a Create contraption-collision crash that kicked everyone near a contraption."
+  "notes": "Season 3. Create Stuff 'N Additions now works on Sable airships (compat mod added); Create Ultimine removed."
 }
