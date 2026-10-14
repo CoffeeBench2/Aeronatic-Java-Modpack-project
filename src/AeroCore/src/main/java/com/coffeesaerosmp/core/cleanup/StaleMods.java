@@ -108,7 +108,13 @@ public final class StaleMods {
         // not match the server's is a refused handshake, not a cosmetic leftover, so
         // 1.8.7 must go ONTO both live servers in the same restart that takes 1.11.4.
         "ssrd-1.8.5",       // the build that was live before 1.11.3
-        "ssrd-1.8.6"        // never shipped by the pack; swept in case it was side-loaded
+        "ssrd-1.8.6",       // never shipped by the pack; swept in case it was side-loaded
+        // ── S3 3.0.5 — Create Ultimine (FTB Ultimine x Create compat) dropped ─────
+        // Owner to-do 2026-10-14. Zero blocks/items and no network channels of its own (FTB
+        // Ultimine right-click handlers only), so a leftover copy cannot refuse a handshake —
+        // this just takes it off disk. Nothing else the pack ships starts "createultimine-";
+        // ftb-ultimine-*, ultimine_rewind-* and create_ultimate_factory-* are all kept.
+        "createultimine-"
     );
 
     private static final String DIR = ".aero-cleanup";
