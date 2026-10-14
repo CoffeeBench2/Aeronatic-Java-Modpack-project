@@ -60,11 +60,22 @@ public final class InClientUpdater {
     }
 
     private static void run() {
+        runWith(null, null, null, true);
+    }
+
+    /**
+     * The whole update. Arguments are null in the game (read from the config / Minecraft); the
+     * end-to-end test passes a temp instance and a local pack server, and {@code handOff = false}
+     * stops before the loader update and the Applier launch so the test can run the Applier itself.
+     */
+    static void runWith(Path gameDirArg, String packUrlArg, String versionUrlArg, boolean handOff) {
         try {
-            String packUrl = AeroConfig.PACK_TOML_URL.get();
+            String packUrl = packUrlArg != null ? packUrlArg : AeroConfig.PACK_TOML_URL.get();
             if (packUrl == null || packUrl.isBlank()) throw new IllegalStateException("no pack.toml URL configured");
             String base = packUrl.substring(0, packUrl.lastIndexOf('/') + 1);
-            Path gameDir = Minecraft.getInstance().gameDirectory.getCanonicalFile().toPath();
+            Path gameDir = gameDirArg != null ? gameDirArg
+                : Minecraft.getInstance().gameDirectory.getCanonicalFile().toPath();
+            String versionUrl = versionUrlArg != null ? versionUrlArg : AeroConfig.VERSION_CHECK_URL.get();
             Path staging = gameDir.resolve(".aero-update").resolve("staging");
 
             phase = "Reading pack…";
@@ -87,6 +98,8 @@ public final class InClientUpdater {
                     pack.getOrDefault("index.hash-format", "sha256")))
                 throw new IOException("pack index is inconsistent (index.toml does not match pack.toml)"
                     + " — the pack was published without a packwiz refresh; try again shortly");
+
+            remoteRetired = fetchRemoteRetired(gameDir, versionUrl);
 
             phase = "Checking files…";
             List<String[]> files = parseFilesArray(indexRaw);      // [file, hash, metafile]
@@ -164,6 +177,10 @@ public final class InClientUpdater {
                             modeDisabled, com.coffeesaerosmp.core.mode.ClientMode.DISABLED_SUFFIX);
             }
 
+            Set<String> planned = new HashSet<>();
+            for (Target tg : plan) planned.add(rel(gameDir, tg.target()));
+            plannedRels = planned;
+
             // Orphans: files a previous in-client update installed that the pack no longer lists.
             List<String> removals = orphans(gameDir, managed);
 
@@ -179,10 +196,18 @@ public final class InClientUpdater {
             // manages some version of the same mod. A dropped mod has neither, so on a player's first
             // update it would silently survive into the new pack — leaving them running content the
             // server no longer has.
-            removals.addAll(retiredMods(gameDir));
+            removals.addAll(retiredMods(gameDir, managed));
             removals.addAll(retiredFiles(gameDir));
 
+            // Never touch anything a player owns, whatever a list says (maps, saves, LODs...).
+            removals.removeIf(com.coffeesaerosmp.core.util.AeroState::isProtected);
+            removals = new ArrayList<>(new LinkedHashSet<>(removals));
+
             if (plan.isEmpty() && removals.isEmpty()) {
+                // Seed the manifest here too. This path used to return before writeManifest, so an
+                // instance that happened to be current never got one and the NEXT de-indexed mod
+                // had nothing to be diffed against.
+                writeManifest(gameDir, managed, removals);
                 phase = "Already up to date."; success = true; finished = true; return;
             }
 
@@ -205,7 +230,12 @@ public final class InClientUpdater {
                 done++;
             }
 
-            writeManifest(gameDir, managed);
+            writeManifest(gameDir, managed, removals);
+
+            if (!handOff) {   // test harness: it runs the Applier itself
+                Files.write(gameDir.resolve(".aero-update").resolve("removals.txt"), removals, StandardCharsets.UTF_8);
+                success = true; finished = true; return;
+            }
 
             // NeoForge, if the pack now needs a newer one than we are running. This is the one
             // part of an update the file-moving applier cannot do, because the loader is not a file
@@ -274,6 +304,26 @@ public final class InClientUpdater {
         Path target = gameDir.resolve(rel);
         Target t = matches(target, hash, idxHashFmt) ? null : new Target(base + file, target, hash, idxHashFmt);
         return new Scan(rel(gameDir, target), t);
+    }
+
+    /** Retired prefixes from the live version.json, fetched fresh for this run. */
+    private static volatile List<String> remoteRetired = List.of();
+
+    /**
+     * Reads {@code "retired"} from the live version.json (fresh, not the session's cached copy) and
+     * caches it for {@link com.coffeesaerosmp.core.cleanup.StaleMods}. Never fatal: on any failure the
+     * last cached list is used.
+     */
+    private static List<String> fetchRemoteRetired(Path gameDir, String url) {
+        try {
+            if (url != null && !url.isBlank()) {
+                List<String> l = com.coffeesaerosmp.core.version.VersionCheck.parseRetired(get(url));
+                if (l != null) com.coffeesaerosmp.core.version.VersionCheck.cacheRetired(gameDir, l);
+            }
+        } catch (Exception e) {
+            LOGGER.warn("[Updater] could not refresh the retired-mod list: {}", e.toString());
+        }
+        return com.coffeesaerosmp.core.util.AeroState.remoteRetiredPrefixes(gameDir);
     }
 
     /** Set when a NeoForge change was staged, so the finished screen can say so. */
@@ -476,11 +526,21 @@ public final class InClientUpdater {
 
     // ── Manifest / orphans ──────────────────────────────────────────────────────
 
-    private static Path manifestPath(Path gameDir) { return gameDir.resolve(".aero-update").resolve("manifest.txt"); }
-
-    private static void writeManifest(Path gameDir, Set<String> managed) throws IOException {
-        Files.createDirectories(manifestPath(gameDir).getParent());
-        Files.write(manifestPath(gameDir), managed, StandardCharsets.UTF_8);
+    /**
+     * 🔴 Lives in {@code .aero-state/}, NOT {@code .aero-update/}. The Applier wipes
+     * {@code .aero-update/} after every successful apply, and from 2026-06-24 to 1.4.4 that deleted
+     * this file every single time — {@link #orphans} always saw no manifest, so no de-indexed mod
+     * was ever removed. See {@link com.coffeesaerosmp.core.util.AeroState}.
+     *
+     * <p>Pending removals are written in as well. If the Applier cannot delete one (antivirus, a
+     * launcher holding it), it stays "previously managed, no longer managed" and the next update
+     * queues it again, instead of dropping out of tracking for good.
+     */
+    private static void writeManifest(Path gameDir, Set<String> managed, List<String> removals) throws IOException {
+        Set<String> all = new LinkedHashSet<>(managed);
+        all.addAll(removals);
+        com.coffeesaerosmp.core.util.AeroState.writeLines(
+            com.coffeesaerosmp.core.util.AeroState.manifest(gameDir), all);
     }
 
     /**
@@ -545,8 +605,15 @@ public final class InClientUpdater {
      * anyway, one launch earlier than the constructor sweep would. It is the optimisation, not the
      * guarantee — {@code StaleMods} is the guarantee.
      */
-    private static List<String> retiredMods(Path gameDir) {
+    private static List<String> retiredMods(Path gameDir, Set<String> managed) {
         List<String> out = new ArrayList<>();
+        // Compiled list + the remote list from version.json. The remote one is what makes a removal
+        // land in the SAME update that drops the mod: this code runs from the Core already installed,
+        // so a compiled-in entry only exists one release later (the old "two-release trap").
+        List<String> prefixes = new ArrayList<>(com.coffeesaerosmp.core.cleanup.StaleMods.RETIRED);
+        prefixes.addAll(remoteRetired);
+        Set<String> managedLower = new HashSet<>();
+        for (String m : managed) managedLower.add(m.toLowerCase(Locale.ROOT));
         Path mods = gameDir.resolve("mods");
         if (!Files.isDirectory(mods)) return out;
         try (Stream<Path> s = Files.list(mods)) {
@@ -561,7 +628,9 @@ public final class InClientUpdater {
                     : name;
                 if (!bare.toLowerCase(Locale.ROOT).endsWith(".jar")) continue;
                 String low = bare.toLowerCase(Locale.ROOT);
-                for (String prefix : com.coffeesaerosmp.core.cleanup.StaleMods.RETIRED) {
+                // Never retire a file the pack still ships — a bad prefix must not delete a live mod.
+                if (managedLower.contains("mods/" + low)) continue;
+                for (String prefix : prefixes) {
                     if (low.startsWith(prefix)) {
                         out.add("mods/" + name);
                         LOGGER.info("[Updater] retiring dropped mod: {}", name);
@@ -598,7 +667,11 @@ public final class InClientUpdater {
                 String lower = name.toLowerCase(Locale.ROOT);
                 if (!lower.endsWith(".jar")) continue;
                 if (managedNames.contains(lower)) continue;    // it IS the managed copy
-                if (name.equals(self)) continue;               // never delete the jar we are running from
+                // The running Core may go ONLY when its managed replacement is already on disk or
+                // is being staged — the Applier runs from a copy, so the jar is free after exit, and
+                // keeping it meant every Core update left a duplicate for a whole extra session.
+                // The Applier additionally refuses this removal if the replacement failed to apply.
+                if (name.equals(self) && !replacementPresentOrPlanned(gameDir, managed, name)) continue;
                 if (managedKeys.contains(modKey(name))) out.add("mods/" + name);
             }
         } catch (IOException ignored) {}
@@ -623,6 +696,20 @@ public final class InClientUpdater {
         return key.length() == 0 ? n : key.toString();
     }
 
+    /** Managed paths this run will download (set before removals are computed). */
+    private static volatile Set<String> plannedRels = Set.of();
+
+    private static boolean replacementPresentOrPlanned(Path gameDir, Set<String> managed, String self) {
+        String key = modKey(self);
+        for (String rel : managed) {
+            if (!rel.startsWith("mods/")) continue;
+            String n = rel.substring(5);
+            if (n.equalsIgnoreCase(self) || !modKey(n).equals(key)) continue;
+            if (Files.isRegularFile(gameDir.resolve(rel)) || plannedRels.contains(rel)) return true;
+        }
+        return false;
+    }
+
     /** The Core jar this process is running from, so the sweep can never delete it. */
     private static String runningCoreJarName(Path gameDir) {
         try {
@@ -644,11 +731,10 @@ public final class InClientUpdater {
 
     private static List<String> orphans(Path gameDir, Set<String> nowManaged) {
         List<String> out = new ArrayList<>();
-        Path mf = manifestPath(gameDir);
-        if (!Files.exists(mf)) return out;
-        try {
-            for (String prev : Files.readAllLines(mf, StandardCharsets.UTF_8)) {
+        {
+            for (String prev : com.coffeesaerosmp.core.util.AeroState.readManifest(gameDir)) {
                 prev = prev.trim();
+                if (com.coffeesaerosmp.core.util.AeroState.isProtected(prev)) continue;
                 // Player-owned files are never orphaned. If the pack ever stops shipping options.txt,
                 // this loop would otherwise DELETE every player's keybinds on their next update —
                 // the file is in the old manifest, absent from the new managed set, and present on
@@ -657,7 +743,7 @@ public final class InClientUpdater {
                 if (!prev.isEmpty() && !nowManaged.contains(prev) && Files.exists(gameDir.resolve(prev)))
                     out.add(prev);
             }
-        } catch (IOException ignored) {}
+        }
         return out;
     }
 

@@ -149,7 +149,7 @@ public final class LoaderUpdater {
     public static boolean stage(Path gameDir, Plan plan) {
         if (!plan.actionable() || plan.metaFile() == null) return false;
         try {
-            Path work = gameDir.resolve(".aero-update");
+            Path work = gameDir.resolve(".aero-loader");
             Files.createDirectories(work);
             Path req = work.resolve("loader.txt");
             Files.write(req, java.util.List.of(

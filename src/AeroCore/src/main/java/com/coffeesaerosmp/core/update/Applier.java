@@ -29,14 +29,20 @@ public final class Applier {
         // tiny extra grace so the OS fully releases file handles
         sleep(800);
 
+        List<String> failed;
         try {
-            applyStaging(gameDir, staging);
-            applyRemovals(gameDir, removalsFile);
+            failed = applyStaging(gameDir, staging);
+            applyRemovals(gameDir, removalsFile, failed);
         } catch (IOException e) {
             System.err.println("[Applier] failed: " + e);
             return;
         }
-        cleanup(staging.getParent());   // best-effort: wipe the .aero-update work dir
+        // 🔴 Delete ONLY this run's throwaway files. This used to wipe the whole .aero-update/
+        // directory, which destroyed the updater manifest (orphan removal never worked), the
+        // NeoForge loader request (racing LoaderApplier, which starts at the same exit) and every
+        // marker other features kept there. Persistent state now lives in .aero-state/.
+        deleteTree(staging);
+        try { Files.deleteIfExists(removalsFile); } catch (IOException ignored) {}
         System.out.println("[Applier] update applied. Relaunch Coffees Aero SMP.");
     }
 
@@ -49,8 +55,10 @@ public final class Applier {
         }
     }
 
-    private static void applyStaging(Path gameDir, Path staging) throws IOException {
-        if (!Files.isDirectory(staging)) return;
+    /** @return staged paths (relative, '/'-separated) that could NOT be applied */
+    private static List<String> applyStaging(Path gameDir, Path staging) throws IOException {
+        List<String> failedRels = new java.util.ArrayList<>();
+        if (!Files.isDirectory(staging)) return failedRels;
         // Per-file fault isolation: one stubborn file (AV scan / launcher briefly holding a jar) must
         // not abort the rest of the apply. A failed file keeps its PREVIOUS copy — an old jar still
         // loads; a missing jar cascades into "balm is not installed" dependency errors for players.
@@ -64,6 +72,7 @@ public final class Applier {
                     moveReplacing(src, dst);
                 } catch (IOException e) {
                     failed.add(rel + " -> " + e);
+                    failedRels.add(rel.toString().replace(java.io.File.separatorChar, '/'));
                 }
             }
         }
@@ -71,6 +80,7 @@ public final class Applier {
             System.err.println("[Applier] " + failed.size() + " file(s) kept their previous copy (apply failed):");
             for (String f : failed) System.err.println("  " + f);
         }
+        return failedRels;
     }
 
     private static void moveReplacing(Path src, Path dst) throws IOException {
@@ -99,17 +109,48 @@ public final class Applier {
         throw last;
     }
 
-    private static void applyRemovals(Path gameDir, Path removalsFile) throws IOException {
+    private static void applyRemovals(Path gameDir, Path removalsFile, List<String> failedStaged) throws IOException {
         if (!Files.exists(removalsFile)) return;
+        // A jar whose replacement failed to apply must survive: removing the old Core (or any old
+        // mod) after its new copy failed would leave the instance with NEITHER.
+        java.util.Set<String> failedKeys = new java.util.HashSet<>();
+        for (String f : failedStaged) if (f.startsWith("mods/")) failedKeys.add(modKey(f.substring(5)));
+        Path root = gameDir.toAbsolutePath().normalize();
         List<String> lines = Files.readAllLines(removalsFile, StandardCharsets.UTF_8);
+        int removed = 0, kept = 0;
         for (String rel : lines) {
-            rel = rel.trim();
+            rel = rel.trim().replace(java.io.File.separatorChar, '/');
             if (rel.isEmpty()) continue;
-            try { Files.deleteIfExists(gameDir.resolve(rel)); } catch (IOException ignored) {}
+            Path target = root.resolve(rel).normalize();
+            if (!target.startsWith(root)) continue;              // never outside the instance
+            if (rel.startsWith("mods/") && failedKeys.contains(modKey(rel.substring(5)))) {
+                System.err.println("[Applier] kept " + rel + " — its replacement failed to apply");
+                kept++;
+                continue;
+            }
+            try {
+                if (Files.deleteIfExists(target)) { removed++; System.out.println("[Applier] removed " + rel); }
+            } catch (IOException e) {
+                System.err.println("[Applier] could not remove " + rel + ": " + e + " (retried next update)");
+            }
         }
+        System.out.println("[Applier] removals: " + removed + " removed, " + kept + " kept");
     }
 
-    private static void cleanup(Path workDir) {
+    /** Same reduction as InClientUpdater.modKey: the name up to the first version-looking segment. */
+    static String modKey(String fileName) {
+        String n = fileName.toLowerCase(java.util.Locale.ROOT);
+        if (n.endsWith(".jar")) n = n.substring(0, n.length() - 4);
+        StringBuilder key = new StringBuilder();
+        for (String part : n.split("-")) {
+            if (!part.isEmpty() && Character.isDigit(part.charAt(0))) break;
+            if (key.length() > 0) key.append('-');
+            key.append(part);
+        }
+        return key.length() == 0 ? n : key.toString();
+    }
+
+    private static void deleteTree(Path workDir) {
         if (workDir == null || !Files.exists(workDir)) return;
         try (Stream<Path> walk = Files.walk(workDir)) {
             walk.sorted((a, b) -> b.getNameCount() - a.getNameCount()).forEach(p -> {

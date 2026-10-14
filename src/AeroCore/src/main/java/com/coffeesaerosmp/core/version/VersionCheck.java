@@ -9,6 +9,8 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Polls a small {@code version.json} (hosted in the pack repo) once per session and compares the
@@ -97,11 +99,49 @@ public final class VersionCheck {
             // Rides this fetch on purpose: it already runs once per session, off the render thread,
             // and cache-busted — so flipping the token in version.json takes effect the same day
             // without shipping a jar. See DhLodReset for why the trigger cannot be "on update".
+            java.nio.file.Path gameDir = net.minecraft.client.Minecraft.getInstance().gameDirectory.toPath();
             com.coffeesaerosmp.core.client.DhLodReset.applyIfRequested(
-                net.minecraft.client.Minecraft.getInstance().gameDirectory.toPath(),
-                o.has("lodReset") ? o.get("lodReset").getAsString() : "");
+                gameDir, o.has("lodReset") ? o.get("lodReset").getAsString() : "");
+
+            // Remote retired-mod list. Cached for StaleMods, which sweeps from the mod constructor
+            // before this fetch can finish — so a newly listed mod is queued on the next launch and
+            // removed at that session's exit, with NO Core release. (The updater fetches it fresh
+            // itself, so an update removes it in the same apply.)
+            List<String> retired = parseRetired(resp.body());
+            if (retired != null) cacheRetired(gameDir, retired);
         } catch (Exception e) {
             state = State.ERROR;
+        }
+    }
+
+    /**
+     * {@code "retired": ["prefix-", ...]} from version.json, lower-cased and filtered.
+     * Returns {@code null} when the field is absent (keep whatever is cached), an empty list when it
+     * is present and empty (clear the cache).
+     */
+    public static List<String> parseRetired(String versionJson) {
+        try {
+            JsonObject o = JsonParser.parseString(versionJson).getAsJsonObject();
+            if (!o.has("retired") || !o.get("retired").isJsonArray()) return null;
+            List<String> out = new ArrayList<>();
+            for (var e : o.getAsJsonArray("retired")) {
+                if (!e.isJsonPrimitive()) continue;
+                String p = e.getAsString().trim().toLowerCase(java.util.Locale.ROOT);
+                // Same guards as AeroState.remoteRetiredPrefixes: no tiny prefixes, no paths.
+                if (p.length() >= 4 && !p.contains("/") && !p.contains("\\")) out.add(p);
+            }
+            return out;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    public static void cacheRetired(java.nio.file.Path gameDir, List<String> prefixes) {
+        try {
+            com.coffeesaerosmp.core.util.AeroState.writeLines(
+                com.coffeesaerosmp.core.util.AeroState.remoteRetired(gameDir), prefixes);
+        } catch (Exception ignored) {
+            // A failed cache write only delays a removal by one launch.
         }
     }
 

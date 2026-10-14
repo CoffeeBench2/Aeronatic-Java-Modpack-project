@@ -43,8 +43,8 @@ public final class PostExitAudit {
         // nothing else clears it at startup and the signal survives to be audited here.
         {".aero-mode/pending.txt",     ".aero-mode/mode.log",       "Potato/Normal mode switch"},
         // LoaderApplier deletes its request once the launcher metadata is patched.
-        {".aero-update/loader.txt",    ".aero-update/loader.log",   "NeoForge loader update"},
-        // Applier wipes the whole .aero-update work dir, removals.txt included, on success.
+        {".aero-loader/loader.txt",    ".aero-loader/loader.log",   "NeoForge loader update"},
+        // Applier deletes removals.txt and staging/ on success (no longer the whole directory).
         {".aero-update/removals.txt",  ".aero-update/apply.log",    "pack update apply"},
     };
 
@@ -61,6 +61,11 @@ public final class PostExitAudit {
             for (String[] h : HELPERS) {
                 Path request = gameDir.resolve(h[0]);
                 if (!Files.isRegularFile(request)) continue;   // absent = it completed, or never ran
+                // 🔴 Written THIS session = queued for this session's exit, not a failure. The
+                // stale-mod sweep runs before the title screen, so every launch that queued anything
+                // used to log "DID NOT COMPLETE" about its own fresh queue — a false alarm that made
+                // a working cleanup look broken (2026-10-15).
+                if (writtenThisSession(request)) continue;
 
                 List<String> pending = read(request);
                 LOGGER.error("[PostExit] The {} from the previous session DID NOT COMPLETE. "
@@ -76,6 +81,15 @@ public final class PostExitAudit {
         } catch (Throwable t) {
             // An audit that crashes the client would be worse than the silence it replaces.
             LOGGER.warn("[PostExit] audit skipped: {}", t.toString());
+        }
+    }
+
+    private static boolean writtenThisSession(Path p) {
+        try {
+            long jvmStart = java.lang.management.ManagementFactory.getRuntimeMXBean().getStartTime();
+            return Files.getLastModifiedTime(p).toMillis() >= jvmStart - 2_000L;
+        } catch (Throwable t) {
+            return false;
         }
     }
 

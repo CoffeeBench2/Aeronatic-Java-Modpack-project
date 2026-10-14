@@ -130,7 +130,7 @@ public final class LoaderApplier {
      */
     private static boolean runInstaller(Path gameDir, Path root, String ver) {
         try {
-            Path work = gameDir.resolve(".aero-update");
+            Path work = gameDir.resolve(".aero-loader");
             Files.createDirectories(work);
             Path jar = work.resolve("neoforge-installer-" + ver + ".jar");
             String url = "https://maven.neoforged.net/releases/net/neoforged/neoforge/"
@@ -164,7 +164,7 @@ public final class LoaderApplier {
             }
             if (p.exitValue() != 0) {
                 System.err.println("[Loader] installer exit " + p.exitValue()
-                    + " — see .aero-update/neoforge-install.log");
+                    + " — see .aero-loader/neoforge-install.log");
                 return false;
             }
             Files.deleteIfExists(jar);

@@ -95,8 +95,11 @@ public final class DhLodReset {
     public static void applyIfRequested(Path gameDir, String remoteToken) {
         if (remoteToken == null || remoteToken.isBlank()) return;
         try {
-            Path marker = gameDir.resolve(".aero-update").resolve(MARKER);
+            // .aero-state, not .aero-update: the pack Applier used to wipe .aero-update after every
+            // update. A lost marker is safe here (first run = adopt, no wipe) but it must not be lost.
+            Path marker = com.coffeesaerosmp.core.util.AeroState.file(gameDir, MARKER);
             String seen = readMarker(marker);
+            if (seen == null) seen = readMarker(gameDir.resolve(".aero-update").resolve(MARKER));
 
             if (seen == null) {
                 // First run with this feature: adopt the token, wipe nothing.

@@ -35,7 +35,7 @@ import java.util.concurrent.Executors;
  * thread — hence the hop through {@link Minecraft#execute}. Doing the upload from the worker is the
  * classic way to get a driver crash that only reproduces on other people's machines.
  *
- * <p>Disk cache lives in {@code .aero-update/newscache/} keyed by a hash of the URL, so a player who
+ * <p>Disk cache lives in {@code .aero-state/newscache/} keyed by a hash of the URL, so a player who
  * has opened the news once sees the pictures instantly forever after, and offline.
  */
 public final class NewsImages {
@@ -152,7 +152,7 @@ public final class NewsImages {
     }
 
     private static Path cacheDir() {
-        return FMLPaths.GAMEDIR.get().resolve(".aero-update").resolve("newscache");
+        return com.coffeesaerosmp.core.util.AeroState.file(FMLPaths.GAMEDIR.get(), "newscache");
     }
 
     private static byte[] cached(String url) {

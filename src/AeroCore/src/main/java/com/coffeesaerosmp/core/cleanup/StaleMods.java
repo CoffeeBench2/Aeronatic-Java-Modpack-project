@@ -129,6 +129,13 @@ public final class StaleMods {
             if (!Files.isDirectory(mods)) return;
 
             List<String> doomed = new ArrayList<>();
+            // Compiled list + the remote list cached from version.json (1.4.4). The remote list is
+            // what lets a removal ship WITHOUT a new Core: add the prefix to version.json and every
+            // 1.4.4+ client sweeps it. Guarded by the manifest: a jar the pack still ships is never
+            // retired, however a prefix is written.
+            List<String> prefixes = new ArrayList<>(RETIRED);
+            prefixes.addAll(com.coffeesaerosmp.core.util.AeroState.remoteRetiredPrefixes(gameDir));
+            java.util.Set<String> shipped = com.coffeesaerosmp.core.util.AeroState.managedModNames(gameDir);
             try (var s = Files.list(mods)) {
                 for (Path p : (Iterable<Path>) s::iterator) {
                     String name = p.getFileName().toString();
@@ -142,7 +149,8 @@ public final class StaleMods {
                         : name;
                     String low = bare.toLowerCase(Locale.ROOT);
                     if (!low.endsWith(".jar")) continue;
-                    for (String prefix : RETIRED) {
+                    if (shipped.contains(low)) continue;
+                    for (String prefix : prefixes) {
                         if (low.startsWith(prefix)) { doomed.add(name); break; }
                     }
                 }

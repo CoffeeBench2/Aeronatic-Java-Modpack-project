@@ -54,8 +54,12 @@ public final class XaeroDataMigration {
     public static void run(Path gameDir) {
         try {
             String target = "Multiplayer_" + hostOf(ServerLocator.resolve());
-            Path marker = gameDir.resolve(".aero-update").resolve("xaero-migrated.txt");
-            if (alreadyDone(marker, target)) return;
+            // .aero-state survives updates; .aero-update is the Applier's scratch space.
+            Path marker = com.coffeesaerosmp.core.util.AeroState.file(gameDir, "xaero-migrated.txt");
+            if (alreadyDone(marker, target)
+                    || alreadyDone(gameDir.resolve(".aero-update").resolve("xaero-migrated.txt"), target)) {
+                return;
+            }
 
             int moved = 0;
             for (String root : ROOTS) {

@@ -52,6 +52,18 @@ dependencies {
     // 1.4.0: Create's own particles (cubes, steam jets, air, rotation rings, fluid drips) for the cosmetics. Same
     // isolation: only cosmetics.CreateFx.Impl touches Create types, after ModList says Create is loaded.
     compileOnly(files("../CoffeesAeroAuth/libs/create.jar"))
+
+    // 1.4.4: regression tests for the updater / cleanup path (manifest survival, scoped Applier
+    // cleanup, failed-replacement guard, retired-list guards). `./gradlew build` runs them.
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    // Minecraft's own libraries are on the game classpath but not the plain test runtime.
+    testImplementation 'com.google.code.gson:gson:2.10.1'
+    testImplementation 'org.slf4j:slf4j-api:2.0.9'
+}
+
+test {
+    useJUnitPlatform()
 }
 
 // CurseForge distribution: build with -PnoUpdater to EXCLUDE the in-client updater subsystem
