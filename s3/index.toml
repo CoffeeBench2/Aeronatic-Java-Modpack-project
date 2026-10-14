@@ -962,7 +962,7 @@ metafile = true
 
 [[files]]
 file = "overrides/config/coffees_aero_announcements.json"
-hash = "273daf3247d211b98c69504a7eb01fbec51ee5706dbcf154ac6dcc7cf5cf6253"
+hash = "8dfc347affd0f708e04d0a58e7ce31c7acc516de4bf5a9f3a2ece7b53c4ce116"
 
 [[files]]
 file = "overrides/config/coffeesaerosmp_core-client.toml"
