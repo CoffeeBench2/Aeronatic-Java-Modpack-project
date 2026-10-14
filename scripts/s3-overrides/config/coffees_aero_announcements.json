@@ -2,6 +2,13 @@
   "_comment": "Season 3 CurseForge pack news (bundled; newsUrl is blank in this pack).",
   "entries": [
     {
+      "version": "3.0.9",
+      "date": "October 2026",
+      "tag": "FIX",
+      "title": "No more \"hash mismatch\" right after an update",
+      "body": "Right after a new version came out, the updater could download a mix of old and new files and stop with a \"hash mismatch\" error. It now always downloads one complete version, and waits and retries if the download server is still catching up."
+    },
+    {
       "version": "3.0.8",
       "date": "October 2026",
       "tag": "FIX",
