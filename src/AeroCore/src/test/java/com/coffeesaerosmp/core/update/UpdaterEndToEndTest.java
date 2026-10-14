@@ -88,6 +88,63 @@ class UpdaterEndToEndTest {
             upd.resolve("staging").toString(), upd.resolve("removals.txt").toString()});
     }
 
+    /**
+     * The 3.0.8 failure, replayed: the server hands out a STALE copy of one override file for the
+     * first few requests (GitHub's raw CDN did exactly this, ignoring the cache-buster). The update
+     * must wait it out and succeed, not die with "hash mismatch after download".
+     */
+    @Test
+    void staleCdnCopyIsRetriedNotFatal(@TempDir Path tmp) throws Exception {
+        Path pack = tmp.resolve("pack"), game = tmp.resolve("instance");
+        UpdaterRegressionTest.jar(pack.resolve("files/keeper-2.0.jar"), "keep");
+        String url = serve(pack);
+        publish(pack, url, List.of("keeper-2.0.jar"), List.of());
+        Path cfg = pack.resolve("overrides/config/aero-test.toml");
+        byte[] fresh = Files.readAllBytes(cfg);
+        int[] staleLeft = {2};
+        server.removeContext("/");
+        server.createContext("/", ex -> {
+            String p = ex.getRequestURI().getPath().substring(1);
+            Path f = pack.resolve(p).normalize();
+            byte[] body = Files.isRegularFile(f) ? Files.readAllBytes(f) : null;
+            if (p.endsWith("aero-test.toml") && staleLeft[0]-- > 0) body = "x = 0 # stale\n".getBytes();
+            ex.sendResponseHeaders(body == null ? 404 : 200, body == null ? -1 : body.length);
+            if (body != null) try (OutputStream o = ex.getResponseBody()) { o.write(body); }
+            ex.close();
+        });
+        long[] saved = InClientUpdater.mismatchWaitsMs;
+        InClientUpdater.mismatchWaitsMs = new long[]{10, 10, 10};
+        try {
+            update(game, url);
+        } finally {
+            InClientUpdater.mismatchWaitsMs = saved;
+        }
+        assertArrayEquals(fresh, Files.readAllBytes(game.resolve("config/aero-test.toml")));
+    }
+
+    @Test
+    void rawUrlsArePinnedToOneCommit() {
+        var saved = InClientUpdater.shaResolver;
+        int[] calls = {0};
+        InClientUpdater.shaResolver = k -> { calls[0]++; return "main".equals(k.split("/")[2])
+            ? "1a4edc4be224c43927cdca987a793fbbca0b11eb" : null; };
+        try {
+            String raw = "https://raw.githubusercontent.com/CoffeeBench2/Aeronatic-Java-Modpack-project/main/s3/";
+            assertEquals(raw.replace("/main/", "/1a4edc4be224c43927cdca987a793fbbca0b11eb/") + "pack.toml",
+                InClientUpdater.pinToCommit(raw + "pack.toml"));
+            assertEquals(raw.replace("/main/", "/1a4edc4be224c43927cdca987a793fbbca0b11eb/") + "version.json",
+                InClientUpdater.pinToCommit(raw + "version.json"));
+            assertTrue(calls[0] <= 1, "one API call per run, not one per file");
+            String other = "https://raw.githubusercontent.com/o/r/dev/x.toml";
+            assertEquals(other, InClientUpdater.pinToCommit(other), "unresolvable → branch URL unchanged");
+            assertEquals("https://cdn.modrinth.com/a.jar", InClientUpdater.pinToCommit("https://cdn.modrinth.com/a.jar"));
+            String already = raw.replace("/main/", "/1a4edc4be224c43927cdca987a793fbbca0b11eb/") + "index.toml";
+            assertEquals(already, InClientUpdater.pinToCommit(already));
+        } finally {
+            InClientUpdater.shaResolver = saved;
+        }
+    }
+
     @Test
     void droppedModIsRemovedOnTheNextUpdate(@TempDir Path tmp) throws Exception {
         Path pack = tmp.resolve("pack"), game = tmp.resolve("instance");

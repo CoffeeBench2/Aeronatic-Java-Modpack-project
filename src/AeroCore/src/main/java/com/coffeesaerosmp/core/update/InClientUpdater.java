@@ -72,13 +72,22 @@ public final class InClientUpdater {
         try {
             String packUrl = packUrlArg != null ? packUrlArg : AeroConfig.PACK_TOML_URL.get();
             if (packUrl == null || packUrl.isBlank()) throw new IllegalStateException("no pack.toml URL configured");
+            String versionUrl = versionUrlArg != null ? versionUrlArg : AeroConfig.VERSION_CHECK_URL.get();
+
+            phase = "Reading pack…";
+            // 🔴 Pin the whole run to ONE commit (2026-10-15). GitHub's raw CDN caches each path for
+            // ~300 s and, it turned out, IGNORES the ?aerocb= query string the Core relied on since
+            // 1.3.3: on the 3.0.8 release it served a fresh index.toml next to a 5-minute-old
+            // coffees_aero_announcements.json → "hash mismatch after download", every retry. A
+            // .../<sha>/... URL is immutable, so every file of the run comes from the same snapshot.
+            PINNED.clear();
+            packUrl = pinToCommit(packUrl);
+            versionUrl = versionUrl == null ? null : pinToCommit(versionUrl);
             String base = packUrl.substring(0, packUrl.lastIndexOf('/') + 1);
             Path gameDir = gameDirArg != null ? gameDirArg
                 : Minecraft.getInstance().gameDirectory.getCanonicalFile().toPath();
-            String versionUrl = versionUrlArg != null ? versionUrlArg : AeroConfig.VERSION_CHECK_URL.get();
             Path staging = gameDir.resolve(".aero-update").resolve("staging");
 
-            phase = "Reading pack…";
             Map<String, String> pack = parseToml(get(packUrl));
             // From here on, key raw fetches on the index hash (see bust()): one cached copy of index.toml
             // + every metafile serves the whole player base per release, instead of each client punching
@@ -224,9 +233,7 @@ public final class InClientUpdater {
                 phase = "Downloading " + (done + 1) + " / " + total;
                 Path stagePath = staging.resolve(rel(gameDir, tg.target()));
                 Files.createDirectories(stagePath.getParent());
-                download(tg.url(), stagePath);
-                if (tg.hash() != null && !hashMatches(stagePath, tg.hash(), tg.hashFormat()))
-                    throw new IOException("hash mismatch after download: " + tg.target().getFileName());
+                downloadVerified(tg, stagePath);
                 done++;
             }
 
@@ -421,6 +428,87 @@ public final class InClientUpdater {
         return url + (url.indexOf('?') < 0 ? "?" : "&") + "aerocb=" + token;
     }
 
+    // ── Commit pinning ──────────────────────────────────────────────────────────
+
+    private static final java.util.regex.Pattern RAW_URL = java.util.regex.Pattern.compile(
+        "^https://raw\\.githubusercontent\\.com/([^/]+)/([^/]+)/([^/]+)/(.+)$");
+    private static final java.util.regex.Pattern SHA40 = java.util.regex.Pattern.compile("^[0-9a-f]{40}$");
+    /** owner/repo/branch → sha for the current run, so pack + version.json cost ONE API call. */
+    private static final Map<String, String> PINNED = new java.util.concurrent.ConcurrentHashMap<>();
+    /** Test hook: "owner/repo/branch" → sha (null = unresolvable). */
+    static volatile java.util.function.Function<String, String> shaResolver = InClientUpdater::resolveSha;
+
+    /**
+     * Rewrites a {@code raw.githubusercontent.com/<o>/<r>/<branch>/...} URL to the commit the branch
+     * points at right now. Anything else (or a failure to resolve) is returned unchanged — the run
+     * then falls back to the branch URL and relies on {@link #downloadVerified}'s retries.
+     */
+    static String pinToCommit(String url) {
+        java.util.regex.Matcher m = RAW_URL.matcher(url);
+        if (!m.matches() || SHA40.matcher(m.group(3)).matches()) return url;
+        String key = m.group(1) + "/" + m.group(2) + "/" + m.group(3);
+        String sha = PINNED.computeIfAbsent(key, k -> {
+            String s = shaResolver.apply(k);
+            return s != null && SHA40.matcher(s).matches() ? s : "";
+        });
+        if (sha.isEmpty()) {
+            LOGGER.warn("[Updater] could not resolve {} to a commit; using the branch URL", key);
+            return url;
+        }
+        LOGGER.info("[Updater] pinned {} to commit {}", key, sha);
+        return "https://raw.githubusercontent.com/" + m.group(1) + "/" + m.group(2) + "/" + sha + "/" + m.group(4);
+    }
+
+    /** GitHub API: the commit a branch points at. ~60 unauthenticated calls/hour/IP; we use one per update. */
+    private static String resolveSha(String ownerRepoBranch) {
+        String[] p = ownerRepoBranch.split("/", 3);
+        String api = "https://api.github.com/repos/" + p[0] + "/" + p[1] + "/commits/" + p[2];
+        for (int attempt = 1; attempt <= 2; attempt++) {
+            try {
+                HttpResponse<String> r = HTTP.send(HttpRequest.newBuilder(URI.create(api))
+                        .timeout(Duration.ofSeconds(10))
+                        .header("Accept", "application/vnd.github.sha")
+                        .header("User-Agent", "CoffeesAeroCore-Updater").GET().build(),
+                    HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+                if (r.statusCode() == 200) return r.body().trim();
+                LOGGER.warn("[Updater] commit lookup HTTP {} ({})", r.statusCode(), api);
+            } catch (Exception e) {
+                LOGGER.warn("[Updater] commit lookup failed: {}", e.toString());
+            }
+        }
+        return null;
+    }
+
+    /** Waits between re-fetches of a file whose bytes do not match the index. Test-overridable. */
+    static volatile long[] mismatchWaitsMs = {10_000L, 30_000L, 60_000L, 120_000L};
+
+    /**
+     * Download + verify, re-fetching on a hash mismatch instead of failing the whole update.
+     *
+     * <p>A mismatch is almost always a CDN serving a stale copy of one path (it caches ~300 s per
+     * path), not a broken pack — the index-integrity gate already proved the index is consistent. So
+     * wait and fetch again with a fresh cache key, for up to ~3.5 minutes, which outlasts the CDN's
+     * cache window. Only after that is it reported as a real error.
+     */
+    private static void downloadVerified(Target tg, Path stagePath) throws IOException, InterruptedException {
+        for (int attempt = 0; ; attempt++) {
+            String url = attempt == 0 ? tg.url()
+                : tg.url() + (tg.url().indexOf('?') < 0 ? "?" : "&") + "aeroretry=" + System.nanoTime();
+            download(url, stagePath);
+            if (tg.hash() == null || hashMatches(stagePath, tg.hash(), tg.hashFormat())) return;
+            if (attempt >= mismatchWaitsMs.length) {
+                throw new IOException("hash mismatch after download: " + tg.target().getFileName()
+                    + " (still wrong after " + attempt + " retries)");
+            }
+            LOGGER.warn("[Updater] {} did not match the pack index (stale download server copy?) — retry {} in {} s",
+                tg.target().getFileName(), attempt + 1, mismatchWaitsMs[attempt] / 1000);
+            String before = phase;
+            phase = "Waiting for the download server to catch up…";
+            Thread.sleep(mismatchWaitsMs[attempt]);
+            phase = before;
+        }
+    }
+
     /**
      * Bounded retry around a single request.
      *
@@ -481,7 +569,11 @@ public final class InClientUpdater {
         sendWithRetry(
             HttpRequest.newBuilder().timeout(Duration.ofMinutes(5))
                 .header("Cache-Control", "no-cache").GET(),
-            url, HttpResponse.BodyHandlers.ofFile(target));
+            // TRUNCATE_EXISTING: plain ofFile(target) opens CREATE+WRITE only, so a re-download over a
+            // longer earlier copy kept its tail and could never match the hash again (found 2026-10-15
+            // by the stale-CDN test — every retry of a shrunken file was doomed).
+            url, HttpResponse.BodyHandlers.ofFile(target,
+                StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING));
     }
 
     // ── Hashing ─────────────────────────────────────────────────────────────────
