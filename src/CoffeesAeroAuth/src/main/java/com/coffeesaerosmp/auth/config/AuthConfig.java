@@ -202,6 +202,8 @@ public class AuthConfig {
     public static final ModConfigSpec.IntValue     CLAIMS_MAX;
     public static final ModConfigSpec.IntValue     SHIP_CLAIMS_BASE;
     public static final ModConfigSpec.IntValue     SHIP_CLAIMS_EVERY_LEVELS;
+    public static final ModConfigSpec.BooleanValue SHIP_BORDER_WALL;
+    public static final ModConfigSpec.DoubleValue  SHIP_BORDER_BOUNCE;
     public static final ModConfigSpec.IntValue     LEVEL_MILESTONE_EVERY;
     public static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> LEVEL_MILESTONE_ITEMS;
     public static final ModConfigSpec.BooleanValue OPS_GET_ALL_ADVANCEMENTS;
@@ -1560,6 +1562,12 @@ public class AuthConfig {
             .defineInRange("shipClaimsBase", 2, 0, 1_000);
         SHIP_CLAIMS_EVERY_LEVELS = b.comment("One more free ship claim every N levels above 1 (5 = +1 at Lv 6, 11, 16...). 0 = none.")
             .defineInRange("shipClaimsEveryLevels", 5, 0, 1_000);
+        SHIP_BORDER_WALL = b.comment("World border is a solid wall for Sable/Aeronautics ships (vanilla only stops entities,",
+                                     "so ships sailed through with their crew). Outward motion at the border is reflected;",
+                                     "a ship already outside can still fly back in.")
+            .define("shipBorderWall", true);
+        SHIP_BORDER_BOUNCE = b.comment("How much of a ship's outward speed bounces back at the border (0 = dead stop).")
+            .defineInRange("shipBorderBounce", 0.3, 0.0, 1.0);
         LEVEL_MILESTONE_EVERY = b.comment("Every Nth level also mails levelMilestoneItems. 0 = never.")
             .defineInRange("levelMilestoneEvery", 5, 0, 1000);
         LEVEL_MILESTONE_ITEMS = b

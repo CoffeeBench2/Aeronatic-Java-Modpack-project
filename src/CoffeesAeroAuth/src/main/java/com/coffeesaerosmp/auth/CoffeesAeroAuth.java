@@ -245,6 +245,11 @@ public class CoffeesAeroAuth {
         // hook is a no-op unless levelingEnabled / mailEnabled (both default OFF), and SMP-role only.
         NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.tick.ServerTickEvent.Post e) ->
             com.coffeesaerosmp.auth.leveling.LevelService.onServerTick(e.getServer()));
+        // 1.14.1: the world border is a solid wall for Sable ships (SMP only; the lobby has no flying ships).
+        NeoForge.EVENT_BUS.addListener((net.neoforged.neoforge.event.tick.ServerTickEvent.Post e) -> {
+            if (!com.coffeesaerosmp.auth.lobby.LobbyHandoff.isLobbyRole())
+                com.coffeesaerosmp.auth.world.ShipBorderGuard.onServerTick(e.getServer());
+        });
         NeoForge.EVENT_BUS.addListener(
             (net.neoforged.neoforge.event.entity.player.AdvancementEvent.AdvancementEarnEvent e) -> {
                 if (e.getEntity() instanceof net.minecraft.server.level.ServerPlayer sp) {
