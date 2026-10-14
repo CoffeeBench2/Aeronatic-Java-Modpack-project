@@ -36,14 +36,39 @@ class CleanupRegressionTest {
 
     @Test
     void compiledRetiredListNeverMatchesKeptUltimineMods() {
-        for (String kept : List.of("ftb-ultimine-neoforge-2101.1.15.jar", "ultimine_rewind-2.1.0.jar",
+        for (String kept : List.of(
                 "create_ultimate_factory-2.2.4-neoforge-1.21.1.jar", "sable_sa_compat-1.0.4.jar",
+                "ftb-library-neoforge-2101.1.36.jar", "ftb-quests-neoforge-2101.1.36.jar",
+                "ftb-chunks-neoforge-2101.1.22.jar", "ftb-teams-neoforge-2101.1.11.jar",
+                "ftb-essentials-neoforge-2101.1.10.jar",
                 "ssrd-1.8.7-1.21.1.jar", "distanthorizons-3.3.3-1.21.1-fabric-neoforge.jar")) {
             for (String p : StaleMods.RETIRED) {
                 assertFalse(kept.toLowerCase().startsWith(p), p + " would delete " + kept);
             }
         }
-        assertTrue(StaleMods.RETIRED.stream().anyMatch("createultimine-1.21.1-neoforge-1.3.3.jar"::startsWith));
+        for (String gone : List.of("createultimine-1.21.1-neoforge-1.3.3.jar",
+                "ftb-ultimine-neoforge-2101.1.15.jar", "ultimine_rewind-2.1.0.jar")) {
+            assertTrue(StaleMods.RETIRED.stream().anyMatch(gone::startsWith), gone);
+        }
+    }
+
+    @Test
+    void sweepFlagsLoadedRetiredModsForTheJoinGate(@TempDir Path game) throws Exception {
+        Path mods = game.resolve("mods");
+        Files.createDirectories(mods);
+        Files.writeString(mods.resolve("ftb-ultimine-neoforge-2101.1.15.jar"), "x");
+        Files.writeString(mods.resolve("ultimine_rewind-2.1.0.jar"), "x");
+        Files.writeString(mods.resolve("ftb-library-neoforge-2101.1.36.jar"), "keep");
+        Files.writeString(mods.resolve("create_ultimate_factory-2.2.4-neoforge-1.21.1.jar"), "keep");
+
+        StaleMods.sweep(game);
+
+        assertEquals(List.of("ftb-ultimine-neoforge-2101.1.15.jar", "ultimine_rewind-2.1.0.jar"),
+            StaleMods.queuedThisSession().stream().sorted().toList());
+        List<String> queue = Files.readAllLines(game.resolve(".aero-cleanup/delete.txt"));
+        assertTrue(queue.contains("ftb-ultimine-neoforge-2101.1.15.jar"));
+        assertFalse(queue.contains("create_ultimate_factory-2.2.4-neoforge-1.21.1.jar"));
+        assertFalse(queue.contains("ftb-library-neoforge-2101.1.36.jar"));
     }
 
     @Test

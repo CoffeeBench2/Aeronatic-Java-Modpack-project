@@ -114,8 +114,18 @@ public final class StaleMods {
         // Ultimine right-click handlers only), so a leftover copy cannot refuse a handshake —
         // this just takes it off disk. Nothing else the pack ships starts "createultimine-";
         // ftb-ultimine-*, ultimine_rewind-* and create_ultimate_factory-* are all kept.
-        "createultimine-"
+        "createultimine-",
+        // ── S3 3.0.10 — all Ultimine dropped (owner 2026-10-15). Also on the remote list
+        // (scripts/s3-retired.txt); compiled in too because Ultimine Rewind registers REQUIRED
+        // channels and players on Core <=1.4.3 run an updater that has no remote list.
+        "ftb-ultimine-",
+        "ultimine_rewind-"
     );
+
+    /** Retired mods found loaded this session (deleted at exit). Empty = nothing pending. */
+    private static volatile List<String> queuedThisSession = List.of();
+
+    public static List<String> queuedThisSession() { return queuedThisSession; }
 
     private static final String DIR = ".aero-cleanup";
     private static final String QUEUE = "delete.txt";
@@ -181,6 +191,13 @@ public final class StaleMods {
                 // If we cannot establish which jar is running we must not guess — deleting the
                 // live Core would leave an instance with no Core at all.
             }
+
+            // Retired mods (not just a duplicate Core, which FML never loads alongside the newer one)
+            // are LOADED for the rest of this session — they can only be deleted after exit. One with
+            // required network channels gets the player refused at join, so the Join button checks this.
+            List<String> live = new ArrayList<>();
+            for (String n : doomed) if (!n.toLowerCase(Locale.ROOT).startsWith("coffeesaerocore")) live.add(n);
+            queuedThisSession = List.copyOf(live);
 
             if (doomed.isEmpty()) return;
 

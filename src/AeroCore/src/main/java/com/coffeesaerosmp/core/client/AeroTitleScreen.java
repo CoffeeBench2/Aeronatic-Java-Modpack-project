@@ -125,6 +125,25 @@ public class AeroTitleScreen extends Screen {
                         this.minecraft.setScreen(openUpdateTarget());
                         return;
                     }
+                    // 1.4.7: a mod the pack dropped is still LOADED this session (it is deleted when
+                    // the game closes). If it has required network channels the server refuses the
+                    // join with a misleading "Incompatible client" — so say what is going on and
+                    // offer the one-click fix instead of letting that happen.
+                    var pending = com.coffeesaerosmp.core.cleanup.StaleMods.queuedThisSession();
+                    if (!pending.isEmpty()) {
+                        this.minecraft.setScreen(new net.minecraft.client.gui.screens.ConfirmScreen(
+                            quit -> {
+                                if (quit) this.minecraft.stop();
+                                else this.minecraft.setScreen(this);
+                            },
+                            Component.literal("Restart to finish the update"),
+                            Component.literal(pending.size() + " old mod(s) the pack no longer uses are still loaded ("
+                                + String.join(", ", pending) + "). They are removed when the game closes. "
+                                + "Close the game and start it again, then join."),
+                            Component.literal("Quit Game"),
+                            Component.literal("Back")));
+                        return;
+                    }
                     connectToServer();
                 }
         ).bounds(this.width / 2 - 100, joinY, 200, 20).build());
