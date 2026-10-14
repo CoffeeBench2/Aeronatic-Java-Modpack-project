@@ -200,6 +200,8 @@ public class AuthConfig {
     public static final ModConfigSpec.IntValue     CLAIMS_BASE;
     public static final ModConfigSpec.IntValue     CLAIMS_PER_LEVEL;
     public static final ModConfigSpec.IntValue     CLAIMS_MAX;
+    public static final ModConfigSpec.IntValue     SHIP_CLAIMS_BASE;
+    public static final ModConfigSpec.IntValue     SHIP_CLAIMS_EVERY_LEVELS;
     public static final ModConfigSpec.IntValue     LEVEL_MILESTONE_EVERY;
     public static final ModConfigSpec.ConfigValue<java.util.List<? extends String>> LEVEL_MILESTONE_ITEMS;
     public static final ModConfigSpec.BooleanValue OPS_GET_ALL_ADVANCEMENTS;
@@ -1551,6 +1553,13 @@ public class AuthConfig {
         CLAIMS_MAX = b.comment("Hard cap per person (owner: 150, 2026-10-04; was 50). Teams add their members'",
                                "allowances together (FTB party_limit_mode = \"sum\"), capped by FTB's hard_team_claim_limit.")
             .defineInRange("claimsMax", 150, 0, 100_000);
+        SHIP_CLAIMS_BASE = b.comment("FREE AeroClaims ship claims every player gets on top of their land claims (2026-10-15).",
+                                     "1 ship claim = AeroClaims blocksPerClaim ship blocks (250 → 2 = a 500-block ship).",
+                                     "Granted by adding them to the FTB extra allowance and moving them into AeroClaims, so land",
+                                     "is unchanged. Never taken back if lowered. 0 = off.")
+            .defineInRange("shipClaimsBase", 2, 0, 1_000);
+        SHIP_CLAIMS_EVERY_LEVELS = b.comment("One more free ship claim every N levels above 1 (5 = +1 at Lv 6, 11, 16...). 0 = none.")
+            .defineInRange("shipClaimsEveryLevels", 5, 0, 1_000);
         LEVEL_MILESTONE_EVERY = b.comment("Every Nth level also mails levelMilestoneItems. 0 = never.")
             .defineInRange("levelMilestoneEvery", 5, 0, 1000);
         LEVEL_MILESTONE_ITEMS = b

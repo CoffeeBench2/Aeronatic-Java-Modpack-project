@@ -57,6 +57,18 @@ final class FtbClaims {
         }
     }
 
+    /** The player's PERSONAL extra claim chunks right now, or -1 if unreadable. */
+    static int getExtra(ServerPlayer player) {
+        if (!resolve()) return -1;
+        try {
+            Object mgr = getManager.invoke(api.invoke(null));
+            Object personal = getPersonalData.invoke(mgr, player.getUUID());
+            return personal == null ? -1 : (int) getExtra.invoke(personal);
+        } catch (Throwable t) {
+            return -1;
+        }
+    }
+
     /** {@code updateLimits()} is public on the implementation but not on the API interface. */
     private static void updateLimits(Object teamData) {
         try {

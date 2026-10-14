@@ -132,8 +132,34 @@ public final class LevelService {
         int level = LevelFormula.level(xpOf(player), p);
 
         if (AuthConfig.LEVEL_CLAIMS_ENABLED.get()) {
-            int extra = LevelFormula.extraClaims(level, p);
-            if (extra != st.lastExtraApplied && FtbClaims.setExtra(player, extra) >= 0) st.lastExtraApplied = extra;
+            // Free ship claims ride on top of land: the FTB extra includes them, then ShipClaims moves
+            // them into AeroClaims, so land is unchanged. max(target, granted): never shrink what was
+            // already moved — a lowered config must not quietly cut into someone's land.
+            int shipTarget = ShipClaims.available()
+                ? LevelFormula.shipClaims(level, AuthConfig.SHIP_CLAIMS_BASE.get(), AuthConfig.SHIP_CLAIMS_EVERY_LEVELS.get())
+                : 0;
+            int shipInExtra = shipTarget <= 0 ? ShipClaims.grantedOrZero(player)
+                : Math.max(shipTarget, ShipClaims.granted(player.getServer(), player.getUUID()));
+            int formula = LevelFormula.extraClaims(level, p) + shipInExtra;
+
+            // 🔴 Admin-added claims (2026-10-15). This used to set the extra to the formula and nothing
+            // else, so `/ftbchunks admin extra_claim_chunks … add 500` was silently reset on the next
+            // check — the owner had 556 extra on file and a 61-chunk limit (= the Lv 29 formula). Any
+            // change made from OUTSIDE the level system now becomes a permanent bonus on top.
+            ShipClaims.Ledger ledger = player.getServer() == null ? null : ShipClaims.Ledger.get(player.getServer());
+            int current = FtbClaims.getExtra(player);
+            if (ledger != null && current >= 0) {
+                ledger.setBonus(player.getUUID(), LevelFormula.reconcileBonus(
+                    ledger.lastApplied(player.getUUID()), current, formula, ledger.bonus(player.getUUID())));
+            }
+            int extra = formula + (ledger == null ? 0 : ledger.bonus(player.getUUID()));
+            if (extra != current) {
+                if (FtbClaims.setExtra(player, extra) >= 0) st.lastExtraApplied = extra;
+            } else {
+                st.lastExtraApplied = extra;
+            }
+            if (ledger != null && st.lastExtraApplied == extra) ledger.setLastApplied(player.getUUID(), extra);
+            if (shipTarget > 0 && st.lastExtraApplied == extra) ShipClaims.topUp(player, shipTarget);
         }
 
         int previous = st.lastLevel;

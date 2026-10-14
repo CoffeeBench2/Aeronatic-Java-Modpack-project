@@ -72,4 +72,45 @@ class LevelFormulaTest {
         assertTrue(lv >= 45 && lv <= 60, "was Lv " + lv);
         assertEquals(LevelFormula.claims(lv, P), Math.min(150, 5 + 2 * (lv - 1)));
     }
+
+    @Test
+    void shipClaimsBasePlusOneEveryFiveLevels() {
+        assertEquals(2, LevelFormula.shipClaims(1, 2, 5));
+        assertEquals(2, LevelFormula.shipClaims(5, 2, 5));
+        assertEquals(3, LevelFormula.shipClaims(6, 2, 5));     // +1 at Lv 6
+        assertEquals(3, LevelFormula.shipClaims(10, 2, 5));
+        assertEquals(4, LevelFormula.shipClaims(11, 2, 5));
+        assertEquals(2, LevelFormula.shipClaims(50, 2, 0));    // no growth
+        assertEquals(0, LevelFormula.shipClaims(50, 0, 0));    // off
+        assertEquals(1, LevelFormula.shipClaims(6, 0, 5));     // growth only
+    }
+
+    @Test
+    void adminAddedClaimsSurviveTheLevelSystem() {
+        // The owner's real file: extra 556, Lv 29 formula 56 (+2 ship = 58) → 498 hand-added... first sight.
+        assertEquals(500, LevelFormula.reconcileBonus(null, 556, 56, 0));
+        assertEquals(0, LevelFormula.reconcileBonus(null, 56, 56, 0), "normal player: no bonus");
+        assertEquals(0, LevelFormula.reconcileBonus(null, 40, 56, 0), "below formula is not a negative bonus");
+        // We applied 58; nobody touched it → bonus unchanged.
+        assertEquals(500, LevelFormula.reconcileBonus(558, 558, 58, 500));
+        // Admin ran `extra_claim_chunks add 100` → kept.
+        assertEquals(600, LevelFormula.reconcileBonus(558, 658, 58, 500));
+        // Admin removed 50 → the bonus shrinks, never below 0.
+        assertEquals(450, LevelFormula.reconcileBonus(558, 508, 58, 500));
+        assertEquals(0, LevelFormula.reconcileBonus(58, 0, 58, 10));
+        // Level-up: formula grows from 58 to 60 but FTB still shows our last 558 → bonus untouched.
+        assertEquals(500, LevelFormula.reconcileBonus(558, 558, 60, 500));
+    }
+
+    @Test
+    void shipClaimsNeverChangeLand() {
+        // The FTB extra carries ship claims ON TOP of the land extra; AeroClaims then subtracts the
+        // migrated ship slots, so the land a player can use is exactly the level formula's.
+        for (int lv : new int[]{1, 6, 30, 73}) {
+            int ship = LevelFormula.shipClaims(lv, 2, 5);
+            int ftbMax = P.claimsBase() + LevelFormula.extraClaims(lv, P) + ship;
+            int landUsable = ftbMax - ship;
+            assertEquals(LevelFormula.claims(lv, P), landUsable, "Lv " + lv);
+        }
+    }
 }

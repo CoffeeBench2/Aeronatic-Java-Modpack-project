@@ -41,6 +41,11 @@ public final class GameTestPlayers {
         ServerPlayer p = new ServerPlayer(level.getServer(), level, cookie.gameProfile(), cookie.clientInformation());
         Connection conn = new Connection(PacketFlow.SERVERBOUND);
         new EmbeddedChannel(conn);
+        // Mark every registered payload as negotiated, like a real modded client. Without it the first
+        // mod that sends a packet on join (Sable's sable:dimension_physics, once AeroClaims+Sable were
+        // added for the ship-claim tests, 2026-10-15) throws "may not be sent to the client" and every
+        // player test fails before it starts.
+        net.neoforged.neoforge.network.registration.NetworkRegistry.configureMockConnection(conn);
         level.getServer().getPlayerList().placeNewPlayer(conn, p, cookie);
         // Auth freezes a fresh join until the gate cookie arrives (no gate here). Mark it logged in — by
         // reflection, in the test only, so no auth bypass exists in the shipped mod.

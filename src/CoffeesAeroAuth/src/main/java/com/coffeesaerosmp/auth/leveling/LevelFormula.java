@@ -65,6 +65,28 @@ public final class LevelFormula {
         return (int) Math.max(p.claimsBase(), Math.min(p.claimsMax(), c));
     }
 
+    /** Free AeroClaims ship claims at {@code level}: a base plus one every {@code everyLevels} levels. */
+    public static int shipClaims(int level, int base, int everyLevels) {
+        if (base <= 0 && everyLevels <= 0) return 0;
+        int bonus = everyLevels > 0 ? Math.max(0, level - 1) / everyLevels : 0;
+        return Math.max(0, base) + bonus;
+    }
+
+    /**
+     * Claims added from OUTSIDE the level system (admin commands, rewards), kept as a bonus on top.
+     *
+     * @param lastApplied what the level system last set (null = never seen in this world)
+     * @param current     the FTB extra right now
+     * @param formula     what the level system wants (land + ship)
+     * @param bonus       the bonus recorded so far
+     * @return the new bonus, never negative
+     */
+    public static int reconcileBonus(Integer lastApplied, int current, int formula, int bonus) {
+        if (lastApplied == null) return Math.max(0, current - formula);   // first sight: excess was hand-added
+        if (current == lastApplied) return Math.max(0, bonus);            // nobody touched it
+        return Math.max(0, bonus + (current - lastApplied));              // admin add (or remove)
+    }
+
     /** What to pass to FTB Chunks' setExtraClaimChunks: everything above its own base. */
     public static int extraClaims(int level, Params p) {
         return claims(level, p) - p.claimsBase();
