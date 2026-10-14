@@ -1,0 +1,396 @@
+{
+	default_hide_dependency_lines: false
+	default_quest_shape: "circle"
+	filename: "andesite"
+	group: "100DB6268111BF6B"
+	icon: {
+		id: "create:cogwheel"
+	}
+	id: "05F31E02D13C8282"
+	images: [ ]
+	order_index: 0
+	quest_links: [ ]
+	quests: [
+		{
+			icon: {
+				id: "create:cogwheel"
+			}
+			id: "7F511C66920CA9B7"
+			rewards: [
+				{
+					id: "31BEB01E9C82CF06"
+					type: "xp"
+					xp: 10
+				}
+			]
+			shape: "hexagon"
+			size: 1.5d
+			tasks: [
+				{
+					id: "045F07CC59F92039"
+					type: "checkmark"
+				}
+			]
+			x: 0.0d
+			y: 0.0d
+		}
+		{
+			dependencies: ["7F511C66920CA9B7"]
+			id: "17B0F807FC8A54C3"
+			rewards: [
+				{
+					id: "33503186A7AA6D50"
+					type: "xp"
+					xp: 25
+				}
+				{
+					count: 4
+					id: "6A30FFE477DB4EA2"
+					item: {
+						count: 1
+						id: "minecraft:andesite"
+					}
+					type: "item"
+				}
+			]
+			tasks: [
+				{
+					id: "0A2CC2EDB2B9EE8B"
+					item: {
+						count: 1
+						id: "create:andesite_alloy"
+					}
+					type: "item"
+				}
+			]
+			x: 2.0d
+			y: -1.75d
+		}
+		{
+			dependencies: ["17B0F807FC8A54C3"]
+			id: "64ACB975E4D71951"
+			rewards: [
+				{
+					id: "0A1215D3208798BF"
+					type: "xp"
+					xp: 25
+				}
+			]
+			tasks: [
+				{
+					id: "09DC2BC8E4E176FD"
+					item: {
+						count: 1
+						id: "create:shaft"
+					}
+					type: "item"
+				}
+			]
+			x: 4.0d
+			y: -0.875d
+		}
+		{
+			dependencies: ["64ACB975E4D71951"]
+			id: "30FA9D87D297924A"
+			rewards: [
+				{
+					id: "0D59932682283CB8"
+					type: "xp"
+					xp: 25
+				}
+			]
+			tasks: [
+				{
+					id: "226829DC3E44A247"
+					item: {
+						count: 1
+						id: "create:cogwheel"
+					}
+					type: "item"
+				}
+			]
+			x: 6.0d
+			y: -3.5d
+		}
+		{
+			dependencies: ["30FA9D87D297924A"]
+			id: "62A952CE8531547A"
+			rewards: [
+				{
+					id: "10D356CF3D325B52"
+					type: "xp"
+					xp: 25
+				}
+			]
+			tasks: [
+				{
+					id: "7530F2A54180561C"
+					item: {
+						count: 1
+						id: "create:large_cogwheel"
+					}
+					type: "item"
+				}
+			]
+			x: 8.0d
+			y: -1.75d
+		}
+		{
+			dependencies: ["64ACB975E4D71951"]
+			id: "75B82D3BD7D27EB8"
+			rewards: [
+				{
+					id: "16A76B7FFC568E86"
+					type: "xp"
+					xp: 25
+				}
+			]
+			tasks: [
+				{
+					id: "479CD3733B78FDCC"
+					item: {
+						count: 1
+						id: "create:hand_crank"
+					}
+					type: "item"
+				}
+			]
+			x: 6.0d
+			y: -1.75d
+		}
+		{
+			dependencies: ["75B82D3BD7D27EB8"]
+			id: "03B5C11ABE947D09"
+			rewards: [
+				{
+					id: "12F322AA7B5E5DAA"
+					type: "xp"
+					xp: 50
+				}
+			]
+			shape: "hexagon"
+			tasks: [
+				{
+					id: "5AFC7BA62AF52C33"
+					item: {
+						count: 1
+						id: "create:water_wheel"
+					}
+					type: "item"
+				}
+			]
+			x: 8.0d
+			y: 0.0d
+		}
+		{
+			dependencies: ["03B5C11ABE947D09"]
+			id: "7887B32CCE148D8C"
+			rewards: [
+				{
+					id: "6092FBE5195F1F9C"
+					type: "xp"
+					xp: 25
+				}
+			]
+			tasks: [
+				{
+					id: "66CE0597F21047FC"
+					item: {
+						count: 1
+						id: "create:windmill_bearing"
+					}
+					type: "item"
+				}
+			]
+			x: 10.0d
+			y: 0.0d
+		}
+		{
+			dependencies: ["7887B32CCE148D8C"]
+			id: "568A6A4C0493329C"
+			rewards: [
+				{
+					id: "0B8B8E2371656C7D"
+					type: "xp"
+					xp: 25
+				}
+			]
+			tasks: [
+				{
+					count: 8L
+					id: "0DD879AF3956BAB1"
+					item: {
+						count: 1
+						id: "create:white_sail"
+					}
+					type: "item"
+				}
+			]
+			x: 12.0d
+			y: 0.0d
+		}
+		{
+			dependencies: ["7F511C66920CA9B7"]
+			id: "19C4203FD35FD71E"
+			rewards: [
+				{
+					id: "759FC337A5F970D6"
+					type: "xp"
+					xp: 25
+				}
+			]
+			tasks: [
+				{
+					id: "7A9340BDDD5F3B21"
+					item: {
+						count: 1
+						id: "create:goggles"
+					}
+					type: "item"
+				}
+			]
+			x: 2.0d
+			y: 0.0d
+		}
+		{
+			dependencies: ["7F511C66920CA9B7"]
+			id: "1EA1AF6016537E12"
+			rewards: [
+				{
+					id: "6727EFB9F6D18FDD"
+					type: "xp"
+					xp: 25
+				}
+			]
+			tasks: [
+				{
+					id: "5A2C8D662E6E86DC"
+					item: {
+						count: 1
+						id: "create:wrench"
+					}
+					type: "item"
+				}
+			]
+			x: 2.0d
+			y: 1.75d
+		}
+		{
+			dependencies: ["17B0F807FC8A54C3"]
+			id: "3806E2C3F9E566EF"
+			rewards: [
+				{
+					id: "768E7AFD6F3C8A66"
+					type: "xp"
+					xp: 25
+				}
+			]
+			tasks: [
+				{
+					id: "2ADADF2AA85A4E6A"
+					item: {
+						count: 1
+						id: "create:andesite_casing"
+					}
+					type: "item"
+				}
+			]
+			x: 4.0d
+			y: 0.875d
+		}
+		{
+			dependencies: ["3806E2C3F9E566EF"]
+			id: "066D25139D8C9A58"
+			rewards: [
+				{
+					id: "36CB51BF24AEC2AD"
+					type: "xp"
+					xp: 25
+				}
+			]
+			tasks: [
+				{
+					id: "13B2C6D7895F7EC3"
+					item: {
+						count: 1
+						id: "create:gearbox"
+					}
+					type: "item"
+				}
+			]
+			x: 6.0d
+			y: 0.0d
+		}
+		{
+			dependencies: ["3806E2C3F9E566EF"]
+			id: "4A2C3969947A9C59"
+			rewards: [
+				{
+					id: "1CE697BAFE129146"
+					type: "xp"
+					xp: 25
+				}
+			]
+			tasks: [
+				{
+					id: "52C23AF05CFB344B"
+					item: {
+						count: 1
+						id: "create:belt_connector"
+					}
+					type: "item"
+				}
+			]
+			x: 6.0d
+			y: 1.75d
+		}
+		{
+			dependencies: ["3806E2C3F9E566EF"]
+			id: "2522847D222D1CA1"
+			rewards: [
+				{
+					id: "796AF19EC48C582B"
+					type: "xp"
+					xp: 25
+				}
+			]
+			tasks: [
+				{
+					id: "40F4983BE063B21D"
+					item: {
+						count: 1
+						id: "create:depot"
+					}
+					type: "item"
+				}
+			]
+			x: 6.0d
+			y: 3.5d
+		}
+		{
+			dependencies: ["2522847D222D1CA1", "4A2C3969947A9C59"]
+			id: "60BC2C3AD2300950"
+			rewards: [
+				{
+					id: "28EC75F2B3289AE0"
+					type: "xp"
+					xp: 100
+				}
+			]
+			shape: "hexagon"
+			size: 1.25d
+			tasks: [
+				{
+					id: "026E48C2AF8615D9"
+					item: {
+						count: 1
+						id: "create:mechanical_press"
+					}
+					type: "item"
+				}
+			]
+			x: 8.0d
+			y: 1.75d
+		}
+	]
+}

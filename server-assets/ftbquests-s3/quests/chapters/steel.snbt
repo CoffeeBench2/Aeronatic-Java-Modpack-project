@@ -1,0 +1,274 @@
+{
+	default_hide_dependency_lines: false
+	default_quest_shape: "circle"
+	filename: "steel"
+	group: "53A79C6317ADAF67"
+	icon: {
+		id: "tfmg:steel_ingot"
+	}
+	id: "499B7C50A7D5FADF"
+	images: [ ]
+	order_index: 0
+	quest_links: [ ]
+	quests: [
+		{
+			dependencies: ["473C5520EBD11338"]
+			icon: {
+				id: "tfmg:steel_ingot"
+			}
+			id: "746E3C60E06295D9"
+			rewards: [
+				{
+					id: "6679A90A2CB90666"
+					type: "xp"
+					xp: 10
+				}
+			]
+			shape: "hexagon"
+			size: 1.5d
+			tasks: [
+				{
+					id: "070F224FEAD81AF8"
+					type: "checkmark"
+				}
+			]
+			x: 0.0d
+			y: 0.0d
+		}
+		{
+			dependencies: ["746E3C60E06295D9"]
+			id: "65C29E91300D3F4D"
+			rewards: [
+				{
+					id: "6BC2500DC837380F"
+					type: "xp"
+					xp: 25
+				}
+			]
+			tasks: [
+				{
+					id: "469813A515D45F45"
+					item: {
+						count: 1
+						id: "tfmg:coke_oven"
+					}
+					type: "item"
+				}
+			]
+			x: 2.0d
+			y: -0.875d
+		}
+		{
+			dependencies: ["65C29E91300D3F4D"]
+			id: "6463390F4814ED60"
+			rewards: [
+				{
+					id: "46ADDDE545BAB92C"
+					type: "xp"
+					xp: 25
+				}
+			]
+			tasks: [
+				{
+					id: "7C3ABC4A6CAF012B"
+					item: {
+						count: 1
+						id: "tfmg:coal_coke"
+					}
+					type: "item"
+				}
+			]
+			x: 4.0d
+			y: -1.75d
+		}
+		{
+			dependencies: ["65C29E91300D3F4D"]
+			id: "486E430627F1515E"
+			optional: true
+			rewards: [
+				{
+					id: "37345E53FFC3A559"
+					type: "xp"
+					xp: 25
+				}
+			]
+			shape: "diamond"
+			tasks: [
+				{
+					id: "2F1D0B1F8AE8A902"
+					item: {
+						count: 1
+						id: "tfmg:creosote_bucket"
+					}
+					type: "item"
+				}
+			]
+			x: 4.0d
+			y: 0.0d
+		}
+		{
+			dependencies: ["746E3C60E06295D9"]
+			id: "360E0952088A1E37"
+			rewards: [
+				{
+					id: "467FA75B78F4E3D0"
+					type: "xp"
+					xp: 25
+				}
+			]
+			tasks: [
+				{
+					id: "18F47D8B020C8A8C"
+					item: {
+						count: 1
+						id: "tfmg:fireclay_ball"
+					}
+					type: "item"
+				}
+			]
+			x: 2.0d
+			y: 0.875d
+		}
+		{
+			dependencies: ["360E0952088A1E37"]
+			id: "7341444D60F81C66"
+			rewards: [
+				{
+					id: "3EF6CFB6E20D664D"
+					type: "xp"
+					xp: 25
+				}
+			]
+			tasks: [
+				{
+					id: "1013D64FA0DAE71D"
+					item: {
+						count: 1
+						id: "tfmg:fireproof_bricks"
+					}
+					type: "item"
+				}
+			]
+			x: 4.0d
+			y: 1.75d
+		}
+		{
+			dependencies: ["7341444D60F81C66", "6463390F4814ED60"]
+			id: "4577334E30F1478C"
+			rewards: [
+				{
+					id: "285F015AA625FCF9"
+					type: "xp"
+					xp: 50
+				}
+			]
+			shape: "hexagon"
+			tasks: [
+				{
+					id: "3F265C8082A40D1B"
+					item: {
+						count: 1
+						id: "tfmg:blast_furnace_output"
+					}
+					type: "item"
+				}
+			]
+			x: 6.0d
+			y: 0.0d
+		}
+		{
+			dependencies: ["4577334E30F1478C"]
+			id: "4E0AC80B31ECB0DA"
+			rewards: [
+				{
+					id: "1FC2C62513C66A42"
+					type: "xp"
+					xp: 25
+				}
+			]
+			tasks: [
+				{
+					id: "27DCB66BB8708BE5"
+					item: {
+						count: 1
+						id: "tfmg:blast_furnace_reinforcement"
+					}
+					type: "item"
+				}
+			]
+			x: 8.0d
+			y: 0.0d
+		}
+		{
+			dependencies: ["4E0AC80B31ECB0DA"]
+			id: "03B012A823BEDFE5"
+			rewards: [
+				{
+					id: "4926EE62DE051352"
+					type: "xp"
+					xp: 100
+				}
+			]
+			shape: "hexagon"
+			size: 1.25d
+			tasks: [
+				{
+					id: "1C63ABBA067BE06C"
+					item: {
+						count: 1
+						id: "tfmg:steel_ingot"
+					}
+					type: "item"
+				}
+			]
+			x: 10.0d
+			y: 0.0d
+		}
+		{
+			dependencies: ["03B012A823BEDFE5"]
+			id: "11548EF04296AEB2"
+			rewards: [
+				{
+					id: "671A0639C32084E1"
+					type: "xp"
+					xp: 25
+				}
+			]
+			tasks: [
+				{
+					id: "24512438E7D34B8B"
+					item: {
+						count: 1
+						id: "tfmg:steel_casing"
+					}
+					type: "item"
+				}
+			]
+			x: 12.0d
+			y: 0.0d
+		}
+		{
+			dependencies: ["11548EF04296AEB2"]
+			id: "28702CEC0C2246AD"
+			rewards: [
+				{
+					id: "1D7D5AACB47EACBE"
+					type: "xp"
+					xp: 25
+				}
+			]
+			tasks: [
+				{
+					id: "5833F63D82E06D82"
+					item: {
+						count: 1
+						id: "tfmg:steel_mechanism"
+					}
+					type: "item"
+				}
+			]
+			x: 14.0d
+			y: 0.0d
+		}
+	]
+}

@@ -1,0 +1,178 @@
+{
+	chapter.05F31E02D13C8282.title: "Andesite Age"
+	chapter.1C366C0C5E6768BD.title: "Advanced Flight"
+	chapter.2C34A273BFD2E3C8.title: "Logistics"
+	chapter.4446AEB1B7E99123.title: "Welcome to Aero SMP"
+	chapter.499B7C50A7D5FADF.title: "Steel"
+	chapter.4A2D56289483159A.title: "Processing"
+	chapter.4ECF45246D7795AC.title: "Ground Vehicles"
+	chapter.500E9A4A85840540.title: "Your First Airship"
+	chapter.621986A821CECBFE.title: "Brass Age"
+	chapter.6E44740026804E98.title: "Trains"
+	chapter_group.100DB6268111BF6B.title: "Create"
+	chapter_group.41F6301AE58978D6.title: "Start Here"
+	chapter_group.53A79C6317ADAF67.title: "Industry"
+	chapter_group.771D248454C8ADC6.title: "Flight"
+	file.0000000000000001.title: "Coffee's Aero SMP — Season 3 Guide"
+	quest.000773B6EA728C5E.quest_desc: ["The Precision Mechanism is made by Sequenced Assembly:", "start with a golden sheet, then a deployer adds a cogwheel, a large cogwheel and an iron nugget,", "and the whole sequence repeats several times. Some attempts fail and give scrap.", "", "Build a loop of belts and deployers. Making these by hand is a punishment."]
+	quest.00AFCA996C940077.quest_desc: ["Glue it, assemble it, and drive it somewhere.", "Tick this when you've driven a car you built."]
+	quest.00AFCA996C940077.title: "First Drive"
+	quest.0280DD9A64204C2D.quest_desc: ["Signals split a line into blocks so two trains never share one.", "You need them as soon as a second train runs on the same track."]
+	quest.03B012A823BEDFE5.quest_desc: ["Steel. Crushed raw iron, limesand and coal coke dust go in the top, molten steel comes out to be cast.", "", "Almost everything in TFMG is built from it. Make a lot."]
+	quest.03B5C11ABE947D09.quest_desc: ["A Water Wheel turns forever when water flows past it.", "Put it in a stream or pour water over it. One flowing side is enough; more sides add nothing.", "", "A Large Water Wheel gives more stress capacity but spins slower."]
+	quest.05B96FDC4E9DA5F5.quest_desc: ["/rtp drops you 1,500 to 10,000 blocks out. Stand perfectly still until you arrive.", "/spawn takes you back to spawn.", "", "That's all the teleporting there is. A railway or an airship is how you really travel here."]
+	quest.05B96FDC4E9DA5F5.quest_subtitle: "/spawn, /rtp"
+	quest.05B96FDC4E9DA5F5.title: "Getting Around"
+	quest.064CB64168B228DF.quest_desc: ["Right-click a track with the Station to place it beside the line.", "The station is where trains are built, named and stop."]
+	quest.066D25139D8C9A58.quest_desc: ["A Gearbox turns rotation 90 degrees, out of all four sides around it.", "Use it when a shaft needs to turn a corner."]
+	quest.072AC31D8161535B.quest_desc: ["Rose Quartz is crafted from quartz and redstone.", "Polish it with sandpaper (or a deployer holding sandpaper) to get Polished Rose Quartz."]
+	quest.079EE677C87337DF.quest_desc: ["Balloons are easy. Helicopters, steam lift and remote-controlled ships take a bit more."]
+	quest.079EE677C87337DF.title: "Beyond the Balloon"
+	quest.07F52FD0CD3E4B84.quest_desc: ["Drive-By-Wire runs Cables between your controls and the rest of the ship.", "Bind your controller to a Controller Hub and you can fly the ship from the cockpit,", "or from far away."]
+	quest.0814E5A84FB1C684.quest_desc: ["A propeller pushes the ship along. Give it rotation and it makes thrust.", "Reverse the rotation to reverse the thrust."]
+	quest.0BA7B5BA444A19A4.quest_desc: ["A Portable Engine burns fuel for rotation, and runs in either direction.", "It's the simplest way to power propellers on a ship. A Blaze Cake superheats it."]
+	quest.0C292241A4091A68.quest_desc: ["Power a wheel mount from the SIDE and the wheel steers toward that side.", "Redstone Links on the front mounts let you steer without wires."]
+	quest.0C292241A4091A68.title: "Steering"
+	quest.0C5DA0E62D037E60.quest_desc: ["A Chute drops items straight down. Put a fan under it and it lifts them instead."]
+	quest.0F0FDEDCBD60777F.quest_desc: ["Railway Casing is made from brass casing and a sturdy sheet.", "Right-click a track with it to place a bogey: the wheels of your train."]
+	quest.109AEBF9220509B1.quest_desc: ["Brass is where Create gets clever: smart routing, precise parts and the big machines."]
+	quest.109AEBF9220509B1.title: "The Brass Age"
+	quest.1127D7D3924518ED.quest_desc: ["Hot Air Envelope blocks enclose a space that makes lift when it fills with hot air.", "The balloon has to be airtight, and blocks inside it take up volume.", "", "Dye them by right-clicking with any dye."]
+	quest.1127D7D3924518ED.title: "A Balloon"
+	quest.11548EF04296AEB2.quest_desc: ["Steel Casing: the next tier of casing, for steel-age machines."]
+	quest.14AE877B205FCA88.quest_desc: ["The Steam Engine is Create's biggest power source.", "Mount it on a Fluid Tank, heat the tank with Blaze Burners and pump water in.", "Bigger tank plus more heat means a higher boiler level and more engines it can run.", "", "Goggles on the tank show the boiler level and what's holding it back."]
+	quest.17B0F807FC8A54C3.quest_desc: ["Andesite Alloy is the material your first machines are made of.", "Craft it from andesite and iron nuggets (zinc nuggets work too).", "", "Make a stack early. You'll use it for everything in this chapter."]
+	quest.185525965F1AFFB2.quest_desc: ["A Schedule makes a train drive itself: go here, wait, go there.", "Hand it to the train's conductor, a mob seated at the controls, and it runs on its own."]
+	quest.185DBA7CBB0E71A7.quest_desc: ["An Item Vault is a big multiblock store. Place vaults side by side and they merge."]
+	quest.18CF387D1F5D8310.quest_desc: ["Right-click stripped wood with a brass ingot. Same as andesite casing, one tier up."]
+	quest.19C4203FD35FD71E.quest_desc: ["Engineer's Goggles show the stress numbers when you look at a machine.", "Wear them. Most 'it stopped working' problems are visible through them in one second."]
+	quest.1EA1AF6016537E12.quest_desc: ["The Wrench rotates a block when you right-click it.", "Shift-right-click picks the block up instantly. You'll use it constantly."]
+	quest.1EA31349054DDBCA.quest_desc: ["Land claims do not protect a ship. Ships use a Claim Block placed on the ship.", "", "Each Claim Block covers 250 ship blocks and spends one of your chunks.", "The order is Place, Claim, Name. Never pick up a claimed ship and put it back down:", "that gives it a new ID and orphans the claim.", "", "The Flight chapters walk you through it."]
+	quest.1EA31349054DDBCA.title: "Ships Have Their Own Claims"
+	quest.1FAB4FE1EF7E3D51.quest_desc: ["Fluid Tanks stack and merge into one big tank.", "You'll need one under a steam engine later."]
+	quest.1FE0578FF9986A4E.quest_desc: ["The Deployer is a robot hand. It uses whatever item you give it, on whatever is in front of it.", "", "It's how Create automates crafting steps that need a player.", "You'll need it for brass parts, so this chapter ends here."]
+	quest.204A03D7A13B24F5.quest_desc: ["Honey Glue marks what belongs to the ship. Click two corners to make a glued area,", "then Ctrl+Scroll to grow or shrink it. Hold ALT to place a corner in mid-air.", "", "Honey Glue only sticks to Simulated Contraptions, so it won't fight your other Create machines."]
+	quest.20D091BF8FBE4FDB.quest_desc: ["The Hot Air Burner fills the balloon above it, from the top down.", "It only burns while it has a redstone signal.", "", "Its panel sets the maximum output. A weaker redstone signal scales it down.", "Several burners can feed one balloon."]
+	quest.2355DD08E76AE6A3.quest_desc: ["The Millstone grinds what you drop in the top: ores, flowers, gravel.", "Slow but simple. Crushing Wheels are the upgrade."]
+	quest.2522847D222D1CA1.quest_desc: ["A Depot holds one stack for a machine above it to work on.", "Put it under a press or a fan. It's the simplest workbench in Create."]
+	quest.2584BAEE183A8F31.quest_desc: ["Optional. A Display Link reads a block and writes what it sees onto a sign or Display Board."]
+	quest.25B917B1B5BF9BBC.quest_desc: ["Zinc ore spawns underground. Crush it, wash it, smelt it.", "You need as much zinc as copper for brass."]
+	quest.26C3FAFE11EA04BA.quest_desc: ["The Mechanical Arm moves items between nearby blocks.", "BEFORE placing it, right-click its inputs (blue) and outputs (orange) while holding it.", "Placing it first and then wondering why it does nothing is a rite of passage."]
+	quest.28702CEC0C2246AD.quest_desc: ["The Steel Mechanism is TFMG's version of the precision mechanism. Every big machine needs some."]
+	quest.293854AA9EC8CB10.quest_desc: ["A Frogport sends and catches packages on a Chain Conveyor.", "Packages find their own way to a frog with a matching address."]
+	quest.2A7766ECD85D129F.quest_desc: ["Optional. The Altitude Sensor gives a redstone signal that changes with height.", "Goggles on it show the exact altitude and air pressure."]
+	quest.3027C62A2114CB76.quest_desc: ["This book is a guide, not a grind.", "Each quest teaches one thing. Most only ask you to make or hold one item.", "", "Rewards are mostly XP. The real reward is knowing how the machine works.", "Start here, then open the Create chapters."]
+	quest.3027C62A2114CB76.title: "Welcome, Engineer"
+	quest.30555E439C5A4163.quest_desc: ["Fluid Pipes move liquids. They need a Mechanical Pump somewhere on the line."]
+	quest.30FA9D87D297924A.quest_desc: ["A Cogwheel passes rotation to cogwheels beside it.", "Neighbouring cogs spin in opposite directions."]
+	quest.330CF857DD22451D.quest_desc: ["Right-click a Smart Propeller with a wrench to flip which way it pushes."]
+	quest.339D8AAD917C4335.quest_desc: ["The Gimbal Sensor outputs redstone based on how the ship tilts.", "Wire it to your thrust and the ship can level itself."]
+	quest.360E0952088A1E37.quest_desc: ["Fireclay is found near the surface. It's what fireproof bricks are made from."]
+	quest.37890D351B8AF57A.quest_desc: ["Optional. If part of a ship gets cut off, it splits into its own contraption.", "Right-click with a Slime Ball to merge two contraptions back into one."]
+	quest.37890D351B8AF57A.title: "Splits and Merges"
+	quest.3806E2C3F9E566EF.quest_desc: ["Right-click a stripped log or stripped wood with Andesite Alloy to make Andesite Casing.", "", "Casing is what tidies shafts and cogs into neat boxes, and it's in most andesite recipes."]
+	quest.38FC673F585D6638.quest_desc: ["Blow crushed copper ore through water to wash it into Copper Nuggets.", "This is the start of every ore line in your base."]
+	quest.38FC673F585D6638.title: "Washing Ores"
+	quest.3964101A7B81B90E.quest_desc: ["A Packager sits against an inventory and wraps its items into a package.", "Put a sign on the packager to give its packages an address."]
+	quest.3BEC066128C93F0E.quest_desc: ["Stand on your ship and type /shipname <name>.", "Do it now. When you own three ships all called 'ship' you'll wish you had."]
+	quest.3BEC066128C93F0E.quest_subtitle: "/shipname"
+	quest.3BEC066128C93F0E.title: "Name It"
+	quest.3D97867F3DC81BA7.quest_desc: ["Your level is on the sidebar. It grows from advancements (10 XP each) and hours played (6 XP each).", "", "Every level adds 2 claimable chunks and mails you a reward.", "Idle for 10 minutes and you are sent to the lobby. AFK time doesn't count."]
+	quest.3D97867F3DC81BA7.quest_subtitle: "Advancements and playtime"
+	quest.3D97867F3DC81BA7.title: "How You Level Up"
+	quest.3F43F21CC2847E16.quest_desc: ["Press an iron ingot into an Iron Sheet.", "Sheets go into fans, drills, saws, deployers and most of what follows."]
+	quest.3F473483F69D6EEE.quest_desc: ["Once you have more than a few machines, moving items becomes the real work.", "This chapter goes from simple funnels to Create's package network."]
+	quest.3F473483F69D6EEE.title: "Moving Things Around"
+	quest.3F70CDDCDC3A32CD.quest_desc: ["Regular sails make lift when they move. Symmetric Sails only make drag.", "Angle them against the airflow to turn or steady the ship."]
+	quest.415C86A2169BAA88.quest_desc: ["No /tpa this season. A railway is the cheapest way to connect your base to the world."]
+	quest.415C86A2169BAA88.title: "All Aboard"
+	quest.42E77164C86D0C32.quest_desc: ["A Rope Winch reels a rope in and out when it's given rotation.", "Connect it to a Rope Connector with a Rope Coupling. Cargo hooks, tow lines, anchors."]
+	quest.4577334E30F1478C.quest_desc: ["The Blast Furnace Output is the heart of the furnace.", "Build a cylinder of fireproof bricks around it, with one Blast Furnace Hatch in the wall for hot air.", "Everything goes in through the hole at the top."]
+	quest.462D7FCFEB35454D.quest_desc: ["/daily pays a 7-day cycle of items and XP. Claim it every 20 hours, in the Overworld.", "Leave it longer than 40 hours and the streak resets.", "", "/vote gives you the link. Voting pays spurs and diamonds, and the reward grows with your streak."]
+	quest.462D7FCFEB35454D.quest_subtitle: "/daily and /vote"
+	quest.462D7FCFEB35454D.title: "Every Day Counts"
+	quest.46AE7AFFB755AA19.quest_desc: ["Docking Connectors lock two contraptions rigidly together.", "Once locked, items and fluids can pass through in both directions."]
+	quest.473C5520EBD11338.quest_desc: ["The Mechanical Mixer goes over a basin and mixes what's inside.", "Some recipes need heat. That's the next quest."]
+	quest.48250D4A8DBF6DA3.quest_desc: ["The Stock Ticker shows everything in the network and lets you order from it.", "Pick what you want, give an address, and a package turns up.", "", "That's a whole base you can request from one screen."]
+	quest.486E430627F1515E.quest_desc: ["Optional. The Coke Oven's by-product. Don't waste it, some recipes want it."]
+	quest.496E9FD011EEC374.quest_desc: ["An Empty Blaze Burner. Right-click a blaze with it to catch one.", "Blazes live in Nether fortresses. Bring fire resistance."]
+	quest.49C290D7B7908756.quest_desc: ["Build a small platform, a balloon over a burner, glue it, assemble, and turn the throttle up.", "", "Lift gets weaker the higher you go, so a ship settles where lift equals its weight.", "Change the throttle and it settles at a new height. That is how you steer up and down.", "", "Tick this when your first balloon leaves the ground."]
+	quest.49C290D7B7908756.title: "Lift Off"
+	quest.4A2C3969947A9C59.quest_desc: ["A Mechanical Belt links two shafts. It carries rotation AND items.", "Right-click one shaft, then the other. One belt item covers any length."]
+	quest.4B636009740B5867.quest_desc: ["Two Crushing Wheels, side by side, spinning toward each other.", "Drop items into the gap from above.", "", "Crushed ores wash into more nuggets than smelting gives you ingots."]
+	quest.4B636009740B5867.title: "Crushing Wheels"
+	quest.4D527EDECA4AFF84.quest_desc: ["Optional, but stylish. Aviator's Goggles do everything Engineer's Goggles do."]
+	quest.4E0AC80B31ECB0DA.quest_desc: ["Blast furnaces need reinforcements around them to work, and more of them makes it faster."]
+	quest.50A2A8E9B32CA406.quest_desc: ["A Brass Funnel pulls items in or out of inventories and belts.", "Unlike the andesite one, it can filter and pull exact amounts."]
+	quest.521BEEA6877F51E6.quest_desc: ["Died? /back returns you to where you fell, within 5 minutes.", "You arrive as a ghost for up to 60 seconds: nothing can hurt you while you reach your corpse.", "", "PvP is on. A hit tags you for 30 seconds. Log out while tagged and you die where you stood."]
+	quest.521BEEA6877F51E6.quest_subtitle: "/back"
+	quest.521BEEA6877F51E6.title: "When Things Go Wrong"
+	quest.538A7148D8E074EB.quest_desc: ["The Navigation Table points a redstone signal toward a destination,", "set by the navigation item you put in it. The signal is strongest when you face it."]
+	quest.544D7DCC292F7091.quest_desc: ["Normal propeller bearings make wobbly helicopters.", "The Gyroscopic Propeller Bearing tries to keep its propeller upright.", "A redstone signal resets its tilt to zero."]
+	quest.568A6A4C0493329C.quest_desc: ["A windmill needs at least 8 sail blocks to count as one.", "A simple cross of sails, glued to the bearing, is the easy first windmill."]
+	quest.568A6A4C0493329C.title: "Sails"
+	quest.56993F8DE93E74C5.quest_desc: ["Create Track curves smoothly: right-click one end, then where it should go.", "Count is the lesson here. Any real line needs a lot of it."]
+	quest.56993F8DE93E74C5.title: "Lay Some Track"
+	quest.571BFAD0284A7F03.quest_desc: ["Create's real trick is processing: crushing, washing, mixing and baking in bulk.", "Every machine here replaces something you'd otherwise do by hand."]
+	quest.571BFAD0284A7F03.title: "Machines That Make Things"
+	quest.58F74ECF94220F1D.quest_desc: ["Power a wheel mount from the TOP and it brakes, adding friction.", "Build brakes before you build speed. Tick this when your car can stop."]
+	quest.58F74ECF94220F1D.title: "Brakes"
+	quest.5ACB0E72424BF0BC.quest_desc: ["The Physics Assembler turns glued blocks into a Simulated Contraption.", "Glue the blocks you want, then hold right-click on the assembler and pull its lever.", "", "Once assembled, any Physics Assembler can disassemble it again."]
+	quest.5F8AE569B4BBC6BE.quest_desc: ["Train Controls are where you drive from. Every train needs one.", "A second set facing the other way lets it leave stations in both directions."]
+	quest.608A1595249D341A.quest_desc: ["Mix copper and zinc in a HEATED basin to make brass.", "Mixer on top, Blaze Burner underneath."]
+	quest.60BC2C3AD2300950.quest_desc: ["The Mechanical Press flattens ingots on a depot or belt below it into sheets.", "Iron Sheets come next, and they're in a lot of recipes.", "", "That's the Andesite Age done. Processing is next."]
+	quest.61A34BD90DD2D524.quest_desc: ["Optional. Outputs redstone based on how fast the contraption is moving."]
+	quest.62547F2D825666C7.quest_desc: ["Mechanical Crafters chain together into a crafting grid of any size.", "Use a wrench to connect them, then feed items in."]
+	quest.62A952CE8531547A.quest_desc: ["A Large Cogwheel meshes with small cogs diagonally.", "Small to large halves the speed. Large to small doubles it.", "This is how you change RPM."]
+	quest.6463390F4814ED60.quest_desc: ["Coal Coke burns hotter than coal. It's the fuel your blast furnace runs on."]
+	quest.64ACB975E4D71951.quest_desc: ["A Shaft carries rotation in a straight line, in both directions.", "Place shafts end to end to move power across your base."]
+	quest.653792230A0F46D7.quest_desc: ["The Linked Controller binds your keys to redstone link frequencies.", "Bind forward, back, left, right and brake, and you're driving."]
+	quest.65C29E91300D3F4D.quest_desc: ["The Coke Oven slowly bakes coal into Coal Coke.", "It's slow, so build a row of them.", "Coal goes in anywhere. Creosote comes out the sides, and the coke falls out when it's done."]
+	quest.65F055A7C5C58AF4.quest_desc: ["Open the station screen and switch to Assembly Mode.", "Place bogeys on the track, build the body on top, add the controls and Super Glue it all together.", "Then confirm in the station screen.", "", "Fuel in a chest or barrel on board makes it faster.", "", "Tick this when your train rolls."]
+	quest.65F055A7C5C58AF4.title: "Assemble a Train"
+	quest.66DF28CF83EDD409.quest_desc: ["Optional. The Steering Wheel gives exact rotation: hold right-click and move the mouse.", "Sneak to snap to 45 degrees."]
+	quest.6732F82BCF299F3F.quest_desc: ["Your ship is NOT protected until you place a Claim Block on it.", "Each block covers 250 ship blocks and uses one of your chunks.", "", "Place, Claim, Name. In that order.", "Never pick up a claimed ship and place it again. It gets a new ID and the claim is lost.", "", "Here's a spare Claim Block for the next one."]
+	quest.6732F82BCF299F3F.title: "Claim Your Ship"
+	quest.68D7A682FE041ADB.quest_desc: ["Optional, and a big one. A Factory Gauge keeps a stock level topped up", "by sending ingredients to a machine whenever the network runs low.", "Watch its ponder scene before building one."]
+	quest.6950A40C4D10A6B5.quest_desc: ["A Wheel Mount holds a tire and drives it from the rotation it gets.", "Four of them for a basic car."]
+	quest.6950A40C4D10A6B5.title: "Wheel Mounts"
+	quest.6A991DC382664356.quest_desc: ["An Andesite Funnel puts items into, or takes them out of, whatever it faces."]
+	quest.6AEF0CE510F50415.quest_desc: ["A Smart Chute is a vertical item path with a filter.", "Great for sorting a single item out of a stream."]
+	quest.6CBD1488691DCB23.quest_desc: ["The Mechanical Pump pushes fluid along pipes in the direction of its arrow.", "Reverse the rotation to reverse the flow."]
+	quest.6ECD3967302EF34F.quest_desc: ["The Propeller Bearing spins any structure in front of it as a propeller.", "It needs at least 2 sail-like blocks. More sails push harder.", "", "A wrench flips the thrust without touching the rotation.", "Moving propellers push less, because the air is already moving past them."]
+	quest.6ED7758BD8A2F7DB.quest_desc: ["A Stock Link on a packager connects that inventory to a logistics network.", "To join an existing network, right-click a placed Stock Link with the new one before placing it."]
+	quest.6FC9EAEFE5FBE46C.quest_desc: ["Optional. Levitite keeps a ship floating with no balloon at all,", "if there's enough of it. It can't climb on its own, so you still need thrust.", "", "It's made by heating Levitite Blend. Once it crystallizes you can't get the blend back."]
+	quest.6FD0423CF636E2ED.quest_desc: ["A Basin holds items and fluids for a machine above it.", "Pair it with a Press to compact, or a Mixer to mix."]
+	quest.705D9BC2C127EAEB.quest_desc: ["A Borehead Bearing with Rock Cutting Wheels is a tunnel-boring drill.", "It needs a storage container on the contraption to hold what it digs.", "", "It runs at a quarter of the speed you give it, and slows down the more it tries to break at once."]
+	quest.726CB5FF1753D067.quest_desc: ["Something has to turn the wheels. A Portable Engine burns fuel and spins either way."]
+	quest.72CE667591563F1B.quest_desc: ["/home takes you to your bed or respawn point.", "There is no /tpa this season, so sleep where you actually live.", "", "Tick this once your bed is in your base."]
+	quest.72CE667591563F1B.quest_subtitle: "/home"
+	quest.72CE667591563F1B.title: "Somewhere to Come Back To"
+	quest.72FAEB85823C60D5.quest_desc: ["Open the map with M and click chunks to claim them.", "", "You start with 5 chunks and get 2 more every level.", "Claims are full-height columns, bedrock to sky. Claim it before you build it."]
+	quest.72FAEB85823C60D5.quest_subtitle: "Press M"
+	quest.72FAEB85823C60D5.title: "Claim Your Land"
+	quest.7341444D60F81C66.quest_desc: ["Fireproof Bricks are the walls of your blast furnace."]
+	quest.73FC1C50CA5C67E2.quest_desc: ["Right-click a wheel mount with a tire to fit it.", "They come in small, normal, large and monstrous sizes."]
+	quest.73FC1C50CA5C67E2.title: "Tires"
+	quest.746E3C60E06295D9.quest_desc: ["TFMG adds real industry on top of Create: coke, blast furnaces and steel.", "It's a long ladder. Each step unlocks the next."]
+	quest.746E3C60E06295D9.title: "Heavy Industry"
+	quest.75B82D3BD7D27EB8.quest_desc: ["Your first power source: you.", "Hold right-click on the Hand Crank to turn it. Good for testing, terrible for a factory."]
+	quest.75E06B1BB5F44C05.quest_desc: ["Type /mail. Your Season 3 starter kit is waiting: spurs, bread and saplings.", "", "Everything the server gives you arrives as mail: level rewards, /daily and votes.", "Nothing drops into your inventory by itself, so a full inventory never eats a reward."]
+	quest.75E06B1BB5F44C05.quest_subtitle: "/mail"
+	quest.75E06B1BB5F44C05.title: "Open Your Mail"
+	quest.76BCAFE2974CFF29.quest_desc: ["Not everything has to fly. A car uses the same Physics Assembler as a ship,", "and it's a cheaper way to learn how contraptions handle."]
+	quest.76BCAFE2974CFF29.title: "Wheels First"
+	quest.7727438DF9996E87.quest_desc: ["Create: Aeronautics is the reason this server exists.", "You build a ship on the ground as a normal structure, then assemble it", "and it becomes a real physics object that flies.", "", "Rule one: test small. Learn on a tiny balloon before you sink hours into a big one."]
+	quest.7727438DF9996E87.title: "Why We're All Here"
+	quest.7887B32CCE148D8C.quest_desc: ["A Windmill Bearing turns a sail structure into a power source.", "Build sails on the front, Super Glue them together, then right-click the bearing to start it.", "", "More sails make it spin faster. Right-click again any time to stop it and edit."]
+	quest.78A1616D696DAB19.quest_desc: ["Electron Tubes are in every smart brass component.", "Polished rose quartz plus an iron sheet."]
+	quest.79118C285B7A2C33.quest_desc: ["A lit Blaze Burner under a basin heats it.", "Feed it fuel to keep it burning. Heated mixing is how you make brass."]
+	quest.7A4BDAAD3FEC4B9C.quest_desc: ["An Encased Fan blows items. Put something in its airflow and it processes everything passing through:", "  Water in front: washing.", "  Fire or lava in front: smelting.", "  Soul fire in front: haunting."]
+	quest.7BBB8DAFB7012150.quest_desc: ["Optional. A Handle lets you grab a contraption and move it by hand.", "Handy when your car is stuck in a ditch."]
+	quest.7C1ED9D6648CC57D.quest_desc: ["A Spout fills items below it: buckets, bottles, and some recipes that need a fluid poured on."]
+	quest.7E44348DB233B69E.quest_desc: ["A Steam Vent lifts with steam instead of hot air.", "Like a steam engine, it needs heat, water and enough boiler space."]
+	quest.7E692E8565624267.quest_desc: ["Set an exact RPM. Put it next to a large cogwheel."]
+	quest.7F511C66920CA9B7.quest_desc: ["Create runs on rotation. Something spins, shafts and cogs carry the spin, machines use it.", "", "Every machine has a Stress Impact. Every source has a Stress Capacity.", "Ask for more than you supply and the whole network stops. That's the one rule.", "", "Hold W on any Create item (or press the Ponder key) to watch it work."]
+	quest.7F511C66920CA9B7.title: "Rotation Is Everything"
+	quest.7FE0411DA6435ADF.quest_desc: ["The Throttle Lever gives an exact analog redstone signal: click and drag to set it.", "Wire it to your burner and you have an altitude control."]
+}

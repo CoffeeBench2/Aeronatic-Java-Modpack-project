@@ -1,0 +1,204 @@
+{
+	default_hide_dependency_lines: false
+	default_quest_shape: "circle"
+	filename: "trains"
+	group: "100DB6268111BF6B"
+	icon: {
+		id: "create:track_station"
+	}
+	id: "6E44740026804E98"
+	images: [ ]
+	order_index: 4
+	quest_links: [ ]
+	quests: [
+		{
+			dependencies: ["18CF387D1F5D8310"]
+			icon: {
+				id: "create:track_station"
+			}
+			id: "415C86A2169BAA88"
+			rewards: [
+				{
+					id: "23ADB006E754B1E4"
+					type: "xp"
+					xp: 10
+				}
+			]
+			shape: "hexagon"
+			size: 1.5d
+			tasks: [
+				{
+					id: "6F0E9EB025047644"
+					type: "checkmark"
+				}
+			]
+			x: 0.0d
+			y: 0.0d
+		}
+		{
+			dependencies: ["415C86A2169BAA88"]
+			id: "56993F8DE93E74C5"
+			rewards: [
+				{
+					id: "3935F775935439EE"
+					type: "xp"
+					xp: 25
+				}
+			]
+			tasks: [
+				{
+					count: 16L
+					id: "1C4F1FB6AF4705C7"
+					item: {
+						count: 1
+						id: "create:track"
+					}
+					type: "item"
+				}
+			]
+			x: 2.0d
+			y: -0.875d
+		}
+		{
+			dependencies: ["56993F8DE93E74C5"]
+			id: "064CB64168B228DF"
+			rewards: [
+				{
+					id: "28935F9123571043"
+					type: "xp"
+					xp: 50
+				}
+			]
+			shape: "hexagon"
+			tasks: [
+				{
+					id: "479C92AED10E197E"
+					item: {
+						count: 1
+						id: "create:track_station"
+					}
+					type: "item"
+				}
+			]
+			x: 4.0d
+			y: -0.875d
+		}
+		{
+			dependencies: ["415C86A2169BAA88"]
+			id: "0F0FDEDCBD60777F"
+			rewards: [
+				{
+					id: "24C062929DD5D250"
+					type: "xp"
+					xp: 25
+				}
+			]
+			tasks: [
+				{
+					id: "3CB91A072E9444BC"
+					item: {
+						count: 1
+						id: "create:railway_casing"
+					}
+					type: "item"
+				}
+			]
+			x: 2.0d
+			y: 0.875d
+		}
+		{
+			dependencies: ["0F0FDEDCBD60777F"]
+			id: "5F8AE569B4BBC6BE"
+			rewards: [
+				{
+					id: "112F99886B73A379"
+					type: "xp"
+					xp: 25
+				}
+			]
+			tasks: [
+				{
+					id: "25EBA3F670FBED4F"
+					item: {
+						count: 1
+						id: "create:controls"
+					}
+					type: "item"
+				}
+			]
+			x: 4.0d
+			y: 0.875d
+		}
+		{
+			dependencies: ["5F8AE569B4BBC6BE", "064CB64168B228DF"]
+			icon: {
+				id: "create:track_station"
+			}
+			id: "65F055A7C5C58AF4"
+			rewards: [
+				{
+					id: "08219B9791B05047"
+					type: "xp"
+					xp: 50
+				}
+			]
+			shape: "hexagon"
+			tasks: [
+				{
+					id: "0837C5A9F161DCBD"
+					type: "checkmark"
+				}
+			]
+			x: 6.0d
+			y: 0.0d
+		}
+		{
+			dependencies: ["65F055A7C5C58AF4"]
+			id: "0280DD9A64204C2D"
+			rewards: [
+				{
+					id: "0017F22EA0B56D87"
+					type: "xp"
+					xp: 25
+				}
+			]
+			tasks: [
+				{
+					id: "07F6415CADCFE9EF"
+					item: {
+						count: 1
+						id: "create:track_signal"
+					}
+					type: "item"
+				}
+			]
+			x: 8.0d
+			y: -0.875d
+		}
+		{
+			dependencies: ["65F055A7C5C58AF4"]
+			id: "185525965F1AFFB2"
+			rewards: [
+				{
+					id: "655E5F7A3F390F8B"
+					type: "xp"
+					xp: 100
+				}
+			]
+			shape: "hexagon"
+			size: 1.25d
+			tasks: [
+				{
+					id: "52F11D472027E986"
+					item: {
+						count: 1
+						id: "create:schedule"
+					}
+					type: "item"
+				}
+			]
+			x: 8.0d
+			y: 0.875d
+		}
+	]
+}

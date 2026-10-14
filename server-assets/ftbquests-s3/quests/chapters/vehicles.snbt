@@ -1,0 +1,277 @@
+{
+	default_hide_dependency_lines: false
+	default_quest_shape: "rsquare"
+	filename: "vehicles"
+	group: "771D248454C8ADC6"
+	icon: {
+		id: "offroad:tire"
+	}
+	id: "4ECF45246D7795AC"
+	images: [ ]
+	order_index: 1
+	quest_links: [ ]
+	quests: [
+		{
+			dependencies: ["5ACB0E72424BF0BC"]
+			icon: {
+				id: "offroad:tire"
+			}
+			id: "76BCAFE2974CFF29"
+			rewards: [
+				{
+					id: "17F3AFA66DC5AA3B"
+					type: "xp"
+					xp: 10
+				}
+			]
+			shape: "hexagon"
+			size: 1.5d
+			tasks: [
+				{
+					id: "4B6CBC466C5AD339"
+					type: "checkmark"
+				}
+			]
+			x: 0.0d
+			y: 0.0d
+		}
+		{
+			dependencies: ["76BCAFE2974CFF29"]
+			id: "6950A40C4D10A6B5"
+			rewards: [
+				{
+					id: "6C91623A0AA2D691"
+					type: "xp"
+					xp: 25
+				}
+			]
+			tasks: [
+				{
+					count: 4L
+					id: "00EAEC3665EAD275"
+					item: {
+						count: 1
+						id: "offroad:wheel_mount"
+					}
+					type: "item"
+				}
+			]
+			x: 2.0d
+			y: -0.875d
+		}
+		{
+			dependencies: ["6950A40C4D10A6B5"]
+			id: "73FC1C50CA5C67E2"
+			rewards: [
+				{
+					id: "6BB3EE772899BCF8"
+					type: "xp"
+					xp: 25
+				}
+			]
+			tasks: [
+				{
+					count: 4L
+					id: "520B7134BF2B38FA"
+					item: {
+						count: 1
+						id: "offroad:tire"
+					}
+					type: "item"
+				}
+			]
+			x: 4.0d
+			y: 0.0d
+		}
+		{
+			dependencies: ["76BCAFE2974CFF29"]
+			id: "726CB5FF1753D067"
+			rewards: [
+				{
+					id: "0D74DD28173F3CF4"
+					type: "xp"
+					xp: 25
+				}
+			]
+			tasks: [
+				{
+					id: "140B377B791DDB93"
+					item: {
+						count: 1
+						id: "simulated:white_portable_engine"
+					}
+					type: "item"
+				}
+			]
+			x: 2.0d
+			y: 0.875d
+		}
+		{
+			dependencies: ["73FC1C50CA5C67E2"]
+			id: "0C292241A4091A68"
+			rewards: [
+				{
+					id: "6BEF01BF5D9C1728"
+					type: "xp"
+					xp: 25
+				}
+			]
+			tasks: [
+				{
+					id: "70310425E464A75C"
+					item: {
+						count: 1
+						id: "create:redstone_link"
+					}
+					type: "item"
+				}
+			]
+			x: 6.0d
+			y: -0.875d
+		}
+		{
+			dependencies: ["73FC1C50CA5C67E2"]
+			icon: {
+				id: "offroad:tire"
+			}
+			id: "58F74ECF94220F1D"
+			rewards: [
+				{
+					id: "3829156F81A2E741"
+					type: "xp"
+					xp: 25
+				}
+			]
+			tasks: [
+				{
+					id: "3DF06833FDC74B7E"
+					type: "checkmark"
+				}
+			]
+			x: 6.0d
+			y: 0.875d
+		}
+		{
+			dependencies: ["0C292241A4091A68"]
+			id: "653792230A0F46D7"
+			rewards: [
+				{
+					id: "4DD0096D7DDD3460"
+					type: "xp"
+					xp: 50
+				}
+			]
+			shape: "hexagon"
+			tasks: [
+				{
+					id: "25D5FEEA1BED323C"
+					item: {
+						count: 1
+						id: "create:linked_controller"
+					}
+					type: "item"
+				}
+			]
+			x: 8.0d
+			y: 0.0d
+		}
+		{
+			dependencies: ["653792230A0F46D7", "58F74ECF94220F1D", "726CB5FF1753D067"]
+			icon: {
+				id: "offroad:tire"
+			}
+			id: "00AFCA996C940077"
+			rewards: [
+				{
+					id: "57564C88E6C32D75"
+					type: "xp"
+					xp: 50
+				}
+			]
+			shape: "hexagon"
+			tasks: [
+				{
+					id: "3F865031DEC453E7"
+					type: "checkmark"
+				}
+			]
+			x: 10.0d
+			y: 0.0d
+		}
+		{
+			dependencies: ["00AFCA996C940077"]
+			id: "66DF28CF83EDD409"
+			optional: true
+			rewards: [
+				{
+					id: "1A273BDA60E13E7B"
+					type: "xp"
+					xp: 25
+				}
+			]
+			shape: "diamond"
+			tasks: [
+				{
+					id: "6E678015D19AC0B3"
+					item: {
+						count: 1
+						id: "simulated:steering_wheel"
+					}
+					type: "item"
+				}
+			]
+			x: 12.0d
+			y: -1.75d
+		}
+		{
+			dependencies: ["00AFCA996C940077"]
+			id: "7BBB8DAFB7012150"
+			optional: true
+			rewards: [
+				{
+					id: "0B07E011E9D45B13"
+					type: "xp"
+					xp: 25
+				}
+			]
+			shape: "diamond"
+			tasks: [
+				{
+					id: "418EED211D0E3266"
+					item: {
+						count: 1
+						id: "simulated:iron_handle"
+					}
+					type: "item"
+				}
+			]
+			x: 12.0d
+			y: 0.0d
+		}
+		{
+			dependencies: ["00AFCA996C940077"]
+			id: "705D9BC2C127EAEB"
+			rewards: [
+				{
+					id: "50DDB0E70E6A94D0"
+					type: "xp"
+					xp: 100
+				}
+			]
+			shape: "hexagon"
+			size: 1.25d
+			tasks: [
+				{
+					id: "3C84DF04E259C16A"
+					item: {
+						count: 1
+						id: "offroad:borehead_bearing"
+					}
+					type: "item"
+				}
+			]
+			x: 12.0d
+			y: 1.75d
+		}
+	]
+}

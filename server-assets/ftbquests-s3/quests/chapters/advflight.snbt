@@ -1,0 +1,274 @@
+{
+	default_hide_dependency_lines: false
+	default_quest_shape: "rsquare"
+	filename: "advflight"
+	group: "771D248454C8ADC6"
+	icon: {
+		id: "aeronautics:gyroscopic_propeller_bearing"
+	}
+	id: "1C366C0C5E6768BD"
+	images: [ ]
+	order_index: 2
+	quest_links: [ ]
+	quests: [
+		{
+			dependencies: ["49C290D7B7908756", "000773B6EA728C5E"]
+			icon: {
+				id: "aeronautics:gyroscopic_propeller_bearing"
+			}
+			id: "079EE677C87337DF"
+			rewards: [
+				{
+					id: "40486AA7261A2316"
+					type: "xp"
+					xp: 10
+				}
+			]
+			shape: "hexagon"
+			size: 1.5d
+			tasks: [
+				{
+					id: "49BF21AC1C5C603D"
+					type: "checkmark"
+				}
+			]
+			x: 0.0d
+			y: 0.0d
+		}
+		{
+			dependencies: ["079EE677C87337DF"]
+			id: "544D7DCC292F7091"
+			rewards: [
+				{
+					id: "5D818EED62B7CA1D"
+					type: "xp"
+					xp: 50
+				}
+			]
+			shape: "hexagon"
+			tasks: [
+				{
+					id: "606B627D209CF347"
+					item: {
+						count: 1
+						id: "aeronautics:gyroscopic_propeller_bearing"
+					}
+					type: "item"
+				}
+			]
+			x: 2.0d
+			y: -3.5d
+		}
+		{
+			dependencies: ["079EE677C87337DF"]
+			id: "7E44348DB233B69E"
+			rewards: [
+				{
+					id: "0288036BD981A51C"
+					type: "xp"
+					xp: 25
+				}
+			]
+			tasks: [
+				{
+					id: "6ED50FAFB67EB738"
+					item: {
+						count: 1
+						id: "aeronautics:steam_vent"
+					}
+					type: "item"
+				}
+			]
+			x: 2.0d
+			y: -1.75d
+		}
+		{
+			dependencies: ["079EE677C87337DF"]
+			id: "330CF857DD22451D"
+			rewards: [
+				{
+					id: "3A058E53FA6FF104"
+					type: "xp"
+					xp: 25
+				}
+			]
+			tasks: [
+				{
+					id: "377A203AD9A80208"
+					item: {
+						count: 1
+						id: "aeronautics:smart_propeller"
+					}
+					type: "item"
+				}
+			]
+			x: 2.0d
+			y: 0.0d
+		}
+		{
+			dependencies: ["079EE677C87337DF"]
+			id: "3F70CDDCDC3A32CD"
+			rewards: [
+				{
+					id: "6BCAF60939BA1EFA"
+					type: "xp"
+					xp: 25
+				}
+			]
+			tasks: [
+				{
+					id: "70A42570E06C014D"
+					item: {
+						count: 1
+						id: "simulated:white_symmetric_sail"
+					}
+					type: "item"
+				}
+			]
+			x: 2.0d
+			y: 1.75d
+		}
+		{
+			dependencies: ["544D7DCC292F7091"]
+			id: "339D8AAD917C4335"
+			rewards: [
+				{
+					id: "72E1AC35AAB8C84C"
+					type: "xp"
+					xp: 25
+				}
+			]
+			tasks: [
+				{
+					id: "3898059E1BCD6B3D"
+					item: {
+						count: 1
+						id: "simulated:gimbal_sensor"
+					}
+					type: "item"
+				}
+			]
+			x: 4.0d
+			y: -0.875d
+		}
+		{
+			dependencies: ["339D8AAD917C4335"]
+			id: "61A34BD90DD2D524"
+			optional: true
+			rewards: [
+				{
+					id: "2B1B92D54E6AAAFD"
+					type: "xp"
+					xp: 25
+				}
+			]
+			shape: "diamond"
+			tasks: [
+				{
+					id: "30C5F4C9243CDCC5"
+					item: {
+						count: 1
+						id: "simulated:velocity_sensor"
+					}
+					type: "item"
+				}
+			]
+			x: 6.0d
+			y: -0.875d
+		}
+		{
+			dependencies: ["079EE677C87337DF"]
+			id: "42E77164C86D0C32"
+			rewards: [
+				{
+					id: "652E1603068F9BC9"
+					type: "xp"
+					xp: 25
+				}
+			]
+			tasks: [
+				{
+					id: "257FDD1B16D0F57B"
+					item: {
+						count: 1
+						id: "simulated:rope_winch"
+					}
+					type: "item"
+				}
+			]
+			x: 2.0d
+			y: 3.5d
+		}
+		{
+			dependencies: ["42E77164C86D0C32"]
+			id: "46AE7AFFB755AA19"
+			rewards: [
+				{
+					id: "6080A0509A7389C7"
+					type: "xp"
+					xp: 25
+				}
+			]
+			tasks: [
+				{
+					id: "2E457349C845B38A"
+					item: {
+						count: 1
+						id: "simulated:docking_connector"
+					}
+					type: "item"
+				}
+			]
+			x: 4.0d
+			y: 0.875d
+		}
+		{
+			dependencies: ["339D8AAD917C4335"]
+			id: "538A7148D8E074EB"
+			rewards: [
+				{
+					id: "1F0D47A86F0A7C64"
+					type: "xp"
+					xp: 25
+				}
+			]
+			tasks: [
+				{
+					id: "6D74DE0CEFE127FC"
+					item: {
+						count: 1
+						id: "simulated:navigation_table"
+					}
+					type: "item"
+				}
+			]
+			x: 6.0d
+			y: 0.875d
+		}
+		{
+			dependencies: ["538A7148D8E074EB"]
+			id: "07F52FD0CD3E4B84"
+			rewards: [
+				{
+					id: "60CC0D018149ACCE"
+					type: "xp"
+					xp: 100
+				}
+			]
+			shape: "hexagon"
+			size: 1.25d
+			tasks: [
+				{
+					id: "13854F1DFF458EAD"
+					item: {
+						count: 1
+						id: "drivebywire:controller_hub"
+					}
+					type: "item"
+				}
+			]
+			x: 8.0d
+			y: 0.0d
+		}
+	]
+}

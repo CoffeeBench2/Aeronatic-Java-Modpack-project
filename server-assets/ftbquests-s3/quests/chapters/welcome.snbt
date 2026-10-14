@@ -1,0 +1,215 @@
+{
+	default_hide_dependency_lines: false
+	default_quest_shape: "circle"
+	filename: "welcome"
+	group: "41F6301AE58978D6"
+	icon: {
+		id: "aeroclaims:claim_block"
+	}
+	id: "4446AEB1B7E99123"
+	images: [ ]
+	order_index: 0
+	quest_links: [ ]
+	quests: [
+		{
+			icon: {
+				id: "aeroclaims:claim_block"
+			}
+			id: "3027C62A2114CB76"
+			rewards: [
+				{
+					id: "77821713BCA80437"
+					type: "xp"
+					xp: 10
+				}
+			]
+			shape: "hexagon"
+			size: 1.5d
+			tasks: [
+				{
+					id: "4889F6F83634886E"
+					type: "checkmark"
+				}
+			]
+			x: 0.0d
+			y: 0.0d
+		}
+		{
+			dependencies: ["3027C62A2114CB76"]
+			icon: {
+				id: "aeroclaims:claim_block"
+			}
+			id: "75E06B1BB5F44C05"
+			rewards: [
+				{
+					id: "4DB06230F3A4A6DD"
+					type: "xp"
+					xp: 25
+				}
+			]
+			tasks: [
+				{
+					id: "19FCE883504E23E7"
+					type: "checkmark"
+				}
+			]
+			x: 2.0d
+			y: -0.875d
+		}
+		{
+			dependencies: ["3027C62A2114CB76"]
+			icon: {
+				id: "aeroclaims:claim_block"
+			}
+			id: "72FAEB85823C60D5"
+			rewards: [
+				{
+					id: "58C3A4659B6DDC44"
+					type: "xp"
+					xp: 25
+				}
+			]
+			tasks: [
+				{
+					id: "0087EE86B4AF11E5"
+					type: "checkmark"
+				}
+			]
+			x: 2.0d
+			y: 0.875d
+		}
+		{
+			dependencies: ["72FAEB85823C60D5"]
+			icon: {
+				id: "aeroclaims:claim_block"
+			}
+			id: "72CE667591563F1B"
+			rewards: [
+				{
+					id: "456E7F8FED91B4FC"
+					type: "xp"
+					xp: 25
+				}
+			]
+			tasks: [
+				{
+					id: "70C13E532B6D4775"
+					type: "checkmark"
+				}
+			]
+			x: 4.0d
+			y: -1.75d
+		}
+		{
+			dependencies: ["75E06B1BB5F44C05"]
+			icon: {
+				id: "aeroclaims:claim_block"
+			}
+			id: "462D7FCFEB35454D"
+			rewards: [
+				{
+					id: "703F365C7B44C914"
+					type: "xp"
+					xp: 25
+				}
+			]
+			tasks: [
+				{
+					id: "46030890317A870C"
+					type: "checkmark"
+				}
+			]
+			x: 4.0d
+			y: 0.0d
+		}
+		{
+			dependencies: ["462D7FCFEB35454D"]
+			icon: {
+				id: "aeroclaims:claim_block"
+			}
+			id: "3D97867F3DC81BA7"
+			rewards: [
+				{
+					id: "2CB995EAC587A3C6"
+					type: "xp"
+					xp: 25
+				}
+			]
+			tasks: [
+				{
+					id: "59304A2C59ADC45A"
+					type: "checkmark"
+				}
+			]
+			x: 6.0d
+			y: -1.75d
+		}
+		{
+			dependencies: ["72CE667591563F1B"]
+			icon: {
+				id: "aeroclaims:claim_block"
+			}
+			id: "521BEEA6877F51E6"
+			rewards: [
+				{
+					id: "065388693FC02A65"
+					type: "xp"
+					xp: 25
+				}
+			]
+			tasks: [
+				{
+					id: "0330A32749E71347"
+					type: "checkmark"
+				}
+			]
+			x: 6.0d
+			y: 0.0d
+		}
+		{
+			dependencies: ["72CE667591563F1B"]
+			icon: {
+				id: "aeroclaims:claim_block"
+			}
+			id: "05B96FDC4E9DA5F5"
+			rewards: [
+				{
+					id: "600EB8BEF098A7FB"
+					type: "xp"
+					xp: 25
+				}
+			]
+			tasks: [
+				{
+					id: "44B019721C86C00B"
+					type: "checkmark"
+				}
+			]
+			x: 6.0d
+			y: 1.75d
+		}
+		{
+			dependencies: ["72FAEB85823C60D5"]
+			icon: {
+				id: "aeroclaims:claim_block"
+			}
+			id: "1EA31349054DDBCA"
+			rewards: [
+				{
+					id: "2C0638E8B7C6F714"
+					type: "xp"
+					xp: 50
+				}
+			]
+			shape: "hexagon"
+			tasks: [
+				{
+					id: "104165348C9A2528"
+					type: "checkmark"
+				}
+			]
+			x: 4.0d
+			y: 1.75d
+		}
+	]
+}
