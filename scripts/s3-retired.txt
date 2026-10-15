@@ -10,5 +10,4 @@
 # Make prefixes narrow: include the dash or the version when the mod id is a prefix of another mod.
 
 createultimine-        # 3.0.5 — Create Ultimine (FTB Ultimine x Create compat), owner to-do 2026-10-14
-ftb-ultimine-          # 3.0.10 — FTB Ultimine dropped (owner 2026-10-15: "remove all related to ultimine")
 ultimine_rewind-       # 3.0.10 — Ultimine Rewind (FTB Ultimine add-on, REQUIRED channels)
