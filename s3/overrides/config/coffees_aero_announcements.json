@@ -1,12 +1,40 @@
 {
-  "_comment": "Season 3 CurseForge pack news (bundled; newsUrl is blank in this pack).",
+  "_comment": "Season 3 news. Source of truth: scripts/s3-overrides/config/ (build_s3_channel.py copies it to s3/overrides/config/). Core 1.4.9+ also fetches the s3/ copy live from the public repo, so news can change without an update.",
   "entries": [
     {
-      "version": "3.0.10",
+      "version": "3.0.13",
       "date": "October 2026",
-      "tag": "FIX",
-      "title": "Update fixes in progress",
-      "body": "We're fixing some problems with how updates install. FTB Ultimine has been removed from the pack."
+      "tag": "UPDATE",
+      "title": "Your Settings Stay Yours",
+      "body": "The pack now keeps its hands off your stuff. Change something once and it stays changed.",
+      "added": [
+        "This news screen now updates live, so you'll hear about server news without waiting for a pack update"
+      ],
+      "fixed": [
+        "Leaving potato mode only puts back the video settings it changed. Your keybinds, sound and language stay as you set them",
+        "Hiding the recipe viewer stays hidden",
+        "Resource packs you add yourself are never deleted",
+        "Your map and waypoint folders are never moved or deleted",
+        "From the next update on, your Aero settings like the cosmetics view are kept",
+        "Resetting your Aero settings can no longer install the old Season 2 pack"
+      ]
+    },
+    {
+      "version": "3.0.12",
+      "date": "October 2026",
+      "tag": "UPDATE",
+      "title": "Gauges, Lights and Accessories",
+      "added": [
+        "Accessory slots for rings, belts and other wearables",
+        "New lights, switches and panel gauges for your factories and ship bridges",
+        "Rotate and balance recipes right in the crafting grid",
+        "/ship recall brings your ship back to you",
+        "FTB Ultimine is back"
+      ],
+      "fixed": [
+        "Ships now have a top speed of 150 blocks a second",
+        "Mods you switched off in your launcher stay off through updates"
+      ]
     },
     {
       "version": "3.0.5",
