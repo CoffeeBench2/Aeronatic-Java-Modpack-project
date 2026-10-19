@@ -1,11 +1,8 @@
 {
-  "version": "3.0.11",
+  "version": "3.0.12",
   "url": "https://modrinth.com/modpack/coffees-create-aeronautics-smp",
   "neoforge": "21.1.251",
   "minecraft": "1.21.1",
-  "notes": "Season 3. FTB Ultimine is back.",
-  "retired": [
-    "createultimine-",
-    "ultimine_rewind-"
-  ]
+  "notes": "Updater fixes.",
+  "retired": []
 }
