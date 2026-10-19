@@ -16,7 +16,9 @@
         "Resource packs you add yourself are never deleted",
         "Your map and waypoint folders are never moved or deleted",
         "From the next update on, your Aero settings like the cosmetics view are kept",
-        "Resetting your Aero settings can no longer install the old Season 2 pack"
+        "Resetting your Aero settings can no longer install the old Season 2 pack",
+        "The RAM warning only shows when you have less than 7 GB set, which can crash the game. The \"too much RAM\" warning is gone",
+        "A shaky connection no longer turns the Updates button red. It tries again first"
       ]
     },
     {

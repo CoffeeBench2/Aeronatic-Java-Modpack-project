@@ -126,8 +126,8 @@ hash = "02b2691c5dc4e13509bb935a7cfc728ae46a0c225e91e1c363580b9a6a71c2d9"
 metafile = true
 
 [[files]]
-file = "mods/coffeesaerocore-1-4-9.pw.toml"
-hash = "a5ab7a546d08013ed5b4c9c1a0da6d2b115ff819b8310a26e587b3a5fe4487ea"
+file = "mods/coffeesaerocore-1-4-10.pw.toml"
+hash = "d1b429511326972ed281e0d2ace90c35704e108850e5b76591a0861924946792"
 metafile = true
 
 [[files]]
@@ -992,7 +992,7 @@ metafile = true
 
 [[files]]
 file = "overrides/config/coffees_aero_announcements.json"
-hash = "f005d90874fa0bfd3fe4ca2d2227a88a825522667b45b05e93530630e4a77670"
+hash = "949eb48c9a4499d43fc0ee5baa7500036a0e235a089d024d6213b24caa27e6b8"
 
 [[files]]
 file = "overrides/config/coffeesaerosmp_core-client.toml"
