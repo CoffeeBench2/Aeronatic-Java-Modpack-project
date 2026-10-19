@@ -127,7 +127,7 @@ metafile = true
 
 [[files]]
 file = "mods/coffeesaerocore-1-4-8.pw.toml"
-hash = "7ec22c3f0b61b190d53e1cf54a6d8afa7b4ee376e006b5ba6166ef26f3be524f"
+hash = "d7d65ac133ed23e16097f65072661abb1ec9366f9eecd7b7cddb9940a5d71500"
 metafile = true
 
 [[files]]
