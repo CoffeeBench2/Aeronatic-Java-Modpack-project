@@ -1,8 +1,8 @@
 {
-  "version": "3.0.12",
+  "version": "3.0.13",
   "url": "https://modrinth.com/modpack/coffees-create-aeronautics-smp",
   "neoforge": "21.1.251",
   "minecraft": "1.21.1",
-  "notes": "Updater fixes.",
+  "notes": "Your settings stay yours, live news, RAM warning only below 7 GB.",
   "retired": []
 }
