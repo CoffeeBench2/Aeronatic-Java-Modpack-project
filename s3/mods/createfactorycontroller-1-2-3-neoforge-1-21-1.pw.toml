@@ -1,0 +1,13 @@
+name = "createfactorycontroller-1.2.3-neoforge-1.21.1"
+filename = "createfactorycontroller-1.2.3-neoforge-1.21.1.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/VR3MrvE2/versions/TajznPRM/createfactorycontroller-1.2.3-neoforge-1.21.1.jar"
+hash-format = "sha512"
+hash = "bc3e718187819742bd0058ddd24d493fe691bf08bae8a0dc31ed56ae44ae8d00fa2fc6ea9ed2e9fa5c26d762027e595c9bfab55acbb759d56c9a00e9a1977a7e"
+
+[update]
+[update.modrinth]
+mod-id = "VR3MrvE2"
+version = "TajznPRM"

@@ -2,6 +2,34 @@
   "_comment": "Season 3 news. Source of truth: scripts/s3-overrides/config/ (build_s3_channel.py copies it to s3/overrides/config/). Core 1.4.9+ also fetches the s3/ copy live from the public repo, so news can change without an update.",
   "entries": [
     {
+      "version": "3.1.0",
+      "date": "November 2026",
+      "tag": "MAJOR",
+      "title": "Spurs Worth Earning",
+      "body": "Spurs finally have somewhere to go. Sell what your factories make, chase crates falling out of the sky, and spend it all on more land.",
+      "added": [
+        "The Wanted Board at spawn buys a new list of Create goods every Monday, paid in coins on the spot",
+        "Team orders: one big weekly delivery for teams of three or more, with the reward split by who delivered",
+        "Sky crates fall somewhere in the wild every few hours. First to crack one open gets the loot",
+        "Type /claims to buy extra land with spurs",
+        "High levels now give far more land, up to 1,500 claims at level 30",
+        "Votes pay more: 5 spurs, rising to 15 with a streak",
+        "Create Deco: new metal doors, catwalks, bars, lamps and decorative blocks for your builds",
+        "Create: Factory Controller: plan and run production orders from one block",
+        "Create: Frogport Reworked: smarter frogports for your package networks",
+        "Advancement banners: a proper banner pops up when you earn an advancement"
+      ],
+      "fixed": [
+        "A voting streak that broke on day 1 no longer stays stuck there",
+        "Drifting in water or riding a ship no longer counts as playing. You'll be asked if you're still there",
+        "Sable is now 2.0.6, the same version the server runs. If you already installed it yourself, the update keeps your copy",
+        "Xaero's World Map and Minimap updated: claim anchors show on the map, and cave mode zooms properly"
+      ],
+      "removed": [
+        "Create Threaded Trains. It could freeze the server, which already runs without it. Installed from Modrinth? You can delete createthreadedtrains from your mods folder"
+      ]
+    },
+    {
       "version": "3.0.13",
       "date": "October 2026",
       "tag": "UPDATE",
