@@ -1,0 +1,8 @@
+name = "CoffeesAeroCore-1.4.16"
+filename = "CoffeesAeroCore-1.4.16.jar"
+side = "client"
+
+[download]
+url = "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/download/s3-v3.1.1/CoffeesAeroCore-1.4.16.jar"
+hash-format = "sha256"
+hash = "335bec7622439898af933bc52fd29833b769d0333eecb2e867b1dd18aa9a2689"

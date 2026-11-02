@@ -3,6 +3,6 @@ filename = "create-frogport-reworked-1.0.1.jar"
 side = "both"
 
 [download]
-url = "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/download/s3-v3.1.0/create-frogport-reworked-1.0.1.jar"
+url = "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/download/s3-v3.1.1/create-frogport-reworked-1.0.1.jar"
 hash-format = "sha256"
 hash = "29a5410dee46d29e0a08be7027e936b81312ab5c6c5a7537053c766b12751d52"
