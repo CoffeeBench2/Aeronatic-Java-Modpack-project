@@ -1,0 +1,13 @@
+name = "sable-cool-rain-1.0.1+1.21.1+neoforge"
+filename = "sable-cool-rain-1.0.1+1.21.1+neoforge.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/nUwwB5kx/versions/3KLMffqk/sable-cool-rain-1.0.1%2B1.21.1%2Bneoforge.jar"
+hash-format = "sha512"
+hash = "dccd4b92360caef342fa3226ab7e8d6e2dbf44745cf4ff9e3e861356bf7a6796e26a19512319fd1cd143a0f25b23ad65f542ee7783a7f61f6cdc4907a6f78961"
+
+[update]
+[update.modrinth]
+mod-id = "nUwwB5kx"
+version = "3KLMffqk"

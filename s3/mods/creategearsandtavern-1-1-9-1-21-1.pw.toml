@@ -1,0 +1,13 @@
+name = "creategearsandtavern-1.1.9-1.21.1"
+filename = "creategearsandtavern-1.1.9-1.21.1.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/ZjAeukl9/versions/smqH5sEQ/creategearsandtavern-1.1.9-1.21.1.jar"
+hash-format = "sha512"
+hash = "a32f69efbc946a0a4bc8e2294d79c3678555506a9f99e4027a3323b26ced3a3aeccdc3c319042ca0ed4bf75c21329286832218d0f46a8b4a1ae95b73f5b0f588"
+
+[update]
+[update.modrinth]
+mod-id = "ZjAeukl9"
+version = "smqH5sEQ"

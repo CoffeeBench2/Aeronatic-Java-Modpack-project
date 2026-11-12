@@ -1,0 +1,13 @@
+name = "create_submarine-3.4.7"
+filename = "create_submarine-3.4.7.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/mva5q4qZ/versions/LbcjXrsN/create_submarine-3.4.7.jar"
+hash-format = "sha512"
+hash = "cf5e4846a0248d577c0a1647c69e2f85cb6058b44ce54656d7af510e19868e2a9d5780cfd3b3df177b0e08fb638d49bcdfc7621d4ff08c7763d1cddcde3197c3"
+
+[update]
+[update.modrinth]
+mod-id = "mva5q4qZ"
+version = "LbcjXrsN"

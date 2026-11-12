@@ -3,6 +3,11 @@ filename = "create-frogport-reworked-1.0.1.jar"
 side = "both"
 
 [download]
-url = "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/download/s3-v3.1.1/create-frogport-reworked-1.0.1.jar"
-hash-format = "sha256"
-hash = "29a5410dee46d29e0a08be7027e936b81312ab5c6c5a7537053c766b12751d52"
+url = "https://cdn.modrinth.com/data/R4vq7qIg/versions/VoV2MZoE/create-frogport-reworked-1.0.1.jar"
+hash-format = "sha512"
+hash = "fe7028420af2f8c1ec58968dfe8559f1423998d986c0d672a331ed962db2df24cc65a6953160b2c86a44446711b5d3481455990806b06b8729d4a575cb13e472"
+
+[update]
+[update.modrinth]
+mod-id = "R4vq7qIg"
+version = "VoV2MZoE"
