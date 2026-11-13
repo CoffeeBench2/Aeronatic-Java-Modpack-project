@@ -1,0 +1,13 @@
+name = "mechanical_botany-1.1.3+1.21.1-neoforged"
+filename = "mechanical_botany-1.1.3+1.21.1-neoforged.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/ZDmMjKj7/versions/55jZm9ug/mechanical_botany-1.1.3%2B1.21.1-neoforged.jar"
+hash-format = "sha512"
+hash = "f2d76516e06ed9e49f91853014c255327b744a631d305dc7bbb7f203ff202601f6e8ec37ab824a36fb57d17d3774c71cca825cfb23f6aeb5c9e408de5781940a"
+
+[update]
+[update.modrinth]
+mod-id = "ZDmMjKj7"
+version = "55jZm9ug"
