@@ -1,8 +1,8 @@
 {
-  "version": "3.3.0",
+  "version": "3.3.1",
   "url": "https://modrinth.com/modpack/coffees-create-aeronautics-smp",
   "neoforge": "21.1.251",
   "minecraft": "1.21.1",
-  "notes": "Aero Radio is live: Lofi, Christmas, Mall and Chill Pop stations. Plus Create: Mechanical Botany and a faster, safer updater.",
+  "notes": "Radio fixes: radios respect land claims, changing station switches at once, and people nearby hear portable radios.",
   "retired": []
 }
