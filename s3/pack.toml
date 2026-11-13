@@ -1,11 +1,11 @@
 name = "Coffees Aero SMP Season 3"
-version = "3.3.0"
+version = "3.3.1"
 pack-format = "packwiz:1.1.0"
 
 [index]
 file = "index.toml"
 hash-format = "sha256"
-hash = "28dc7c286fd4adb16954a9e656bc28b223018191c36679d17ccc2c72e4f44a29"
+hash = "4f5c67bb6c52e4bf75b6f0659e363bfb1d99537d0c4c31ade90b8272e0397519"
 
 [versions]
 minecraft = "1.21.1"

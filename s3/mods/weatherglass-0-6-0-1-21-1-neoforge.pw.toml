@@ -3,6 +3,6 @@ filename = "weatherglass-0.6.0-1.21.1-neoforge.jar"
 side = "both"
 
 [download]
-url = "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/download/s3-v3.3.0/weatherglass-0.6.0-1.21.1-neoforge.jar"
+url = "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/download/s3-v3.3.1/weatherglass-0.6.0-1.21.1-neoforge.jar"
 hash-format = "sha256"
 hash = "7dacdd12c7104a77197ce5d60b4fac3d0b2418a01002d972b42c416752355730"
