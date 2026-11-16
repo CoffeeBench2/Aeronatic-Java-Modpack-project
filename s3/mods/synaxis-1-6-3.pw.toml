@@ -1,0 +1,13 @@
+name = "synaxis-1.6.3"
+filename = "synaxis-1.6.3.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/aJewFWOb/versions/nm5hV39x/synaxis-1.6.3.jar"
+hash-format = "sha512"
+hash = "74dc3c2704ec59944430fc8f9d24779a6ec4ce98e2048e7d3926e10f3c3afadc2d401771078064e0673693ce6113af1d9be6bb2a2252ff46cc4f6017d64a53bf"
+
+[update]
+[update.modrinth]
+mod-id = "aJewFWOb"
+version = "nm5hV39x"
