@@ -1,8 +1,8 @@
 {
-  "version": "3.3.1",
+  "version": "3.3.2",
   "url": "https://modrinth.com/modpack/coffees-create-aeronautics-smp",
   "neoforge": "21.1.251",
   "minecraft": "1.21.1",
-  "notes": "Radio fixes: radios respect land claims, changing station switches at once, and people nearby hear portable radios.",
+  "notes": "Tank Wars (Beta) for everyone: right-click the Join Tank Wars NPC in the lobby (or type /tankwars). The Tank Wars mods only do anything on Tank Wars; the SMP plays exactly as before.",
   "retired": []
 }
