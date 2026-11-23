@@ -1,8 +1,10 @@
 {
-  "version": "3.3.2",
+  "version": "3.4.0",
   "url": "https://modrinth.com/modpack/coffees-create-aeronautics-smp",
   "neoforge": "21.1.251",
   "minecraft": "1.21.1",
-  "notes": "Tank Wars (Beta) for everyone: right-click the Join Tank Wars NPC in the lobby (or type /tankwars). The Tank Wars mods only do anything on Tank Wars; the SMP plays exactly as before.",
-  "retired": []
+  "notes": "Christmas update! New in the /shop: the Emperor rank, land claim packs for Beans, airship contrails and new trails, auras and gradient names. New mods: Macaw's Holidays and Create: Bells & Whistles. MapSyncer removed. Crash reports can now be sent to staff with one click.",
+  "retired": [
+    "mapsyncer-"
+  ]
 }
