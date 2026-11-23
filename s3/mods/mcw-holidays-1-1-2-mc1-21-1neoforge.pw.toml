@@ -1,0 +1,13 @@
+name = "mcw-holidays-1.1.2-mc1.21.1neoforge"
+filename = "mcw-holidays-1.1.2-mc1.21.1neoforge.jar"
+side = "both"
+
+[download]
+url = "https://cdn.modrinth.com/data/rH20L2Lp/versions/2mO9Xhpt/mcw-holidays-1.1.2-mc1.21.1neoforge.jar"
+hash-format = "sha512"
+hash = "439c93fe0a8ca363898b3d3d85e0413d7988927ae0a2716e2c4deed9a4097607087abc09a7dc60ac726d7cab9491d444e296ee57e5f0708ddb8951df2ac911a2"
+
+[update]
+[update.modrinth]
+mod-id = "rH20L2Lp"
+version = "2mO9Xhpt"

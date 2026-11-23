@@ -3,6 +3,6 @@ filename = "CoffeesTankWars-0.8.0.jar"
 side = "both"
 
 [download]
-url = "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/download/s3-v3.3.2/CoffeesTankWars-0.8.0.jar"
+url = "https://github.com/CoffeeBench2/Aeronatic-Java-Modpack-project/releases/download/s3-v3.4.0/CoffeesTankWars-0.8.0.jar"
 hash-format = "sha256"
 hash = "232605d821fc69d08a0d3470620dd6651d493a6906ec43106eeed1ecb753aa38"
